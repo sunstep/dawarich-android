@@ -17,4 +17,10 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=sunstep/dawarich-companion&type=Date)](https://star-history.com/#sunstep/dawarich-companion&Date)
+<a href="https://star-history.com/#sunstep/Dawarich-Companion&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=sunstep/Dawarich-Companion&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=sunstep/Dawarich-Companion&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=sunstep/Dawarich-Companion&type=Date" />
+ </picture>
+</a>

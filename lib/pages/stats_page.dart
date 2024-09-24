@@ -68,7 +68,7 @@ class StatsPageState extends State<StatsPage> {
           Center(
             child:
             ElevatedButton(
-              onPressed: _refreshStats,
+              onPressed: _isLoading? null : _refreshStats,
               style: ElevatedButton.styleFrom(
                 backgroundColor: backgroundColor,
                 foregroundColor: Colors.white,
@@ -94,6 +94,7 @@ class StatsPageState extends State<StatsPage> {
     setState(() {
 
       _isLoading = true;
+      _stats.clear();
     });
 
     await _fetchStats();
@@ -131,11 +132,11 @@ class StatsPageState extends State<StatsPage> {
   Widget _buildHeaderSection() {
 
     List<Widget> statItems = [
-      _buildHeaderItem(_isLoading? null : '${_stats["totalCountriesVisited"]}', 'Countries visited', Colors.purple, 150, 80),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalCitiesVisited"]}', 'Cities visited', Colors.green, 150, 80),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalPointsTracked"]}', 'Geopoints Tracked', Colors.pink, 150, 80),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalReverseGeocodedPoints"]}', 'Reverse geocoded points', Colors.orange, 150, 80),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalDistanceKm"]} km', 'Total distance', Colors.blue, 325, 80),
+      _buildHeaderItem(_isLoading? null : '${_stats["totalCountriesVisited"]}', 'Countries visited', Colors.purple, 150, 90),
+      _buildHeaderItem(_isLoading? null : '${_stats["totalCitiesVisited"]}', 'Cities visited', Colors.green, 150, 90),
+      _buildHeaderItem(_isLoading? null : '${_stats["totalPointsTracked"]}', 'Geopoints Tracked', Colors.pink, 150, 90),
+      _buildHeaderItem(_isLoading? null : '${_stats["totalReverseGeocodedPoints"]}', 'Reverse geocoded', Colors.orange, 150, 90),
+      _buildHeaderItem(_isLoading? null : '${_stats["totalDistanceKm"]} km', 'Total distance', Colors.blue, 325, 90),
     ];
 
     return Column(
@@ -185,7 +186,7 @@ class StatsPageState extends State<StatsPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 100),
             child: value == null
                 ? Container(
               width: 40.0,

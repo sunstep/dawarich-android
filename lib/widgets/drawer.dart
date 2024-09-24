@@ -1,5 +1,6 @@
-import 'package:dawarich/pages/points_page.dart';
 import 'package:flutter/material.dart';
+import 'package:dawarich/pages/points_page.dart';
+import '../pages/tracker_page.dart';
 import 'package:dawarich/pages/stats_page.dart';
 import 'package:dawarich/pages/map_page.dart';
 import 'package:dawarich/pages/imports_page.dart';
@@ -43,6 +44,16 @@ class CustomDrawer extends StatelessWidget {
               Navigator.pop(context);
               Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) => const PointsPage())
+              );
+            }
+          ),
+          ListTile(
+            leading: const Icon(Icons.gps_fixed),
+            title: const Text("Tracker"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const TrackerPage())
               );
             }
           ),

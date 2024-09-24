@@ -1,9 +1,8 @@
-import 'dart:convert';
-
+import 'package:dawarich/containers/point_page_container.dart';
+import 'package:dawarich/models/api_point.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/widgets/drawer.dart';
 import 'package:dawarich/widgets/appbar.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
@@ -20,27 +19,25 @@ class PointsPageState extends State<PointsPage> {
   String? _endpoint;
   String? _apiKey;
 
-  DateTime _startDate = DateTime.now();
-  DateTime _endDate = DateTime.now();
-  bool _selectAll = false;
-  List<dynamic> _points = [];
-  Set<String> _selectedItems = {};
   bool _isLoading = true;
+  bool _selectAll = false;
+
+
+
+  Set<String> _selectedItems = {};
   bool _sortByNew = true;
 
-  int _currentPage = 0;
-  final int _pointsPerPage = 150;
-  int get _totalPages => (_points.length / _pointsPerPage).floor();
+  final PointsPageContainer _container = PointsPageContainer();
 
-  List<dynamic> _getCurrentPagePoints() {
-    final start = _currentPage * _pointsPerPage;
-    final end = start + _pointsPerPage;
+  List<ApiPoint> _getCurrentPagePoints() {
+    final int start = _container.currentPage * _container.pointsPerPage;
+    final int end = start + _container.pointsPerPage;
 
-    if (start >= _points.length) {
+    if (start >= _container.points.length) {
       return [];
     }
 
-    return _points.sublist(start, end > _points.length ? _points.length : end);
+    return _container.points.sublist(start, end > _container.points.length ? _container.points.length : end);
   }
 
   @override
@@ -51,54 +48,21 @@ class PointsPageState extends State<PointsPage> {
 
   Future<void> _initialize() async {
 
-    await _fetchEndpointInfo();
-    await _fetchPoints();
-  }
-
-  Future<void> _fetchEndpointInfo() async {
-    const storage = FlutterSecureStorage();
-    _endpoint = await storage.read(key: "host");
-    _apiKey = await storage.read(key: "api_key");
-  }
-
-  Future<void> _fetchPoints() async {
-
-    final startDate =
-    DateTime(_startDate.year, _startDate.month, _startDate.day)
-        .toIso8601String();
-    final endDate = DateTime(_endDate.year, _endDate.month,
-        _endDate.day, 23, 59, 59)
-        .toIso8601String();
-
-    final uri = Uri.parse('$_endpoint/api/v1/points?api_key=$_apiKey&start_at=$startDate&end_at=$endDate');
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      setState(() {
-        _points = jsonDecode(response.body);
-        _points.sort((a, b) {
-          DateTime dateA = DateTime.parse(a['created_at']);
-          DateTime dateB = DateTime.parse(b['created_at']);
-          return dateB.compareTo(dateA);
-        });
-        _selectedItems = {};
-        _isLoading = false;
-      });
-    } else {
-      throw Exception('Failed to load points');
-    }
+    await _container.fetchEndpointInfo(context);
+    await _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
+    _isLoading = false;
   }
 
   void _selectStartDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _startDate,
+      initialDate: _container.startDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked != _startDate) {
+    if (picked != null && picked != _container.startDate) {
       setState(() {
-        _startDate = picked;
+        _container.startDate = picked;
       });
     }
   }
@@ -106,13 +70,13 @@ class PointsPageState extends State<PointsPage> {
   void _selectEndDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _endDate,
+      initialDate: _container.endDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked != _endDate) {
+    if (picked != null && picked != _container.endDate) {
       setState(() {
-        _endDate = picked;
+        _container.endDate = picked;
       });
     }
   }
@@ -124,7 +88,7 @@ class PointsPageState extends State<PointsPage> {
       _selectAll = !_selectAll;
 
       if (value == true){
-        _selectedItems = _getCurrentPagePoints().map((point) => point['id'].toString()).toSet();
+        _selectedItems = _getCurrentPagePoints().map((point) => point.id.toString()).toSet();
       } else {
         _selectedItems.clear();
       }
@@ -133,7 +97,7 @@ class PointsPageState extends State<PointsPage> {
 
   void _toggleSelection(int index, bool? value) {
 
-    final String pointId = _points[index]['id'].toString();
+    final String pointId = _container.points[index].id.toString();
 
     setState(() {
 
@@ -159,15 +123,15 @@ class PointsPageState extends State<PointsPage> {
     setState(() {
 
       if (_sortByNew) {
-        _points.sort((a, b) {
-          DateTime dateA = DateTime.parse(a['created_at']);
-          DateTime dateB = DateTime.parse(b['created_at']);
+        _container.points.sort((a, b) {
+          DateTime dateA = DateTime.parse(a.createdAt!);
+          DateTime dateB = DateTime.parse(b.createdAt!);
           return dateB.compareTo(dateA);
         });
       } else {
-        _points.sort((a, b) {
-          DateTime dateA = DateTime.parse(a['created_at']);
-          DateTime dateB = DateTime.parse(b['created_at']);
+        _container.points.sort((a, b) {
+          DateTime dateA = DateTime.parse(a.createdAt!);
+          DateTime dateB = DateTime.parse(b.createdAt!);
           return dateA.compareTo(dateB);
         });
       }
@@ -176,18 +140,19 @@ class PointsPageState extends State<PointsPage> {
 
   bool hasSelectedItems() => _selectedItems.isNotEmpty;
 
+  bool _isAllSelected() => _selectedItems.length == _container.pointsPerPage;
+
   Future<void> _searchPressed() async {
     setState(() {
       _isLoading = true;
-      _points.clear();
-      _currentPage = 0;
+      _container.points.clear();
+      _container.currentPage = 0;
 
     });
 
-    await _fetchPoints();
+    await _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
   }
 
-  bool _isAllSelected() => _selectedItems.length == _pointsPerPage;
 
   Future<void> _deleteSelection() async {
 
@@ -199,7 +164,7 @@ class PointsPageState extends State<PointsPage> {
 
       if (response.statusCode == 200) {
         setState(() {
-          _points.removeWhere((point) => point['id'].toString() == pointId);
+          _container.points.removeWhere((point) => point.id.toString() == pointId);
           _selectedItems.remove(pointId);
           _selectAll = _isAllSelected();
         });
@@ -247,10 +212,8 @@ class PointsPageState extends State<PointsPage> {
 
   Widget _pageContent() {
 
-    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-    final textColor = isDarkTheme ? Colors.white : Colors.black;
-    final borderColor = Theme.of(context).dividerColor;
+
 
     final bodyMedium = Theme.of(context).textTheme.bodyMedium;
     final bodyLarge = Theme.of(context).textTheme.bodyLarge;
@@ -276,7 +239,7 @@ class PointsPageState extends State<PointsPage> {
                         ),
                       ),
                       controller: TextEditingController(
-                        text: '${_startDate.toLocal()}'.split(' ')[0],
+                        text: '${_container.startDate.toLocal()}'.split(' ')[0],
                       ),
                     ),
                   ),
@@ -298,7 +261,7 @@ class PointsPageState extends State<PointsPage> {
                         ),
                       ),
                       controller: TextEditingController(
-                        text: '${_endDate.toLocal()}'.split(' ')[0],
+                        text: '${_container.endDate.toLocal()}'.split(' ')[0],
                       ),
                     ),
                   ),
@@ -351,7 +314,7 @@ class PointsPageState extends State<PointsPage> {
                   ),
               ),
               if (hasSelectedItems())
-                const SizedBox(width: 30),
+                const SizedBox(width: 10),
               if (hasSelectedItems())
                 ElevatedButton(
                   onPressed: () {
@@ -374,50 +337,60 @@ class PointsPageState extends State<PointsPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (_points.length > _pointsPerPage && !hasSelectedItems())
+                    if (!hasSelectedItems())
                       IconButton(
-                        onPressed: () {
+                        onPressed: () async {
                           setState(() {
-                            if (_currentPage != 0){
-                              _currentPage = 0;
+                            if (_container.currentPage != 0){
+                              _isLoading = true;
+                              _container.currentPage = 0;
                             }
+
+                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
                           });
                         },
                         icon: const Icon(Icons.first_page),
                       ),
-                    if (_points.length > _pointsPerPage && !hasSelectedItems())
+                    if (!hasSelectedItems())
                       IconButton(
                         onPressed: () {
                           setState(() {
-                            if (_currentPage > 0){
-                              _currentPage--;
+                            if (_container.currentPage > 0){
+                              _isLoading = true;
+                              _container.currentPage--;
                             }
+
+                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
                           });
                         },
                         icon: const Icon(Icons.navigate_before),
                       ),
                     if (!hasSelectedItems())
-                      Text("${_currentPage+1}/${_totalPages+1}"),
+                      Text("${_container.currentPage}/${_container.totalPages}"),
                     if (!hasSelectedItems())
                       const SizedBox(width: 8),
-                    if (_points.length > _pointsPerPage && !hasSelectedItems())
+                    if (!hasSelectedItems())
                       IconButton(
                         onPressed: () {
                           setState(() {
-                            if (_currentPage != _totalPages){
-                              _currentPage++;
+                            if (_container.currentPage != _container.totalPages){
+                              _isLoading = true;
+                              _container.currentPage++;
                             }
+                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
                           });
                         },
                         icon: const Icon(Icons.navigate_next),
                       ),
-                    if (_points.length > _pointsPerPage && !hasSelectedItems())
+                    if (!hasSelectedItems())
                       IconButton(
                         onPressed: () {
                           setState(() {
-                            if (_currentPage < _totalPages){
-                              _currentPage = _totalPages;
+                            if (_container.currentPage < _container.totalPages){
+                              _isLoading = true;
+                              _container.currentPage = _container.totalPages;
                             }
+                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
                           });
                         },
                         icon: const Icon(Icons.last_page),
@@ -465,7 +438,10 @@ class PointsPageState extends State<PointsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
-              const Checkbox(value: false, onChanged: null),
+              const Checkbox(
+                value: false,
+                onChanged: null,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,15 +525,15 @@ class PointsPageState extends State<PointsPage> {
           ],
           rows: List<DataRow>.generate(
             currentPoints.length,
-                (index) {
+            (index) {
               final point = currentPoints[index];
-              final recordedAt = point['created_at'];
-              final latitude = point['latitude'];
-              final longitude = point['longitude'];
+              final recordedAt = point.createdAt;
+              final latitude = point.latitude;
+              final longitude = point.longitude;
 
-              final DateTime parsedDate = DateTime.parse(recordedAt);
+              final DateTime parsedDate = DateTime.parse(recordedAt!);
               final String formattedDate = dateFormat.format(parsedDate);
-              final isSelected = _selectedItems.contains(point['id'].toString());
+              final isSelected = _selectedItems.contains(point.id.toString());
 
               return DataRow(
                 cells: [
@@ -566,6 +542,8 @@ class PointsPageState extends State<PointsPage> {
                       value: isSelected,
                       onChanged: (value) => _toggleSelection(index, value),
                       side: BorderSide(color: checkColor),
+                      //checkColor: ,
+                      //activeColor: activeColor,
                     ),
                   ),
                   DataCell(

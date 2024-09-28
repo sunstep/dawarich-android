@@ -24,7 +24,7 @@ class PointApi {
         .toIso8601String();
 
     final Uri uri = Uri.parse(
-        '$_endpoint/api/v1/points?api_key=$_apiKey&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page&slim=false');
+        '$_endpoint/api/v1/points?api_key=$_apiKey&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {

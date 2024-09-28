@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:latlong2/latlong.dart';
-import '../models/api_point.dart';
 
 class PointPair {
   final LatLng A;

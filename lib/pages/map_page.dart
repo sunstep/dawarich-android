@@ -1,12 +1,13 @@
-import 'package:dawarich/models/api_point.dart';
-import 'package:dawarich/models/slim_api_point.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/widgets/drawer.dart';
 import 'package:dawarich/widgets/appbar.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:dawarich/containers/map.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:dawarich/models/slim_api_point.dart';
+
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -16,7 +17,7 @@ class MapPage extends StatefulWidget {
 }
 
 class MapPageState extends State<MapPage> {
-  final MapContainer _locationContainer = MapContainer();
+  final MapContainer _container = MapContainer();
   LatLng? _currentLocation;
   List<LatLng> _points = [];
   bool _isLoading = true;
@@ -29,95 +30,119 @@ class MapPageState extends State<MapPage> {
   }
 
   Future<void> _initialize() async {
-    await _locationContainer.fetchEndpointInfo(context);
-    Position? position = await _locationContainer.getCurrentLocation();
+    await _container.fetchEndpointInfo(context);
+    Position? position = await _container.getCurrentLocation();
 
     if (position != null) {
-      setState(() {
-        _currentLocation = LatLng(position.latitude, position.longitude);
-      });
+      if (mounted){
+        setState(() {
+          _currentLocation = LatLng(position.latitude, position.longitude);
+        });
+      }
     }
     await _loadToday();
   }
 
   Future<void> _loadPreviousDay() async {
 
-    DateTime previousDay = _locationContainer.selectedDate.subtract(const Duration(days: 1));
+    DateTime previousDay = _container.selectedDate.subtract(const Duration(days: 1));
 
-    setState(() {
-      _isLoading = true;
-      _points.clear();
-      _locationContainer.selectedDate = DateTime(previousDay.year, previousDay.month, previousDay.day);
-    });
+    if (mounted){
+      setState(() {
+        _isLoading = true;
+        _points.clear();
+        _container.selectedDate = DateTime(previousDay.year, previousDay.month, previousDay.day);
+      });
+    }
 
-    final List<SlimApiPoint> data = await _locationContainer.fetchAllPoints(1750);
+    final List<SlimApiPoint> data = await _container.fetchAllPoints(1750);
 
-    setState(() {
-      _points = _locationContainer.prepPoints(data);
-      _isLoading = false;
-    });
+    if (mounted){
+      setState(() {
+        _points = _container.prepPoints(data);
+        _isLoading = false;
+      });
+    }
+
   }
 
   Future<void> _loadToday() async {
 
-    setState(() {
-      _isLoading =  true;
-      _points.clear();
-    });
+    if (mounted){
+      setState(() {
+        _isLoading =  true;
+        _points.clear();
+      });
+    }
 
-    final List<SlimApiPoint> data = await _locationContainer.fetchAllPoints(1750);
+    final List<SlimApiPoint> data = await _container.fetchAllPoints(1750);
 
-    setState(() {
-      _points = _locationContainer.prepPoints(data);
-      _isLoading = false;
-    });
+    if (mounted){
+      setState(() {
+        _points = _container.prepPoints(data);
+        _isLoading = false;
+      });
+    }
+
 
   }
 
   Future<void> _loadNextDay() async {
 
-    DateTime nextDay = _locationContainer.selectedDate.add(const Duration(days: 1));
+    DateTime nextDay = _container.selectedDate.add(const Duration(days: 1));
 
-    setState(() {
-      _isLoading = true;
-      _points.clear();
-      _locationContainer.selectedDate = DateTime(nextDay.year, nextDay.month, nextDay.day);
-    });
+    if (mounted){
+      setState(() {
+        _isLoading = true;
+        _points.clear();
+        _container.selectedDate = DateTime(nextDay.year, nextDay.month, nextDay.day);
+      });
+    }
 
-    final List<SlimApiPoint> data = await _locationContainer.fetchAllPoints(1750);
 
-    setState(() {
-      _points = _locationContainer.prepPoints(data);
-      _isLoading = false;
-    });
+    final List<SlimApiPoint> data = await _container.fetchAllPoints(1750);
+
+    if (mounted){
+      setState(() {
+        _points = _container.prepPoints(data);
+        _isLoading = false;
+      });
+    }
+
   }
 
   Future<void> _displayDatePicker() async {
 
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: _locationContainer.selectedDate,
+      initialDate: _container.selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
 
-    if (pickedDate == null || pickedDate == _locationContainer.selectedDate) {
+    if (pickedDate == null || pickedDate == _container.selectedDate) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _points.clear();
-      _locationContainer.selectedDate = pickedDate;
-    });
+    if (mounted){
+      setState(() {
+        _isLoading = true;
+        _points.clear();
+        _container.selectedDate = pickedDate;
+      });
+    }
 
-    final List<SlimApiPoint> data = await _locationContainer.fetchAllPoints(1750);
 
-    setState(() {
+    final List<SlimApiPoint> data = await _container.fetchAllPoints(1750);
 
-      _points = _locationContainer.prepPoints(data);
-      _isLoading = false;
-    });
+    if (mounted){
+      setState(() {
+
+        _points = _container.prepPoints(data);
+        _isLoading = false;
+      });
+    }
+
   }
 
   Widget _buildBottomSheet() {
@@ -174,7 +199,7 @@ class MapPageState extends State<MapPage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                _locationContainer.displayDate(),
+                                _container.displayDate(),
                                 style: Theme.of(context).textTheme.bodyLarge,
                               ),
                               const Icon(Icons.arrow_drop_down),
@@ -183,7 +208,7 @@ class MapPageState extends State<MapPage> {
                         ),
                       ),
                     ),
-                    if (!_locationContainer.isTodaySelected())
+                    if (!_container.isTodaySelected())
                       IconButton(
                         icon: const Icon(Icons.arrow_forward_ios),
                         onPressed: () {
@@ -232,7 +257,8 @@ class MapPageState extends State<MapPage> {
             ),
             PolylineLayer(polylines: [
               Polyline(points: _points, strokeWidth: 4.0, color: Colors.blue, borderStrokeWidth: 2.0, borderColor: const Color(0xFF395078))
-            ])
+            ]),
+            CurrentLocationLayer(),
 
           ],
 

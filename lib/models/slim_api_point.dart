@@ -1,15 +1,13 @@
 
-import 'dart:ffi';
-
 class SlimApiPoint {
 
-  String? Latitude;
-  String? Longitude;
-  int? Timestamp;
+  String? latitude;
+  String? longitude;
+  int? timestamp;
 
   SlimApiPoint(Map<String, dynamic> point){
-    Latitude = point['latitude'];
-    Longitude = point['longitude'];
-    Timestamp = point['timestamp'];
+    latitude = point['latitude'];
+    longitude = point['longitude'];
+    timestamp = point['timestamp'];
   }
 }

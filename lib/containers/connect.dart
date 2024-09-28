@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/helpers/endpoint.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 
 class ConnectContainer {
@@ -57,7 +58,10 @@ class ConnectContainer {
   }
 
   Future<void> _storeConnection(String host, String apiKey) async {
+
     EndpointResult endpoint = Provider.of<EndpointResult>(_context, listen: false);
     await endpoint.setInfo(host, apiKey);
+    await endpoint.getInfo();
+
   }
 }

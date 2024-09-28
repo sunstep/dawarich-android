@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:dawarich/helpers/points.dart';
 import 'package:intl/intl.dart';
-import '../models/api_point.dart';
 import 'point_api.dart';
 
 class MapContainer {
@@ -54,18 +53,12 @@ class MapContainer {
     final int pages = int.parse(headers["x-total-pages"]!);
     final List<SlimApiPoint> allPoints = [];
 
-    final stopwatch = Stopwatch()..start();
-
     final List<Future<List<SlimApiPoint>>> responses = [];
     for (int page = 1; page <= pages; page++) {
       responses.add(api.fetchSlimPoints(perPage, page));
     }
 
     final List<List<SlimApiPoint>> results = await Future.wait(responses);
-
-    stopwatch.stop();
-
-    print('Fetched $pages pages in ${stopwatch.elapsedMilliseconds}ms');
 
     for (List<SlimApiPoint> result in results){
       allPoints.addAll(result);
@@ -90,8 +83,8 @@ class MapContainer {
     }
 
     data.sort((a, b) {
-      int? timestampA = a.Timestamp!;
-      int? timestampB = b.Timestamp!;
+      int? timestampA = a.timestamp!;
+      int? timestampB = b.timestamp!;
 
       return timestampA.compareTo(timestampB);
     });
@@ -105,11 +98,11 @@ class MapContainer {
     final List<SlimApiPoint> mergedPoints = [];
 
     if (points.isNotEmpty) {
-      LatLng currentPoint = LatLng(double.parse(points[0].Latitude!), double.parse(points[0].Longitude!));
+      LatLng currentPoint = LatLng(double.parse(points[0].latitude!), double.parse(points[0].longitude!));
       mergedPoints.add(points[0]);
 
       for (int i = 1; i < points.length; i++) {
-        final nextPoint = LatLng(double.parse(points[i].Latitude!), double.parse(points[i].Longitude!));
+        final nextPoint = LatLng(double.parse(points[i].latitude!), double.parse(points[i].longitude!));
         final pointPair = PointPair(currentPoint, nextPoint);
         final double dist = pointPair.calculateDistance();
 
@@ -125,8 +118,8 @@ class MapContainer {
 
   List<LatLng> parsePoints(List<SlimApiPoint> points) {
     return points.map((point) {
-      final latitude = double.parse(point.Latitude!);
-      final longitude = double.parse(point.Longitude!);
+      final latitude = double.parse(point.latitude!);
+      final longitude = double.parse(point.longitude!);
       return LatLng(latitude, longitude);
     }).toList();
   }

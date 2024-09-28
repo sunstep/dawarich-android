@@ -22,23 +22,10 @@ class PointsPageState extends State<PointsPage> {
   bool _isLoading = true;
   bool _selectAll = false;
 
-
-
   Set<String> _selectedItems = {};
   bool _sortByNew = true;
 
   final PointsPageContainer _container = PointsPageContainer();
-
-  List<ApiPoint> _getCurrentPagePoints() {
-    final int start = _container.currentPage * _container.pointsPerPage;
-    final int end = start + _container.pointsPerPage;
-
-    if (start >= _container.points.length) {
-      return [];
-    }
-
-    return _container.points.sublist(start, end > _container.points.length ? _container.points.length : end);
-  }
 
   @override
   void initState() {
@@ -49,8 +36,16 @@ class PointsPageState extends State<PointsPage> {
   Future<void> _initialize() async {
 
     await _container.fetchEndpointInfo(context);
-    await _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
-    _isLoading = false;
+    await _container.fetchPoints();
+    _container.setCurrentPagePoints();
+    _sortPoints();
+
+    if (mounted){
+      setState(() {
+        _isLoading = false;
+      });
+    }
+
   }
 
   void _selectStartDate(BuildContext context) async {
@@ -60,10 +55,12 @@ class PointsPageState extends State<PointsPage> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked != _container.startDate) {
-      setState(() {
-        _container.startDate = picked;
-      });
+    if (picked != null && picked != _container.startDate && mounted) {
+      if (mounted){
+        setState(() {
+          _container.startDate = picked;
+        });
+      }
     }
   }
 
@@ -75,67 +72,75 @@ class PointsPageState extends State<PointsPage> {
       lastDate: DateTime.now(),
     );
     if (picked != null && picked != _container.endDate) {
-      setState(() {
-        _container.endDate = picked;
-      });
+      if (mounted){
+        setState(() {
+          _container.endDate = picked;
+        });
+      }
     }
   }
 
   void _toggleSelectAll(bool? value) {
 
-    setState(() {
+    if (mounted) {
+      setState(() {
 
-      _selectAll = !_selectAll;
+        _selectAll = !_selectAll;
 
-      if (value == true){
-        _selectedItems = _getCurrentPagePoints().map((point) => point.id.toString()).toSet();
-      } else {
-        _selectedItems.clear();
-      }
-    });
+        if (value == true){
+          _selectedItems = _container.getCurrentPagePoints().map((point) => point.id.toString()).toSet();
+        } else {
+          _selectedItems.clear();
+        }
+      });
+    }
+
   }
 
   void _toggleSelection(int index, bool? value) {
 
     final String pointId = _container.points[index].id.toString();
+    if (mounted){
+      setState(() {
 
-    setState(() {
+        if (value == true){
+          _selectedItems.add(pointId);
+        } else {
+          _selectedItems.remove(pointId);
+        }
 
-      if (value == true){
-        _selectedItems.add(pointId);
-      } else {
-        _selectedItems.remove(pointId);
-      }
+        _selectAll = _isAllSelected();
+      });
+    }
 
-      _selectAll = _isAllSelected();
-    });
   }
 
   void _toggleSort() {
 
-    setState(() {
-      _sortByNew = !_sortByNew;
-    });
+    if (mounted){
+      setState(() {
+        _sortByNew = !_sortByNew;
+      });
+    }
+
   }
 
   void _sortPoints(){
 
-    setState(() {
+    if (mounted){
+      setState(() {
 
-      if (_sortByNew) {
         _container.points.sort((a, b) {
-          DateTime dateA = DateTime.parse(a.createdAt!);
-          DateTime dateB = DateTime.parse(b.createdAt!);
-          return dateB.compareTo(dateA);
+          DateTime dateA = DateTime.fromMillisecondsSinceEpoch(a.timestamp! * 1000);
+          DateTime dateB = DateTime.fromMillisecondsSinceEpoch(b.timestamp! * 1000);
+          return _sortByNew ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
         });
-      } else {
-        _container.points.sort((a, b) {
-          DateTime dateA = DateTime.parse(a.createdAt!);
-          DateTime dateB = DateTime.parse(b.createdAt!);
-          return dateA.compareTo(dateB);
-        });
-      }
-    });
+
+        _container.setCurrentPagePoints();
+
+      });
+    }
+
   }
 
   bool hasSelectedItems() => _selectedItems.isNotEmpty;
@@ -143,14 +148,24 @@ class PointsPageState extends State<PointsPage> {
   bool _isAllSelected() => _selectedItems.length == _container.pointsPerPage;
 
   Future<void> _searchPressed() async {
-    setState(() {
-      _isLoading = true;
-      _container.points.clear();
-      _container.currentPage = 0;
 
-    });
+    if (mounted){
+      setState(() {
+        _isLoading = true;
+        _container.points.clear();
+        _container.currentPage = 1;
+      });
+    }
 
-    await _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
+    await _container.fetchPoints();
+    _container.getCurrentPagePoints();
+    _sortPoints();
+
+    if (mounted){
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
 
@@ -163,11 +178,15 @@ class PointsPageState extends State<PointsPage> {
       final response = await http.delete(uri);
 
       if (response.statusCode == 200) {
-        setState(() {
-          _container.points.removeWhere((point) => point.id.toString() == pointId);
-          _selectedItems.remove(pointId);
-          _selectAll = _isAllSelected();
-        });
+
+        if (mounted){
+          setState(() {
+            _container.points.removeWhere((point) => point.id.toString() == pointId);
+            _selectedItems.remove(pointId);
+            _selectAll = _isAllSelected();
+          });
+        }
+
 
       }
     }
@@ -210,13 +229,85 @@ class PointsPageState extends State<PointsPage> {
     );
   }
 
+  void _navigateFirst() {
+
+    if (_container.currentPage > 0 && mounted){
+      setState(() {
+
+          _isLoading = true;
+          _container.currentPage = 1;
+
+          _container.setCurrentPagePoints();
+      });
+
+      if (mounted){
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _navigateBack() {
+    if (_container.currentPage > 1 && mounted){
+      setState(() {
+
+        _isLoading = true;
+        _container.currentPage--;
+
+        _container.setCurrentPagePoints();
+      });
+
+      if (mounted){
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _navigateNext() {
+    if (_container.currentPage < _container.totalPages && mounted){
+      setState(() {
+
+        _isLoading = true;
+        _container.currentPage++;
+
+        _container.setCurrentPagePoints();
+      });
+
+      if (mounted){
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _navigateLast() {
+    if (_container.currentPage < _container.totalPages && mounted){
+      setState(() {
+
+        _isLoading = true;
+        _container.currentPage = _container.totalPages;
+
+        _container.setCurrentPagePoints();
+      });
+
+      if (mounted){
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Widget _pageContent() {
 
-    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
-
-    final bodyMedium = Theme.of(context).textTheme.bodyMedium;
-    final bodyLarge = Theme.of(context).textTheme.bodyLarge;
+    final TextStyle? bodyMedium = Theme.of(context).textTheme.bodyMedium;
+    final TextStyle? bodyLarge = Theme.of(context).textTheme.bodyLarge;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -270,9 +361,11 @@ class PointsPageState extends State<PointsPage> {
               const SizedBox(width: 16),
               ElevatedButton(
                 onPressed: () {
-                  setState(() {
-                    _searchPressed();
-                  });
+                  if (mounted){
+                    setState(() {
+                      _searchPressed();
+                    });
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: backgroundColor,
@@ -339,30 +432,12 @@ class PointsPageState extends State<PointsPage> {
                   children: [
                     if (!hasSelectedItems())
                       IconButton(
-                        onPressed: () async {
-                          setState(() {
-                            if (_container.currentPage != 0){
-                              _isLoading = true;
-                              _container.currentPage = 0;
-                            }
-
-                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
-                          });
-                        },
+                        onPressed: _navigateFirst,
                         icon: const Icon(Icons.first_page),
                       ),
                     if (!hasSelectedItems())
                       IconButton(
-                        onPressed: () {
-                          setState(() {
-                            if (_container.currentPage > 0){
-                              _isLoading = true;
-                              _container.currentPage--;
-                            }
-
-                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
-                          });
-                        },
+                        onPressed: _navigateBack,
                         icon: const Icon(Icons.navigate_before),
                       ),
                     if (!hasSelectedItems())
@@ -371,28 +446,12 @@ class PointsPageState extends State<PointsPage> {
                       const SizedBox(width: 8),
                     if (!hasSelectedItems())
                       IconButton(
-                        onPressed: () {
-                          setState(() {
-                            if (_container.currentPage != _container.totalPages){
-                              _isLoading = true;
-                              _container.currentPage++;
-                            }
-                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
-                          });
-                        },
+                        onPressed: _navigateNext,
                         icon: const Icon(Icons.navigate_next),
                       ),
                     if (!hasSelectedItems())
                       IconButton(
-                        onPressed: () {
-                          setState(() {
-                            if (_container.currentPage < _container.totalPages){
-                              _isLoading = true;
-                              _container.currentPage = _container.totalPages;
-                            }
-                            _container.fetchPoints(_container.pointsPerPage, _container.currentPage);
-                          });
-                        },
+                        onPressed: _navigateLast,
                         icon: const Icon(Icons.last_page),
                       ),
                   ],
@@ -483,7 +542,7 @@ class PointsPageState extends State<PointsPage> {
     final bodyMedium = Theme.of(context).textTheme.bodyMedium;
 
     final DateFormat dateFormat = DateFormat('dd MMM yyyy, HH:mm:ss');
-    final currentPoints = _getCurrentPagePoints();
+    _container.setCurrentPagePoints();
 
     return Container(
       color: backgroundColor,
@@ -524,14 +583,14 @@ class PointsPageState extends State<PointsPage> {
             ),
           ],
           rows: List<DataRow>.generate(
-            currentPoints.length,
+            _container.currentPoints.length,
             (index) {
-              final point = currentPoints[index];
-              final recordedAt = point.createdAt;
-              final latitude = point.latitude;
-              final longitude = point.longitude;
+              final ApiPoint point = _container.currentPoints[index];
+              final int? recordedAt = point.timestamp;
+              final String? latitude = point.latitude;
+              final String? longitude = point.longitude;
 
-              final DateTime parsedDate = DateTime.parse(recordedAt!);
+              final DateTime parsedDate = DateTime.fromMillisecondsSinceEpoch(recordedAt!*1000);
               final String formattedDate = dateFormat.format(parsedDate);
               final isSelected = _selectedItems.contains(point.id.toString());
 

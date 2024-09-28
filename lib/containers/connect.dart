@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/helpers/endpoint.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'dart:async';
 
 
 class ConnectContainer {

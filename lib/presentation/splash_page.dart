@@ -1,7 +1,7 @@
 import 'package:dawarich/helpers/endpoint.dart';
 import 'package:provider/provider.dart';
-import 'package:dawarich/pages/connect_page.dart';
-import 'package:dawarich/pages/map_page.dart';
+import 'package:dawarich/presentation/connect_page.dart';
+import 'package:dawarich/presentation//map_page.dart';
 import "package:flutter/material.dart";
 import 'package:http/http.dart';
 

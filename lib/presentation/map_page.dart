@@ -1,3 +1,4 @@
+import 'package:dawarich/helpers/point_populator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/widgets/drawer.dart';
 import 'package:dawarich/widgets/appbar.dart';
@@ -18,6 +19,7 @@ class MapPage extends StatefulWidget {
 
 class MapPageState extends State<MapPage> {
   final MapContainer _container = MapContainer();
+  final PointPopulator _populator = PointPopulator();
   LatLng? _currentLocation;
   List<LatLng> _points = [];
   bool _isLoading = true;
@@ -31,7 +33,7 @@ class MapPageState extends State<MapPage> {
 
   Future<void> _initialize() async {
     await _container.fetchEndpointInfo(context);
-    Position? position = await _container.getCurrentLocation();
+    Position? position = await _populator.getCurrentLocation();
 
     if (position != null) {
       if (mounted){

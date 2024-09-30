@@ -1,5 +1,5 @@
 import 'package:dawarich/helpers/endpoint.dart';
-import 'package:dawarich/pages/splash_page.dart';
+import 'package:dawarich/presentation/splash_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';

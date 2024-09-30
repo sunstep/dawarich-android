@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/pages/points_page.dart';
-import '../pages/tracker_page.dart';
-import 'package:dawarich/pages/stats_page.dart';
-import 'package:dawarich/pages/map_page.dart';
-import 'package:dawarich/pages/imports_page.dart';
-import 'package:dawarich/pages/exports_page.dart';
-import 'package:dawarich/pages/settings_page.dart';
+import 'package:dawarich/presentation//points_page.dart';
+import '../presentation/tracker_page.dart';
+import 'package:dawarich/presentation/stats_page.dart';
+import 'package:dawarich/presentation/map_page.dart';
+import 'package:dawarich/presentation/imports_page.dart';
+import 'package:dawarich/presentation/exports_page.dart';
+import 'package:dawarich/presentation/settings_page.dart';
 
 
 class CustomDrawer extends StatelessWidget {

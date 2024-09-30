@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/widgets/drawer.dart';
-import 'package:dawarich/widgets/appbar.dart';
+import 'package:dawarich/presentation/widgets/drawer.dart';
+import 'package:dawarich/presentation/widgets/appbar.dart';
 
 class VisitsPage extends StatefulWidget {
 

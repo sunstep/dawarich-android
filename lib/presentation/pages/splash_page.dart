@@ -1,8 +1,7 @@
+import "package:flutter/material.dart";
+import 'package:dawarich/presentation/routing/app_router.dart';
 import 'package:dawarich/helpers/endpoint.dart';
 import 'package:provider/provider.dart';
-import 'package:dawarich/presentation/connect_page.dart';
-import 'package:dawarich/presentation//map_page.dart';
-import "package:flutter/material.dart";
 import 'package:http/http.dart';
 
 class SplashPage extends StatefulWidget {
@@ -49,13 +48,10 @@ class SplashPageState extends State<SplashPage> {
       }
 
       if (response.statusCode == 200) {
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MapPage())
-        );
+
+        Navigator.of(context).pushReplacementNamed(AppRouter.map);
       } else {
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const ConnectionPage())
-        );
+        Navigator.of(context).pushReplacementNamed(AppRouter.connect);
       }
     } catch (e) {
 
@@ -63,9 +59,7 @@ class SplashPageState extends State<SplashPage> {
         return;
       }
 
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ConnectionPage())
-      );
+      Navigator.of(context).pushReplacementNamed(AppRouter.connect);
     }
 
 

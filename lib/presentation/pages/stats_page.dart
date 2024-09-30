@@ -1,8 +1,7 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:dawarich/widgets/drawer.dart';
-import 'package:dawarich/widgets/appbar.dart';
+import 'package:dawarich/presentation/widgets/drawer.dart';
+import 'package:dawarich/presentation/widgets/appbar.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;

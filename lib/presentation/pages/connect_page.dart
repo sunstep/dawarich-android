@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/widgets/appbar.dart';
+import 'package:dawarich/presentation/widgets/appbar.dart';
 import 'package:dawarich/containers/connect.dart';
-import 'package:dawarich/presentation/map_page.dart';
+import 'package:dawarich/presentation/pages/map_page.dart';
 
 class ConnectionPage extends StatefulWidget {
 

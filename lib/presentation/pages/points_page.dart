@@ -1,8 +1,8 @@
 import 'package:dawarich/containers/point_page_container.dart';
 import 'package:dawarich/models/api_point.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/widgets/drawer.dart';
-import 'package:dawarich/widgets/appbar.dart';
+import 'package:dawarich/presentation/widgets/drawer.dart';
+import 'package:dawarich/presentation/widgets/appbar.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 

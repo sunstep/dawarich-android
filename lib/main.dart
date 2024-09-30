@@ -1,8 +1,9 @@
-import 'package:dawarich/helpers/endpoint.dart';
-import 'package:dawarich/presentation/pages/splash_page.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:dawarich/presentation/routing/app_router.dart';
 import 'theme/app_theme.dart';
+import 'package:dawarich/presentation/pages/splash_page.dart';
+import 'package:dawarich/helpers/endpoint.dart';
+import 'package:provider/provider.dart';
 
 
 void main() {
@@ -24,6 +25,8 @@ class MyApp extends StatelessWidget {
       darkTheme: Themes().darkTheme,
       themeMode: ThemeMode.system,
       home: const SplashPage(),
+      onGenerateRoute: AppRouter.generateRoute,
+      initialRoute: '/splash',
     );
   }
 

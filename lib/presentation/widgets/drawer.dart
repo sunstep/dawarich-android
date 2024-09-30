@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/presentation/pages/points_page.dart';
-import '../../presentation/pages/tracker_page.dart';
-import 'package:dawarich/presentation/pages/stats_page.dart';
-import 'package:dawarich/presentation/pages/map_page.dart';
-import 'package:dawarich/presentation/pages/imports_page.dart';
-import 'package:dawarich/presentation/pages/exports_page.dart';
-import 'package:dawarich/presentation/pages/settings_page.dart';
+import 'package:dawarich/presentation/routing/app_router.dart';
+
 
 
 class CustomDrawer extends StatelessWidget {
@@ -22,9 +17,7 @@ class CustomDrawer extends StatelessWidget {
             title: const Text("Timeline"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const MapPage())
-              );
+              Navigator.of(context).pushReplacementNamed(AppRouter.map);
             }
           ),
           ListTile(
@@ -32,9 +25,7 @@ class CustomDrawer extends StatelessWidget {
             title: const Text("Stats"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const StatsPage())
-              );
+              Navigator.of(context).pushReplacementNamed(AppRouter.stats);
             }
           ),
           ListTile(
@@ -42,9 +33,8 @@ class CustomDrawer extends StatelessWidget {
             title: const Text("Points"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const PointsPage())
-              );
+              Navigator.of(context).pushReplacementNamed(AppRouter.points);
+
             }
           ),
           ListTile(
@@ -52,9 +42,8 @@ class CustomDrawer extends StatelessWidget {
             title: const Text("Tracker"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const TrackerPage())
-              );
+              Navigator.of(context).pushReplacementNamed(AppRouter.tracker);
+
             }
           ),
           ListTile(
@@ -62,9 +51,8 @@ class CustomDrawer extends StatelessWidget {
             title: const Text("Imports"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const ImportsPage())
-              );
+              Navigator.of(context).pushReplacementNamed(AppRouter.imports);
+
             }
           ),
           ListTile(
@@ -72,9 +60,8 @@ class CustomDrawer extends StatelessWidget {
             title: const Text("Exports"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const ExportsPage())
-              );
+              Navigator.of(context).pushReplacementNamed(AppRouter.exports);
+
             }
           ),
           ListTile(
@@ -82,9 +69,8 @@ class CustomDrawer extends StatelessWidget {
             title: const Text("Settings"),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const SettingsPage())
-              );
+              Navigator.of(context).pushReplacementNamed(AppRouter.settings);
+
             }
           ),
         ],

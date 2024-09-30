@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/widgets/appbar.dart';
-import 'package:dawarich/widgets/drawer.dart';
+import 'package:dawarich/presentation/widgets/appbar.dart';
+import 'package:dawarich/presentation/widgets/drawer.dart';
 
 class SettingsPage extends StatefulWidget {
 

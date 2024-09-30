@@ -27,7 +27,7 @@ class Themes {
       ),
       bodySmall: TextStyle(
         color: Colors.black,
-        fontSize: 15,
+        fontSize: 13,
         fontWeight: FontWeight.bold
       ),
     ),
@@ -109,7 +109,7 @@ class Themes {
         ),
         bodySmall: TextStyle(
           color: Colors.grey.shade200,
-          fontSize: 15,
+          fontSize: 13,
           fontWeight: FontWeight.bold
         ),
       ),

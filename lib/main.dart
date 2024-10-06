@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:dawarich/presentation/routing/app_router.dart';
 import 'package:dawarich/presentation/theme/app_theme.dart';
-import 'package:dawarich/helpers/endpoint.dart';
-import 'package:provider/provider.dart';
-
+import 'package:dawarich/application/dependency_injection/service_locator.dart';
 
 void main() {
-  runApp(ChangeNotifierProvider(
-    create: (context) => EndpointResult(),
-    child: const MyApp(),
-  ));
+  injectDependencies();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

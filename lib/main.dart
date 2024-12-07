@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/presentation/routing/app_router.dart';
-import 'package:dawarich/presentation/theme/app_theme.dart';
+import 'package:dawarich/ui/routing/app_router.dart';
+import 'package:dawarich/ui/theme/app_theme.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
 
 void main() {
+
   injectDependencies();
-  runApp(const MyApp());
+  runApp(const AppBase());
 }
 
-class MyApp extends StatelessWidget {
+class AppBase extends StatelessWidget {
 
-  const MyApp({super.key});
+  const AppBase({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +24,6 @@ class MyApp extends StatelessWidget {
       initialRoute: '/splash',
     );
   }
-
 
 }
 

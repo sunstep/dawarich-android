@@ -8,7 +8,8 @@ import 'package:option_result/option_result.dart';
 
 class PointService {
 
-  final IPointInterfaces _pointInterfaces = GetIt.I<IPointInterfaces>();
+  final IPointInterfaces _pointInterfaces;
+  PointService(this._pointInterfaces);
 
   Future<Option<List<ApiPoint>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
 

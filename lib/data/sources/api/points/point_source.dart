@@ -1,19 +1,30 @@
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
-import 'package:dawarich/data/sources/local/secure_storage/api_config.dart';
+import 'package:dawarich/domain/data_transfer_objects/api_config_dto.dart';
 import 'package:dawarich/domain/data_transfer_objects/api_point_dto.dart';
 import 'package:dawarich/domain/data_transfer_objects/slim_api_point_dto.dart';
+import 'package:dawarich/domain/interfaces/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
 class PointSource {
 
-  final ApiConfigSource _apiConfig = getIt<ApiConfigSource>();
+  final IApiConfigSource _apiConfig;
+  late ApiConfigDTO _apiInfo;
+
+  PointSource(this._apiConfig){
+    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
+
+    if (apiInfo == null) {
+      throw StateError("Cannot query points without a configured endpoint");
+    }
+    _apiInfo = apiInfo;
+  }
 
   Future<Result<List<ApiPointDTO>, String>> queryPoints(String startDate, String endDate, int perPage, int page) async {
 
+
     final Uri uri = Uri.parse(
-        '${_apiConfig.host}/api/v1/points?api_key=${_apiConfig.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
+        '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
@@ -28,7 +39,7 @@ class PointSource {
 
   Future<Result<List<SlimApiPointDTO>, String>> querySlimPoints(String startDate, String endDate, int perPage, int page) async {
     final Uri uri = Uri.parse(
-        '${_apiConfig.host}/api/v1/points?api_key=${_apiConfig.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page&slim=true');
+        '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page&slim=true');
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
@@ -42,7 +53,7 @@ class PointSource {
   }
 
   Future<Result<ApiPointDTO, String>> queryLastPoint() async {
-    final Uri uri = Uri.parse("${_apiConfig.host}/api/v1/points?api_key=${_apiConfig.apiKey}&per_page=1&page=1&order=desc");
+    final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&per_page=1&page=1&order=desc");
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
@@ -57,7 +68,7 @@ class PointSource {
   Future<Result<Map<String, String?>, String>> queryHeaders(String startDate, String endDate, int perPage) async {
 
     final Uri uri = Uri.parse(
-        '${_apiConfig.host}/api/v1/points?api_key=${_apiConfig.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage');
+        '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage');
     final http.Response response = await http.head(uri);
 
     if (response.statusCode == 200) {
@@ -69,7 +80,7 @@ class PointSource {
 
   Future<Result<(), String>> queryDeletePoint(String id) async {
     final Uri uri = Uri.parse(
-      "${_apiConfig.host}/api/v1/points/$id?api_key=${_apiConfig.apiKey}",
+      "${_apiInfo.host}/api/v1/points/$id?api_key=${_apiInfo.apiKey}",
     );
 
     try {

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'package:dawarich/application/services/location_service.dart';
-//import 'package:dawarich/application/services/point_service.dart';
 import 'package:dawarich/application/services/map_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
@@ -10,9 +8,10 @@ import 'package:latlong2/latlong.dart';
 
 class MapViewModel with ChangeNotifier {
 
-  final MapService _mapService = GetIt.I<MapService>();
-  //final PointService _pointService = GetIt.I<PointService>();
-  final LocationService _locationService = GetIt.I<LocationService>();
+  final MapService _mapService;
+  final LocationService _locationService;
+
+  MapViewModel(this._mapService, this._locationService);
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;

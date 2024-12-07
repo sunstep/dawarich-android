@@ -102,7 +102,7 @@ class ConnectionPage extends StatelessWidget {
     return Scaffold(
         appBar: const Appbar(
           title: "Connect to Dawarich",
-          fontSize: 40,
+          fontSize: 28,
         ),
         body: _pageContent(context),
         drawer: const CustomDrawer()
@@ -113,7 +113,7 @@ class ConnectionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => getIt<ConnectViewModel>(),
-      child: _pageBase(context),
+      child: Builder(builder: (context) => _pageBase(context)),
     );
   }
 }

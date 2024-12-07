@@ -1,3 +1,4 @@
+import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
@@ -147,13 +148,37 @@ class MapPage extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final MapViewModel model = context.watch<MapViewModel>();
+  Widget _pageBase(BuildContext context) {
+    MapViewModel viewModel = context.watch<MapViewModel>();
     return Scaffold(
       appBar: const Appbar(title: "Timeline", fontSize: 20),
-      body: _pageContent(model),
+      body: _pageContent(viewModel),
       drawer: const CustomDrawer(),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _initializeMapViewModel(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Colors.cyan));
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Failed to load: ${snapshot.error}'));
+        }
+
+        // Once initialized, provide the viewModel
+        return ChangeNotifierProvider(
+          create: (_) => getIt<MapViewModel>(),
+          child: Builder(builder: (context) => _pageBase(context)),
+        );
+      },
+    );
+  }
+
+  Future<void> _initializeMapViewModel() async {
+    final viewModel = getIt<MapViewModel>();
+    await viewModel.initialize(); // Await the async initialization
   }
 }

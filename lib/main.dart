@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/ui/routing/app_router.dart';
-import 'package:dawarich/ui/theme/app_theme.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
+import 'package:dawarich/ui/theme/app_theme.dart';
+import 'package:dawarich/ui/routing/app_router.dart';
 
 void main() {
-
   injectDependencies();
   runApp(const AppBase());
 }
 
 class AppBase extends StatelessWidget {
-
   const AppBase({super.key});
 
   @override
@@ -24,6 +22,4 @@ class AppBase extends StatelessWidget {
       initialRoute: '/splash',
     );
   }
-
 }
-

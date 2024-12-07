@@ -1,3 +1,4 @@
+import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/application/entities/api_point.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
@@ -76,12 +77,14 @@ class PointsPage extends StatelessWidget {
     );
   }
 
-  Widget _pageContent(BuildContext context, PointsPageViewModel viewModel) {
+  Widget _pageContent(BuildContext context) {
 
     final Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
     final TextStyle? bodyMedium = Theme.of(context).textTheme.bodyMedium;
     final TextStyle? bodyLarge = Theme.of(context).textTheme.bodyLarge;
+
+    PointsPageViewModel viewModel = context.watch<PointsPageViewModel>();
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -396,14 +399,20 @@ class PointsPage extends StatelessWidget {
     );
   }
 
+  Widget _pageBase(BuildContext context) {
+    return Scaffold(
+      appBar: const Appbar(title: "Points", fontSize: 40),
+      body: _pageContent(context),
+      drawer: const CustomDrawer(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
 
-    PointsPageViewModel viewModel = context.watch<PointsPageViewModel>();
-    return Scaffold(
-      appBar: const Appbar(title: "Points", fontSize: 40),
-      body: _pageContent(context, viewModel),
-      drawer: const CustomDrawer(),
+    return ChangeNotifierProvider(
+      create: (_) => getIt<PointsPageViewModel>(),
+      child: Builder(builder: (context) => _pageBase(context)),
     );
   }
 

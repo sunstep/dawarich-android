@@ -1,5 +1,5 @@
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:flutter/material.dart';
+import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -159,26 +159,15 @@ class MapPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _initializeMapViewModel(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.cyan));
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Failed to load: ${snapshot.error}'));
-        }
-
-        // Once initialized, provide the viewModel
-        return ChangeNotifierProvider(
-          create: (_) => getIt<MapViewModel>(),
-          child: Builder(builder: (context) => _pageBase(context)),
-        );
-      },
+    final mapViewModel = getIt<MapViewModel>();
+    return ChangeNotifierProvider.value(
+      value: mapViewModel,
+      child: Builder(
+        builder: (context) {
+          return _pageBase(context);
+        },
+      ),
     );
   }
 
-  Future<void> _initializeMapViewModel() async {
-    final viewModel = getIt<MapViewModel>();
-    await viewModel.initialize(); // Await the async initialization
-  }
 }

@@ -51,7 +51,11 @@ void injectDependencies() {
   );
 
   getIt.registerFactory<MapViewModel>(
-        () => MapViewModel(getIt<MapService>(), getIt<LocationService>()),
+        () {
+      final viewModel = MapViewModel(getIt<MapService>(), getIt<LocationService>());
+      viewModel.initialize(); // Initialize it when created.
+      return viewModel;
+    },
   );
 
   getIt.registerFactory<PointsPageViewModel>(

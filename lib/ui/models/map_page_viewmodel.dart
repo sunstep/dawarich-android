@@ -64,7 +64,7 @@ class MapViewModel with ChangeNotifier {
 
   Future<void> loadPreviousDay() async {
 
-    DateTime previousDay = _selectedDate.subtract(const Duration(days: 1));
+    DateTime previousDay = selectedDate.subtract(const Duration(days: 1));
 
     setIsLoading(true);
     clearPoints();

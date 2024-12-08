@@ -161,6 +161,10 @@ class PointsPageViewModel with ChangeNotifier {
 
     setLoading(true);
     clearPoints();
+
+    int amountOfPages = await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
+    setTotalPages(amountOfPages);
+
     setCurrentPage(1);
 
     Option<List<ApiPoint>> result = await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);

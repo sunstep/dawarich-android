@@ -31,7 +31,7 @@ class PointsPage extends StatelessWidget {
       context: context,
       initialDate: viewModel.endDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      lastDate: viewModel.endDate,
     );
     if (picked != null && picked != viewModel.endDate) {
 

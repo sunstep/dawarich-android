@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:dawarich/application/services/location_service.dart';
 import 'package:dawarich/application/services/map_service.dart';

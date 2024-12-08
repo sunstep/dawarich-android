@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/presentation/routing/app_router.dart';
-import 'package:dawarich/presentation/theme/app_theme.dart';
-import 'package:dawarich/helpers/endpoint.dart';
-import 'package:provider/provider.dart';
-
+import 'package:dawarich/application/dependency_injection/service_locator.dart';
+import 'package:dawarich/ui/theme/app_theme.dart';
+import 'package:dawarich/ui/routing/app_router.dart';
 
 void main() {
-  runApp(ChangeNotifierProvider(
-    create: (context) => EndpointResult(),
-    child: const MyApp(),
-  ));
+  WidgetsFlutterBinding.ensureInitialized();
+  injectDependencies();
+  runApp(const AppBase());
 }
 
-class MyApp extends StatelessWidget {
-
-  const MyApp({super.key});
+class AppBase extends StatelessWidget {
+  const AppBase({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +23,4 @@ class MyApp extends StatelessWidget {
       initialRoute: '/splash',
     );
   }
-
-
 }
-

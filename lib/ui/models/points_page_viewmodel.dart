@@ -1,5 +1,6 @@
 import 'package:dawarich/application/entities/api_point.dart';
 import 'package:dawarich/application/services/point_service.dart';
+import 'package:dawarich/ui/models/api_point_viewmodel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get_it/get_it.dart';
 import 'package:option_result/option_result.dart';
@@ -18,8 +19,8 @@ class PointsPageViewModel with ChangeNotifier {
   int _totalPages = 0;
   final int _pointsPerPage = 100;
 
-  List<ApiPoint> _points = [];
-  List<ApiPoint> _pagePoints = [];
+  List<ApiPointViewModel> _points = [];
+  List<ApiPointViewModel> _pagePoints = [];
 
   Set<String> _selectedItems = {};
 
@@ -39,8 +40,8 @@ class PointsPageViewModel with ChangeNotifier {
   int get totalPages => _totalPages;
   int get pointsPerPage => _pointsPerPage;
 
-  List<ApiPoint> get points => _points;
-  List<ApiPoint> get pagePoints => _pagePoints;
+  List<ApiPointViewModel> get points => _points;
+  List<ApiPointViewModel> get pagePoints => _pagePoints;
 
   Set<String> get selectedItems => _selectedItems;
 
@@ -79,7 +80,7 @@ class PointsPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  void setPoints(List<ApiPoint> list) {
+  void setPoints(List<ApiPointViewModel> list) {
     _points = list;
     notifyListeners();
   }
@@ -104,7 +105,7 @@ class PointsPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  void setPagePoints(List<ApiPoint> list) {
+  void setPagePoints(List<ApiPointViewModel> list) {
     _pagePoints = list;
     notifyListeners();
   }
@@ -126,6 +127,36 @@ class PointsPageViewModel with ChangeNotifier {
     setPagePoints(points.sublist(start, end > points.length ? points.length : end));
   }
 
+  Future<void> initialize() async {
+
+    setLoading(true);
+
+    int amountOfPages = await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
+    setTotalPages(amountOfPages);
+
+    Option<List<ApiPoint>> result =  await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
+
+    switch (result) {
+
+      case Some(value: List<ApiPoint> fetchedPoints): {
+
+        List<ApiPointViewModel> points = fetchedPoints
+            .map((point) => ApiPointViewModel(point))
+            .toList();
+
+        setPoints(points);
+        setCurrentPagePoints();
+
+        setLoading(false);
+      }
+
+      case None(): {
+        // Handle error
+      }
+    }
+
+  }
+
   Future<void> searchPressed() async {
 
     setLoading(true);
@@ -135,7 +166,12 @@ class PointsPageViewModel with ChangeNotifier {
     Option<List<ApiPoint>> result = await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
 
     switch (result) {
-      case Some(value: List<ApiPoint> points): {
+      case Some(value: List<ApiPoint> fetchedPoints): {
+
+        List<ApiPointViewModel> points = fetchedPoints
+            .map((point) => ApiPointViewModel(point))
+            .toList();
+
         setPoints(points);
         getCurrentPagePoints();
         sortPoints();
@@ -148,8 +184,19 @@ class PointsPageViewModel with ChangeNotifier {
       }
     }
 
+  }
 
+  List<ApiPointViewModel> getCurrentPagePoints() {
 
+    final int start = (pagePoints.length - 1) * pointsPerPage;
+    final int end = start + pointsPerPage;
+
+    if (start >= points.length) {
+      return [];
+    }
+
+    List<ApiPointViewModel> newList = points.sublist(start, end > points.length ? points.length : end);
+    return newList;
   }
 
   Future<void> deleteSelection() async {
@@ -221,19 +268,6 @@ class PointsPageViewModel with ChangeNotifier {
       _isLoading = false;
 
     }
-  }
-
-  List<ApiPoint> getCurrentPagePoints() {
-
-    final int start = (pagePoints.length - 1) * pointsPerPage;
-    final int end = start + pointsPerPage;
-
-    if (start >= points.length) {
-      return [];
-    }
-
-    List<ApiPoint> newList = points.sublist(start, end > points.length ? points.length : end);
-    return newList;
   }
 
 

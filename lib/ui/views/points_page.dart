@@ -1,6 +1,6 @@
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
+import 'package:dawarich/ui/models/api_point_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/application/entities/api_point.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:intl/intl.dart';
@@ -315,7 +315,6 @@ class PointsPage extends StatelessWidget {
     final bodyMedium = Theme.of(context).textTheme.bodyMedium;
 
     final DateFormat dateFormat = DateFormat('dd MMM yyyy, HH:mm:ss');
-    viewModel.setCurrentPagePoints();
 
     return Container(
       color: backgroundColor,
@@ -358,7 +357,7 @@ class PointsPage extends StatelessWidget {
           rows: List<DataRow>.generate(
             viewModel.pagePoints.length,
             (index) {
-              final ApiPoint point = viewModel.pagePoints[index];
+              final ApiPointViewModel point = viewModel.pagePoints[index];
               final int? recordedAt = point.timestamp;
               final String? latitude = point.latitude;
               final String? longitude = point.longitude;
@@ -410,8 +409,9 @@ class PointsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    return ChangeNotifierProvider(
-      create: (_) => getIt<PointsPageViewModel>(),
+    PointsPageViewModel viewModel = getIt<PointsPageViewModel>();
+    return ChangeNotifierProvider.value(
+      value: viewModel,
       child: Builder(builder: (context) => _pageBase(context)),
     );
   }

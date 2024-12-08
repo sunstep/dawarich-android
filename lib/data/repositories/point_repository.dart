@@ -8,7 +8,6 @@ import 'package:option_result/option_result.dart';
 class PointRepository implements IPointInterfaces {
 
   final PointSource _source;
-
   PointRepository(this._source);
 
   @override

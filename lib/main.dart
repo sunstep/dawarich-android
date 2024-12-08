@@ -4,6 +4,7 @@ import 'package:dawarich/ui/theme/app_theme.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   injectDependencies();
   runApp(const AppBase());
 }

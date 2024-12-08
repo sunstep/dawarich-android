@@ -1,56 +1,17 @@
-import 'dart:convert';
+import 'package:dawarich/application/dependency_injection/service_locator.dart';
+import 'package:dawarich/ui/models/stats_page_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
+class StatsPage extends StatelessWidget {
 
-class StatsPage extends StatefulWidget {
   const StatsPage({super.key});
 
-  @override
-  StatsPageState createState() => StatsPageState();
-}
+  Widget _pageContent(BuildContext context){
 
-class StatsPageState extends State<StatsPage> {
-
-  String? _endpoint;
-  String? _apiKey;
-
-  bool _isLoading = true;
-
-  final Map<String, int?> _stats = {
-    "totalDistanceKm": null,
-    "totalPointsTracked": null,
-    "totalReverseGeocodedPoints": null,
-    "totalCountriesVisited": null,
-    "totalCitiesVisited": null,
-  };
-
-  List<Map<String, dynamic>> _yearlyStats = [];
-  List<Map<String, dynamic>> _monthlyStats = [];
-
-  @override
-  void initState() {
-    super.initState();
-
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
-
-    await _fetchEndpointInfo();
-    await _fetchStats();
-  }
-
-  Future<void> _fetchEndpointInfo() async {
-    FlutterSecureStorage storage = const FlutterSecureStorage();
-    _endpoint = await storage.read(key: "host");
-    _apiKey = await storage.read(key: "api_key");
-  }
-
-  Widget _pageContent(){
+    StatsPageViewModel viewModel = context.watch<StatsPageViewModel>();
 
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     final borderColor = Theme.of(context).dividerColor;
@@ -61,12 +22,12 @@ class StatsPageState extends State<StatsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeaderSection(),
+          _buildHeaderSection(context, viewModel),
           const SizedBox(height: 20),
           Center(
             child:
             ElevatedButton(
-              onPressed: _isLoading? null : _refreshStats,
+              onPressed: viewModel.isLoading ? null : viewModel.refreshStats,
               style: ElevatedButton.styleFrom(
                 backgroundColor: backgroundColor,
                 foregroundColor: Colors.white,
@@ -87,54 +48,14 @@ class StatsPageState extends State<StatsPage> {
     );
   }
 
-  Future<void> _refreshStats() async {
-
-    setState(() {
-
-      _isLoading = true;
-      _stats.clear();
-    });
-
-    await _fetchStats();
-  }
-
-  Future<void> _fetchStats() async {
-
-
-    final uri = Uri.parse("$_endpoint/api/v1/stats?api_key=$_apiKey");
-    final response = await http.get(uri);
-
-    final jsonStats = jsonDecode(response.body);
-
-    setState(() {
-      _stats["totalDistanceKm"] = jsonStats["totalDistanceKm"] ?? 0;
-      _stats["totalPointsTracked"] = jsonStats["totalPointsTracked"] ?? 0;
-      _stats["totalReverseGeocodedPoints"] = jsonStats["totalReverseGeocodedPoints"] ?? 0;
-      _stats["totalCountriesVisited"] = jsonStats["totalCountriesVisited"] ?? 0;
-      _stats["totalCitiesVisited"] = jsonStats["totalCitiesVisited"] ?? 0;
-
-      _yearlyStats = List<Map<String, dynamic>>.from(jsonStats["yearlyStats"]);
-
-      _monthlyStats = _yearlyStats.map((yearStats) {
-        return {
-          "year": yearStats["year"],
-          "monthlyDistances": yearStats["monthlyDistanceKm"],
-        };
-      }).toList();
-
-      _isLoading = false;
-    });
-
-  }
-
-  Widget _buildHeaderSection() {
+  Widget _buildHeaderSection(BuildContext context, StatsPageViewModel viewModel) {
 
     List<Widget> statItems = [
-      _buildHeaderItem(_isLoading? null : '${_stats["totalCountriesVisited"]}', 'Countries visited', Colors.purple, 150, 90),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalCitiesVisited"]}', 'Cities visited', Colors.green, 150, 90),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalPointsTracked"]}', 'Geopoints Tracked', Colors.pink, 150, 90),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalReverseGeocodedPoints"]}', 'Reverse geocoded', Colors.orange, 150, 90),
-      _buildHeaderItem(_isLoading? null : '${_stats["totalDistanceKm"]} km', 'Total distance', Colors.blue, 325, 90),
+      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalCountries}', 'Countries visited', Colors.purple, 150, 90),
+      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalCities}', 'Cities visited', Colors.green, 150, 90),
+      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalPoints}', 'Geopoints Tracked', Colors.pink, 150, 90),
+      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalReverseGeocodedPoints}', 'Reverse geocoded', Colors.orange, 150, 90),
+      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalDistance} km', 'Total distance', Colors.blue, 325, 90),
     ];
 
     return Column(
@@ -159,7 +80,7 @@ class StatsPageState extends State<StatsPage> {
     );
   }
 
-  Widget _buildHeaderItem(String? value, String label, Color color, double? width, double? height) {
+  Widget _buildHeaderItem(BuildContext context, String? value, String label, Color color, double? width, double? height) {
 
     final textSmall = Theme.of(context).textTheme.bodySmall;
 
@@ -216,12 +137,21 @@ class StatsPageState extends State<StatsPage> {
   //
   // }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _pageBase(BuildContext context) {
     return Scaffold(
       appBar: const Appbar(title: "Stats", fontSize: 40),
-      body: _pageContent(),
+      body: _pageContent(context),
       drawer: const CustomDrawer(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final StatsPageViewModel viewModel = getIt<StatsPageViewModel>();
+    return ChangeNotifierProvider.value(
+      value: viewModel,
+      child: Builder(builder: (context) => _pageBase(context)
+      ),
     );
   }
 

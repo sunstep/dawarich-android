@@ -62,17 +62,22 @@ class MapViewModel with ChangeNotifier {
     await loadToday();
   }
 
-  Future<void> loadPreviousDay() async {
+  Future<void> getAndSetPoints() async {
 
-    DateTime previousDay = selectedDate.subtract(const Duration(days: 1));
+    final List<LatLng> data = await _mapService.loadMap(selectedDate);
+    setPoints(data);
+  }
+
+  Future<void> loadPreviousDay() async {
 
     setIsLoading(true);
     clearPoints();
-    _selectedDate = DateTime(previousDay.year, previousDay.month, previousDay.day);
 
-    final List<LatLng> data = await _mapService.loadMap(selectedDate);
+    DateTime previousDay = selectedDate.subtract(const Duration(days: 1));
+    setSelectedDate(DateTime(previousDay.year, previousDay.month, previousDay.day));
 
-    setPoints(data);
+    await getAndSetPoints();
+
     setIsLoading(false);
   }
 
@@ -82,9 +87,8 @@ class MapViewModel with ChangeNotifier {
     setIsLoading(true);
     clearPoints();
 
-    final List<LatLng> data = await _mapService.loadMap(selectedDate);
+    await getAndSetPoints();
 
-    setPoints(data);
     setIsLoading(false);
 
   }
@@ -92,15 +96,13 @@ class MapViewModel with ChangeNotifier {
   Future<void> loadNextDay() async {
 
     setIsLoading(true);
-    points.clear();
+    clearPoints();
 
     DateTime nextDay = selectedDate.add(const Duration(days: 1));
-    DateTime newDate = DateTime(nextDay.year, nextDay.month, nextDay.day);
-    setSelectedDate(newDate);
+    setSelectedDate(DateTime(nextDay.year, nextDay.month, nextDay.day));
 
-    final List<LatLng> data = await _mapService.loadMap(selectedDate);
+    await getAndSetPoints();
 
-    setPoints(data);
     setIsLoading(false);
   }
 
@@ -110,14 +112,14 @@ class MapViewModel with ChangeNotifier {
       return;
     }
 
-    setSelectedDate(pickedDate);
-
     setIsLoading(true);
     clearPoints();
 
+    setSelectedDate(pickedDate);
 
+    await getAndSetPoints();
 
-
+    setIsLoading(false);
   }
 
 

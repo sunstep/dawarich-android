@@ -39,8 +39,8 @@ class MapPage extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new),
-                      onPressed: () {
-                        mapModel.loadPreviousDay;
+                      onPressed: () async {
+                        await mapModel.loadPreviousDay();
                       },
                     ),
                     Expanded(
@@ -67,7 +67,7 @@ class MapPage extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.arrow_forward_ios),
                         onPressed: () {
-                          mapModel.loadNextDay;
+                          mapModel.loadNextDay();
                         },
                       )
                     else

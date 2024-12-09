@@ -1,3 +1,4 @@
+import 'package:dawarich/ui/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
@@ -11,21 +12,30 @@ class MapPage extends StatelessWidget {
 
   const MapPage({super.key});
 
-  Widget _bottomsheetContent(BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
+  Widget _bottomsheetContent(
+      BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).bottomSheetTheme.backgroundColor,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16.0),
-          topRight: Radius.circular(16.0),
+          topLeft: Radius.circular(50.0),
+          topRight: Radius.circular(50.0),
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 6.0,
+            offset: Offset(0, -2),
+          ),
+        ],
       ),
       child: Column(
         children: [
+          // Top draggable handle
           Container(
             margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
             height: 5.0,
-            width: 25.0,
+            width: 40.0,
             decoration: BoxDecoration(
               color: Colors.grey[400],
               borderRadius: BorderRadius.circular(10.0),
@@ -34,9 +44,11 @@ class MapPage extends StatelessWidget {
           Expanded(
             child: ListView(
               controller: scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               children: [
                 Row(
                   children: [
+                    // Previous day button
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new),
                       onPressed: () async {
@@ -49,9 +61,16 @@ class MapPage extends StatelessWidget {
                           onPressed: () {
                             _datePicker(context, mapModel);
                           },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Theme.of(context).primaryColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 mapModel.displayDate(),
@@ -59,7 +78,7 @@ class MapPage extends StatelessWidget {
                               ),
                               const Icon(Icons.arrow_drop_down),
                             ],
-                          )
+                          ),
                         ),
                       ),
                     ),
@@ -71,18 +90,28 @@ class MapPage extends StatelessWidget {
                         },
                       )
                     else
-                      const SizedBox(width: 48)
+                      const SizedBox(width: 48),
                   ],
                 ),
+                const SizedBox(height: 16),
                 Container(
-                  margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                  height: 1.0,
+                  height: 1.5,
+                  margin: const EdgeInsets.symmetric(horizontal: 16.0),
                   decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    borderRadius: BorderRadius.circular(10.0),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.grey.withOpacity(0.2),
+                        Colors.grey.withOpacity(0.6),
+                        Colors.grey.withOpacity(0.2),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
                   ),
                 ),
-                mapModel.isLoading? const Center(child: CircularProgressIndicator(color: Colors.cyan)) : const SizedBox(),
+                const SizedBox(height: 16),
+                // Loading indicator or other bottom sheet content
+                mapModel.isLoading ? const CustomLoadingIndicator(message: "Loading your timeline...") : const SizedBox(),
               ],
             ),
           ),
@@ -91,12 +120,13 @@ class MapPage extends StatelessWidget {
     );
   }
 
+
   Widget _buildBottomSheet(MapViewModel mapModel) {
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.2,
-      minChildSize: 0.11,
-      maxChildSize: 0.5,
+      initialChildSize: 0.3,
+      minChildSize: 0.15,
+      maxChildSize: 0.75,
       builder: (BuildContext context, ScrollController scrollController) {
         return _bottomsheetContent(context, mapModel, scrollController);
       },
@@ -121,7 +151,7 @@ class MapPage extends StatelessWidget {
   Widget _pageContent(MapViewModel mapModel) {
 
     if (mapModel.currentLocation == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.cyan));
+      return const CustomLoadingIndicator(message: "Preparing the map...");
     }
 
     return Stack(
@@ -137,9 +167,17 @@ class MapPage extends StatelessWidget {
               userAgentPackageName: 'app.dawarich',
               maxNativeZoom: 19,
             ),
-            PolylineLayer(polylines: [
-              Polyline(points: mapModel.points, strokeWidth: 4.0, color: Colors.blue, borderStrokeWidth: 2.0, borderColor: const Color(0xFF395078))
-            ]),
+            PolylineLayer(
+              polylines: [
+                Polyline(
+                  points: mapModel.points,
+                  strokeWidth: 6.0, // Thicker for better visibility
+                  color: Colors.blue.withOpacity(0.8),
+                  borderStrokeWidth: 2.0, // Adds a subtle border for contrast
+                  borderColor: Colors.white.withOpacity(0.7),
+                ),
+              ],
+            ),
             CurrentLocationLayer(),
           ],
         ),

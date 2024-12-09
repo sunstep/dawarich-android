@@ -18,8 +18,8 @@ class MapPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).bottomSheetTheme.backgroundColor,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(50.0),
-          topRight: Radius.circular(50.0),
+          topLeft: Radius.circular(40.0),
+          topRight: Radius.circular(40.0),
         ),
         boxShadow: const [
           BoxShadow(
@@ -171,7 +171,7 @@ class MapPage extends StatelessWidget {
               polylines: [
                 Polyline(
                   points: mapModel.points,
-                  strokeWidth: 6.0, // Thicker for better visibility
+                  strokeWidth: 6.0,
                   color: Colors.blue.withOpacity(0.8),
                   borderStrokeWidth: 2.0, // Adds a subtle border for contrast
                   borderColor: Colors.white.withOpacity(0.7),

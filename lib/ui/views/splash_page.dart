@@ -14,7 +14,7 @@ class SplashPage extends StatelessWidget {
       create: (_) {
         final SplashViewModel viewModel = getIt<SplashViewModel>();
         viewModel.setNavigationMethod((isLoggedIn) {
-          Navigator.of(context).pushReplacementNamed(isLoggedIn ? AppRouter.map : AppRouter.connect);
+          Navigator.of(context).pushNamedAndRemoveUntil(isLoggedIn ? AppRouter.map : AppRouter.connect, (route) => false);
         });
         return viewModel;
       },

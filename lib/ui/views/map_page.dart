@@ -76,7 +76,11 @@ class MapPage extends StatelessWidget {
                                 mapModel.displayDate(),
                                 style: Theme.of(context).textTheme.bodyLarge,
                               ),
-                              const Icon(Icons.arrow_drop_down),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                color: Theme.of(context).iconTheme.color,
+                                size: 20,
+                              ),
                             ],
                           ),
                         ),

@@ -38,7 +38,7 @@ class MapService {
   }
 
   List<SlimApiPoint> mergePoints(List<SlimApiPoint> points){
-    const double distanceThreshold = 15;
+    const double distanceThreshold = 50;
     final List<SlimApiPoint> mergedPoints = [];
 
     if (points.isNotEmpty) {

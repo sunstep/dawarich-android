@@ -4,23 +4,13 @@ import 'package:flutter/cupertino.dart';
 class SplashViewModel with ChangeNotifier {
 
   final ApiConfigService apiConfigService;
-  Function(bool isConnected)? _navigate;
-
   SplashViewModel(this.apiConfigService);
 
-  Future<void> initialize() async {
+  Future<bool> checkLoginStatusAsync() async {
 
     await apiConfigService.initialize();
-    bool isLoggedIn = apiConfigService.isConfigured();
-
-    if (_navigate != null) {
-      _navigate!(isLoggedIn);
-    }
-
+    return apiConfigService.isConfigured();
   }
 
-  void setNavigationMethod(Function(bool isConnected) function) {
-    _navigate = function;
-  }
 
 }

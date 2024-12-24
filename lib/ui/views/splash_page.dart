@@ -11,19 +11,27 @@ class SplashPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) {
-        final SplashViewModel viewModel = getIt<SplashViewModel>();
-        viewModel.setNavigationMethod((isLoggedIn) {
-          Navigator.of(context).pushNamedAndRemoveUntil(isLoggedIn ? AppRouter.map : AppRouter.connect, (route) => false);
-        });
-        return viewModel;
-      },
+      create: (_) => getIt<SplashViewModel>(),
       child: Consumer<SplashViewModel>(
         builder: (context, viewModel, child) {
-          return FutureBuilder(
-            future: viewModel.initialize(),
+          return FutureBuilder<bool>(
+            future: viewModel.checkLoginStatusAsync(),
             builder: (context, snapshot) {
-              // Loading indicator or just pretend like the app is still starting up? lets just keep it like this for now. As it is not the most important thing to deal with.
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasData) {
+                final isLoggedIn = snapshot.data!;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    isLoggedIn ? AppRouter.map : AppRouter.connect,
+                        (route) => false,
+                  );
+                });
+              }
+
               return const SizedBox();
             },
           );

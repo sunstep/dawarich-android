@@ -1,66 +1,106 @@
 import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:flutter/material.dart';
 
-
 class ConnectViewModel with ChangeNotifier {
+  final ApiConfigService apiConfigService;
 
-  final ApiConfigService _apiConfigService;
+  ConnectViewModel(this.apiConfigService);
 
-  bool _isValidating = false;
-  String? _credentialsError;
+  bool _isVerifyingHost = false;
+  bool _isLoggingIn = false;
+  bool _hostVerified = false;
+  bool _apiKeyPreferred = false;
+  bool _passwordVisible = false;
+  bool _apiKeyVisible = false;
+  String? _snackbarMessage;
+  String? _errorMessage;
 
-  bool get isValidating => _isValidating;
-  String? get credentialsError => _credentialsError;
+  bool get isVerifyingHost => _isVerifyingHost;
+  bool get isLoggingIn => _isLoggingIn;
+  bool get hostVerified => _hostVerified;
+  bool get apiKeyPreferred => _apiKeyPreferred;
+  bool get passwordVisible => _passwordVisible;
+  bool get apiKeyVisible => _apiKeyVisible;
+  String? get snackbarMessage => _snackbarMessage;
+  String? get errorMessage => _errorMessage;
 
-  Function? _navigatorFunction;
+  Future<bool> verifyHost(String host) async {
 
-  ConnectViewModel(this._apiConfigService);
+    _setVerifyingHost(true);
+    _setErrorMessage(null);
 
-  Future<void> connect(String host, String apiKey) async {
+    final result = await apiConfigService.testHost(host);
 
-    _setValidating(true);
-    _credentialsError = null;
+    _setVerifyingHost(false);
 
-    host.trim();
-    apiKey.trim();
-
-    bool isValid = await _apiConfigService.testConnection(host, apiKey);
-
-    if (isValid && _navigatorFunction != null) {
-        _navigatorFunction!();
+    if (result) {
+      _setHostVerified(true);
+      return true;
     } else {
-      setCredentialsError('Invalid host or API key');
+      _setErrorMessage("Unable to reach the host. Please try again.");
+      return false;
     }
-
-    _setValidating(false);
-
   }
 
-  String? validateInputs(String? input) {
-    if (input == null || input.isEmpty) {
-      return "This field is required";
+  Future<bool> logIn(String email, String password) async {
+    _setLoggingIn(true);
+    _setErrorMessage(null);
+
+    await Future.delayed(const Duration(seconds: 2));
+    final result = email == 'test@example.com' && password == 'password123'; // Mock logic
+
+    _setLoggingIn(false);
+
+    if (result) {
+      return true;
+    } else {
+      _setErrorMessage("Invalid email or password.");
+      return false;
     }
-
-    return null;
   }
 
-
-  void setNavigatorFunction(Function function){
-    _navigatorFunction = function;
-  }
-
-  void _setValidating(bool isLoading) {
-    _isValidating = isLoading;
+  void _setVerifyingHost(bool value) {
+    _isVerifyingHost = value;
     notifyListeners();
   }
 
-  void setCredentialsError(String error) {
-    _credentialsError = error;
+  void _setLoggingIn(bool value) {
+    _isLoggingIn = value;
     notifyListeners();
   }
 
-  void clearErrors() {
-    _credentialsError = null;
+  void _setHostVerified(bool value) {
+    _hostVerified = value;
+    notifyListeners();
+  }
+
+  void setApiKeyPreference(bool trueOrFalse) {
+    _apiKeyPreferred = trueOrFalse;
+    notifyListeners();
+  }
+
+  void setPasswordVisibility(bool trueOrFalse) {
+    _passwordVisible = trueOrFalse;
+    notifyListeners();
+  }
+
+  void setApiKeyVisibility(bool trueOrFalse) {
+    _apiKeyVisible = trueOrFalse;
+    notifyListeners();
+  }
+
+  void setSnackbarMessage(String message) {
+    _snackbarMessage = message;
+    notifyListeners();
+  }
+
+  void clearSnackbarMessage() {
+    _snackbarMessage = null;
+    notifyListeners();
+  }
+
+  void _setErrorMessage(String? message) {
+    _errorMessage = message;
     notifyListeners();
   }
 }

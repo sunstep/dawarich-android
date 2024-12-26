@@ -2,9 +2,9 @@ import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:flutter/material.dart';
 
 class ConnectViewModel with ChangeNotifier {
-  final ApiConfigService apiConfigService;
 
-  ConnectViewModel(this.apiConfigService);
+  final ApiConfigService _apiConfigService;
+  ConnectViewModel(this._apiConfigService);
 
   bool _isVerifyingHost = false;
   bool _isLoggingIn = false;
@@ -29,7 +29,7 @@ class ConnectViewModel with ChangeNotifier {
     _setVerifyingHost(true);
     _setErrorMessage(null);
 
-    final result = await apiConfigService.testHost(host);
+    final bool result = await _apiConfigService.testHost(host);
 
     _setVerifyingHost(false);
 
@@ -57,6 +57,25 @@ class ConnectViewModel with ChangeNotifier {
       _setErrorMessage("Invalid email or password.");
       return false;
     }
+  }
+
+  Future<bool> tryLoginApiKey(String apiKey) async {
+
+    _setLoggingIn(true);
+    _setErrorMessage(null);
+
+    apiKey = apiKey.trim();
+
+    bool isValid = await _apiConfigService.tryApiKey(apiKey);
+
+    if (isValid) {
+      await _apiConfigService.storeApiConfig();
+      _setLoggingIn(true);
+      return true;
+    }
+
+    _setLoggingIn(false);
+    return false;
   }
 
   void _setVerifyingHost(bool value) {

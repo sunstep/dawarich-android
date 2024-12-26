@@ -169,22 +169,23 @@ class ConnectPage extends StatelessWidget {
       ElevatedButton(
         style: Theme.of(context).elevatedButtonTheme.style,
         onPressed: viewModel.isLoggingIn
-            ? null
-            : () async {
-          if (_formKey.currentState!.validate()) {
-            final success = await viewModel.logIn(
-              _emailController.text,
-              _passwordController.text,
-            );
-            if (success) {
-              Navigator.pushReplacementNamed(context, AppRouter.map);
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(viewModel.errorMessage ?? 'Login failed.')),
+          ? null :
+          () async {
+            if (_formKey.currentState!.validate()) {
+
+              final success = await viewModel.tryLoginApiKey(
+                _apiKeyController.text
               );
+
+              if (context.mounted && success) {
+                Navigator.pushReplacementNamed(context, AppRouter.map);
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(viewModel.errorMessage ?? 'Login failed.')),
+                );
+              }
             }
-          }
-        },
+          },
         child: viewModel.isLoggingIn
             ? Padding(
           padding: const EdgeInsets.all(8.0), // Add some space around the indicator
@@ -203,13 +204,13 @@ class ConnectPage extends StatelessWidget {
         ),
       ),
       TextButton(
-          onPressed: () => {
-            viewModel.setApiKeyPreference(false)
-          },
-          child: Text(
-            "Login with Dawarich account",
-            style: Theme.of(context).textTheme.bodySmall,
-          )
+        onPressed: () => {
+          viewModel.setApiKeyPreference(false)
+        },
+        child: Text(
+          "Login with Dawarich account",
+          style: Theme.of(context).textTheme.bodySmall,
+        )
       )
     ];
   }

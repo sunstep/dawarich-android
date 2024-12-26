@@ -28,7 +28,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SplashPage());
       }
       case connect: {
-        return MaterialPageRoute(builder: (_) => ConnectionPage());
+        return MaterialPageRoute(builder: (_) => ConnectPage());
       }
       case map: {
         return MaterialPageRoute(builder: (_) => const MapPage());

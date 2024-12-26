@@ -3,6 +3,7 @@ import 'package:dawarich/domain/data_transfer_objects/slim_api_point_dto.dart';
 import 'package:dawarich/application/entities/api_point.dart';
 import 'package:dawarich/application/entities/slim_api_point.dart';
 import 'package:dawarich/domain/interfaces/point_interfaces.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 class PointService {
@@ -48,7 +49,7 @@ class PointService {
 
       case Ok(value: ()): return true;
       case Err(value: String error): {
-        print("Failed to delete point: $error");
+        debugPrint("Failed to delete point: $error");
         return false;
       }
     }

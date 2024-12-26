@@ -1,7 +1,24 @@
 
 class ApiConfigDTO {
-  final String? host;
-  final String? apiKey;
+  String? _host;
+  String? _apiKey;
 
-  ApiConfigDTO({required this.host, required this.apiKey});
+  String? get host => _host;
+  String? get apiKey => _apiKey;
+
+  void setHost(String host) {
+    _host = host;
+  }
+
+  void setApiKey(String apiKey) {
+    _apiKey = apiKey;
+  }
+
+  bool isConfigured() => host != null && _apiKey != null;
+
+  void clear() {
+    _host = null;
+    _apiKey = null;
+  }
+
 }

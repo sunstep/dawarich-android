@@ -2,6 +2,7 @@ import 'package:dawarich/domain/interfaces/point_interfaces.dart';
 import 'package:dawarich/data/sources/api/points/point_source.dart';
 import 'package:dawarich/domain/data_transfer_objects/api_point_dto.dart';
 import 'package:dawarich/domain/data_transfer_objects/slim_api_point_dto.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 
@@ -37,7 +38,7 @@ class PointRepository implements IPointInterfaces {
               allPoints.addAll(page);
             }
             case Err(value: String error): {
-              print('Error fetching points for a page: $error');
+              debugPrint('Error fetching points for a page: $error');
             }
           }
 
@@ -47,7 +48,7 @@ class PointRepository implements IPointInterfaces {
       }
 
       case Err(value: String error): {
-        print("Failed to retrieve headers: $error");
+        debugPrint("Failed to retrieve headers: $error");
         return const None();
       }
     }
@@ -81,7 +82,7 @@ class PointRepository implements IPointInterfaces {
               allPoints.addAll(page);
             }
             case Err(value: String error): {
-              print('Error fetching slim points for a page: $error');
+              debugPrint('Error fetching slim points for a page: $error');
             }
           }
 
@@ -91,7 +92,7 @@ class PointRepository implements IPointInterfaces {
       }
 
       case Err(value: String error): {
-        print("Failed to retrieve slim point headers: $error");
+        debugPrint("Failed to retrieve slim point headers: $error");
         return const None();
       }
     }
@@ -114,7 +115,7 @@ class PointRepository implements IPointInterfaces {
 
       case Err(value: String error): {
 
-        print("Failed to get total pages: $error");
+        debugPrint("Failed to get total pages: $error");
         return 0;
       }
     }
@@ -130,7 +131,7 @@ class PointRepository implements IPointInterfaces {
 
       case Ok(value: ApiPointDTO dto): return Some(dto);
       case Err(value: String error): {
-        print("Failed to fetch last point: $error");
+        debugPrint("Failed to fetch last point: $error");
         return const None();
       }
     }
@@ -155,7 +156,7 @@ class PointRepository implements IPointInterfaces {
       case Ok(value: Map<String, String?> headers): return Some(headers);
       case Err(value: String error): {
 
-        print("Failed to fetch headers: $error");
+        debugPrint("Failed to fetch headers: $error");
         return const None();
       }
     }
@@ -170,7 +171,7 @@ class PointRepository implements IPointInterfaces {
 
       case Ok(value: ()): return const Ok(());
       case Err(value: String error): {
-        print("Failed to delete point: $error");
+        debugPrint("Failed to delete point: $error");
         return const Err("Failed to delete point.");
       }
     }

@@ -2,6 +2,7 @@
 import 'package:dawarich/data/sources/api/stats/stats_source.dart';
 import 'package:dawarich/domain/data_transfer_objects/stats_dto.dart';
 import 'package:dawarich/domain/interfaces/stats_interfaces.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 class StatsRepository implements IStatsRepository {
@@ -22,7 +23,7 @@ class StatsRepository implements IStatsRepository {
 
       case Err(value: String error): {
 
-        print("Failed to retrieve stats: $error");
+        debugPrint("Failed to retrieve stats: $error");
         return const None();
       }
     }

@@ -39,7 +39,7 @@ class ConnectPage extends StatelessWidget {
             final messenger = ScaffoldMessenger.of(context);
 
             if (_formKey.currentState!.validate()) {
-              final success = await viewModel.verifyHost(_hostController.text);
+              final success = await viewModel.testHost(_hostController.text);
               if (success) {
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Successfully connected to Dawarich!')),

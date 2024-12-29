@@ -14,7 +14,7 @@ class ApiConfigDTO {
     _apiKey = apiKey;
   }
 
-  bool isConfigured() => host != null && _apiKey != null;
+  bool isConfigured() => host != null;
 
   void clear() {
     _host = null;

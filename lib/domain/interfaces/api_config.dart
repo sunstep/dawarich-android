@@ -6,10 +6,8 @@ abstract interface class IApiConfigSource {
   Future<void> initialize();
   Future<void> setHost(String host);
   Future<void> setApiKey(String apiKey);
-  ApiConfigDTO? getApiConfig();
+  ApiConfigDTO getApiConfig();
   Future<void> storeApiConfig();
-  Future<bool> testHost();
-  Future<bool> tryApiKey();
   Future<void> clearConfiguration();
   bool isConfigured();
 

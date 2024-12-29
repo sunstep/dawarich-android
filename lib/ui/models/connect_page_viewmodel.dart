@@ -1,10 +1,12 @@
 import 'package:dawarich/application/services/api_config_service.dart';
+import 'package:dawarich/application/services/connect_service.dart';
 import 'package:flutter/material.dart';
 
 class ConnectViewModel with ChangeNotifier {
 
   final ApiConfigService _apiConfigService;
-  ConnectViewModel(this._apiConfigService);
+  final ConnectService _connectService;
+  ConnectViewModel(this._apiConfigService, this._connectService);
 
   bool _isVerifyingHost = false;
   bool _isLoggingIn = false;
@@ -24,12 +26,12 @@ class ConnectViewModel with ChangeNotifier {
   String? get snackbarMessage => _snackbarMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<bool> verifyHost(String host) async {
+  Future<bool> testHost(String host) async {
 
     _setVerifyingHost(true);
     _setErrorMessage(null);
 
-    final bool result = await _apiConfigService.testHost(host);
+    final bool result = await _connectService.testHost(host);
 
     _setVerifyingHost(false);
 
@@ -66,7 +68,7 @@ class ConnectViewModel with ChangeNotifier {
 
     apiKey = apiKey.trim();
 
-    bool isValid = await _apiConfigService.tryApiKey(apiKey);
+    bool isValid = await _connectService.tryApiKey(apiKey);
 
     if (isValid) {
       await _apiConfigService.storeApiConfig();

@@ -14,7 +14,7 @@ class PointSource {
   PointSource(this._apiConfig){
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
-    if (apiInfo == null) {
+    if (!apiInfo.isConfigured()) {
       throw StateError("Cannot query points without a configured endpoint");
     }
     _apiInfo = apiInfo;

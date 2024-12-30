@@ -11,7 +11,7 @@ class ConnectViewModel with ChangeNotifier {
   bool _isVerifyingHost = false;
   bool _isLoggingIn = false;
   bool _hostVerified = false;
-  bool _apiKeyPreferred = false;
+  bool _apiKeyPreferred = true;
   bool _passwordVisible = false;
   bool _apiKeyVisible = false;
   String? _snackbarMessage;

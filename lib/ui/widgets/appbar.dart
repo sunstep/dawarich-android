@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class Appbar extends StatelessWidget implements PreferredSizeWidget {
+class Appbar extends StatelessWidget implements PreferredSizeWidget{
 
   final String title;
   final double? fontSize;

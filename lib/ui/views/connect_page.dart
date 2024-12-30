@@ -52,21 +52,18 @@ class ConnectPage extends StatelessWidget {
             }
           },
         child: viewModel.isVerifyingHost
-          ? Padding(
-            padding: const EdgeInsets.all(8.0), // Add some space around the indicator
+          ? const Padding(
+            padding: EdgeInsets.all(8.0), // Add some space around the indicator
             child: SizedBox(
               height: 18,
               width: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: Theme.of(context).textTheme.bodyMedium!.color,
+                color: Colors.white,
               ),
             ),
           )
-          : Text(
-            'Connect',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          : const Text('Connect'),
       ),
     ];
   }
@@ -118,21 +115,18 @@ class ConnectPage extends StatelessWidget {
         style: Theme.of(context).elevatedButtonTheme.style,
         onPressed: null,
         child: viewModel.isLoggingIn
-            ? Padding(
-          padding: const EdgeInsets.all(8.0), // Add some space around the indicator
+            ? const Padding(
+          padding: EdgeInsets.all(8.0), // Add some space around the indicator
           child: SizedBox(
             height: 18, // Control the size of the spinner
             width: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: Theme.of(context).textTheme.bodyMedium!.color,
+              color: Colors.white,
             ),
           ),
         )
-            : Text(
-          'Login',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+            : const Text('Login'),
       ),
       TextButton(
         onPressed: () => {
@@ -187,21 +181,18 @@ class ConnectPage extends StatelessWidget {
             }
           },
         child: viewModel.isLoggingIn
-            ? Padding(
-          padding: const EdgeInsets.all(8.0), // Add some space around the indicator
+            ? const Padding(
+          padding: EdgeInsets.all(8.0), // Add some space around the indicator
           child: SizedBox(
             height: 18, // Control the size of the spinner
             width: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: Theme.of(context).textTheme.bodyMedium!.color,
+              color: Colors.white,
             ),
           ),
         )
-            : Text(
-          'Login',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+            : const Text('Login'),
       ),
       TextButton(
         onPressed: () => {

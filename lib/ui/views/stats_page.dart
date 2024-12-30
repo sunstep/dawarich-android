@@ -13,10 +13,6 @@ class StatsPage extends StatelessWidget {
 
     StatsPageViewModel viewModel = context.watch<StatsPageViewModel>();
 
-    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-    final borderColor = Theme.of(context).dividerColor;
-    final textLarge = Theme.of(context).textTheme.bodyLarge;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(

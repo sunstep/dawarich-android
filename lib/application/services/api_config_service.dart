@@ -25,4 +25,8 @@ class ApiConfigService {
     await _source.storeApiConfig();
   }
 
+  Future<void> clearApiConfig() async {
+    await _source.clearConfiguration();
+  }
+
 }

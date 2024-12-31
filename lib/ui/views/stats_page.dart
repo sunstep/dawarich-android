@@ -32,7 +32,7 @@ class StatsPage extends StatelessWidget {
                 foregroundColor: Theme.of(context).primaryColor,
               ),
               child: SizedBox(
-                width: double.infinity,
+                width: 100,
                 height: 32,
                 child: Center(
                   child: viewModel.isLoading

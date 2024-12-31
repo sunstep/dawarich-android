@@ -5,10 +5,13 @@ class Themes {
   final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primaryColor: Colors.white,
+    scaffoldBackgroundColor: Colors.white,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
     ),
-    scaffoldBackgroundColor: Colors.white,
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Colors.white, // Explicit drawer background color
+    ),
     colorScheme: const ColorScheme.light(
       primary: Colors.black,
       onPrimary: Colors.white,
@@ -36,13 +39,23 @@ class Themes {
           backgroundColor: WidgetStateProperty.all<Color>(Colors.white)
       )
     ),
-    elevatedButtonTheme: ElevatedButtonThemeData(style: ButtonStyle(
-      foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
-      elevation: const WidgetStatePropertyAll<double>(5.0),
-      side: WidgetStateProperty.all<BorderSide>(const BorderSide(
-        color: Colors.black
-      ))
-    )),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.black,
+        elevation: 5,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Colors.black),
+        ),
+        textStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
     inputDecorationTheme: const InputDecorationTheme(
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(
@@ -86,13 +99,16 @@ class Themes {
 
   final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: Colors.grey.shade900,
-    primaryColor: Colors.grey.shade900,
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.grey.shade900,
+    primaryColor: const Color(0xFF101110),
+    scaffoldBackgroundColor: const Color(0xFF101110),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF101110),
     ),
-    colorScheme: ColorScheme.dark(
-      primary: Colors.grey.shade900,
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Color(0xFF101110),
+    ),
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF101110),
       onPrimary: Colors.white,
       secondary: Colors.grey,
     ),
@@ -119,13 +135,21 @@ class Themes {
       )
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ButtonStyle(
-        backgroundColor: WidgetStatePropertyAll<Color>(Colors.grey.shade900),
-        elevation: const WidgetStatePropertyAll<double>(5.0),
-        side: const WidgetStatePropertyAll<BorderSide>(BorderSide(
-          color: Colors.white
-        ))
-      )
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.white,
+        elevation: 5,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Colors.white),
+        ),
+        textStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     ),
     inputDecorationTheme: const InputDecorationTheme(
       enabledBorder: OutlineInputBorder(
@@ -154,17 +178,16 @@ class Themes {
       )
     ),
     iconTheme: const IconThemeData(color: Colors.white),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: Colors.grey.shade900,
-
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF101110),
     ),
-    dividerColor: Colors.grey.shade200,
+    dividerColor: Colors.white,
     toggleButtonsTheme: const ToggleButtonsThemeData(
       selectedColor: Colors.grey,
     )
   );
 
-  final amoledTheme = ThemeData(
+  final ThemeData amoledTheme = ThemeData(
     
   );
 

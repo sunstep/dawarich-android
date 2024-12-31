@@ -13,10 +13,6 @@ class StatsPage extends StatelessWidget {
 
     StatsPageViewModel viewModel = context.watch<StatsPageViewModel>();
 
-    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-    final borderColor = Theme.of(context).dividerColor;
-    final textLarge = Theme.of(context).textTheme.bodyLarge;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -29,15 +25,27 @@ class StatsPage extends StatelessWidget {
             ElevatedButton(
               onPressed: viewModel.isLoading ? null : viewModel.refreshStats,
               style: ElevatedButton.styleFrom(
-                backgroundColor: backgroundColor,
-                foregroundColor: Colors.white,
-                side: BorderSide(
-                  color: borderColor,
+                padding: const EdgeInsets.all(16.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                foregroundColor: Theme.of(context).primaryColor,
               ),
-              child: Text(
-                'Update stats',
-                style: textLarge,
+              child: SizedBox(
+                width: 100,
+                height: 32,
+                child: Center(
+                  child: viewModel.isLoading
+                      ? SizedBox(
+                    height: 32, // Size for the spinner
+                    width: 32,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  )
+                      : const Text('Update stats')
+                ),
               ),
             ),
           ),
@@ -80,8 +88,9 @@ class StatsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderItem(BuildContext context, String? value, String label, Color color, double? width, double? height) {
+  Widget _buildHeaderItem(
 
+    BuildContext context, String? value, String label, Color color, double? width, double? height) {
     final textSmall = Theme.of(context).textTheme.bodySmall;
 
     return Container(
@@ -89,14 +98,18 @@ class StatsPage extends StatelessWidget {
       height: height,
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: Theme.of(context).cardColor, // Use cardColor for better contrast
         borderRadius: BorderRadius.circular(10.0),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.4), // Subtle border
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200.withOpacity(0.3),
-            spreadRadius: 1,
-            blurRadius: 1,
-            offset: const Offset(0, 1),
+            color: Colors.black.withOpacity(0.2), // Slightly darker shadow
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 2), // Adjusted offset for better lift effect
           ),
         ],
       ),
@@ -132,6 +145,7 @@ class StatsPage extends StatelessWidget {
       ),
     );
   }
+
 
   // Widget _buildYearlyStats() {
   //

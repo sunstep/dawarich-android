@@ -1,4 +1,4 @@
-import 'package:dawarich/application/entities/monthly_stats.dart';
+import 'package:dawarich/application/entities/api/stats/monthly_stats.dart';
 
 class MonthlyStatsViewModel {
 

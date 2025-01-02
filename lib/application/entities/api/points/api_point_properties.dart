@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/data_transfer_objects/api_point_properties_dto.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/points/api_point_properties_dto.dart';
 
 class ApiPointProperties {
   String? city;

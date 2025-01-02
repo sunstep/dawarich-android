@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/data_transfer_objects/slim_api_point_dto.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/points/slim_api_point_dto.dart';
 
 class SlimApiPoint {
 

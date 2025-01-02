@@ -14,11 +14,11 @@ import 'package:dawarich/domain/interfaces/api_config.dart';
 import 'package:dawarich/domain/interfaces/connect_repository.dart';
 import 'package:dawarich/domain/interfaces/point_interfaces.dart';
 import 'package:dawarich/domain/interfaces/stats_interfaces.dart';
-import 'package:dawarich/ui/models/connect_page_viewmodel.dart';
-import 'package:dawarich/ui/models/map_page_viewmodel.dart';
-import 'package:dawarich/ui/models/points_page_viewmodel.dart';
-import 'package:dawarich/ui/models/splash_page_viewmodel.dart';
-import 'package:dawarich/ui/models/stats_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/splash_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
 import 'package:get_it/get_it.dart';
 
 final GetIt getIt = GetIt.I;

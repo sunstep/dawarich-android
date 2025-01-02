@@ -5,7 +5,7 @@ import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
-import 'package:dawarich/ui/models/map_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class MapPage extends StatelessWidget {

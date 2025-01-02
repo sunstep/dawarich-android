@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/data_transfer_objects/api_config_dto.dart';
+import 'package:dawarich/domain/data_transfer_objects/local/api_config_dto.dart';
 import 'package:dawarich/domain/interfaces/api_config.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 

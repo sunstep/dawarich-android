@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dawarich/domain/data_transfer_objects/api_config_dto.dart';
+import 'package:dawarich/domain/data_transfer_objects/local/api_config_dto.dart';
 import 'package:dawarich/domain/interfaces/api_config.dart';
 import 'package:dawarich/domain/interfaces/connect_repository.dart';
 import 'package:http/http.dart' as http;
-import 'package:dawarich/domain/data_transfer_objects/health_dto.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/health/health_dto.dart';
 import 'package:flutter/cupertino.dart';
 
 class ConnectRepository implements IConnectRepository {

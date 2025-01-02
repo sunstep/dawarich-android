@@ -1,5 +1,5 @@
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
-import 'package:dawarich/ui/models/connect_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';

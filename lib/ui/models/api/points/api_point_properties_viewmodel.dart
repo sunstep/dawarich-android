@@ -1,5 +1,5 @@
 
-import 'package:dawarich/application/entities/api_point_properties.dart';
+import 'package:dawarich/application/entities/api/points/api_point_properties.dart';
 
 class ApiPointPropertiesViewModel {
 

@@ -1,6 +1,5 @@
-
-import 'package:dawarich/application/entities/api/stats/yearly_stats.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/stats/stats_dto.dart';
+import 'package:dawarich/application/entities/api/stats/response/yearly_stats.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/stats/response/stats_dto.dart';
 
 class Stats {
   int totalDistance;

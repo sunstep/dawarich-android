@@ -1,5 +1,5 @@
-import 'package:dawarich/domain/data_transfer_objects/api/points/api_point_dto.dart';
-import 'package:dawarich/application/entities/api/points/api_point_geodata.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/points/response/api_point_dto.dart';
+import 'package:dawarich/application/entities/api/points/response/api_point_geodata.dart';
 
 class ApiPoint {
   int? id;

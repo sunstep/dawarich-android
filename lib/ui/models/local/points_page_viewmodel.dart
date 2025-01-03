@@ -1,6 +1,6 @@
-import 'package:dawarich/application/entities/api/points/api_point.dart';
+import 'package:dawarich/application/entities/api/points/response/api_point.dart';
 import 'package:dawarich/application/services/point_service.dart';
-import 'package:dawarich/ui/models/api/points/api_point_viewmodel.dart';
+import 'package:dawarich/ui/models/api/points/response/api_point_viewmodel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get_it/get_it.dart';
 import 'package:option_result/option_result.dart';

@@ -1,5 +1,5 @@
 import 'package:dawarich/application/services/point_service.dart';
-import 'package:dawarich/application/entities/api/points/slim_api_point.dart';
+import 'package:dawarich/application/entities/api/points/response/slim_api_point.dart';
 import 'package:dawarich/application/entities/local/point_pair.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:option_result/option_result.dart';

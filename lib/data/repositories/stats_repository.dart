@@ -1,6 +1,6 @@
 
 import 'package:dawarich/data/sources/api/stats/stats_source.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/stats/stats_dto.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/stats/response/stats_dto.dart';
 import 'package:dawarich/domain/interfaces/stats_interfaces.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';

@@ -1,5 +1,5 @@
-import 'package:dawarich/application/entities/api/stats/yearly_stats.dart';
-import 'package:dawarich/ui/models/api/stats/monthly_stats_viewmodel.dart';
+import 'package:dawarich/application/entities/api/stats/response/yearly_stats.dart';
+import 'package:dawarich/ui/models/api/stats/response/monthly_stats_viewmodel.dart';
 
 class YearlyStatsViewModel {
 

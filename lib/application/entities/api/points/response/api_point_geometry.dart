@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/data_transfer_objects/api/points/api_point_geometry_dto.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/points/response/api_point_geometry_dto.dart';
 
 class ApiPointGeometry {
   String? type;

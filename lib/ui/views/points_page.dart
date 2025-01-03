@@ -1,5 +1,5 @@
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
-import 'package:dawarich/ui/models/api/points/api_point_viewmodel.dart';
+import 'package:dawarich/ui/models/api/points/response/api_point_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';

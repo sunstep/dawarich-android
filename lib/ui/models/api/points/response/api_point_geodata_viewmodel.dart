@@ -1,6 +1,6 @@
-import 'package:dawarich/application/entities/api/points/api_point_geodata.dart';
-import 'package:dawarich/ui/models/api/points/api_point_geometry_viewmodel.dart';
-import 'package:dawarich/ui/models/api/points/api_point_properties_viewmodel.dart';
+import 'package:dawarich/application/entities/api/points/response/api_point_geodata.dart';
+import 'package:dawarich/ui/models/api/points/response/api_point_geometry_viewmodel.dart';
+import 'package:dawarich/ui/models/api/points/response/api_point_properties_viewmodel.dart';
 
 class GeoDataViewModel {
 

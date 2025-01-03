@@ -1,6 +1,8 @@
-import 'package:dawarich/domain/data_transfer_objects/api/points/api_point_properties_dto.dart';
 
-class ApiPointProperties {
+import 'package:dawarich/application/entities/api/points/response/api_point_properties.dart';
+
+class ApiPointPropertiesViewModel {
+
   String? city;
   String? type;
   String? state;
@@ -16,20 +18,20 @@ class ApiPointProperties {
   String? housenumber;
 
 
-  ApiPointProperties(ApiPointPropertiesDTO dto) {
-    city = dto.city;
-    type = dto.type;
-    state = dto.state;
-    osmId = dto.osmId;
-    street = dto.street;
-    country = dto.country;
-    osmKey = dto.osmKey;
-    locality = dto.locality;
-    osmType = dto.osmType;
-    postcode = dto.postcode;
-    osmValue = dto.osmValue;
-    countrycode = dto.countrycode;
-    housenumber = dto.housenumber;
+  ApiPointPropertiesViewModel(ApiPointProperties properties) {
+    city = properties.city;
+    type = properties.type;
+    state = properties.state;
+    osmId = properties.osmId;
+    street = properties.street;
+    country = properties.country;
+    osmKey = properties.osmKey;
+    locality = properties.locality;
+    osmType = properties.osmType;
+    postcode = properties.postcode;
+    osmValue = properties.osmValue;
+    countrycode = properties.countrycode;
+    housenumber = properties.housenumber;
   }
 
   Map<String, dynamic> toJson() {

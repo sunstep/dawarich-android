@@ -22,7 +22,6 @@ class PointSource {
 
   Future<Result<List<ApiPointDTO>, String>> queryPoints(String startDate, String endDate, int perPage, int page) async {
 
-
     final Uri uri = Uri.parse(
         '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
     final http.Response response = await http.get(uri);
@@ -34,7 +33,7 @@ class PointSource {
           .toList());
     }
 
-      return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying points.");
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying points.");
   }
 
   Future<Result<List<SlimApiPointDTO>, String>> querySlimPoints(String startDate, String endDate, int perPage, int page) async {
@@ -49,7 +48,7 @@ class PointSource {
           .toList());
     }
 
-      return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying slim points.");
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying slim points.");
   }
 
   Future<Result<ApiPointDTO, String>> queryLastPoint() async {

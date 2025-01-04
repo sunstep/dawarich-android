@@ -1,9 +1,11 @@
+import 'package:dawarich/domain/data_transfer_objects/api/v1/overland/batches/request/batch_dto.dart';
 import 'package:dawarich/domain/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/domain/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:option_result/option_result.dart';
 
 abstract interface class IPointInterfaces {
 
+  Future<Result<(), String>> uploadBatch(BatchDto batch);
   Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage);
   Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(DateTime startDate, DateTime endDate, int perPage);
   Future<int> getTotalPages(DateTime startDate, DateTime endDate, int perPage);

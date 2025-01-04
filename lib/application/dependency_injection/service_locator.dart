@@ -7,6 +7,7 @@ import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/data/repositories/connect_repository.dart';
 import 'package:dawarich/data/repositories/point_repository.dart';
 import 'package:dawarich/data/repositories/stats_repository.dart';
+import 'package:dawarich/data/sources/api/v1/overland/batches/batches_wrapper.dart';
 import 'package:dawarich/data/sources/api/v1/points/point_source.dart';
 import 'package:dawarich/data/sources/api/v1/stats/stats_source.dart';
 import 'package:dawarich/data/sources/local/secure_storage/api_config.dart';
@@ -28,11 +29,12 @@ void injectDependencies() {
   // Sources
   getIt.registerLazySingleton<IApiConfigSource>(() => ApiConfigSource());
   getIt.registerLazySingleton<PointSource>(() => PointSource(getIt<IApiConfigSource>()));
+  getIt.registerLazySingleton<BatchesWrapper>(() => BatchesWrapper(getIt<IApiConfigSource>()));
   getIt.registerLazySingleton<StatsSource>(() => StatsSource(getIt<IApiConfigSource>()));
 
   // Repositories
   getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<IApiConfigSource>()));
-  getIt.registerLazySingleton<IPointInterfaces>(() => PointRepository(getIt<PointSource>()));
+  getIt.registerLazySingleton<IPointInterfaces>(() => PointRepository(getIt<PointSource>(), getIt<BatchesWrapper>()));
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsSource>()));
 
 

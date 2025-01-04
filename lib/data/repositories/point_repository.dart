@@ -1,3 +1,5 @@
+import 'package:dawarich/data/sources/api/v1/overland/batches/batches_wrapper.dart';
+import 'package:dawarich/domain/data_transfer_objects/api/v1/overland/batches/request/batch_dto.dart';
 import 'package:dawarich/domain/interfaces/point_interfaces.dart';
 import 'package:dawarich/data/sources/api/v1/points/point_source.dart';
 import 'package:dawarich/domain/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
@@ -9,7 +11,24 @@ import 'package:option_result/option_result.dart';
 class PointRepository implements IPointInterfaces {
 
   final PointSource _source;
-  PointRepository(this._source);
+  final BatchesWrapper _batchesWrapper;
+  PointRepository(this._source, this._batchesWrapper);
+
+  @override
+  Future<Result<(), String>> uploadBatch(BatchDto batch) async {
+
+    Result<(), String> result = await _batchesWrapper.post(batch);
+
+    switch (result) {
+      case Ok(value: ()): {
+        return const Ok(());
+      }
+      case Err(value: String error): {
+        debugPrint("Failed to upload batch: $error");
+        return Err(error);
+      }
+    }
+  }
 
   @override
   Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {

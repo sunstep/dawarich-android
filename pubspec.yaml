@@ -32,7 +32,6 @@ dependencies:
     sdk: flutter
   flutter_secure_storage:
   http:
-  dio:
   fl_chart:
   flutter_map:
   flutter_map_location_marker:

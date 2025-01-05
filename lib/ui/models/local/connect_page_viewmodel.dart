@@ -1,6 +1,6 @@
 import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:dawarich/application/services/connect_service.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class ConnectViewModel with ChangeNotifier {
 

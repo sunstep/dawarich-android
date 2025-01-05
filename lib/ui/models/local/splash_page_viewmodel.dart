@@ -1,5 +1,5 @@
 import 'package:dawarich/application/services/api_config_service.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
 class SplashViewModel with ChangeNotifier {
 

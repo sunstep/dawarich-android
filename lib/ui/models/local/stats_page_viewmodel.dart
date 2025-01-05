@@ -2,7 +2,7 @@
 import 'package:dawarich/application/entities/api/v1/stats/response/stats.dart';
 import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/ui/models/api/v1/stats/response/stats_viewmodel.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
 class StatsPageViewModel extends ChangeNotifier {

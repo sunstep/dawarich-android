@@ -1,6 +1,7 @@
+import 'package:dawarich/ui/theme/dark_theme.dart';
+import 'package:dawarich/ui/theme/light_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
-import 'package:dawarich/ui/theme/app_theme.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 
 void main() {
@@ -16,8 +17,8 @@ class AppBase extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Dawarich',
-      theme: Themes().lightTheme,
-      darkTheme: Themes().darkTheme,
+      theme: LightTheme.primaryTheme,
+      darkTheme: DarkTheme.primaryTheme,
       themeMode: ThemeMode.system,
       onGenerateRoute: AppRouter.generateRoute,
       initialRoute: '/splash',

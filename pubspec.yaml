@@ -39,6 +39,7 @@ dependencies:
   geolocator:
   latlong2:
   intl:
+  connectivity_plus:
   battery_plus:
   network_info_plus:
   device_info_plus:

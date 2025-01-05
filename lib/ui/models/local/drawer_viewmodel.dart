@@ -1,5 +1,5 @@
 import 'package:dawarich/application/services/api_config_service.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 
 class DrawerViewModel with ChangeNotifier {
 

@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/interfaces/api_config.dart';
+import 'package:dawarich/interfaces/interfaces/api_config.dart';
 
 class ApiConfigService {
 

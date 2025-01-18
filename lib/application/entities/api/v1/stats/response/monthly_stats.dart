@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/data_transfer_objects/api/v1/stats/response/monthly_stats_dto.dart';
+import 'package:dawarich/interfaces/data_transfer_objects/api/v1/stats/response/monthly_stats_dto.dart';
 
 class MonthlyStats {
 

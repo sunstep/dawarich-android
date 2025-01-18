@@ -1,6 +1,6 @@
 
-import 'package:dawarich/domain/interfaces/api_config.dart';
-import 'package:dawarich/domain/interfaces/connect_repository.dart';
+import 'package:dawarich/interfaces/interfaces/api_config.dart';
+import 'package:dawarich/interfaces/interfaces/connect_repository.dart';
 
 class ConnectService {
 

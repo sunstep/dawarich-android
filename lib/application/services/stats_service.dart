@@ -1,6 +1,6 @@
 import 'package:dawarich/application/entities/api/v1/stats/response/stats.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/v1/stats/response/stats_dto.dart';
-import 'package:dawarich/domain/interfaces/stats_interfaces.dart';
+import 'package:dawarich/interfaces/data_transfer_objects/api/v1/stats/response/stats_dto.dart';
+import 'package:dawarich/interfaces/interfaces/stats_interfaces.dart';
 import 'package:option_result/option_result.dart';
 
 class StatsService {

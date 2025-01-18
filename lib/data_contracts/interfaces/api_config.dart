@@ -1,5 +1,5 @@
 
-import 'package:dawarich/domain/data_transfer_objects/local/api_config_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 
 abstract interface class IApiConfigSource {
 

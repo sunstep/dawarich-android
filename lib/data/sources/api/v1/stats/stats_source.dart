@@ -1,6 +1,6 @@
-import 'package:dawarich/interfaces/data_transfer_objects/local/api_config_dto.dart';
-import 'package:dawarich/interfaces/data_transfer_objects/api/v1/stats/response/stats_dto.dart';
-import 'package:dawarich/interfaces/interfaces/api_config.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/stats/response/stats_dto.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 import 'dart:convert';

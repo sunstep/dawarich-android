@@ -1,8 +1,8 @@
-import 'package:dawarich/interfaces/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
-import 'package:dawarich/interfaces/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/slim_api_point.dart';
-import 'package:dawarich/interfaces/interfaces/point_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/point_interfaces.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 

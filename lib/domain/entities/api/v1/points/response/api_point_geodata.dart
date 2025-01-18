@@ -1,5 +1,5 @@
-import 'package:dawarich/application/entities/api/v1/points/response/api_point_geometry.dart';
-import 'package:dawarich/application/entities/api/v1/points/response/api_point_properties.dart';
+import 'package:dawarich/domain/entities/api/v1/points/response/api_point_geometry.dart';
+import 'package:dawarich/domain/entities/api/v1/points/response/api_point_properties.dart';
 import 'package:dawarich/interfaces/data_transfer_objects/api/v1/points/response/api_point_geodata_dto.dart';
 
 

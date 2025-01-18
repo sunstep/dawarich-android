@@ -1,4 +1,4 @@
-import 'package:dawarich/application/entities/api/v1/stats/response/yearly_stats.dart';
+import 'package:dawarich/domain/entities/api/v1/stats/response/yearly_stats.dart';
 import 'package:dawarich/ui/models/api/v1/stats/response/monthly_stats_viewmodel.dart';
 
 class YearlyStatsViewModel {

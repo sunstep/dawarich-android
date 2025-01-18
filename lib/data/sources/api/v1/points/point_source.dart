@@ -1,7 +1,7 @@
-import 'package:dawarich/domain/data_transfer_objects/local/api_config_dto.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
-import 'package:dawarich/domain/interfaces/api_config.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 import 'dart:convert';

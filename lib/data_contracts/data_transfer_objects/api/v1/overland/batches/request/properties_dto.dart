@@ -1,5 +1,6 @@
 
 class PropertiesDto {
+
   final String timestamp;
   final double altitude;
   final double speed;

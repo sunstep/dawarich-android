@@ -1,7 +1,9 @@
-import 'package:dawarich/domain/data_transfer_objects/api/v1/overland/batches/request/geometry_dto.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/v1/overland/batches/request/properties_dto.dart';
+
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/geometry_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/properties_dto.dart';
 
 class PointDto {
+
   final String type;
   final GeometryDto geometry;
   final PropertiesDto properties;

@@ -1,4 +1,5 @@
 class GeometryDto {
+
   final String type;
   final List<double> coordinates;
 

@@ -24,6 +24,7 @@ import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/splash_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:get_it/get_it.dart';
 
 final GetIt getIt = GetIt.I;
@@ -59,26 +60,34 @@ void injectDependencies() {
   getIt.registerFactory<ConnectViewModel>(() => ConnectViewModel(getIt<ApiConfigService>(), getIt<ConnectService>()));
 
   getIt.registerFactory<MapViewModel>(
-        () {
-      final viewModel = MapViewModel(getIt<MapService>(), getIt<LocationService>());
+    () {
+      final MapViewModel viewModel = MapViewModel(getIt<MapService>(), getIt<LocationService>());
       viewModel.initialize();
       return viewModel;
     },
   );
 
   getIt.registerFactory<PointsPageViewModel>(
-      () {
-        final viewModel = PointsPageViewModel();
-        viewModel.initialize();
-        return viewModel;
-      }
+    () {
+      final PointsPageViewModel viewModel = PointsPageViewModel();
+      viewModel.initialize();
+      return viewModel;
+    }
   );
 
   getIt.registerFactory<StatsPageViewModel>(
-      () {
-        final viewModel = StatsPageViewModel(getIt<StatsService>());
-        viewModel.fetchStats();
-        return viewModel;
-      }
+    () {
+      final StatsPageViewModel viewModel = StatsPageViewModel(getIt<StatsService>());
+      viewModel.fetchStats();
+      return viewModel;
+    }
+  );
+
+  getIt.registerFactory<TrackerPageViewModel>(
+    () {
+      final TrackerPageViewModel viewModel = TrackerPageViewModel();
+
+      return viewModel;
+    }
   );
 }

@@ -1,240 +1,155 @@
 import 'package:flutter/material.dart';
+import 'package:dawarich/application/dependency_injection/service_locator.dart';
+import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 
-class TrackerPage extends StatefulWidget {
+class TrackerPage extends StatelessWidget {
 
   const TrackerPage({super.key});
 
-  @override
-  TrackerPageState createState() => TrackerPageState();
-}
-
-class TrackerPageState extends State<TrackerPage> {
-
-
-  LocationAccuracy _accuracy = LocationAccuracy.best;
-
-  bool _isTrackingEnabled = true;
-  bool _showCoordinates = false;
-
-
-  void _submitPoint() {
-
-  }
-
-  void _refreshPoint() {
-
-  }
-
-  Widget _pageContent(){
+  Widget _pageContent(BuildContext context) {
+    TrackerPageViewModel viewModel = context.watch<TrackerPageViewModel>();
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _lastPointCard(),
+          _lastPointInformation(context, viewModel),
 
-          const SizedBox(height: 16),
+          Center(
+            child: ElevatedButton(
+              onPressed: () {},
+              style: Theme.of(context).elevatedButtonTheme.style,
+              child: const Text(
+                  "Track Point",
+              ),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton.icon(
-                onPressed: _submitPoint,
-                icon: IconTheme(data: Theme.of(context).iconTheme, child: const Icon(Icons.upload)),
-                label: Text(
-                  "Submit Point",
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: _refreshPoint,
-                icon: IconTheme(data: Theme.of(context).iconTheme, child: const Icon(Icons.refresh)),
-                label: Text(
-                  "Refresh Last Point",
-                  style: Theme.of(context).textTheme.bodySmall
-                ),
-              ),
-            ],
+            ),
           ),
 
-          const Spacer(),
+          const Divider(height: 32),
 
-          // Tracker Settings
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Text(
-                      "Tracker Settings",
-                      style: Theme.of(context).textTheme.bodyLarge
-                    ),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      "Location Tracking",
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    value: _isTrackingEnabled,
-                    onChanged: (bool value) {
-                      setState(() {
-                        _isTrackingEnabled = value;
-                      });
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Tracking frequency",
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      SizedBox(
-                        width: 100,
-                        child: TextFormField(
-                            keyboardType: TextInputType.number,
-                            initialValue: "30",
-                            decoration: InputDecoration(
-                              hintText: "e.g., 30",
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Theme.of(context).dividerColor),
-                              ),
-                            )
-                        ),
-                      )
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Center(
-                      child: Text(
-                        "Location Accuracy",
-                        style: Theme.of(context).textTheme.bodyMedium
-                      ),
-                    ),
-                    subtitle: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        ChoiceChip(
-                          label: const Text("Low"),
-                          selected: _accuracy == LocationAccuracy.low,
-                          onSelected: (bool selected) {
-                            setState(() {
-                              _accuracy = LocationAccuracy.low;
-                            });
-                          },
-                        ),
-                        ChoiceChip(
-                          label: const Text("Medium"),
-                          selected: _accuracy == LocationAccuracy.medium,
-                          onSelected: (bool selected) {
-                            setState(() {
-                              _accuracy = LocationAccuracy.medium;
-                            });
-                          },
-                        ),
-                        ChoiceChip(
-                          label: const Text("High"),
-                          selected: _accuracy == LocationAccuracy.high,
-                          onSelected: (bool selected) {
-                            setState(() {
-                              _accuracy = LocationAccuracy.high;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          Expanded(
+            child: _trackerConfigurations(context, viewModel),
           ),
         ],
       ),
     );
   }
 
-  Widget _lastPointCard() {
+  Widget _lastPointInformation(BuildContext context, TrackerPageViewModel viewModel) {
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Last Point Information",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+
+              _keyValueRow("Timestamp:", viewModel.lastPoint?.timestamp ?? "No Data"),
+              const SizedBox(height: 4),
+              _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
+              const SizedBox(height: 4),
+              _keyValueRow("Longitude:", viewModel.lastPoint?.longitude.toString() ?? "No Data"),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _keyValueRow(String key, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(key, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(value),
+      ],
+    );
+  }
+
+
+
+  Widget _trackerConfigurations(BuildContext context, TrackerPageViewModel viewModel) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Text(
-                "Last Submitted Point",
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "Record Date: 31 Aug 2024, 14:00:00",
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            Text(
-              "Place: Fake City, Fake Country",
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            _showCoordinates
-                ? Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                    "Coordinates: 53.534523, 41.233343",
-                    style: Theme.of(context).textTheme.bodyMedium
+                const Text("Automatic Tracking"),
+                Switch(
+                  value: viewModel.isTrackingEnabled,
+                  onChanged: viewModel.toggleTracking,
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _showCoordinates = false;
-                    });
-                  },
-                  child: Center(
-                    child: Text(
-                        "Hide Coordinates",
-                        style: Theme.of(context).textTheme.bodyMedium
-                    ),
-                  ),
-                )
               ],
-            )
-                : TextButton(
-              onPressed: () {
-                setState(() {
-                  _showCoordinates = true;
-                });
-              },
-              child: Center(
-                child: Text(
-                  "Show Coordinates",
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
             ),
-            const SizedBox(height: 10),
-            Center(
-              child: Text(
-                "x seconds ago",
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+
+            const SizedBox(height: 16),
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Points Per Batch"),
+                Slider(
+                  value: viewModel.pointsPerBatch.toDouble(),
+                  min: 50,
+                  max: 1000,
+                  divisions: 19,
+                  label: "${viewModel.pointsPerBatch}",
+                  onChanged: (value) =>
+                      viewModel.setPointsPerBatch(value.toInt()),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Tracking Frequency (seconds)"),
+                Slider(
+                  value: viewModel.trackingFrequency.toDouble(),
+                  min: 5,
+                  max: 60,
+                  divisions: 11,
+                  label: "${viewModel.trackingFrequency} s",
+                  onChanged: (value) =>
+                      viewModel.setTrackingFrequency(value.toInt()),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Location Accuracy (meters)"),
+                Slider(
+                  value: viewModel.desiredAccuracyMeters.toDouble(),
+                  min: 5,
+                  max: 50,
+                  divisions: 9,
+                  label: "${viewModel.locationAccuracy} m",
+                  onChanged: (value) =>
+                      viewModel.setLocationAccuracy(value.toInt()),
+                ),
+              ],
             ),
           ],
         ),
@@ -242,12 +157,22 @@ class TrackerPageState extends State<TrackerPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _pageBase(BuildContext context) {
     return Scaffold(
       appBar: const Appbar(title: "Tracker", fontSize: 40),
-      body: _pageContent(),
+      body: _pageContent(context),
       drawer: const CustomDrawer(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    TrackerPageViewModel viewModel = getIt<TrackerPageViewModel>();
+    return ChangeNotifierProvider.value(value:
+      viewModel,
+      child: Builder(
+        builder: (context) => _pageBase(context)
+      ),
     );
   }
 

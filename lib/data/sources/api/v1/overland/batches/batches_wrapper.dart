@@ -7,12 +7,12 @@ import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 
-class BatchesWrapper {
+class BatchesApiWrapper {
 
   final IApiConfigSource _apiConfig;
   late ApiConfigDTO _apiInfo;
 
-  BatchesWrapper(this._apiConfig) {
+  BatchesApiWrapper(this._apiConfig) {
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
     if (!apiInfo.isConfigured()) {

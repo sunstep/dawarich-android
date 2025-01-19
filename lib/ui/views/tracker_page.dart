@@ -20,7 +20,9 @@ class TrackerPage extends StatelessWidget {
 
           Center(
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () async {
+                await viewModel.trackPoint();
+              },
               style: Theme.of(context).elevatedButtonTheme.style,
               child: const Text(
                   "Track Point",

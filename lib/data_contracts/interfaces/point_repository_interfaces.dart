@@ -7,9 +7,6 @@ import 'package:option_result/option_result.dart';
 
 abstract interface class IPointInterfaces {
 
-  Future<Result<PointDto, String>> createPoint();
-  Future<Option<PointDto>> createCachedPoint();
-  Future<Result<(), String>> uploadBatch(PointBatchDto batch);
   Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage);
   Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(DateTime startDate, DateTime endDate, int perPage);
   Future<int> getTotalPages(DateTime startDate, DateTime endDate, int perPage);

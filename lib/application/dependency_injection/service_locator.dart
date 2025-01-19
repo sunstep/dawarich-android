@@ -2,9 +2,11 @@ import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:dawarich/application/services/connect_service.dart';
 import 'package:dawarich/application/services/location_service.dart';
 import 'package:dawarich/application/services/map_service.dart';
+import 'package:dawarich/application/services/point_creation_service.dart';
 import 'package:dawarich/application/services/point_service.dart';
 import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/data/repositories/connect_repository.dart';
+import 'package:dawarich/data/repositories/point_creation_repository.dart';
 import 'package:dawarich/data/repositories/point_repository.dart';
 import 'package:dawarich/data/repositories/stats_repository.dart';
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_wrapper.dart';
@@ -17,6 +19,7 @@ import 'package:dawarich/data/sources/hardware/wifi_data_source.dart';
 import 'package:dawarich/data/sources/local/secure_storage/api_config.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/point_creation_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
@@ -26,6 +29,7 @@ import 'package:dawarich/ui/models/local/splash_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart';
 
 final GetIt getIt = GetIt.I;
 
@@ -38,12 +42,13 @@ void injectDependencies() {
   getIt.registerLazySingleton<BatteryDataSource>(() => BatteryDataSource());
   getIt.registerLazySingleton<WiFiDataSource>(() => WiFiDataSource());
   getIt.registerLazySingleton<PointSource>(() => PointSource(getIt<IApiConfigSource>()));
-  getIt.registerLazySingleton<BatchesWrapper>(() => BatchesWrapper(getIt<IApiConfigSource>()));
+  getIt.registerLazySingleton<BatchesApiWrapper>(() => BatchesApiWrapper(getIt<IApiConfigSource>()));
   getIt.registerLazySingleton<StatsSource>(() => StatsSource(getIt<IApiConfigSource>()));
 
   // Repositories
   getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<IApiConfigSource>()));
-  getIt.registerLazySingleton<IPointInterfaces>(() => PointRepository(getIt<GpsDataSource>(), getIt<DeviceDataSource>(), getIt<BatteryDataSource>(), getIt<WiFiDataSource>(), getIt<PointSource>(), getIt<BatchesWrapper>()));
+  getIt.registerLazySingleton<IPointInterfaces>(() => PointRepository(getIt<PointSource>()));
+  getIt.registerLazySingleton<IPointCreationInterfaces>(() => PointCreationRepository(getIt<GpsDataSource>(), getIt<DeviceDataSource>(), getIt<BatteryDataSource>(), getIt<WiFiDataSource>(), getIt<BatchesApiWrapper>()));
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsSource>()));
 
 
@@ -85,7 +90,7 @@ void injectDependencies() {
 
   getIt.registerFactory<TrackerPageViewModel>(
     () {
-      final TrackerPageViewModel viewModel = TrackerPageViewModel();
+      final TrackerPageViewModel viewModel = TrackerPageViewModel(getIt<PointCreationService>());
 
       return viewModel;
     }

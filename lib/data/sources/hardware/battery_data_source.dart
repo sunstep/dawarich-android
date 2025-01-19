@@ -8,10 +8,13 @@ class BatteryDataSource {
     _battery = Battery();
   }
 
-  Future<String> getBatteryState() async => _battery.batteryState.toString();
+  Future<String> getBatteryState() async {
 
-  Future<int> getBatteryLevel() async {
-    return _battery.batteryLevel;
+    BatteryState state = await _battery.batteryState;
+    return state.toString().split(".")[1];
   }
+
+  Future<int> getBatteryLevel() async => await _battery.batteryLevel;
+
 
 }

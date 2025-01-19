@@ -1,6 +1,6 @@
 
-import 'package:dawarich/application/entities/api/v1/overland/batches/request/geometry.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/v1/overland/batches/request/geometry_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/geometry_dto.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/geometry.dart';
 
 extension GeometryToDto on Geometry {
 

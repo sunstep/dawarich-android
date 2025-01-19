@@ -1,4 +1,4 @@
-import 'package:dawarich/application/entities/api/v1/overland/batches/request/point.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
 
 class Batch {
   final List<Point> points;

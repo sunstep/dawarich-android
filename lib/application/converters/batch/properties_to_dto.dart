@@ -1,6 +1,6 @@
 
-import 'package:dawarich/application/entities/api/v1/overland/batches/request/properties.dart';
-import 'package:dawarich/domain/data_transfer_objects/api/v1/overland/batches/request/properties_dto.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/properties.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/properties_dto.dart';
 
 extension PropertiesToDto on Properties {
 

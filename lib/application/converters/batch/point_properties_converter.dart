@@ -1,12 +1,12 @@
 
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/properties.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/properties_dto.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_properties.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_properties_dto.dart';
 
-extension PropertiesToDto on Properties {
+extension PropertiesToDto on PointProperties {
 
-  PropertiesDto toDto() {
+  PointPropertiesDto toDto() {
 
-    return PropertiesDto(
+    return PointPropertiesDto(
         timestamp: timestamp,
         altitude: altitude,
         speed: speed,

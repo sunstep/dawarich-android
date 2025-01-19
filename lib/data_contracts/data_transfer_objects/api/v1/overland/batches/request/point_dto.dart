@@ -1,12 +1,12 @@
 
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/geometry_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/properties_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_properties_dto.dart';
 
 class PointDto {
 
   final String type;
-  final GeometryDto geometry;
-  final PropertiesDto properties;
+  final PointGeometryDto geometry;
+  final PointPropertiesDto properties;
 
   PointDto({
     required this.type,
@@ -17,8 +17,8 @@ class PointDto {
   factory PointDto.fromJson(Map<String, dynamic> json) {
     return PointDto(
       type: json['type'],
-      geometry: GeometryDto.fromJson(json['geometry']),
-      properties: PropertiesDto.fromJson(json['properties']),
+      geometry: PointGeometryDto.fromJson(json['geometry']),
+      properties: PointPropertiesDto.fromJson(json['properties']),
     );
   }
 

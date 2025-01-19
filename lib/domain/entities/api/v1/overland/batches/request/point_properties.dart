@@ -1,6 +1,5 @@
 
-class PropertiesDto {
-
+class PointProperties {
   final String timestamp;
   final double altitude;
   final double speed;
@@ -16,9 +15,9 @@ class PropertiesDto {
   final String deviceId;
   final String wifi;
   final String batteryState;
-  final double batteryLevel;
+  final int batteryLevel;
 
-  PropertiesDto({
+  PointProperties({
     required this.timestamp,
     required this.altitude,
     required this.speed,
@@ -37,8 +36,8 @@ class PropertiesDto {
     required this.batteryLevel,
   });
 
-  factory PropertiesDto.fromJson(Map<String, dynamic> json) {
-    return PropertiesDto(
+  factory PointProperties.fromJson(Map<String, dynamic> json) {
+    return PointProperties(
       timestamp: json['timestamp'],
       altitude: (json['altitude'] as num).toDouble(),
       speed: (json['speed'] as num).toDouble(),
@@ -54,7 +53,7 @@ class PropertiesDto {
       deviceId: json['device_id'],
       wifi: json['wifi'],
       batteryState: json['battery_state'],
-      batteryLevel: (json['battery_level'] as num).toDouble(),
+      batteryLevel: json['battery_level'],
     );
   }
 

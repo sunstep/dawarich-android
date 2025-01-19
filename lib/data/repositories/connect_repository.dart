@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config.dart';
-import 'package:dawarich/data_contracts/interfaces/connect_repository.dart';
+import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:http/http.dart' as http;
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/health/response/health_dto.dart';
 import 'package:flutter/cupertino.dart';

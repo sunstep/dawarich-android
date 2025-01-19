@@ -1,5 +1,6 @@
-import 'api_point_geometry_dto.dart';
-import 'api_point_properties_dto.dart';
+
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_geometry_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_properties_dto.dart';
 
 class GeodataDTO {
   String? type;

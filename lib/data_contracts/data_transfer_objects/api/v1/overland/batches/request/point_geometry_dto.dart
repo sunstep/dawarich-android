@@ -1,11 +1,12 @@
-class Geometry {
+class PointGeometryDto {
+
   final String type;
   final List<double> coordinates;
 
-  Geometry({required this.type, required this.coordinates});
+  PointGeometryDto({required this.type, required this.coordinates});
 
-  factory Geometry.fromJson(Map<String, dynamic> json) {
-    return Geometry(
+  factory PointGeometryDto.fromJson(Map<String, dynamic> json) {
+    return PointGeometryDto(
       type: json['type'],
       coordinates: List<double>.from(json['coordinates']),
     );

@@ -1,9 +1,9 @@
 
 import 'dart:io';
 
-import 'package:dawarich/application/entities/api/v1/overland/batches/request/geometry.dart';
-import 'package:dawarich/application/entities/api/v1/overland/batches/request/point.dart';
-import 'package:dawarich/application/entities/api/v1/overland/batches/request/properties.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/geometry.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/properties.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:device_info_plus/device_info_plus.dart';

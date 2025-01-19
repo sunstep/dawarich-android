@@ -18,6 +18,17 @@ class TrackerPage extends StatelessWidget {
         children: [
           _lastPointInformation(context, viewModel),
 
+          Center(
+            child: ElevatedButton(
+              onPressed: () {},
+              style: Theme.of(context).elevatedButtonTheme.style,
+              child: const Text(
+                  "Track Point",
+              ),
+
+            ),
+          ),
+
           const Divider(height: 32),
 
           Expanded(
@@ -46,9 +57,9 @@ class TrackerPage extends StatelessWidget {
 
               _keyValueRow("Timestamp:", viewModel.lastPoint?.timestamp ?? "No Data"),
               const SizedBox(height: 4),
-              _keyValueRow("Latitude:", viewModel.lastPoint?.latitude?.toString() ?? "No Data"),
+              _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
               const SizedBox(height: 4),
-              _keyValueRow("Longitude:", viewModel.lastPoint?.longitude?.toString() ?? "No Data"),
+              _keyValueRow("Longitude:", viewModel.lastPoint?.longitude.toString() ?? "No Data"),
             ],
           ),
         ),

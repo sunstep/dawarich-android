@@ -6,12 +6,12 @@ import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
 
-class StatsSource {
+class StatsClient {
 
   final IApiConfigSource _apiConfig;
   late ApiConfigDTO _apiInfo;
 
-  StatsSource(this._apiConfig){
+  StatsClient(this._apiConfig){
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
     if (!apiInfo.isConfigured()) {

@@ -6,12 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
-class PointSource {
+class PointsClient {
 
   final IApiConfigSource _apiConfig;
   late ApiConfigDTO _apiInfo;
 
-  PointSource(this._apiConfig){
+  PointsClient(this._apiConfig){
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
     if (!apiInfo.isConfigured()) {

@@ -1,5 +1,5 @@
 import 'package:dawarich/data_contracts/interfaces/point_repository_interfaces.dart';
-import 'package:dawarich/data/sources/api/v1/points/point_source.dart';
+import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,7 +8,7 @@ import 'package:option_result/option_result.dart';
 
 class PointRepository implements IPointInterfaces {
 
-  final PointSource _source;
+  final PointsClient _source;
 
   PointRepository(this._source);
 

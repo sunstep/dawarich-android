@@ -1,24 +1,24 @@
-import 'package:dawarich/data/sources/api/v1/overland/batches/batches_wrapper.dart';
+import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_properties_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/point_creation_repository_interfaces.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:dawarich/data/sources/hardware/battery_data_source.dart';
-import 'package:dawarich/data/sources/hardware/device_data_source.dart';
-import 'package:dawarich/data/sources/hardware/gps_source.dart';
-import 'package:dawarich/data/sources/hardware/wifi_data_source.dart';
+import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
+import 'package:dawarich/data/sources/hardware/device_data_client.dart';
+import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
+import 'package:dawarich/data/sources/hardware/wifi_data_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
 import 'package:option_result/option_result.dart';
 
 class PointCreationRepository implements IPointCreationInterfaces {
 
-  final GpsDataSource _gpsDataSource;
-  final DeviceDataSource _deviceDataSource;
+  final GpsDataClient _gpsDataSource;
+  final DeviceDataClient _deviceDataSource;
   final BatteryDataSource _batteryDataSource;
-  final WiFiDataSource _wiFiDataSource;
-  final BatchesApiWrapper _batchesApiWrapper;
+  final WiFiDataClient _wiFiDataSource;
+  final BatchesClient _batchesApiWrapper;
 
   PointCreationRepository(this._gpsDataSource, this._deviceDataSource, this._batteryDataSource, this._wiFiDataSource, this._batchesApiWrapper);
 

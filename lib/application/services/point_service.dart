@@ -2,13 +2,13 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/resp
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/slim_api_point.dart';
-import 'package:dawarich/data_contracts/interfaces/point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 class PointService {
 
-  final IPointInterfaces _pointInterfaces;
+  final IApiPointInterfaces _pointInterfaces;
   PointService(this._pointInterfaces);
 
 
@@ -44,7 +44,7 @@ class PointService {
 
   Future<bool> deletePoint(String point) async {
 
-    Result<(), String> result = await _pointInterfaces.deletePoints(point);
+    Result<(), String> result = await _pointInterfaces.deletePoint(point);
 
     switch (result) {
 

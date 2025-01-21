@@ -1,4 +1,4 @@
-import 'package:dawarich/data_contracts/interfaces/point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
@@ -6,11 +6,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 
-class PointRepository implements IPointInterfaces {
+class ApiPointRepository implements IApiPointInterfaces {
 
   final PointsClient _source;
 
-  PointRepository(this._source);
+  ApiPointRepository(this._source);
 
   @override
   Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
@@ -164,7 +164,7 @@ class PointRepository implements IPointInterfaces {
   }
 
   @override
-  Future<Result<(), String>> deletePoints(String point) async {
+  Future<Result<(), String>> deletePoint(String point) async {
 
     Result<(), String> result = await _source.queryDeletePoint(point);
 

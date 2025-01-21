@@ -6,8 +6,8 @@ import 'package:dawarich/application/services/point_creation_service.dart';
 import 'package:dawarich/application/services/point_service.dart';
 import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/data/repositories/connect_repository.dart';
-import 'package:dawarich/data/repositories/point_creation_repository.dart';
-import 'package:dawarich/data/repositories/point_repository.dart';
+import 'package:dawarich/data/repositories/local_point_repository.dart';
+import 'package:dawarich/data/repositories/api_point_repository.dart';
 import 'package:dawarich/data/repositories/stats_repository.dart';
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
 import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
@@ -19,8 +19,8 @@ import 'package:dawarich/data/sources/hardware/wifi_data_client.dart';
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
-import 'package:dawarich/data_contracts/interfaces/point_creation_repository_interfaces.dart';
-import 'package:dawarich/data_contracts/interfaces/point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
@@ -29,7 +29,6 @@ import 'package:dawarich/ui/models/local/splash_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart';
 
 final GetIt getIt = GetIt.I;
 
@@ -47,8 +46,8 @@ void injectDependencies() {
 
   // Repositories
   getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<IApiConfigSource>()));
-  getIt.registerLazySingleton<IPointInterfaces>(() => PointRepository(getIt<PointsClient>()));
-  getIt.registerLazySingleton<IPointCreationInterfaces>(() => PointCreationRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataSource>(), getIt<WiFiDataClient>(), getIt<BatchesClient>()));
+  getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>()));
+  getIt.registerLazySingleton<ILocalPointInterfaces>(() => LocalPointRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataSource>(), getIt<WiFiDataClient>(), getIt<BatchesClient>()));
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
 
 
@@ -57,7 +56,8 @@ void injectDependencies() {
   getIt.registerLazySingleton<ConnectService>(() => ConnectService(getIt<IConnectRepository>(), getIt<IApiConfigSource>()));
   getIt.registerLazySingleton<LocationService>(() => LocationService());
   getIt.registerLazySingleton<MapService>(() => MapService(getIt<PointService>()));
-  getIt.registerLazySingleton<PointService>(() => PointService(getIt<IPointInterfaces>()));
+  getIt.registerLazySingleton<PointService>(() => PointService(getIt<IApiPointInterfaces>()));
+  getIt.registerLazySingleton<PointCreationService>(() => PointCreationService(getIt<ILocalPointInterfaces>()));
   getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));
 
   // ViewModels

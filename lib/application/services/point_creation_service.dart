@@ -1,7 +1,7 @@
 import 'package:dawarich/application/converters/batch/point_batch_converter.dart';
 import 'package:dawarich/application/converters/batch/point_converter.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/point_creation_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_batch.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,7 +9,7 @@ import 'package:option_result/option_result.dart';
 
 class PointCreationService {
 
-  final IPointCreationInterfaces _pointCreationInterfaces;
+  final ILocalPointInterfaces _pointCreationInterfaces;
 
   PointCreationService(this._pointCreationInterfaces);
 
@@ -30,7 +30,7 @@ class PointCreationService {
     }
   }
 
-  Future<Result<(), String>> uploadBatch() async {
+  Future<Result<void, String>> uploadBatch() async {
 
     List<Point> points = [];
     PointBatch batch = PointBatch(points: points);

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:dawarich/application/services/point_creation_service.dart';
-import 'package:dawarich/application/services/point_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/ui/models/local/last_point.dart';
 import 'package:geolocator/geolocator.dart';
@@ -54,7 +53,16 @@ class TrackerPageViewModel with ChangeNotifier {
 
     final int meters = desiredAccuracyMeters;
 
-    if (Platform.isIOS) {
+    if (Platform.isAndroid) {
+
+      if (meters <= 100) {
+        _locationAccuracy = LocationAccuracy.high;
+      } else if (meters <= 500) {
+        _locationAccuracy = LocationAccuracy.medium;
+      } else if (meters <= 1000) {
+        _locationAccuracy = LocationAccuracy.low;
+      }
+    } else if (Platform.isIOS) {
 
       if (meters <= 5) {
         _locationAccuracy = LocationAccuracy.bestForNavigation;
@@ -69,18 +77,9 @@ class TrackerPageViewModel with ChangeNotifier {
       } else {
         _locationAccuracy = LocationAccuracy.lowest;
       }
-    } else if (Platform.isAndroid) {
-
-      if (meters <= 100) {
-        _locationAccuracy = LocationAccuracy.high;
-      } else if (meters <= 500) {
-        _locationAccuracy = LocationAccuracy.medium;
-      } else if (meters <= 1000) {
-        _locationAccuracy = LocationAccuracy.low;
-      } else {
-        _locationAccuracy = LocationAccuracy.lowest;
-      }
     }
+
+
   }
 
   Future<void> trackPoint() async {

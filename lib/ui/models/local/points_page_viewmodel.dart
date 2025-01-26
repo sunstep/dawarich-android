@@ -1,5 +1,5 @@
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
-import 'package:dawarich/application/services/point_service.dart';
+import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/ui/models/api/v1/points/response/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
@@ -7,7 +7,7 @@ import 'package:option_result/option_result.dart';
 
 class PointsPageViewModel with ChangeNotifier {
 
-  final PointService _pointService = GetIt.I<PointService>();
+  final ApiPointService _pointService = GetIt.I<ApiPointService>();
 
   late DateTime _startDate;
   late DateTime _endDate;

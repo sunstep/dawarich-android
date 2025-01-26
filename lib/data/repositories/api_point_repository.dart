@@ -1,34 +1,16 @@
-import 'package:dawarich/data/sources/api/v1/overland/batches/batches_wrapper.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/point_interfaces.dart';
-import 'package:dawarich/data/sources/api/v1/points/point_source.dart';
+import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
+import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 
-class PointRepository implements IPointInterfaces {
+class ApiPointRepository implements IApiPointInterfaces {
 
-  final PointSource _source;
-  final BatchesWrapper _batchesWrapper;
-  PointRepository(this._source, this._batchesWrapper);
+  final PointsClient _pointsClient;
 
-  @override
-  Future<Result<(), String>> uploadBatch(BatchDto batch) async {
-
-    Result<(), String> result = await _batchesWrapper.post(batch);
-
-    switch (result) {
-      case Ok(value: ()): {
-        return const Ok(());
-      }
-      case Err(value: String error): {
-        debugPrint("Failed to upload batch: $error");
-        return Err(error);
-      }
-    }
-  }
+  ApiPointRepository(this._pointsClient);
 
   @override
   Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
@@ -36,7 +18,7 @@ class PointRepository implements IPointInterfaces {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
-    Result<Map<String, String?>, String> headerResult = await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (headerResult) {
 
@@ -46,7 +28,7 @@ class PointRepository implements IPointInterfaces {
 
         final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
         for (int page = 1; page <= pages; page++) {
-          responses.add(_source.queryPoints(startDateString, endDateString, perPage, page));
+          responses.add(_pointsClient.getPoints(startDateString, endDateString, perPage, page));
         }
 
         final List<Result<List<ApiPointDTO>, String>> fetchResults = await Future.wait(responses);
@@ -80,7 +62,7 @@ class PointRepository implements IPointInterfaces {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
-    Result<Map<String, String?>, String> headerResult = await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (headerResult) {
 
@@ -90,7 +72,7 @@ class PointRepository implements IPointInterfaces {
 
         final List<Future<Result<List<SlimApiPointDTO>, String>>> responses = [];
         for (int page = 1; page <= pages; page++) {
-          responses.add(_source.querySlimPoints(startDateString, endDateString, perPage, page));
+          responses.add(_pointsClient.getSlimPoints(startDateString, endDateString, perPage, page));
         }
 
         final List<Result<List<SlimApiPointDTO>, String>> fetchResults = await Future.wait(responses);
@@ -124,7 +106,7 @@ class PointRepository implements IPointInterfaces {
     final String endDateString = _formatEndDate(endDate);
 
 
-    Result<Map<String, String?>, String> result = await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> result = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (result) {
 
@@ -144,7 +126,7 @@ class PointRepository implements IPointInterfaces {
   @override
   Future<Option<ApiPointDTO>> fetchLastPoint() async {
 
-    Result<ApiPointDTO, String> result  = await _source.queryLastPoint();
+    Result<ApiPointDTO, String> result  = await _pointsClient.getLastPoint();
 
     switch (result) {
 
@@ -168,7 +150,7 @@ class PointRepository implements IPointInterfaces {
         .toUtc()
         .toIso8601String();
 
-    Result<Map<String, String?>, String> result =  await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> result =  await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (result) {
 
@@ -182,9 +164,9 @@ class PointRepository implements IPointInterfaces {
   }
 
   @override
-  Future<Result<(), String>> deletePoints(String point) async {
+  Future<Result<(), String>> deletePoint(String point) async {
 
-    Result<(), String> result = await _source.queryDeletePoint(point);
+    Result<(), String> result = await _pointsClient.getDeletePoint(point);
 
     switch (result)  {
 

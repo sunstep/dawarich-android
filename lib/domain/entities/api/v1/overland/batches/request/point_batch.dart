@@ -1,12 +1,12 @@
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
 
-class Batch {
+class PointBatch {
   final List<Point> points;
 
-  Batch({required this.points});
+  PointBatch({required this.points});
 
-  factory Batch.fromJson(Map<String, dynamic> json) {
-    return Batch(
+  factory PointBatch.fromJson(Map<String, dynamic> json) {
+    return PointBatch(
       points: (json['locations'] as List)
           .map((item) => Point.fromJson(item))
           .toList(),

@@ -3,7 +3,7 @@ import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 
-class ApiConfigSource implements IApiConfigSource {
+class ApiConfigClient implements IApiConfigSource {
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final ApiConfigDTO _apiConfig = ApiConfigDTO();
@@ -49,7 +49,9 @@ class ApiConfigSource implements IApiConfigSource {
 
   @override
   Future<void> clearConfiguration() async {
+
     _apiConfig.clear();
+
     await _secureStorage.delete(key: 'host');
     await _secureStorage.delete(key: 'apiKey');
   }

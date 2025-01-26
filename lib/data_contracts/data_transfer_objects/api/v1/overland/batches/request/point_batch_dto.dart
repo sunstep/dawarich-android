@@ -1,14 +1,14 @@
 
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
 
-class BatchDto {
+class PointBatchDto {
 
   final List<PointDto> points;
 
-  BatchDto({required this.points});
+  PointBatchDto({required this.points});
 
-  factory BatchDto.fromJson(Map<String, dynamic> json) {
-    return BatchDto(
+  factory PointBatchDto.fromJson(Map<String, dynamic> json) {
+    return PointBatchDto(
       points: (json['locations'] as List)
           .map((item) => PointDto.fromJson(item))
           .toList(),

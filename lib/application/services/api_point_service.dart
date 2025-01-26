@@ -1,25 +1,16 @@
-import 'package:dawarich/application/converters/batch/batch_to_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/batch.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/slim_api_point.dart';
-import 'package:dawarich/data_contracts/interfaces/point_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
-class PointService {
+class ApiPointService {
 
-  final IPointInterfaces _pointInterfaces;
-  PointService(this._pointInterfaces);
+  final IApiPointInterfaces _pointInterfaces;
+  ApiPointService(this._pointInterfaces);
 
-  Future<Result<(), String>> uploadBatch() async {
-
-    List<Point> points = [];
-    Batch batch = Batch(points: points);
-    return await _pointInterfaces.uploadBatch(batch.toDto());
-  }
 
   Future<Option<List<ApiPoint>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
 
@@ -53,7 +44,7 @@ class PointService {
 
   Future<bool> deletePoint(String point) async {
 
-    Result<(), String> result = await _pointInterfaces.deletePoints(point);
+    Result<(), String> result = await _pointInterfaces.deletePoint(point);
 
     switch (result) {
 

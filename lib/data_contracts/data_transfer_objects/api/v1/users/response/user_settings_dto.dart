@@ -1,0 +1,34 @@
+
+class UserSettingsDto {
+
+  String immichUrl;
+  String immichApiKey;
+  String photoprismUrl;
+  String photoprismApiKey;
+
+
+  UserSettingsDto({
+    required this.immichUrl,
+    required this.immichApiKey,
+    required this.photoprismUrl,
+    required this.photoprismApiKey});
+
+  factory UserSettingsDto.fromJson(Map<String, dynamic> json) {
+    return UserSettingsDto(
+      immichUrl: json["immich_url"],
+      immichApiKey: json["immich_api_key"],
+      photoprismUrl: json["photoprism_url"],
+      photoprismApiKey: json["photoprism_api_key"]
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "immich_url": immichUrl,
+      "immich_api_key": immichApiKey,
+      "photoprism_url": photoprismUrl,
+      "photoprism_api_key": photoprismApiKey
+    };
+  }
+
+}

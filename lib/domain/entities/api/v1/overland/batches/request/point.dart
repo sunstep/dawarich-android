@@ -1,10 +1,10 @@
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/geometry.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/properties.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_geometry.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_properties.dart';
 
 class Point {
   final String type;
-  final Geometry geometry;
-  final Properties properties;
+  final PointGeometry geometry;
+  final PointProperties properties;
 
   Point({
     required this.type,
@@ -15,8 +15,8 @@ class Point {
   factory Point.fromJson(Map<String, dynamic> json) {
     return Point(
       type: json['type'],
-      geometry: Geometry.fromJson(json['geometry']),
-      properties: Properties.fromJson(json['properties']),
+      geometry: PointGeometry.fromJson(json['geometry']),
+      properties: PointProperties.fromJson(json['properties']),
     );
   }
 

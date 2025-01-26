@@ -1,18 +1,16 @@
-
 import 'dart:convert';
-
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_dto.dart';
+import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 
-class BatchesWrapper {
+class BatchesClient {
 
-  final IApiConfigSource _apiConfig;
+  final ApiConfigClient _apiConfig;
   late ApiConfigDTO _apiInfo;
 
-  BatchesWrapper(this._apiConfig) {
+  BatchesClient(this._apiConfig) {
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
     if (!apiInfo.isConfigured()) {
@@ -21,7 +19,7 @@ class BatchesWrapper {
     _apiInfo = apiInfo;
   }
 
-  Future<Result<(), String>> post(BatchDto batch) async {
+  Future<Result<(), String>> post(PointBatchDto batch) async {
 
     final Uri url = Uri.parse("${_apiInfo.host}/api/v1/overland/batches?api_key=${_apiInfo.apiKey}");
     final http.Response response = await http.post(url, body: batch);

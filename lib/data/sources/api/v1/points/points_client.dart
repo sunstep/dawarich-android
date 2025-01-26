@@ -1,14 +1,14 @@
+import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
 class PointsClient {
 
-  final IApiConfigSource _apiConfig;
+  final ApiConfigClient _apiConfig;
   late ApiConfigDTO _apiInfo;
 
   PointsClient(this._apiConfig){
@@ -20,7 +20,7 @@ class PointsClient {
     _apiInfo = apiInfo;
   }
 
-  Future<Result<List<ApiPointDTO>, String>> queryPoints(String startDate, String endDate, int perPage, int page) async {
+  Future<Result<List<ApiPointDTO>, String>> getPoints(String startDate, String endDate, int perPage, int page) async {
 
     final Uri uri = Uri.parse(
         '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
@@ -36,7 +36,7 @@ class PointsClient {
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying points.");
   }
 
-  Future<Result<List<SlimApiPointDTO>, String>> querySlimPoints(String startDate, String endDate, int perPage, int page) async {
+  Future<Result<List<SlimApiPointDTO>, String>> getSlimPoints(String startDate, String endDate, int perPage, int page) async {
     final Uri uri = Uri.parse(
         '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page&slim=true');
     final http.Response response = await http.get(uri);
@@ -51,7 +51,7 @@ class PointsClient {
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying slim points.");
   }
 
-  Future<Result<ApiPointDTO, String>> queryLastPoint() async {
+  Future<Result<ApiPointDTO, String>> getLastPoint() async {
     final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&per_page=1&page=1&order=desc");
     final http.Response response = await http.get(uri);
 
@@ -64,7 +64,7 @@ class PointsClient {
 
   }
 
-  Future<Result<Map<String, String?>, String>> queryHeaders(String startDate, String endDate, int perPage) async {
+  Future<Result<Map<String, String?>, String>> getHeaders(String startDate, String endDate, int perPage) async {
 
     final Uri uri = Uri.parse(
         '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage');
@@ -77,7 +77,7 @@ class PointsClient {
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while retrieving last point.");
   }
 
-  Future<Result<(), String>> queryDeletePoint(String id) async {
+  Future<Result<(), String>> getDeletePoint(String id) async {
     final Uri uri = Uri.parse(
       "${_apiInfo.host}/api/v1/points/$id?api_key=${_apiInfo.apiKey}",
     );

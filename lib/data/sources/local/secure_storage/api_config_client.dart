@@ -49,7 +49,9 @@ class ApiConfigClient implements IApiConfigSource {
 
   @override
   Future<void> clearConfiguration() async {
+
     _apiConfig.clear();
+
     await _secureStorage.delete(key: 'host');
     await _secureStorage.delete(key: 'apiKey');
   }

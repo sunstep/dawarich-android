@@ -1,12 +1,10 @@
-import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:dawarich/application/services/connect_service.dart';
 import 'package:flutter/foundation.dart';
 
 class ConnectViewModel with ChangeNotifier {
 
-  final ApiConfigService _apiConfigService;
   final ConnectService _connectService;
-  ConnectViewModel(this._apiConfigService, this._connectService);
+  ConnectViewModel(this._connectService);
 
   bool _isVerifyingHost = false;
   bool _isLoggingIn = false;
@@ -71,7 +69,6 @@ class ConnectViewModel with ChangeNotifier {
     bool isValid = await _connectService.tryApiKey(apiKey);
 
     if (isValid) {
-      await _apiConfigService.storeApiConfig();
       _setLoggingIn(true);
       return true;
     }

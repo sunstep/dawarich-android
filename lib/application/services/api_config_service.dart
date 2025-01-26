@@ -1,8 +1,8 @@
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
+import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 
 class ApiConfigService {
 
-  final IApiConfigSource _source;
+  final ApiConfigClient _source;
   ApiConfigService(this._source);
 
   Future<void> initialize() async {

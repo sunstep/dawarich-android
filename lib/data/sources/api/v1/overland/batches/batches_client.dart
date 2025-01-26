@@ -1,15 +1,13 @@
-
 import 'dart:convert';
-
+import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 
 class BatchesClient {
 
-  final IApiConfigSource _apiConfig;
+  final ApiConfigClient _apiConfig;
   late ApiConfigDTO _apiInfo;
 
   BatchesClient(this._apiConfig) {

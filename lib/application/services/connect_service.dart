@@ -1,13 +1,10 @@
-
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
 
 class ConnectService {
 
-  final IApiConfigSource _configSource;
   final IConnectRepository _connectRepository;
 
-  ConnectService(this._connectRepository, this._configSource);
+  ConnectService(this._connectRepository);
 
   Future<bool> testHost(String host) async {
 
@@ -18,18 +15,15 @@ class ConnectService {
     }
 
     String fullUrl = _ensureProtocol(host, isHttps: true);
-    _configSource.setHost(fullUrl);
-    _configSource.storeApiConfig();
-    return _connectRepository.testHost();
+    return _connectRepository.testHost(fullUrl);
   }
 
   Future<bool> tryApiKey(String apiKey) async {
 
     apiKey = apiKey.trim();
-    _configSource.setApiKey(apiKey);
-    _configSource.storeApiConfig();
-    return _connectRepository.tryApiKey();
+    bool success = await _connectRepository.tryApiKey(apiKey);
 
+    return success;
   }
 
 

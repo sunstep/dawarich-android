@@ -1,14 +1,14 @@
+import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/stats/response/stats_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
 
 class StatsClient {
 
-  final IApiConfigSource _apiConfig;
+  final ApiConfigClient _apiConfig;
   late ApiConfigDTO _apiInfo;
 
   StatsClient(this._apiConfig){
@@ -24,7 +24,7 @@ class StatsClient {
 
     final Uri uri = Uri.parse(
         '${_apiInfo.host}/api/v1/stats?api_key=${_apiInfo.apiKey}');
-    final http.Response response = await http.get(uri);
+    final Response response = await get(uri);
 
     if (response.statusCode == 200) {
       final dynamic responseData = jsonDecode(response.body);

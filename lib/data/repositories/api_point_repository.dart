@@ -8,9 +8,9 @@ import 'package:option_result/option_result.dart';
 
 class ApiPointRepository implements IApiPointInterfaces {
 
-  final PointsClient _source;
+  final PointsClient _pointsClient;
 
-  ApiPointRepository(this._source);
+  ApiPointRepository(this._pointsClient);
 
   @override
   Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
@@ -18,7 +18,7 @@ class ApiPointRepository implements IApiPointInterfaces {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
-    Result<Map<String, String?>, String> headerResult = await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (headerResult) {
 
@@ -28,7 +28,7 @@ class ApiPointRepository implements IApiPointInterfaces {
 
         final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
         for (int page = 1; page <= pages; page++) {
-          responses.add(_source.queryPoints(startDateString, endDateString, perPage, page));
+          responses.add(_pointsClient.getPoints(startDateString, endDateString, perPage, page));
         }
 
         final List<Result<List<ApiPointDTO>, String>> fetchResults = await Future.wait(responses);
@@ -62,7 +62,7 @@ class ApiPointRepository implements IApiPointInterfaces {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
-    Result<Map<String, String?>, String> headerResult = await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (headerResult) {
 
@@ -72,7 +72,7 @@ class ApiPointRepository implements IApiPointInterfaces {
 
         final List<Future<Result<List<SlimApiPointDTO>, String>>> responses = [];
         for (int page = 1; page <= pages; page++) {
-          responses.add(_source.querySlimPoints(startDateString, endDateString, perPage, page));
+          responses.add(_pointsClient.getSlimPoints(startDateString, endDateString, perPage, page));
         }
 
         final List<Result<List<SlimApiPointDTO>, String>> fetchResults = await Future.wait(responses);
@@ -106,7 +106,7 @@ class ApiPointRepository implements IApiPointInterfaces {
     final String endDateString = _formatEndDate(endDate);
 
 
-    Result<Map<String, String?>, String> result = await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> result = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (result) {
 
@@ -126,7 +126,7 @@ class ApiPointRepository implements IApiPointInterfaces {
   @override
   Future<Option<ApiPointDTO>> fetchLastPoint() async {
 
-    Result<ApiPointDTO, String> result  = await _source.queryLastPoint();
+    Result<ApiPointDTO, String> result  = await _pointsClient.getLastPoint();
 
     switch (result) {
 
@@ -150,7 +150,7 @@ class ApiPointRepository implements IApiPointInterfaces {
         .toUtc()
         .toIso8601String();
 
-    Result<Map<String, String?>, String> result =  await _source.queryHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> result =  await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (result) {
 
@@ -166,7 +166,7 @@ class ApiPointRepository implements IApiPointInterfaces {
   @override
   Future<Result<(), String>> deletePoint(String point) async {
 
-    Result<(), String> result = await _source.queryDeletePoint(point);
+    Result<(), String> result = await _pointsClient.getDeletePoint(point);
 
     switch (result)  {
 

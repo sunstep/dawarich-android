@@ -6,10 +6,10 @@ import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfac
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
-class PointService {
+class ApiPointService {
 
   final IApiPointInterfaces _pointInterfaces;
-  PointService(this._pointInterfaces);
+  ApiPointService(this._pointInterfaces);
 
 
   Future<Option<List<ApiPoint>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {

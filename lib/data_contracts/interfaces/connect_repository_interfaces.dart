@@ -1,6 +1,6 @@
 
 abstract interface class IConnectRepository {
 
-  Future<bool> testHost();
-  Future<bool> tryApiKey();
+  Future<bool> testHost(String host);
+  Future<bool> tryApiKey(String apiKey);
 }

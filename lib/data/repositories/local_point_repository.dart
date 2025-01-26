@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart' as sqlite;
+import 'package:dawarich/data/sources/local/shared_preferences/user_storage_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_properties_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
@@ -21,11 +24,20 @@ class LocalPointRepository implements ILocalPointInterfaces {
   final DeviceDataClient _deviceDataClient;
   final BatteryDataSource _batteryDataClient;
   final WiFiDataClient _wiFiDataClient;
+
   final BatchesClient _batchesClient;
+  final UserStorageClient _userStorageClient;
 
   final sqlite.SQLiteClient _database = sqlite.SQLiteClient();
 
-  LocalPointRepository(this._gpsDataClient, this._deviceDataClient, this._batteryDataClient, this._wiFiDataClient, this._batchesClient);
+  LocalPointRepository(
+      this._gpsDataClient,
+      this._deviceDataClient,
+      this._batteryDataClient,
+      this._wiFiDataClient,
+      this._batchesClient,
+      this._userStorageClient,
+    );
 
   @override
   Future<Result<PointDto, String>> createPoint() async {
@@ -39,7 +51,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           timestamp: DateTime
               .now()
               .toUtc()
-              .millisecondsSinceEpoch
+              // .millisecondsSinceEpoch
               .toString(),
           altitude: position.altitude,
           speed: position.speed,
@@ -51,7 +63,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           desiredAccuracy: 0.0,
           deferred: 0.0,
           significantChange: "",
-          locationsInPayload: 0,
+          locationsInPayload: await getBatchPointCount(),
           deviceId: await _deviceDataClient.getDeviceId(),
           wifi: await _wiFiDataClient.getWiFiStatus(),
           batteryState: await _batteryDataClient.getBatteryState(),
@@ -76,7 +88,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           timestamp: DateTime
               .now()
               .toUtc()
-              .millisecondsSinceEpoch
+              // .millisecondsSinceEpoch
               .toString(),
           altitude: position.altitude,
           speed: position.speed,
@@ -88,7 +100,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           desiredAccuracy: 0.0,
           deferred: 0.0,
           significantChange: "",
-          locationsInPayload: 0,
+          locationsInPayload: await getBatchPointCount(),
           deviceId: await _deviceDataClient.getDeviceId(),
           wifi: await _wiFiDataClient.getWiFiStatus(),
           batteryState: await _batteryDataClient.getBatteryState(),
@@ -110,6 +122,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           type: Value(point.type),
           geometryId: Value(await _storeGeometry(point.geometry)),
           propertiesId: Value(await _storeProperties(point.properties)),
+          userId: Value(await _userStorageClient.getLoggedInUserId()),
         ),
       );
       return const Ok(null); // Indicate success
@@ -149,6 +162,49 @@ class LocalPointRepository implements ILocalPointInterfaces {
       ),
     );
   }
+
+  @override
+  Future<int> getBatchPointCount() async {
+    try {
+
+      final countQuery = await (_database.selectOnly(_database.pointsTable)
+        ..addColumns([_database.pointsTable.id.count()])
+        ..where(_database.pointsTable.isUploaded.equals(false)))
+          .getSingle();
+
+      return countQuery.read(_database.pointsTable.id.count()) ?? 0;
+    } catch (e) {
+      debugPrint("Error fetching not uploaded points count: $e");
+      return 0;
+    }
+  }
+
+  @override
+  Future<bool> isDuplicatePoint(PointDto point) async {
+    final String serializedCoordinates = jsonEncode(point.geometry.coordinates);
+
+    final count = await (_database.selectOnly(_database.pointsTable)
+      ..addColumns([_database.pointsTable.id])
+      ..join([
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
+        ),
+        innerJoin(
+          _database.pointGeometryTable,
+          _database.pointGeometryTable.id.equalsExp(_database.pointsTable.geometryId),
+        ),
+      ])
+      ..where(
+        _database.pointPropertiesTable.timestamp.equals(point.properties.timestamp) &
+        _database.pointGeometryTable.coordinates.equals(serializedCoordinates),
+      )
+      ..limit(1))
+        .get();
+
+    return count.isNotEmpty;
+  }
+
 
   @override
   Future<Result<void, String>> uploadBatch(PointBatchDto batch) async {

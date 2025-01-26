@@ -17,11 +17,11 @@ class TrackerPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _lastPointInformation(context, viewModel),
-
+          const SizedBox(height: 12),
           Center(
             child: ElevatedButton(
               onPressed: () async {
-                await viewModel.trackPoint();
+                //await viewModel.trackPoint();
               },
               style: Theme.of(context).elevatedButtonTheme.style,
               child: const Text(
@@ -51,10 +51,13 @@ class TrackerPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Last Point Information",
-                style: Theme.of(context).textTheme.bodyMedium,
+              Center(
+                child: Text(
+                  "Last Point Information",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
+
               const SizedBox(height: 8),
 
               _keyValueRow("Timestamp:", viewModel.lastPoint?.timestamp ?? "No Data"),
@@ -62,6 +65,8 @@ class TrackerPage extends StatelessWidget {
               _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
               const SizedBox(height: 4),
               _keyValueRow("Longitude:", viewModel.lastPoint?.longitude.toString() ?? "No Data"),
+              const SizedBox(height: 4),
+              _keyValueRow("Points in batch:", viewModel.batchPointCount.toString()),
             ],
           ),
         ),

@@ -31,6 +31,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_secure_storage:
+  drift:
+  drift_flutter:
+  path_provider:
+  shared_preferences:
   http:
   fl_chart:
   flutter_map:
@@ -42,7 +46,6 @@ dependencies:
   battery_plus:
   network_info_plus:
   device_info_plus:
-  shared_preferences:
   get_it:
   provider:
   option_result:
@@ -52,6 +55,8 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
+  build_runner:
+  drift_dev:
   flutter_test:
     sdk: flutter
 

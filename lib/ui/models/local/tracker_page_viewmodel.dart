@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dawarich/application/services/point_creation_service.dart';
+import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/ui/models/local/last_point.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,6 +14,7 @@ class TrackerPageViewModel with ChangeNotifier {
   int _desiredAccuracyMeters = 5; // in meters
   LocationAccuracy _locationAccuracy = LocationAccuracy.best;
   LastPoint? _lastPoint;
+  int _batchPointCount = 0;
 
   bool get isTrackingEnabled => _isTrackingEnabled;
   int get pointsPerBatch => _pointsPerBatch;
@@ -21,10 +22,20 @@ class TrackerPageViewModel with ChangeNotifier {
   int get desiredAccuracyMeters => _desiredAccuracyMeters;
   LocationAccuracy get locationAccuracy => _locationAccuracy;
   LastPoint? get lastPoint => _lastPoint;
+  int get batchPointCount => _batchPointCount;
 
-  final PointCreationService _pointService;
+  final LocalPointService _pointService;
 
   TrackerPageViewModel(this._pointService);
+
+  Future<void> initialize() async {
+    setBatchPointCount(await _pointService.getBatchPointsCount());
+  }
+
+  void setBatchPointCount(int value) {
+    _batchPointCount = value;
+    notifyListeners();
+  }
 
   void toggleTracking(bool value) {
     _isTrackingEnabled = value;
@@ -82,10 +93,10 @@ class TrackerPageViewModel with ChangeNotifier {
 
   }
 
-  Future<void> trackPoint() async {
-
-    await _pointService.createPoint();
-  }
+  // Future<void> trackPoint() async {
+  //
+  //   await _pointService.createPoint();
+  // }
 
   void updateLastPoint(LastPoint point) {
     _lastPoint = point;

@@ -24,7 +24,6 @@ class UserDto {
   });
   
   factory UserDto.fromJson(Map<String, dynamic> json) {
-    json = json["user"];
     return UserDto(
         id: json["id"],
         email: json["email"],

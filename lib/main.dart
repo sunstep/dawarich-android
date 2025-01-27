@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  injectDependencies();
+  await injectDependencies();
   runApp(const AppBase());
 }
 
@@ -21,7 +21,7 @@ class AppBase extends StatelessWidget {
       darkTheme: DarkTheme.primaryTheme,
       themeMode: ThemeMode.system,
       onGenerateRoute: AppRouter.generateRoute,
-      initialRoute: '/splash',
+      initialRoute: '/splash'
     );
   }
 }

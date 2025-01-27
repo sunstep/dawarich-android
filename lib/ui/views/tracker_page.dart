@@ -3,6 +3,7 @@ import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 class TrackerPage extends StatelessWidget {
@@ -62,9 +63,9 @@ class TrackerPage extends StatelessWidget {
 
               _keyValueRow("Timestamp:", viewModel.lastPoint?.timestamp ?? "No Data"),
               const SizedBox(height: 4),
-              _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
-              const SizedBox(height: 4),
               _keyValueRow("Longitude:", viewModel.lastPoint?.longitude.toString() ?? "No Data"),
+              const SizedBox(height: 4),
+              _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
               const SizedBox(height: 4),
               _keyValueRow("Points in batch:", viewModel.batchPointCount.toString()),
             ],
@@ -84,7 +85,29 @@ class TrackerPage extends StatelessWidget {
     );
   }
 
-
+  Widget _accuracyOptions(BuildContext context, TrackerPageViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Location Accuracy"),
+        Wrap(
+          spacing: 8.0,
+          children: viewModel.accuracyOptions.map((option) {
+            final isSelected = viewModel.locationAccuracy == option['value'];
+            return ChoiceChip(
+              label: Text(option['label'] as String),
+              selected: isSelected,
+              onSelected: (_) =>
+                  viewModel.setLocationAccuracy(option['value'] as LocationAccuracy),
+              selectedColor: Colors.blue,
+              backgroundColor: Colors.grey[300],
+              labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
 
   Widget _trackerConfigurations(BuildContext context, TrackerPageViewModel viewModel) {
     return Card(
@@ -100,7 +123,7 @@ class TrackerPage extends StatelessWidget {
                 const Text("Automatic Tracking"),
                 Switch(
                   value: viewModel.isTrackingEnabled,
-                  onChanged: viewModel.toggleTracking,
+                  onChanged: viewModel.toggleAutomaticTracking,
                 ),
               ],
             ),
@@ -112,13 +135,13 @@ class TrackerPage extends StatelessWidget {
               children: [
                 const Text("Points Per Batch"),
                 Slider(
-                  value: viewModel.pointsPerBatch.toDouble(),
+                  value: viewModel.maxPointsPerBatch.toDouble(),
                   min: 50,
                   max: 1000,
                   divisions: 19,
-                  label: "${viewModel.pointsPerBatch}",
+                  label: "${viewModel.maxPointsPerBatch}",
                   onChanged: (value) =>
-                      viewModel.setPointsPerBatch(value.toInt()),
+                      viewModel.setMaxPointsPerBatch(value.toInt()),
                 ),
               ],
             ),
@@ -146,18 +169,25 @@ class TrackerPage extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Location Accuracy (meters)"),
-                Slider(
-                  value: viewModel.desiredAccuracyMeters.toDouble(),
-                  min: 5,
-                  max: 50,
-                  divisions: 9,
-                  label: "${viewModel.locationAccuracy} m",
-                  onChanged: (value) =>
-                      viewModel.setLocationAccuracy(value.toInt()),
+                const Text("Location Accuracy"),
+                const SizedBox(height: 8),
+                DropdownButton<LocationAccuracy>(
+                  value: viewModel.locationAccuracy,
+                  onChanged: (LocationAccuracy? newValue) {
+                    if (newValue != null) {
+                      viewModel.setLocationAccuracy(newValue);
+                    }
+                  },
+                  items: viewModel.accuracyOptions.map((option) {
+                    return DropdownMenuItem<LocationAccuracy>(
+                      value: option['value'] as LocationAccuracy,
+                      child: Text(option['label'] as String),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
+
           ],
         ),
       ),

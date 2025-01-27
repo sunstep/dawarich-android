@@ -13,18 +13,6 @@ class ApiConfigService {
     return _source.isConfigured();
   }
 
-  Future<void> setApiHost(String host) async {
-    _source.setHost(host);
-  }
-
-  Future<void> setApiKey(String apiKey) async {
-    _source.setApiKey(apiKey);
-  }
-
-  Future<void> storeApiConfig() async {
-    await _source.storeApiConfig();
-  }
-
   Future<void> clearApiConfig() async {
     await _source.clearConfiguration();
   }

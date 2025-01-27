@@ -6,7 +6,7 @@ import 'package:dawarich/data/sources/local/shared_preferences/user_storage_clie
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_properties_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
 import 'package:dawarich/data/sources/hardware/device_data_client.dart';
@@ -161,6 +161,80 @@ class LocalPointRepository implements ILocalPointInterfaces {
         batteryLevel: Value(properties.batteryLevel),
       ),
     );
+  }
+
+  @override
+  Future<Option<PointDto>> getLastPoint() async {
+    try {
+      // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
+      final pointRow = await (_database.select(_database.pointsTable)
+        ..orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc)])
+        ..limit(1))
+          .getSingleOrNull();
+
+      // If no point exists, return null.
+      if (pointRow == null) {
+        return const None();
+      }
+
+      // Fetch related geometry and properties using their foreign key IDs.
+      final geometryRow = await (_database.select(_database.pointGeometryTable)
+        ..where((g) => g.id.equals(pointRow.geometryId)))
+          .getSingleOrNull();
+
+      final propertiesRow = await (_database.select(_database.pointPropertiesTable)
+        ..where((p) => p.id.equals(pointRow.propertiesId)))
+          .getSingleOrNull();
+
+      if (geometryRow == null || propertiesRow == null) {
+        debugPrint("Error: Missing geometry or properties for point ID ${pointRow.id}");
+        return const None();
+      }
+
+      final coordinates = geometryRow.coordinates.split(',');
+      if (coordinates.length != 2) {
+        throw Exception("Invalid coordinates format: ${geometryRow.coordinates}");
+      }
+      final longitude = double.parse(coordinates[0]);
+      final latitude = double.parse(coordinates[1]);
+
+      final geometry = PointGeometryDto(
+        type: geometryRow.type,
+        coordinates: [longitude, latitude],
+      );
+
+      final properties = PointPropertiesDto(
+        timestamp: propertiesRow.timestamp,
+        altitude: propertiesRow.altitude,
+        speed: propertiesRow.speed,
+        horizontalAccuracy: propertiesRow.horizontalAccuracy,
+        verticalAccuracy: propertiesRow.verticalAccuracy,
+        motion: propertiesRow.motion.split(','),
+        pauses: propertiesRow.pauses,
+        activity: propertiesRow.activity,
+        desiredAccuracy: propertiesRow.desiredAccuracy,
+        deferred: propertiesRow.deferred,
+        significantChange: propertiesRow.significantChange,
+        locationsInPayload: propertiesRow.locationsInPayload,
+        deviceId: propertiesRow.deviceId,
+        wifi: propertiesRow.wifi,
+        batteryState: propertiesRow.batteryState,
+        batteryLevel: propertiesRow.batteryLevel,
+      );
+
+      return Some(PointDto(
+        type: pointRow.type,
+        geometry: geometry,
+        properties: properties,
+      ));
+    } catch (e) {
+
+      if (kDebugMode) {
+        debugPrint("Error retrieving last point: $e");
+      }
+
+      return const None();
+    }
   }
 
   @override

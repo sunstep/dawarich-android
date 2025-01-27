@@ -1,6 +1,7 @@
 
 import 'package:dawarich/data/sources/local/shared_preferences/shared_preference_extensions.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
+import 'package:option_result/option.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserStorageClient {
@@ -22,22 +23,32 @@ class UserStorageClient {
     }
   }
 
-  Future<UserDto?> getStoredUser() async {
+  Future<Option<UserDto>> getStoredUser() async {
+
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getObject("user", (json) => UserDto.fromJson(json));
+    UserDto? user = prefs.getObject<UserDto>("user", (json) => UserDto.fromJson(json));
+
+    if (user != null){
+      return Some(user);
+    }
+
+    return const None();
   }
 
   Future<int> getLoggedInUserId() async {
 
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    UserDto? user = prefs.getObject("user", (json) => UserDto.fromJson(json));
-    int userId = 0;
+    Option<UserDto> userResult = await getStoredUser();
 
-    if (user != null) {
-      userId = user.id;
+    switch (userResult) {
+
+      case Some(value: UserDto user): {
+        return user.id;
+      }
+
+      case None(): {
+        throw StateError("A user id should be present at this point!");
+      }
     }
-
-    return userId;
   }
 
   Future<void> clearUser() async {

@@ -1,44 +1,43 @@
-
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 
 class TrackerPreferencesService {
 
- final ITrackerPreferencesRepository _userPreferencesRepository;
-  TrackerPreferencesService(this._userPreferencesRepository);
+ final ITrackerPreferencesRepository _trackerPreferencesRepository;
+  TrackerPreferencesService(this._trackerPreferencesRepository);
 
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {
 
-    await _userPreferencesRepository.setAutomaticTrackingPreference(trueOrFalse);
+    await _trackerPreferencesRepository.setAutomaticTrackingPreference(trueOrFalse);
   }
 
   Future<void> setPointsPerBatchPreference(int amount) async {
-    await _userPreferencesRepository.setPointsPerBatchPreference(amount);
+    await _trackerPreferencesRepository.setPointsPerBatchPreference(amount);
   }
 
   Future<void> setTrackingFrequencyPreference(int seconds) async {
-    await _userPreferencesRepository.setTrackingFrequencyPreference(seconds);
+    await _trackerPreferencesRepository.setTrackingFrequencyPreference(seconds);
   }
 
   Future<void> setLocationAccuracyPreference(LocationAccuracy accuracy) async {
-    await _userPreferencesRepository.setLocationAccuracyPreference(accuracy.index);
+    await _trackerPreferencesRepository.setLocationAccuracyPreference(accuracy.index);
   }
 
   Future<bool> getAutomaticTrackingPreference() async {
-    return await _userPreferencesRepository.getAutomaticTrackingPreference();
+    return await _trackerPreferencesRepository.getAutomaticTrackingPreference();
   }
 
   Future<int> getPointsPerBatchPreference() async {
-    return await _userPreferencesRepository.getPointsPerBatchPreference();
+    return await _trackerPreferencesRepository.getPointsPerBatchPreference();
   }
 
   Future<int> getTrackingFrequencyPreference() async {
-    return await _userPreferencesRepository.getTrackingFrequencyPreference();
+    return await _trackerPreferencesRepository.getTrackingFrequencyPreference();
   }
 
   Future<LocationAccuracy> getLocationAccuracyPreference() async {
 
-    final int accuracyIndex = await _userPreferencesRepository.getLocationAccuracyPreference();
+    final int accuracyIndex = await _trackerPreferencesRepository.getLocationAccuracyPreference();
 
     if (accuracyIndex >= 0 && accuracyIndex < LocationAccuracy.values.length) {
       return LocationAccuracy.values[accuracyIndex];

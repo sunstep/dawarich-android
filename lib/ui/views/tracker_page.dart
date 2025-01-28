@@ -22,7 +22,7 @@ class TrackerPage extends StatelessWidget {
           Center(
             child: ElevatedButton(
               onPressed: () async {
-                //await viewModel.trackPoint();
+                await viewModel.trackPoint();
               },
               style: Theme.of(context).elevatedButtonTheme.style,
               child: const Text(
@@ -169,7 +169,7 @@ class TrackerPage extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Location Accuracy"),
+                const Text("Location tracking accuracy"),
                 const SizedBox(height: 8),
                 DropdownButton<LocationAccuracy>(
                   value: viewModel.locationAccuracy,
@@ -187,6 +187,10 @@ class TrackerPage extends StatelessWidget {
                 ),
               ],
             ),
+
+            const SizedBox(height: 16),
+
+
 
           ],
         ),

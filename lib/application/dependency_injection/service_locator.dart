@@ -65,7 +65,7 @@ Future<void> injectDependencies() async {
   // Repositories
   getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<ApiConfigClient>(), getIt<UsersClient>(), getIt<UserStorageClient>()));
   getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>()));
-  getIt.registerLazySingleton<ILocalPointInterfaces>(() => LocalPointRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataSource>(), getIt<WiFiDataClient>(), getIt<BatchesClient>(), getIt<UserStorageClient>()));
+  getIt.registerLazySingleton<ILocalPointInterfaces>(() => LocalPointRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataSource>(), getIt<WiFiDataClient>(), getIt<BatchesClient>(), getIt<UserStorageClient>(), getIt<TrackerPreferencesClient>()));
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
   getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>()));
 
@@ -76,9 +76,10 @@ Future<void> injectDependencies() async {
   getIt.registerLazySingleton<LocationService>(() => LocationService());
   getIt.registerLazySingleton<MapService>(() => MapService(getIt<ApiPointService>()));
   getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointInterfaces>()));
-  getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<ILocalPointInterfaces>()));
-  getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));
   getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>()));
+  getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<ILocalPointInterfaces>(), getIt<TrackerPreferencesService>()));
+  getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));
+
 
   // ViewModels
   getIt.registerFactory<SplashViewModel>(() => SplashViewModel(getIt<ApiConfigService>()));

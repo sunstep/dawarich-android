@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/ui/models/local/last_point.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 
 class TrackerPageViewModel with ChangeNotifier {
 
@@ -26,8 +28,6 @@ class TrackerPageViewModel with ChangeNotifier {
   int _trackingFrequency = 10; // in seconds
   int get trackingFrequency => _trackingFrequency;
 
-  int _desiredAccuracyMeters = 5; // in meters
-  // int get desiredAccuracyMeters => _desiredAccuracyMeters;
 
   LocationAccuracy _locationAccuracy = Platform.isAndroid ? LocationAccuracy.high : LocationAccuracy.best;
   LocationAccuracy get locationAccuracy => _locationAccuracy;
@@ -59,10 +59,18 @@ class TrackerPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> trackPoint() async {
-  //
-  //   await _pointService.createPoint();
-  // }
+  Future<void> trackPoint() async {
+
+    Point point = await _pointService.createPoint();
+
+    DateTime parsedTimestamp = DateTime.fromMillisecondsSinceEpoch(int.parse(point.properties.timestamp), isUtc: false);
+    String formattedTimestamp = DateFormat('dd MMM yyyy HH:mm:ss').format(parsedTimestamp);
+    double longitude = point.geometry.coordinates[0];
+    double latitude = point.geometry.coordinates[1];
+
+    LastPoint lastPoint = LastPoint(timestamp: formattedTimestamp, longitude: longitude, latitude: latitude);
+    setLastPoint(lastPoint);
+  }
 
   Future<void> setMaxPointsPerBatch(int? amount) async {
     amount ??= 50; // If null somehow, just fall back to default
@@ -97,7 +105,7 @@ class TrackerPageViewModel with ChangeNotifier {
 
     _locationAccuracy = accuracy;
     await _trackerPreferencesService.setLocationAccuracyPreference(accuracy);
-    _mapLocationAccuracy();
+    _pointService.getAccuracyThreshold(locationAccuracy);
     notifyListeners();
   }
 
@@ -122,12 +130,6 @@ class TrackerPageViewModel with ChangeNotifier {
     }
     return [];
   }
-
-  void _mapLocationAccuracy() {
-
-  }
-
-
 
 
 

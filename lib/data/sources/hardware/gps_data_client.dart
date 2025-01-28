@@ -1,15 +1,14 @@
-
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 class GpsDataClient {
 
-  Future<Result<Position, String>> getPosition() async {
+  Future<Result<Position, String>> getPosition(LocationAccuracy locationAccuracy) async {
 
     try {
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.bestForNavigation,
+        locationSettings: LocationSettings(
+          accuracy: locationAccuracy,
           distanceFilter: 0,
           timeLimit: null,
         ),

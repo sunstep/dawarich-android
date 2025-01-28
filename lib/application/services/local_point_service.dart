@@ -1,25 +1,82 @@
+import 'dart:io';
+
 import 'package:dawarich/application/converters/batch/point_batch_converter.dart';
 import 'package:dawarich/application/converters/batch/point_converter.dart';
+import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_batch.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
 import 'package:dawarich/ui/models/local/last_point.dart';
+import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 class LocalPointService {
 
   final ILocalPointInterfaces _pointCreationInterfaces;
+  final TrackerPreferencesService _trackerPreferencesService;
 
-  LocalPointService(this._pointCreationInterfaces);
+  LocalPointService(this._pointCreationInterfaces, this._trackerPreferencesService);
 
-  // Future<Result<Point, String>> createPoint() async {
-  //
-  //   Option<PointDto> cachedPointResult = await _pointCreationInterfaces.createCachedPoint();
-  //
-  //   Result<PointDto, String> creationResult = await _pointCreationInterfaces.createPoint();
-  //
-  // }
+  Future<Point> createPoint() async {
+
+    Option<PointDto> cachedPointResult = await _pointCreationInterfaces.createCachedPoint();
+
+    if (cachedPointResult case Some(value: PointDto pointDto)) {
+
+      Point cachedPoint = pointDto.toEntity();
+
+      if (await _isPointAcceptable(cachedPoint)) {
+        return cachedPoint;
+      } else {
+        if (kDebugMode) {
+          debugPrint("Cached point was not acceptable for usage.");
+        }
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint("Cached point was not available.");
+      }
+    }
+
+    Result<PointDto, String> creationResult = await _pointCreationInterfaces.createPoint();
+
+    if (creationResult case Ok(value: PointDto pointDto)) {
+
+      Point newPoint = pointDto.toEntity();
+
+      if (await _isPointAcceptable(newPoint)) {
+        return newPoint;
+      } else {
+        debugPrint("Created point is too inaccurate.");
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint("New point not created.");
+      }
+    }
+
+    String error = creationResult.unwrapErr();
+    throw Exception("Failed to create point: $error");
+
+  }
+
+  Future<bool> _isPointAcceptable(Point point) async {
+
+    LocationAccuracy requiredAccuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
+
+    double requiredAccuracyMeters = getAccuracyThreshold(requiredAccuracy);
+
+    if (point.properties.horizontalAccuracy > requiredAccuracyMeters) {
+      debugPrint(
+          "Point is not accurate enough. Required accuracy: $requiredAccuracyMeters meters. Actual: ${point.properties.horizontalAccuracy} meters.");
+      return false;
+    }
+
+    return true; // Point meets the accuracy requirements
+  }
 
   Future<LastPoint?> getLastPoint() async {
 
@@ -53,5 +110,44 @@ class LocalPointService {
     List<Point> points = [];
     PointBatch batch = PointBatch(points: points);
     return await _pointCreationInterfaces.uploadBatch(batch.toDto());
+  }
+
+  double getAccuracyThreshold(LocationAccuracy accuracy) {
+    if (Platform.isIOS) {
+      switch (accuracy) {
+        case LocationAccuracy.lowest:
+          return 3000; // iOS Lowest accuracy
+        case LocationAccuracy.low:
+          return 1000; // iOS Low accuracy
+        case LocationAccuracy.medium:
+          return 100; // iOS Medium accuracy
+        case LocationAccuracy.high:
+          return 10; // iOS High accuracy
+        case LocationAccuracy.bestForNavigation:
+          return 0; // iOS Navigation-specific accuracy
+        case LocationAccuracy.reduced:
+          return 3000; // iOS Reduced accuracy
+        default:
+          throw ArgumentError("Unsupported LocationAccuracy value: $accuracy");
+      }
+    } else if (Platform.isAndroid) {
+      switch (accuracy) {
+        case LocationAccuracy.lowest:
+          return 500; // Android Passive accuracy
+        case LocationAccuracy.low:
+          return 500; // Android Low power accuracy
+        case LocationAccuracy.medium:
+          return 500; // Android Balanced power accuracy
+        case LocationAccuracy.high:
+          return 100; // Android High accuracy
+        case LocationAccuracy.best:
+          return 100; // Android matches High accuracy
+        default:
+          throw ArgumentError("Unsupported LocationAccuracy value: $accuracy");
+      }
+    } else {
+      // Default for unsupported platforms
+      throw UnsupportedError("Unsupported platform for LocationAccuracy handling.");
+    }
   }
 }

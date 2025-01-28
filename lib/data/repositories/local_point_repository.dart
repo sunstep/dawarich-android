@@ -1,7 +1,7 @@
 import 'dart:convert';
-
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart' as sqlite;
+import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
 import 'package:dawarich/data/sources/local/shared_preferences/user_storage_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_properties_dto.dart';
@@ -27,6 +27,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
 
   final BatchesClient _batchesClient;
   final UserStorageClient _userStorageClient;
+  final TrackerPreferencesClient _trackerPreferencesClient;
 
   final sqlite.SQLiteClient _database = sqlite.SQLiteClient();
 
@@ -37,12 +38,25 @@ class LocalPointRepository implements ILocalPointInterfaces {
       this._wiFiDataClient,
       this._batchesClient,
       this._userStorageClient,
+      this._trackerPreferencesClient
     );
 
   @override
   Future<Result<PointDto, String>> createPoint() async {
 
-    Result<Position, String> positionResult = await _gpsDataClient.getPosition();
+    Option<int> accuracyResult = await _trackerPreferencesClient.getLocationAccuracyPreference();
+
+    LocationAccuracy accuracy = LocationAccuracy.high;
+
+    if (accuracyResult case Some(value: int accuracyIndex)) {
+      if (accuracyIndex >= 0 && accuracyIndex < LocationAccuracy.values.length) {
+        LocationAccuracy.values[accuracyIndex];
+      } else {
+         LocationAccuracy.high;
+      }
+    }
+
+    Result<Position, String> positionResult = await _gpsDataClient.getPosition(accuracy);
 
     if (positionResult case Ok(value: Position position)) {
 
@@ -51,7 +65,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           timestamp: DateTime
               .now()
               .toUtc()
-              // .millisecondsSinceEpoch
+              .millisecondsSinceEpoch
               .toString(),
           altitude: position.altitude,
           speed: position.speed,
@@ -88,7 +102,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           timestamp: DateTime
               .now()
               .toUtc()
-              // .millisecondsSinceEpoch
+              .millisecondsSinceEpoch
               .toString(),
           altitude: position.altitude,
           speed: position.speed,

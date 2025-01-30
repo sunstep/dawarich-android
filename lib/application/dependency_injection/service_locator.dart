@@ -28,9 +28,9 @@ import 'package:dawarich/data_contracts/interfaces/local_point_repository_interf
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
+import 'package:dawarich/ui/models/local/batch_explorer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
-import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/splash_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
@@ -93,14 +93,6 @@ Future<void> injectDependencies() async {
     },
   );
 
-  getIt.registerFactory<PointsPageViewModel>(
-    () {
-      final PointsPageViewModel viewModel = PointsPageViewModel();
-      viewModel.initialize();
-      return viewModel;
-    }
-  );
-
   getIt.registerFactory<StatsPageViewModel>(
     () {
       final StatsPageViewModel viewModel = StatsPageViewModel(getIt<StatsService>());
@@ -112,7 +104,13 @@ Future<void> injectDependencies() async {
   getIt.registerFactory<TrackerPageViewModel>(
     () {
       final TrackerPageViewModel viewModel = TrackerPageViewModel(getIt<LocalPointService>(), getIt<TrackerPreferencesService>());
-      viewModel.initialize();
+      return viewModel;
+    }
+  );
+
+  getIt.registerFactory<BatchExplorerViewModel>(
+    () {
+      final BatchExplorerViewModel viewModel = BatchExplorerViewModel(getIt<LocalPointService>());
       return viewModel;
     }
   );

@@ -1,14 +1,23 @@
+import 'package:dawarich/main.dart';
+import 'package:dawarich/ui/widgets/appbar.dart';
+import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
-import 'package:dawarich/ui/widgets/appbar.dart';
-import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
-class TrackerPage extends StatelessWidget {
+class TrackerPage extends StatefulWidget {
 
   const TrackerPage({super.key});
+
+  @override
+  State<TrackerPage> createState() => TrackerPageState();
+}
+
+class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, RouteAware {
+
+  late TrackerPageViewModel _viewModel;
 
   Widget _pageContent(BuildContext context) {
     TrackerPageViewModel viewModel = context.watch<TrackerPageViewModel>();
@@ -19,18 +28,6 @@ class TrackerPage extends StatelessWidget {
         children: [
           _lastPointInformation(context, viewModel),
           const SizedBox(height: 12),
-          Center(
-            child: ElevatedButton(
-              onPressed: () async {
-                await viewModel.trackPoint();
-              },
-              style: Theme.of(context).elevatedButtonTheme.style,
-              child: const Text(
-                  "Track Point",
-              ),
-
-            ),
-          ),
 
           const Divider(height: 32),
 
@@ -68,6 +65,30 @@ class TrackerPage extends StatelessWidget {
               _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
               const SizedBox(height: 4),
               _keyValueRow("Points in batch:", viewModel.batchPointCount.toString()),
+
+              const SizedBox(height: 12),
+              Center(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Evenly distributes buttons
+                    children: [
+                      OutlinedButton(
+                        onPressed: () async {
+                          await viewModel.trackPoint();
+                        },
+                        child: const Text("Track point"),
+                      ),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, "/batchExplorer");
+                        },
+                        child: const Text("View Batch"),
+                      ),
+                    ],
+                  ),
+                ),
+              )
             ],
           ),
         ),
@@ -81,30 +102,6 @@ class TrackerPage extends StatelessWidget {
       children: [
         Text(key, style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(value),
-      ],
-    );
-  }
-
-  Widget _accuracyOptions(BuildContext context, TrackerPageViewModel viewModel) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Location Accuracy"),
-        Wrap(
-          spacing: 8.0,
-          children: viewModel.accuracyOptions.map((option) {
-            final isSelected = viewModel.locationAccuracy == option['value'];
-            return ChoiceChip(
-              label: Text(option['label'] as String),
-              selected: isSelected,
-              onSelected: (_) =>
-                  viewModel.setLocationAccuracy(option['value'] as LocationAccuracy),
-              selectedColor: Colors.blue,
-              backgroundColor: Colors.grey[300],
-              labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
-            );
-          }).toList(),
-        ),
       ],
     );
   }
@@ -198,7 +195,7 @@ class TrackerPage extends StatelessWidget {
     );
   }
 
-  Widget _pageBase(BuildContext context) {
+  Widget _pageBase(BuildContext context, TrackerPageViewModel viewModel) {
     return Scaffold(
       appBar: const Appbar(title: "Tracker", fontSize: 40),
       body: _pageContent(context),
@@ -207,14 +204,47 @@ class TrackerPage extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _viewModel = getIt<TrackerPageViewModel>();
+    _viewModel.initialize();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    TrackerPageViewModel viewModel = getIt<TrackerPageViewModel>();
-    return ChangeNotifierProvider.value(value:
-      viewModel,
-      child: Builder(
-        builder: (context) => _pageBase(context)
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Consumer<TrackerPageViewModel>(
+        builder: (context, vm, child) => _pageBase(context, vm)
       ),
     );
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _viewModel.initialize();
+    }
+  }
+
+  @override
+  void didPopNext() {
+    _viewModel.initialize();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
 
 }

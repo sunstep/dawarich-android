@@ -2,7 +2,6 @@ import 'package:dawarich/data/sources/local/database/tables/point_geometry_table
 import 'package:dawarich/data/sources/local/database/tables/point_properties_table.dart';
 import 'package:drift/drift.dart';
 
-@DataClassName('PointDto')
 class PointsTable extends Table {
   IntColumn get id => integer().autoIncrement()(); // Primary Key
   TextColumn get type => text()(); // "type" field in PointDto

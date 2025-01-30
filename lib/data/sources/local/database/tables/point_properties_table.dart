@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-@DataClassName('PointPropertiesDto')
 class PointPropertiesTable extends Table {
   IntColumn get id => integer().autoIncrement()(); // Primary Key
   TextColumn get timestamp => text()(); // Timestamp field

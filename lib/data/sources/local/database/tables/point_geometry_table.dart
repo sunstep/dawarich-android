@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-@DataClassName('PointGeometryDto')
 class PointGeometryTable extends Table {
   IntColumn get id => integer().autoIncrement()(); // Primary Key
   TextColumn get type => text()(); // "type" field in PointGeometryDto

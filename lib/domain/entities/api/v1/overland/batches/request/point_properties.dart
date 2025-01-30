@@ -36,27 +36,6 @@ class PointProperties {
     required this.batteryLevel,
   });
 
-  factory PointProperties.fromJson(Map<String, dynamic> json) {
-    return PointProperties(
-      timestamp: json['timestamp'],
-      altitude: (json['altitude'] as num).toDouble(),
-      speed: (json['speed'] as num).toDouble(),
-      horizontalAccuracy: (json['horizontal_accuracy'] as num).toDouble(),
-      verticalAccuracy: (json['vertical_accuracy'] as num).toDouble(),
-      motion: List<String>.from(json['motion']),
-      pauses: json['pauses'],
-      activity: json['activity'],
-      desiredAccuracy: (json['desired_accuracy'] as num).toDouble(),
-      deferred: (json['deferred'] as num).toDouble(),
-      significantChange: json['significant_change'],
-      locationsInPayload: json['locations_in_payload'],
-      deviceId: json['device_id'],
-      wifi: json['wifi'],
-      batteryState: json['battery_state'],
-      batteryLevel: json['battery_level'],
-    );
-  }
-
   Map<String, dynamic> toJson() {
     return {
       'timestamp': timestamp,

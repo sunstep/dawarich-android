@@ -9,7 +9,10 @@ abstract interface class ILocalPointInterfaces {
   Future<Option<PointDto>> createCachedPoint();
   Future<Result<void, String>> storePoint(PointDto point);
   Future<Option<PointDto>> getLastPoint();
-  Future<Result<void, String>> uploadBatch(PointBatchDto batch);
+  Future<PointBatchDto> getCurrentBatch();
   Future<int> getBatchPointCount();
   Future<bool> isDuplicatePoint(PointDto point);
+  Future<Result<void, String>> deletePoint(int pointId);
+  Future<Result<void, String>> clearBatch();
+  // Future<Result<void, String>> uploadBatch(PointBatchDto batch);
 }

@@ -28,6 +28,8 @@ class PointsPageViewModel with ChangeNotifier {
     DateTime now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
     _endDate = DateTime(now.year, now.month, now.day, 23, 59, 999, 999);
+
+    _initialize();
   }
 
   DateTime get startDate => _startDate;
@@ -127,33 +129,33 @@ class PointsPageViewModel with ChangeNotifier {
     setPagePoints(points.sublist(start, end > points.length ? points.length : end));
   }
 
-  Future<void> initialize() async {
+  Future<void> _initialize() async {
 
-    setLoading(true);
+      setLoading(true);
 
-    int amountOfPages = await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
-    setTotalPages(amountOfPages);
+      int amountOfPages = await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
+      setTotalPages(amountOfPages);
 
-    Option<List<ApiPoint>> result =  await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
+      Option<List<ApiPoint>> result =  await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
 
-    switch (result) {
+      switch (result) {
 
-      case Some(value: List<ApiPoint> fetchedPoints): {
+        case Some(value: List<ApiPoint> fetchedPoints): {
 
-        List<ApiPointViewModel> points = fetchedPoints
-            .map((point) => ApiPointViewModel(point))
-            .toList();
+          List<ApiPointViewModel> points = fetchedPoints
+              .map((point) => ApiPointViewModel(point))
+              .toList();
 
-        setPoints(points);
-        setCurrentPagePoints();
+          setPoints(points);
+          setCurrentPagePoints();
 
-        setLoading(false);
+          setLoading(false);
+        }
+
+        case None(): {
+          // Handle error
+        }
       }
-
-      case None(): {
-        // Handle error
-      }
-    }
 
   }
 

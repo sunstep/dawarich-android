@@ -1,6 +1,28 @@
-
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_geometry.dart';
+import 'package:dawarich/ui/models/api/v1/overland/batches/request/point_geometry_viewmodel.dart';
+
+extension PointGeometryEntityToViewmodel on PointGeometry {
+
+  PointGeometryViewModel toViewModel() {
+    return PointGeometryViewModel(type: type, coordinates: coordinates);
+  }
+}
+
+extension PointGeometryViewModelToEntity on PointGeometryViewModel {
+
+  PointGeometry toEntity() {
+    return PointGeometry(type: type, coordinates: coordinates);
+  }
+}
+
+
+extension PointGeometryDtoToEntity on PointGeometryDto {
+
+  PointGeometry toEntity() {
+    return PointGeometry(type: type, coordinates: coordinates);
+  }
+}
 
 extension PointGeometryToDto on PointGeometry {
 
@@ -9,9 +31,3 @@ extension PointGeometryToDto on PointGeometry {
   }
 }
 
-extension PointGeometryDtoToEntity on PointGeometryDto {
-
-  PointGeometry toEntity() {
-    return PointGeometry(type: type, coordinates: coordinates);
-  }
-}

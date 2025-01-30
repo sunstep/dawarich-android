@@ -50,22 +50,6 @@ class CustomDrawer extends StatelessWidget {
                 }
               ),
               ListTile(
-                leading: const Icon(Icons.download),
-                title: const Text("Imports"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.imports);
-                }
-              ),
-              ListTile(
-                leading: const Icon(Icons.publish),
-                title: const Text("Exports"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.exports);
-                }
-              ),
-              ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text("Settings"),
                 onTap: () {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
+import 'package:dawarich/data/sources/local/database/extensions/mappers/point_mapper.dart';
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart' as sqlite;
 import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
 import 'package:dawarich/data/sources/local/shared_preferences/user_storage_client.dart';
@@ -137,7 +138,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           geometryId: Value(await _storeGeometry(point.geometry)),
           propertiesId: Value(await _storeProperties(point.properties)),
           userId: Value(await _userStorageClient.getLoggedInUserId()),
-        ),
+        )
       );
       return const Ok(null); // Indicate success
     } catch (e) {
@@ -181,66 +182,27 @@ class LocalPointRepository implements ILocalPointInterfaces {
   Future<Option<PointDto>> getLastPoint() async {
     try {
       // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
-      final pointRow = await (_database.select(_database.pointsTable)
-        ..orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc)])
-        ..limit(1))
-          .getSingleOrNull();
+      final int userId = await _userStorageClient.getLoggedInUserId();
 
-      // If no point exists, return null.
-      if (pointRow == null) {
-        return const None();
-      }
+      final queryResult = _database.select(_database.pointsTable)
+        .join([
+          innerJoin(
+            _database.pointGeometryTable,
+            _database.pointGeometryTable.id.equalsExp(_database.pointsTable.geometryId),
+          ),
+          innerJoin(
+            _database.pointPropertiesTable,
+            _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
+          ),
+        ])
+        ..orderBy([OrderingTerm(expression: _database.pointsTable.id, mode: OrderingMode.desc)]) // Apply ordering last
+        ..limit(1)
+        ..where(_database.pointsTable.userId.equals(userId));
 
-      // Fetch related geometry and properties using their foreign key IDs.
-      final geometryRow = await (_database.select(_database.pointGeometryTable)
-        ..where((g) => g.id.equals(pointRow.geometryId)))
-          .getSingleOrNull();
+      return Some(await queryResult.map((row) => row.toPointDto(_database))
+          .getSingle());
 
-      final propertiesRow = await (_database.select(_database.pointPropertiesTable)
-        ..where((p) => p.id.equals(pointRow.propertiesId)))
-          .getSingleOrNull();
 
-      if (geometryRow == null || propertiesRow == null) {
-        debugPrint("Error: Missing geometry or properties for point ID ${pointRow.id}");
-        return const None();
-      }
-
-      final coordinates = geometryRow.coordinates.split(',');
-      if (coordinates.length != 2) {
-        throw Exception("Invalid coordinates format: ${geometryRow.coordinates}");
-      }
-      final longitude = double.parse(coordinates[0]);
-      final latitude = double.parse(coordinates[1]);
-
-      final geometry = PointGeometryDto(
-        type: geometryRow.type,
-        coordinates: [longitude, latitude],
-      );
-
-      final properties = PointPropertiesDto(
-        timestamp: propertiesRow.timestamp,
-        altitude: propertiesRow.altitude,
-        speed: propertiesRow.speed,
-        horizontalAccuracy: propertiesRow.horizontalAccuracy,
-        verticalAccuracy: propertiesRow.verticalAccuracy,
-        motion: propertiesRow.motion.split(','),
-        pauses: propertiesRow.pauses,
-        activity: propertiesRow.activity,
-        desiredAccuracy: propertiesRow.desiredAccuracy,
-        deferred: propertiesRow.deferred,
-        significantChange: propertiesRow.significantChange,
-        locationsInPayload: propertiesRow.locationsInPayload,
-        deviceId: propertiesRow.deviceId,
-        wifi: propertiesRow.wifi,
-        batteryState: propertiesRow.batteryState,
-        batteryLevel: propertiesRow.batteryLevel,
-      );
-
-      return Some(PointDto(
-        type: pointRow.type,
-        geometry: geometry,
-        properties: properties,
-      ));
     } catch (e) {
 
       if (kDebugMode) {
@@ -248,6 +210,31 @@ class LocalPointRepository implements ILocalPointInterfaces {
       }
 
       return const None();
+    }
+  }
+
+  @override
+  Future<PointBatchDto> getCurrentBatch() async {
+
+    try {
+      final query = _database.select(_database.pointsTable).join([
+        innerJoin(
+          _database.pointGeometryTable,
+          _database.pointGeometryTable.id.equalsExp(_database.pointsTable.geometryId),
+        ),
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
+        ),
+      ])
+        ..where(_database.pointsTable.isUploaded.equals(false) & _database.pointsTable.userId.equals(await _userStorageClient.getLoggedInUserId()));
+
+      final List<PointDto> batchPoints = await query.map((row) => row.toPointDto(_database))
+          .get();
+
+      return PointBatchDto(points: batchPoints);
+    } catch (e) {
+      throw Exception("Failed to retrieve batch points: $e");
     }
   }
 
@@ -293,21 +280,56 @@ class LocalPointRepository implements ILocalPointInterfaces {
     return count.isNotEmpty;
   }
 
-
   @override
-  Future<Result<void, String>> uploadBatch(PointBatchDto batch) async {
+  Future<Result<void, String>> deletePoint(int pointId) async {
+    try {
+      final int userId = await _userStorageClient.getLoggedInUserId();
 
-    Result<(), String> result = await _batchesClient.post(batch);
+      final deletedCount = await (_database.delete(_database.pointsTable)
+        ..where((t) => t.id.equals(pointId) & t.userId.equals(userId))
+      ).go();
 
-    switch (result) {
-      case Ok(value: ()): {
-        return const Ok(null);
+      if (deletedCount == 0) {
+        return const Err("Point not found.");
       }
-      case Err(value: String error): {
-        debugPrint("Failed to upload batch: $error");
-        return Err(error);
-      }
+
+      return const Ok(null);
+    } catch (e) {
+      return Err("Failed to delete point: $e");
     }
   }
+
+  @override
+  Future<Result<void, String>> clearBatch() async {
+    try {
+      final int userId = await _userStorageClient.getLoggedInUserId();
+
+      await (_database.delete(_database.pointsTable)
+        ..where((t) => t.isUploaded.equals(false) & t.userId.equals(userId))
+      ).go();
+
+      return const Ok(null);
+    } catch (e) {
+      return Err("Failed to clear batch: $e");
+    }
+  }
+
+
+
+  // @override
+  // Future<Result<void, String>> uploadBatch(PointBatchDto batch) async {
+  //
+  //   Result<(), String> result = await _batchesClient.post(batch);
+  //
+  //   switch (result) {
+  //     case Ok(value: ()): {
+  //       return const Ok(null);
+  //     }
+  //     case Err(value: String error): {
+  //       debugPrint("Failed to upload batch: $error");
+  //       return Err(error);
+  //     }
+  //   }
+  // }
 
 }

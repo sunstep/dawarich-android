@@ -1,3 +1,4 @@
+import 'package:dawarich/ui/views/batch_explorer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/views/splash_page.dart';
 import 'package:dawarich/ui/views/connect_page.dart';
@@ -17,6 +18,7 @@ class AppRouter {
   static const String stats = '/stats';
   static const String points = '/points';
   static const String tracker = '/tracker';
+  static const String batchExplorer = '/batchExplorer';
   static const String imports = '/imports';
   static const String exports = '/exports';
   static const String settings = '/settings';
@@ -41,6 +43,9 @@ class AppRouter {
       }
       case tracker: {
         return MaterialPageRoute(builder: (_) => const TrackerPage());
+      }
+      case batchExplorer: {
+        return MaterialPageRoute(builder: (_) => const BatchExplorerPage());
       }
       case imports: {
         return MaterialPageRoute(builder: (_) => const ImportsPage());

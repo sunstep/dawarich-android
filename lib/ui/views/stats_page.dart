@@ -101,12 +101,12 @@ class StatsPage extends StatelessWidget {
         color: Theme.of(context).cardColor, // Use cardColor for better contrast
         borderRadius: BorderRadius.circular(10.0),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.4), // Subtle border
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.4 * 255), // Subtle border
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2), // Slightly darker shadow
+            color: Colors.black.withValues(alpha: 0.2 * 255), // Slightly darker shadow
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 2), // Adjusted offset for better lift effect

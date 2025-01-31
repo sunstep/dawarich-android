@@ -1,8 +1,8 @@
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
@@ -15,7 +15,7 @@ class ApiPointRepository implements IApiPointInterfaces {
   ApiPointRepository(this._pointsClient, this._batchesClient);
 
   @override
-  Future<Result<void, String>> uploadBatch(PointBatchDto batch) async {
+  Future<Result<void, String>> uploadBatch(ApiPointBatchDto batch) async {
 
     Result<dynamic, String> result = await _batchesClient.post(batch);
 
@@ -34,7 +34,7 @@ class ApiPointRepository implements IApiPointInterfaces {
   }
 
   @override
-  Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
+  Future<Option<List<ReceivedApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
 
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
@@ -45,18 +45,18 @@ class ApiPointRepository implements IApiPointInterfaces {
 
       case Ok(value: Map<String, String?> headers): {
         int pages = int.parse(headers['x-total-pages']!);
-        final List<ApiPointDTO> allPoints = [];
+        final List<ReceivedApiPointDTO> allPoints = [];
 
-        final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
+        final List<Future<Result<List<ReceivedApiPointDTO>, String>>> responses = [];
         for (int page = 1; page <= pages; page++) {
           responses.add(_pointsClient.getPoints(startDateString, endDateString, perPage, page));
         }
 
-        final List<Result<List<ApiPointDTO>, String>> fetchResults = await Future.wait(responses);
-        for (final Result<List<ApiPointDTO>, String> fetchResult in fetchResults) {
+        final List<Result<List<ReceivedApiPointDTO>, String>> fetchResults = await Future.wait(responses);
+        for (final Result<List<ReceivedApiPointDTO>, String> fetchResult in fetchResults) {
 
           switch (fetchResult){
-            case Ok(value: List<ApiPointDTO> page): {
+            case Ok(value: List<ReceivedApiPointDTO> page): {
               allPoints.addAll(page);
             }
             case Err(value: String error): {
@@ -145,13 +145,13 @@ class ApiPointRepository implements IApiPointInterfaces {
   }
 
   @override
-  Future<Option<ApiPointDTO>> fetchLastPoint() async {
+  Future<Option<ReceivedApiPointDTO>> fetchLastPoint() async {
 
-    Result<ApiPointDTO, String> result  = await _pointsClient.getLastPoint();
+    Result<ReceivedApiPointDTO, String> result  = await _pointsClient.getLastPoint();
 
     switch (result) {
 
-      case Ok(value: ApiPointDTO dto): return Some(dto);
+      case Ok(value: ReceivedApiPointDTO dto): return Some(dto);
       case Err(value: String error): {
         debugPrint("Failed to fetch last point: $error");
         return const None();

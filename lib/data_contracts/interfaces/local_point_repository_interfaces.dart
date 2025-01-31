@@ -1,18 +1,18 @@
-
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_batch_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_batch_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
 import 'package:option_result/option_result.dart';
 
 abstract interface class ILocalPointInterfaces {
 
-  Future<Result<PointDto, String>> createPoint();
-  Future<Option<PointDto>> createCachedPoint();
-  Future<Result<void, String>> storePoint(PointDto point);
-  Future<Option<PointDto>> getLastPoint();
+  Future<Result<ApiBatchPointDto, String>> createPoint();
+  Future<Option<ApiBatchPointDto>> createCachedPoint();
+  Future<Result<void, String>> storePoint(ApiBatchPointDto point);
+  Future<Option<BatchPointDto>> getLastPoint();
   Future<PointBatchDto> getCurrentBatch();
   Future<int> getBatchPointCount();
-  Future<bool> isDuplicatePoint(PointDto point);
+  Future<bool> isDuplicatePoint(BatchPointDto point);
+  Future<Result<int, String>> markBatchAsUploaded(List<int> batchIds);
   Future<Result<void, String>> deletePoint(int pointId);
   Future<Result<void, String>> clearBatch();
-  // Future<Result<void, String>> uploadBatch(PointBatchDto batch);
 }

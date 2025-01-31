@@ -1,0 +1,46 @@
+import 'package:dawarich/domain/entities/local/database/batch/batch_point.dart';
+import 'package:dawarich/domain/entities/local/database/batch/point_batch.dart';
+import 'package:dawarich/ui/converters/batch/point_converter.dart';
+import 'package:dawarich/ui/models/api/v1/overland/batches/request/api_batch_point.dart';
+import 'package:dawarich/ui/models/api/v1/overland/batches/request/api_point_batch.dart';
+import 'package:dawarich/ui/models/api/v1/overland/batches/request/point_batch_viewmodel.dart';
+import 'package:dawarich/ui/models/api/v1/overland/batches/request/point_viewmodel.dart';
+import 'package:intl/intl.dart';
+
+extension BatchEntityToViewModel on PointBatch {
+
+  PointBatchViewModel toViewModel() {
+    List<BatchPointViewModel> points = this.points
+        .map((point) => point.toViewModel())
+        .toList();
+    return PointBatchViewModel(points: points);
+  }
+}
+
+extension BatchViewModelToEntity on PointBatchViewModel {
+
+  PointBatch toEntity() {
+    List<BatchPoint> points = this.points
+      .map((point) => point.toEntity())
+      .toList();
+    return PointBatch(points: points);
+  }
+}
+
+extension LocalBatchToApi on PointBatchViewModel {
+  ApiPointBatchViewModel toApi() {
+      List<ApiBatchPointViewModel> points = this.points
+        .map((point) {
+          final String timestamp = point.properties.timestamp;
+          final DateFormat formatter = DateFormat('dd MMM yyyy HH:mm:ss');
+          final parsedTimestamp = formatter.parse(timestamp);
+          point.properties.timestamp = parsedTimestamp
+            .toUtc()
+            .millisecondsSinceEpoch
+            .toString();
+          return point.toApi();
+        })
+        .toList();
+    return ApiPointBatchViewModel(points: points);
+  }
+}

@@ -1,14 +1,12 @@
 import 'package:dawarich/ui/models/api/v1/overland/batches/request/batch_point_geometry_viewmodel.dart';
 import 'package:dawarich/ui/models/api/v1/overland/batches/request/batch_point_properties_viewmodel.dart';
 
-class BatchPointViewModel {
-  final int id;
+class ApiBatchPointViewModel {
   final String type;
   final BatchPointGeometryViewModel geometry;
   final BatchPointPropertiesViewModel properties;
 
-  BatchPointViewModel({
-    required this.id,
+  ApiBatchPointViewModel({
     required this.type,
     required this.geometry,
     required this.properties,

@@ -62,19 +62,27 @@ class BatchExplorerPage extends StatelessWidget{
 
           // Delete All Points Button
           if (!viewModel.isLoadingPoints && viewModel.hasPoints)
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () => _confirmClearBatch(context, viewModel),
-                child: const Text("Delete All Points"),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Ensures buttons are evenly spaced
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: () => _confirmClearBatch(context, viewModel),
+                  child: const Text("Delete All Points"),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  onPressed: () => _confirmUploadBatch(context, viewModel),
+                  child: const Text("Upload Batch"),
+                ),
+              ],
             ),
         ],
       ),
     );
   }
 
-  void _confirmDeletePoint(BuildContext context, BatchExplorerViewModel viewModel, PointViewModel point) {
+  void _confirmDeletePoint(BuildContext context, BatchExplorerViewModel viewModel, BatchPointViewModel point) {
     showDialog(
       context: context,
       builder: (BuildContext ctx) {
@@ -123,6 +131,30 @@ class BatchExplorerPage extends StatelessWidget{
         );
       },
     );
+  }
+
+  void _confirmUploadBatch(BuildContext context, BatchExplorerViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: const Text("Upload batch"),
+          content: const Text("Are you sure you want to upload the batch?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                viewModel.uploadBatch();
+              },
+              child: const Text("Upload")
+            )
+          ],
+        );
+      });
   }
 
   Widget _pageBase(BuildContext context) {

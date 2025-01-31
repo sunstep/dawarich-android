@@ -1,10 +1,8 @@
-
-class PointGeometryDto {
-
+class BatchPointGeometryViewModel {
   final String type;
   final List<double> coordinates;
 
-  PointGeometryDto({required this.type, required this.coordinates});
+  BatchPointGeometryViewModel({required this.type, required this.coordinates});
 
   Map<String, dynamic> toJson() {
     return {

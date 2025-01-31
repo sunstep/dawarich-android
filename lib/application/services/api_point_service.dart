@@ -1,7 +1,7 @@
-import 'package:dawarich/application/converters/batch/point_batch_converter.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
+import 'package:dawarich/application/converters/batch/api_point_batch_converter.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_batch.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_point_batch.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/slim_api_point.dart';
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
@@ -13,7 +13,7 @@ class ApiPointService {
   final IApiPointInterfaces _pointInterfaces;
   ApiPointService(this._pointInterfaces);
 
-  Future<bool> uploadBatch(PointBatch batch) async {
+  Future<bool> uploadBatch(ApiPointBatch batch) async {
 
     Result<void, String> result = await _pointInterfaces.uploadBatch(batch.toDto());
     return result.isOk();
@@ -21,10 +21,10 @@ class ApiPointService {
 
   Future<Option<List<ApiPoint>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
 
-    Option<List<ApiPointDTO>> result = await _pointInterfaces.fetchAllPoints(startDate, endDate, perPage);
+    Option<List<ReceivedApiPointDTO>> result = await _pointInterfaces.fetchAllPoints(startDate, endDate, perPage);
 
     switch (result) {
-      case Some(value: List<ApiPointDTO> points): {
+      case Some(value: List<ReceivedApiPointDTO> points): {
         return Some(points
             .map((point) => ApiPoint(point))
             .toList());

@@ -64,7 +64,7 @@ Future<void> injectDependencies() async {
 
   // Repositories
   getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<ApiConfigClient>(), getIt<UsersClient>(), getIt<UserStorageClient>()));
-  getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>()));
+  getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>(), getIt<BatchesClient>()));
   getIt.registerLazySingleton<ILocalPointInterfaces>(() => LocalPointRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataSource>(), getIt<WiFiDataClient>(), getIt<BatchesClient>(), getIt<UserStorageClient>(), getIt<TrackerPreferencesClient>()));
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
   getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>()));

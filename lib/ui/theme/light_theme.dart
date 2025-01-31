@@ -88,7 +88,7 @@ class LightTheme {
     ),
     dividerColor: Colors.black,
     toggleButtonsTheme: ToggleButtonsThemeData(
-      fillColor: Colors.blueAccent.withOpacity(0.3),
+      fillColor: Colors.blueAccent.withValues(alpha: 0.3 * 255),
       selectedBorderColor: Colors.blueAccent,
       borderColor: Colors.black,
       selectedColor: Colors.blueAccent,

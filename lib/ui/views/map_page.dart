@@ -104,9 +104,9 @@ class MapPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.grey.withOpacity(0.2),
-                        Colors.grey.withOpacity(0.6),
-                        Colors.grey.withOpacity(0.2),
+                        Colors.grey.withValues(alpha: 0.2 * 255),
+                        Colors.grey.withValues(alpha: 0.6 * 255),
+                        Colors.grey.withValues(alpha: 0.2 * 255),
                       ],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
@@ -176,9 +176,9 @@ class MapPage extends StatelessWidget {
                 Polyline(
                   points: mapModel.points,
                   strokeWidth: 6.0,
-                  color: Colors.blue.withOpacity(0.8),
+                  color: Colors.blue.withValues(alpha: 0.8 * 255),
                   borderStrokeWidth: 2.0, // Adds a subtle border for contrast
-                  borderColor: Colors.white.withOpacity(0.7),
+                  borderColor: Colors.white.withValues(alpha: 0.7 * 255),
                 ),
               ],
             ),

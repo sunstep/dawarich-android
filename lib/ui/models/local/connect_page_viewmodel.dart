@@ -42,23 +42,6 @@ class ConnectViewModel with ChangeNotifier {
     }
   }
 
-  Future<bool> logIn(String email, String password) async {
-    _setLoggingIn(true);
-    _setErrorMessage(null);
-
-    await Future.delayed(const Duration(seconds: 2));
-    final result = email == 'test@example.com' && password == 'password123'; // Mock logic
-
-    _setLoggingIn(false);
-
-    if (result) {
-      return true;
-    } else {
-      _setErrorMessage("Invalid email or password.");
-      return false;
-    }
-  }
-
   Future<bool> tryLoginApiKey(String apiKey) async {
 
     _setLoggingIn(true);

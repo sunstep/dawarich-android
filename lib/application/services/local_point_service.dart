@@ -139,7 +139,7 @@ class LocalPointService {
   }
 
   String formatTimestamp(String time) {
-    DateTime parsedTimestamp = DateTime.parse(time);
+    DateTime parsedTimestamp = DateTime.parse(time).toLocal();
     String formattedTimestamp = DateFormat('dd MMM yyyy HH:mm:ss').format(parsedTimestamp);
 
     return formattedTimestamp;

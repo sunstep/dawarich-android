@@ -22,7 +22,8 @@ class BatchesClient {
   Future<Result<dynamic, String>> post(ApiPointBatchDto batch) async {
 
     final Uri url = Uri.parse("${_apiInfo.host}/api/v1/overland/batches?api_key=${_apiInfo.apiKey}");
-    final http.Response response = await http.post(url, body: jsonEncode(batch.toJson()));
+    final String body = jsonEncode(batch.toJson());
+    final http.Response response = await http.post(url, body: body);
 
     if (response.statusCode == 201) {
       final dynamic responseBody = jsonDecode(response.body);

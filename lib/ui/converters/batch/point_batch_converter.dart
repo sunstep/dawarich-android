@@ -33,11 +33,13 @@ extension LocalBatchToApi on PointBatchViewModel {
         .map((point) {
           final String timestamp = point.properties.timestamp;
           final DateFormat formatter = DateFormat('dd MMM yyyy HH:mm:ss');
-          final parsedTimestamp = formatter.parse(timestamp);
-          point.properties.timestamp = parsedTimestamp
-            .toUtc()
-            .millisecondsSinceEpoch
-            .toString();
+          final DateTime parsedTimestamp = formatter.parse(timestamp);
+          final DateTime modifiedTimestamp = parsedTimestamp
+            .toUtc();
+            // .millisecondsSinceEpoch;
+
+          point.properties.timestamp = DateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+              .format(modifiedTimestamp);
           return point.toApi();
         })
         .toList();

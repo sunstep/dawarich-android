@@ -11,7 +11,15 @@ class BatteryDataSource {
   Future<String> getBatteryState() async {
 
     BatteryState state = await _battery.batteryState;
-    return state.toString().split(".")[1];
+    String value = state.toString().split(".")[1];
+
+    if (value == "connectedNotCharging") {
+      value = "full";
+    } else if (value == "discharging") {
+      value = "unplugged";
+    }
+
+    return value;
   }
 
   Future<int> getBatteryLevel() async => await _battery.batteryLevel;

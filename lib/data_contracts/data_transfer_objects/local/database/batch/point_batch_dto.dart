@@ -1,8 +1,8 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
 
 class PointBatchDto {
 
-  final List<PointDto> points;
+  final List<BatchPointDto> points;
 
   PointBatchDto({required this.points});
 

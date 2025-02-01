@@ -1,6 +1,6 @@
 
-class PointPropertiesViewModel {
-  String timestamp;
+class BatchPointProperties {
+  final String timestamp;
   final double altitude;
   final double speed;
   final double horizontalAccuracy;
@@ -15,9 +15,9 @@ class PointPropertiesViewModel {
   final String deviceId;
   final String wifi;
   final String batteryState;
-  final int batteryLevel;
+  final double batteryLevel;
 
-  PointPropertiesViewModel({
+  BatchPointProperties({
     required this.timestamp,
     required this.altitude,
     required this.speed,

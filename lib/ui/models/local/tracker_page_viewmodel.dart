@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/models/local/last_point.dart';
 import 'package:geolocator/geolocator.dart';
@@ -41,6 +41,7 @@ class TrackerPageViewModel with ChangeNotifier {
   Future<void> initialize() async {
 
     // Get last point;
+    await _trackerPreferencesService.initialize();
     await getLastPoint();
     await getPointInBatchCount();
 
@@ -76,7 +77,7 @@ class TrackerPageViewModel with ChangeNotifier {
 
   Future<void> trackPoint() async {
 
-    Point point = await _pointService.createPoint();
+    ApiBatchPoint point = await _pointService.createPoint();
 
     String formattedTimestamp = _pointService.formatTimestamp(point.properties.timestamp);
     double longitude = point.geometry.coordinates[0];

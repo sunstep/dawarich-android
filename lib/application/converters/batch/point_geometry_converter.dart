@@ -1,33 +1,17 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_geometry.dart';
-import 'package:dawarich/ui/models/api/v1/overland/batches/request/point_geometry_viewmodel.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_geometry_dto.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/batch_point_geometry.dart';
 
-extension PointGeometryEntityToViewmodel on PointGeometry {
+extension PointGeometryDtoToEntity on BatchPointGeometryDto {
 
-  PointGeometryViewModel toViewModel() {
-    return PointGeometryViewModel(type: type, coordinates: coordinates);
+  BatchPointGeometry toEntity() {
+    return BatchPointGeometry(type: type, coordinates: coordinates);
   }
 }
 
-extension PointGeometryViewModelToEntity on PointGeometryViewModel {
+extension PointGeometryToDto on BatchPointGeometry {
 
-  PointGeometry toEntity() {
-    return PointGeometry(type: type, coordinates: coordinates);
-  }
-}
-
-
-extension PointGeometryDtoToEntity on PointGeometryDto {
-
-  PointGeometry toEntity() {
-    return PointGeometry(type: type, coordinates: coordinates);
-  }
-}
-
-extension PointGeometryToDto on PointGeometry {
-
-  PointGeometryDto toDto() {
-    return PointGeometryDto(type: type, coordinates: coordinates);
+  BatchPointGeometryDto toDto() {
+    return BatchPointGeometryDto(type: type, coordinates: coordinates);
   }
 }
 

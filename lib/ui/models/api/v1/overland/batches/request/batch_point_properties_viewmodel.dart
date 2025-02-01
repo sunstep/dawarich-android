@@ -1,7 +1,6 @@
 
-class PointPropertiesDto {
-
-  final String timestamp;
+class BatchPointPropertiesViewModel {
+  String timestamp;
   final double altitude;
   final double speed;
   final double horizontalAccuracy;
@@ -16,9 +15,9 @@ class PointPropertiesDto {
   final String deviceId;
   final String wifi;
   final String batteryState;
-  final int batteryLevel;
+  final double batteryLevel;
 
-  PointPropertiesDto({
+  BatchPointPropertiesViewModel({
     required this.timestamp,
     required this.altitude,
     required this.speed,

@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
@@ -32,7 +31,7 @@ class UsersClient {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> json = jsonDecode(response.body);
-        return Ok(UserDto.fromJson(json));
+        return Ok(UserDto.fromJson(json["user"]));
       } else {
         return Err("Failed to fetch user: ${response.statusCode} ${response.reasonPhrase}");
       }

@@ -1,7 +1,7 @@
 import 'package:dawarich/ui/models/api/v1/overland/batches/request/point_viewmodel.dart';
 
 class PointBatchViewModel {
-  final List<PointViewModel> points;
+  final List<BatchPointViewModel> points;
 
   PointBatchViewModel({required this.points});
 

@@ -1,13 +1,15 @@
 import 'dart:io';
-
+import 'package:dawarich/application/converters/batch/api_batch_point_converter.dart';
 import 'package:dawarich/application/converters/batch/point_batch_converter.dart';
-import 'package:dawarich/application/converters/batch/point_converter.dart';
+import 'package:dawarich/application/converters/batch/batch_point_converter.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_batch_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_batch_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point_batch.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
+import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
+import 'package:dawarich/domain/entities/local/database/batch/batch_point.dart';
+import 'package:dawarich/domain/entities/local/database/batch/point_batch.dart';
 import 'package:dawarich/ui/models/local/last_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
@@ -21,13 +23,13 @@ class LocalPointService {
 
   LocalPointService(this._localPointInterfaces, this._trackerPreferencesService);
 
-  Future<Point> createPoint() async {
+  Future<ApiBatchPoint> createPoint() async {
 
-    Option<PointDto> cachedPointResult = await _localPointInterfaces.createCachedPoint();
+    Option<ApiBatchPointDto> cachedPointResult = await _localPointInterfaces.createCachedPoint();
 
-    if (cachedPointResult case Some(value: PointDto cachedPointDto)) {
+    if (cachedPointResult case Some(value: ApiBatchPointDto cachedPointDto)) {
 
-      Point cachedPoint = cachedPointDto.toEntity();
+      ApiBatchPoint cachedPoint = cachedPointDto.toEntity();
 
       if (await _isPointAcceptable(cachedPoint)) {
         await _localPointInterfaces.storePoint(cachedPointDto);
@@ -43,11 +45,11 @@ class LocalPointService {
       }
     }
 
-    Result<PointDto, String> creationResult = await _localPointInterfaces.createPoint();
+    Result<ApiBatchPointDto, String> creationResult = await _localPointInterfaces.createPoint();
 
-    if (creationResult case Ok(value: PointDto newPointDto)) {
+    if (creationResult case Ok(value: ApiBatchPointDto newPointDto)) {
 
-      Point newPoint = newPointDto.toEntity();
+      ApiBatchPoint newPoint = newPointDto.toEntity();
 
       if (await _isPointAcceptable(newPoint)) {
         await _localPointInterfaces.storePoint(newPointDto);
@@ -66,7 +68,41 @@ class LocalPointService {
 
   }
 
-  Future<bool> _isPointAcceptable(Point point) async {
+  Future<bool> markBatchAsUploaded(PointBatch batch) async {
+
+    final List<int> batchIds = batch.points
+        .map((point) => point.id)
+        .whereType<int>()
+        .toList();
+
+    if (batchIds.isEmpty) {
+
+      if (kDebugMode) {
+        debugPrint("[DEBUG] No points need to be marked as uploaded.");
+      }
+
+      return false;
+    }
+
+    Result<int, String> result = await _localPointInterfaces.markBatchAsUploaded(batchIds);
+
+    switch (result) {
+
+      case Ok(value: int rowsAffected): {
+        return rowsAffected == batchIds.length;
+      }
+
+      case Err(value: String error): {
+        if (kDebugMode) {
+          debugPrint("[DEBUG]: Failed to mark batch as uploaded: $error");
+        }
+
+        return false;
+      }
+    }
+  }
+
+  Future<bool> _isPointAcceptable(ApiBatchPoint point) async {
 
     LocationAccuracy requiredAccuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
 
@@ -83,12 +119,12 @@ class LocalPointService {
 
   Future<LastPoint?> getLastPoint() async {
 
-    Option<PointDto> pointResult = await _localPointInterfaces.getLastPoint();
+    Option<BatchPointDto> pointResult = await _localPointInterfaces.getLastPoint();
 
     switch (pointResult) {
 
-      case Some(value: PointDto pointDto): {
-        Point point = pointDto.toEntity();
+      case Some(value: BatchPointDto pointDto): {
+        BatchPoint point = pointDto.toEntity();
         return LastPoint(
             timestamp: formatTimestamp(point.properties.timestamp),
             latitude: point.geometry.coordinates[0],
@@ -103,7 +139,7 @@ class LocalPointService {
   }
 
   String formatTimestamp(String time) {
-    DateTime parsedTimestamp = DateTime.fromMillisecondsSinceEpoch(int.parse(time), isUtc: false);
+    DateTime parsedTimestamp = DateTime.parse(time).toLocal();
     String formattedTimestamp = DateFormat('dd MMM yyyy HH:mm:ss').format(parsedTimestamp);
 
     return formattedTimestamp;
@@ -132,12 +168,6 @@ class LocalPointService {
     return result.isOk();
   }
 
-  // Future<Result<void, String>> uploadBatch() async {
-  //
-  //   List<Point> points = [];
-  //   PointBatch batch = PointBatch(points: points);
-  //   return await _pointCreationInterfaces.uploadBatch(batch.toDto());
-  // }
 
   double getAccuracyThreshold(LocationAccuracy accuracy) {
     if (Platform.isIOS) {

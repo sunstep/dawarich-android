@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
@@ -19,10 +19,15 @@ class BatchesClient {
     _apiInfo = apiInfo;
   }
 
-  Future<Result<(), String>> post(PointBatchDto batch) async {
+  Future<Result<dynamic, String>> post(ApiPointBatchDto batch) async {
 
     final Uri url = Uri.parse("${_apiInfo.host}/api/v1/overland/batches?api_key=${_apiInfo.apiKey}");
-    final http.Response response = await http.post(url, body: batch);
+    final String body = jsonEncode(batch.toJson());
+    final Map<String, String> headers =  {
+      'Content-Type': 'application/json',
+    };
+    final http.Response response = await http.post(url, headers: headers, body: body);
+
 
     if (response.statusCode == 201) {
       final dynamic responseBody = jsonDecode(response.body);

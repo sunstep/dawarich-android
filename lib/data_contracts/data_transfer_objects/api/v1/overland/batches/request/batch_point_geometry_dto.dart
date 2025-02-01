@@ -1,8 +1,10 @@
-class PointGeometry {
+
+class BatchPointGeometryDto {
+
   final String type;
   final List<double> coordinates;
 
-  PointGeometry({required this.type, required this.coordinates});
+  BatchPointGeometryDto({required this.type, required this.coordinates});
 
   Map<String, dynamic> toJson() {
     return {

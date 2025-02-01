@@ -1,6 +1,6 @@
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
@@ -20,7 +20,7 @@ class PointsClient {
     _apiInfo = apiInfo;
   }
 
-  Future<Result<List<ApiPointDTO>, String>> getPoints(String startDate, String endDate, int perPage, int page) async {
+  Future<Result<List<ReceivedApiPointDTO>, String>> getPoints(String startDate, String endDate, int perPage, int page) async {
 
     final Uri uri = Uri.parse(
         '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
@@ -29,7 +29,7 @@ class PointsClient {
     if (response.statusCode == 200) {
       final List<dynamic> responseData = jsonDecode(response.body);
       return Ok(responseData
-          .map((point) => ApiPointDTO(point))
+          .map((point) => ReceivedApiPointDTO(point))
           .toList());
     }
 
@@ -51,13 +51,13 @@ class PointsClient {
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying slim points.");
   }
 
-  Future<Result<ApiPointDTO, String>> getLastPoint() async {
+  Future<Result<ReceivedApiPointDTO, String>> getLastPoint() async {
     final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&per_page=1&page=1&order=desc");
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
       final dynamic responseData = jsonDecode(response.body);
-      return Ok(ApiPointDTO(responseData));
+      return Ok(ReceivedApiPointDTO(responseData));
     }
 
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while retrieving last point.");

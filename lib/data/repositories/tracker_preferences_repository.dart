@@ -12,6 +12,9 @@ class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
   TrackerPreferencesRepository(this._userPreferencesClient);
 
   @override
+  Future<void> initialize() async => await _userPreferencesClient.initialize();
+
+  @override
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {
 
     await _userPreferencesClient.setAutomaticTrackingPreference(trueOrFalse);

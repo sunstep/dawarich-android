@@ -1,7 +1,8 @@
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/point.dart';
+import 'package:dawarich/domain/entities/local/database/batch/batch_point.dart';
 
 class PointBatch {
-  final List<Point> points;
+
+  final List<BatchPoint> points;
 
   PointBatch({required this.points});
 

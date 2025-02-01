@@ -1,13 +1,13 @@
 
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_geometry_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/point_properties_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_geometry_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_properties_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
 import 'package:drift/drift.dart';
 
 extension PointMapper on TypedResult {
 
-  PointDto toPointDto(SQLiteClient database) {
+  BatchPointDto toPointDto(SQLiteClient database) {
     final pointRow = readTable(database.pointsTable);
     final propertiesRow = readTable(database.pointPropertiesTable);
     final geometryRow = readTable(database.pointGeometryTable);
@@ -19,14 +19,14 @@ extension PointMapper on TypedResult {
     final longitude = double.parse(coordinates[0]);
     final latitude = double.parse(coordinates[1]);
 
-    return PointDto(
+    return BatchPointDto(
       id: pointRow.id,
       type: pointRow.type,
-      geometry: PointGeometryDto(
+      geometry: BatchPointGeometryDto(
         type: geometryRow.type,
         coordinates: [longitude, latitude],
       ),
-      properties: PointPropertiesDto(
+      properties: BatchPointPropertiesDto(
         timestamp: propertiesRow.timestamp,
         altitude: propertiesRow.altitude,
         speed: propertiesRow.speed,

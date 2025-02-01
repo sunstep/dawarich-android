@@ -23,7 +23,11 @@ class BatchesClient {
 
     final Uri url = Uri.parse("${_apiInfo.host}/api/v1/overland/batches?api_key=${_apiInfo.apiKey}");
     final String body = jsonEncode(batch.toJson());
-    final http.Response response = await http.post(url, body: body);
+    final Map<String, String> headers =  {
+      'Content-Type': 'application/json',
+    };
+    final http.Response response = await http.post(url, headers: headers, body: body);
+
 
     if (response.statusCode == 201) {
       final dynamic responseBody = jsonDecode(response.body);

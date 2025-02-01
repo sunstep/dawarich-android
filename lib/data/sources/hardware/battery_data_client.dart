@@ -22,7 +22,7 @@ class BatteryDataSource {
     return value;
   }
 
-  Future<int> getBatteryLevel() async => await _battery.batteryLevel;
+  Future<double> getBatteryLevel() async => await _battery.batteryLevel / 100;
 
 
 }

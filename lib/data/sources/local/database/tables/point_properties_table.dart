@@ -17,5 +17,5 @@ class PointPropertiesTable extends Table {
   TextColumn get deviceId => text()(); // Device ID
   TextColumn get wifi => text()(); // Wi-Fi SSID
   TextColumn get batteryState => text()(); // Battery state
-  IntColumn get batteryLevel => integer()(); // Battery level (percentage)
+  RealColumn get batteryLevel => real()(); // Battery level (percentage)
 }

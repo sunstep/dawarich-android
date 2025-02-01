@@ -15,7 +15,7 @@ class BatchPointProperties {
   final String deviceId;
   final String wifi;
   final String batteryState;
-  final int batteryLevel;
+  final double batteryLevel;
 
   BatchPointProperties({
     required this.timestamp,

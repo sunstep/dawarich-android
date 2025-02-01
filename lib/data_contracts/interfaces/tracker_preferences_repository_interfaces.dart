@@ -1,6 +1,8 @@
 
 abstract interface class ITrackerPreferencesRepository {
 
+  Future<void> initialize();
+
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse);
   Future<void> setPointsPerBatchPreference(int amount);
   Future<void> setTrackingFrequencyPreference(int seconds);

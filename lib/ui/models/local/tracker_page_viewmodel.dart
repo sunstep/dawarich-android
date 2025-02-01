@@ -41,6 +41,7 @@ class TrackerPageViewModel with ChangeNotifier {
   Future<void> initialize() async {
 
     // Get last point;
+    await _trackerPreferencesService.initialize();
     await getLastPoint();
     await getPointInBatchCount();
 

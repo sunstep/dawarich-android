@@ -6,6 +6,10 @@ class TrackerPreferencesService {
  final ITrackerPreferencesRepository _trackerPreferencesRepository;
   TrackerPreferencesService(this._trackerPreferencesRepository);
 
+  Future<void> initialize() async {
+    await _trackerPreferencesRepository.initialize();
+  }
+
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {
 
     await _trackerPreferencesRepository.setAutomaticTrackingPreference(trueOrFalse);

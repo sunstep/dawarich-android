@@ -4,12 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class TrackerPreferencesClient {
 
-  final int _userId;
-  TrackerPreferencesClient._(this._userId);
+  int _userId = 0;
 
-  static Future<TrackerPreferencesClient> initialize(UserStorageClient userStorageClient) async {
-    final int userId = await userStorageClient.getLoggedInUserId();
-    return TrackerPreferencesClient._(userId);
+  final UserStorageClient _userStorageClient;
+  TrackerPreferencesClient(this._userStorageClient);
+
+  Future<void> initialize() async {
+    _userId = await _userStorageClient.getLoggedInUserId();
   }
 
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {

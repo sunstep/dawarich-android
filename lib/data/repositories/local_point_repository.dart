@@ -64,7 +64,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           timestamp: DateTime
               .now()
               .toUtc()
-              .millisecondsSinceEpoch
+               // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
               .toString(),
           altitude: position.altitude,
           speed: position.speed,
@@ -101,7 +101,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           timestamp: DateTime
               .now()
               .toUtc()
-              .millisecondsSinceEpoch
+              // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
               .toString(),
           altitude: position.altitude,
           speed: position.speed,

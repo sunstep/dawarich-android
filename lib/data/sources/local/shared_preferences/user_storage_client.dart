@@ -46,7 +46,7 @@ class UserStorageClient {
       }
 
       case None(): {
-        throw StateError("A user id should be present at this point!");
+        throw StateError("A user id should be present at this point.");
       }
     }
   }

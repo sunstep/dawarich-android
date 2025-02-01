@@ -54,12 +54,8 @@ Future<void> injectDependencies() async {
   getIt.registerLazySingleton<UserStorageClient>(() => UserStorageClient());
 
 
-  getIt.registerLazySingletonAsync<TrackerPreferencesClient>(
-    () async {
-      return await TrackerPreferencesClient.initialize(getIt<UserStorageClient>());
-  });
-
-  await getIt.isReady<TrackerPreferencesClient>();
+  getIt.registerLazySingleton<TrackerPreferencesClient>(
+    () => TrackerPreferencesClient(getIt<UserStorageClient>()));
 
 
   // Repositories

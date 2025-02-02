@@ -25,7 +25,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Determine Project Key
+        id: key
+        run: |
+          CLEAN_BRANCH="${GITHUB_REF_NAME//\//-}"
+          
+          PROJECT_KEY="sunstep:dawarich-app-${CLEAN_BRANCH}"
+
+          echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
+
       - uses: SonarSource/sonarqube-scan-action@v4
+        with:
+          args: |
+            -Dsonar.projectKey=${{ steps.key.outputs.project_key }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

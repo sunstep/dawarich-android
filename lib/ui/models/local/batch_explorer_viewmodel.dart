@@ -45,9 +45,6 @@ class BatchExplorerViewModel with ChangeNotifier {
     PointBatch batch = await _localPointService.getCurrentBatch();
     PointBatchViewModel batchVm = batch.toViewModel();
 
-    for (BatchPointViewModel point in batchVm.points) {
-      point.properties.timestamp = _localPointService.formatTimestamp(point.properties.timestamp);
-    }
 
     _setBatch(batchVm);
     _setIsLoadingPoints(false);

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
 
 class TrackerPage extends StatefulWidget {
@@ -36,6 +37,24 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
           ),
         ],
       ),
+    );
+  }
+
+  void _displayPopup(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx), // Close the dialog
+              child: const Text("Ok"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -74,10 +93,14 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Evenly distributes buttons
                     children: [
                       OutlinedButton(
-                        onPressed: () async {
-                          await viewModel.trackPoint();
+                        onPressed: viewModel.isTracking? null : () async {
+                          Result<void, String> result = await viewModel.trackPoint();
+
+                          if (result case Err(value: String error)) {
+                            _displayPopup("Tracking failed", error);
+                          }
                         },
-                        child: const Text("Track point"),
+                        child: viewModel.isTracking ? const CircularProgressIndicator() : const Text("Track point"),
                       ),
                       OutlinedButton(
                         onPressed: () {

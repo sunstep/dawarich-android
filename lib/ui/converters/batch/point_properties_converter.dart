@@ -1,13 +1,21 @@
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/batch_point_properties.dart';
 import 'package:dawarich/ui/models/api/v1/overland/batches/request/batch_point_properties_viewmodel.dart';
+import 'package:intl/intl.dart';
 
 extension PointPropertiesEntityToViewModel on BatchPointProperties {
 
   BatchPointPropertiesViewModel toViewModel() {
+
+    DateTime parsedTimestamp = DateTime.parse(timestamp).toLocal();
+    String formattedTimestamp = DateFormat('dd MMM yyyy HH:mm:ss').format(parsedTimestamp);
+
+    double roundedSpeed = (speed * 100).round() / 100.0;
+
+
     return BatchPointPropertiesViewModel(
-        timestamp: timestamp,
+        timestamp: formattedTimestamp,
         altitude: altitude,
-        speed: speed,
+        speed: roundedSpeed,
         horizontalAccuracy: horizontalAccuracy,
         verticalAccuracy: verticalAccuracy,
         motion: motion,

@@ -8,6 +8,7 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/ba
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_properties_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
@@ -61,11 +62,10 @@ class LocalPointRepository implements ILocalPointInterfaces {
 
       BatchPointGeometryDto geometry = BatchPointGeometryDto(type: "Point", coordinates: [position.longitude, position.latitude]);
       BatchPointPropertiesDto pointProperties = BatchPointPropertiesDto(
-          timestamp: DateTime
-              .now()
+          timestamp: position.timestamp
               .toUtc()
                // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
-              .toString(),
+              .toIso8601String(),
           altitude: position.altitude,
           speed: position.speed,
           horizontalAccuracy: position.accuracy,
@@ -98,11 +98,10 @@ class LocalPointRepository implements ILocalPointInterfaces {
     if (positionResult case Some(value: Position position)) {
       BatchPointGeometryDto geometry = BatchPointGeometryDto(type: "Point", coordinates: [position.longitude, position.latitude]);
       BatchPointPropertiesDto pointProperties = BatchPointPropertiesDto(
-          timestamp: DateTime
-              .now()
+          timestamp: position.timestamp
               .toUtc()
               // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
-              .toString(),
+              .toIso8601String(),
           altitude: position.altitude,
           speed: position.speed,
           horizontalAccuracy: position.accuracy,
@@ -177,12 +176,12 @@ class LocalPointRepository implements ILocalPointInterfaces {
   }
 
   @override
-  Future<Option<BatchPointDto>> getLastPoint() async {
+  Future<Option<LastPointDto>> getLastPoint() async {
     try {
       // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
       final int userId = await _userStorageClient.getLoggedInUserId();
 
-      final queryResult = _database.select(_database.pointsTable)
+      final JoinedSelectStatement queryResult = _database.select(_database.pointsTable)
         .join([
           innerJoin(
             _database.pointGeometryTable,
@@ -197,9 +196,9 @@ class LocalPointRepository implements ILocalPointInterfaces {
         ..limit(1)
         ..where(_database.pointsTable.userId.equals(userId));
 
-      return Some(await queryResult.map((row) => row.toPointDto(_database))
-          .getSingle());
+      BatchPointDto point = await queryResult.map((row) => row.toPointDto(_database)).getSingle();
 
+      return Some(LastPointDto(longitude: point.geometry.coordinates[0], latitude: point.geometry.coordinates[1], timestamp: point.properties.timestamp));
 
     } catch (e) {
 

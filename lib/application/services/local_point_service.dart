@@ -1,19 +1,17 @@
 import 'dart:io';
 import 'package:dawarich/application/converters/batch/api_batch_point_converter.dart';
 import 'package:dawarich/application/converters/batch/point_batch_converter.dart';
-import 'package:dawarich/application/converters/batch/batch_point_converter.dart';
+import 'package:dawarich/application/converters/last_point_converter.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_batch_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
-import 'package:dawarich/domain/entities/local/database/batch/batch_point.dart';
 import 'package:dawarich/domain/entities/local/database/batch/point_batch.dart';
-import 'package:dawarich/ui/models/local/last_point.dart';
+import 'package:dawarich/domain/entities/local/last_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
 class LocalPointService {
@@ -23,7 +21,7 @@ class LocalPointService {
 
   LocalPointService(this._localPointInterfaces, this._trackerPreferencesService);
 
-  Future<ApiBatchPoint> createPoint() async {
+  Future<Result<ApiBatchPoint, String>> createPoint() async {
 
     Option<ApiBatchPointDto> cachedPointResult = await _localPointInterfaces.createCachedPoint();
 
@@ -31,9 +29,9 @@ class LocalPointService {
 
       ApiBatchPoint cachedPoint = cachedPointDto.toEntity();
 
-      if (await _isPointAcceptable(cachedPoint)) {
+      if (!await _isDuplicatePoint(cachedPoint) && await _isPointAcceptable(cachedPoint)) {
         await _localPointInterfaces.storePoint(cachedPointDto);
-        return cachedPoint;
+        return Ok(cachedPoint);
       } else {
         if (kDebugMode) {
           debugPrint("Cached point was not acceptable for usage.");
@@ -51,20 +49,23 @@ class LocalPointService {
 
       ApiBatchPoint newPoint = newPointDto.toEntity();
 
-      if (await _isPointAcceptable(newPoint)) {
+      if (!await _isDuplicatePoint(newPoint) && await _isPointAcceptable(newPoint)) {
         await _localPointInterfaces.storePoint(newPointDto);
-        return newPoint;
+        return Ok(newPoint);
       } else {
         debugPrint("Created point is too inaccurate.");
+        return const Err("New point was too inaccurate.");
       }
     } else {
       if (kDebugMode) {
         debugPrint("New point not created.");
       }
+
+      String error = creationResult.unwrapErr();
+      return Err("Failed to create point: $error");
     }
 
-    String error = creationResult.unwrapErr();
-    throw Exception("Failed to create point: $error");
+
 
   }
 
@@ -117,19 +118,28 @@ class LocalPointService {
     return true; // Point meets the accuracy requirements
   }
 
+  Future<bool> _isDuplicatePoint(ApiBatchPoint candidate) async {
+
+    LastPoint? lastPoint = await getLastPoint();
+
+    if (lastPoint == null) {
+      return false;
+    }
+
+    DateTime candidateTime = DateTime.parse(candidate.properties.timestamp);
+    DateTime lastTime = DateTime.parse(lastPoint.timestamp);
+
+    return candidateTime.isAtSameMomentAs(lastTime);
+  }
+
   Future<LastPoint?> getLastPoint() async {
 
-    Option<BatchPointDto> pointResult = await _localPointInterfaces.getLastPoint();
+    Option<LastPointDto> pointResult = await _localPointInterfaces.getLastPoint();
 
     switch (pointResult) {
 
-      case Some(value: BatchPointDto pointDto): {
-        BatchPoint point = pointDto.toEntity();
-        return LastPoint(
-            timestamp: formatTimestamp(point.properties.timestamp),
-            latitude: point.geometry.coordinates[0],
-            longitude: point.geometry.coordinates[1]
-        );
+      case Some(value: LastPointDto pointDto): {
+        return pointDto.toEntity();
       }
 
       case None(): {
@@ -137,14 +147,6 @@ class LocalPointService {
       }
     }
   }
-
-  String formatTimestamp(String time) {
-    DateTime parsedTimestamp = DateTime.parse(time).toLocal();
-    String formattedTimestamp = DateFormat('dd MMM yyyy HH:mm:ss').format(parsedTimestamp);
-
-    return formattedTimestamp;
-  }
-
 
   Future<int> getBatchPointsCount() async {
 

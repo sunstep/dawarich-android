@@ -3,14 +3,14 @@ name: Build
 on:
   push:
     branches:
-      - stable
+      - dev
 
 
 jobs:
   build:
     name: Build and analyze
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:

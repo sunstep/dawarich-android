@@ -2,14 +2,19 @@ import 'dart:io';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
-import 'package:flutter/material.dart';
-import 'package:dawarich/ui/models/local/last_point.dart';
+import 'package:dawarich/domain/entities/local/last_point.dart';
+import 'package:dawarich/ui/converters/batch/api_point_converter.dart';
+import 'package:dawarich/ui/converters/last_point_converter.dart';
+import 'package:dawarich/ui/models/api/v1/overland/batches/request/api_batch_point.dart';
+import 'package:flutter/foundation.dart';
+import 'package:dawarich/ui/models/local/last_point_viewmodel.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:option_result/option_result.dart';
 
 class TrackerPageViewModel with ChangeNotifier {
 
-  LastPoint? _lastPoint;
-  LastPoint? get lastPoint => _lastPoint;
+  LastPointViewModel? _lastPoint;
+  LastPointViewModel? get lastPoint => _lastPoint;
 
   int _pointInBatchCount = 0;
   int get batchPointCount => _pointInBatchCount;
@@ -21,6 +26,9 @@ class TrackerPageViewModel with ChangeNotifier {
   bool _isUpdatingTracking = false;
   bool get isTrackingEnabled => _isTrackingEnabled;
   bool get isUpdatingTracking => _isUpdatingTracking;
+
+  bool _isTracking = false;
+  bool get isTracking => _isTracking;
 
   int _maxPointsPerBatch = 50;
   int get maxPointsPerBatch => _maxPointsPerBatch;
@@ -54,13 +62,17 @@ class TrackerPageViewModel with ChangeNotifier {
 
   }
 
-  void setLastPoint(LastPoint? point) {
+  void setLastPoint(LastPointViewModel? point) {
 
     _lastPoint = point;
     notifyListeners();
   }
 
-  Future<void> getLastPoint() async => setLastPoint(await _pointService.getLastPoint());
+  Future<void> getLastPoint() async {
+
+    LastPoint? lastPoint =  await _pointService.getLastPoint();
+    setLastPoint(lastPoint?.toViewModel());
+  }
 
 
   void setPointInBatchCount(int value) {
@@ -75,18 +87,42 @@ class TrackerPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> trackPoint() async {
+  Future<Result<void, String>> trackPoint() async {
 
-    ApiBatchPoint point = await _pointService.createPoint();
+    _setIsTracking(true);
 
-    String formattedTimestamp = _pointService.formatTimestamp(point.properties.timestamp);
-    double longitude = point.geometry.coordinates[0];
-    double latitude = point.geometry.coordinates[1];
+    Result<ApiBatchPoint, String> pointResult = await _pointService.createPoint();
 
-    LastPoint lastPoint = LastPoint(timestamp: formattedTimestamp, longitude: longitude, latitude: latitude);
+    if (pointResult case Ok(value: ApiBatchPoint pointEntity)) {
 
-    setLastPoint(lastPoint);
-    await getPointInBatchCount();
+      ApiBatchPointViewModel point = pointEntity.toViewModel();
+
+      String formattedTimestamp = point.properties.timestamp;
+      double longitude = point.geometry.coordinates[0];
+      double latitude = point.geometry.coordinates[1];
+
+      LastPointViewModel lastPoint = LastPointViewModel(timestamp: formattedTimestamp, longitude: longitude, latitude: latitude);
+
+      setLastPoint(lastPoint);
+      await getPointInBatchCount();
+
+      _setIsTracking(false);
+      return const Ok(null);
+    }
+
+    String error = pointResult.unwrapErr();
+
+    if (kDebugMode) {
+      debugPrint("[DEBUG] Failed to create point: $error");
+    }
+
+    _setIsTracking(false);
+    return Err("Failed to create point: $error Please try again later or set a higher location accuracy threshold.");
+  }
+
+  void _setIsTracking(bool trueOrFalse) {
+    _isTracking = trueOrFalse;
+    notifyListeners();
   }
 
   Future<void> setMaxPointsPerBatch(int? amount) async {

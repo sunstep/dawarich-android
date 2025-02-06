@@ -35,6 +35,16 @@ class TrackerPreferencesClient {
     prefs.setInt("${_userId}_locationAccuracy", accuracy);
   }
 
+  Future<void> setMinimumPointDistancePreference(int meters) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt("${_userId}_minimumPointDistance", meters);
+  }
+
+  Future<void> setTrackerId(String newId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString("${_userId}_trackerId", newId);
+  }
+
   Future<Option<bool>> getAutomaticTrackingPreference() async {
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -87,6 +97,31 @@ class TrackerPreferencesClient {
     return const None();
   }
 
+  Future<Option<int>> getMinimumPointDistancePreference() async {
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    int? preference = prefs.getInt("${_userId}_minimumPointDistance");
+
+    if (preference != null) {
+      return Some(preference);
+    }
+
+    return const None();
+  }
+
+  Future<Option<String>> getTrackerId() async {
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? trackerId = prefs.getString("${_userId}_trackerId");
+
+    if (trackerId != null) {
+      return Some(trackerId);
+    }
+
+    return const None();
+  }
 
 
 }

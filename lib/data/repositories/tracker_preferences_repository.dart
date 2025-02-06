@@ -1,45 +1,62 @@
-
 import 'dart:io';
-
 import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
+import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option.dart';
 
 class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
 
-  final TrackerPreferencesClient _userPreferencesClient;
-  TrackerPreferencesRepository(this._userPreferencesClient);
+  final TrackerPreferencesClient _trackerPreferencesClient;
+  final IHardwareRepository _hardwareRepository;
+  TrackerPreferencesRepository(this._trackerPreferencesClient, this._hardwareRepository);
 
   @override
-  Future<void> initialize() async => await _userPreferencesClient.initialize();
+  Future<void> initialize() async => await _trackerPreferencesClient.initialize();
 
   @override
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {
 
-    await _userPreferencesClient.setAutomaticTrackingPreference(trueOrFalse);
+    await _trackerPreferencesClient.setAutomaticTrackingPreference(trueOrFalse);
   }
 
   @override
   Future<void> setPointsPerBatchPreference(int amount) async {
 
-    await _userPreferencesClient.setPointsPerBatchPreference(amount);
+    await _trackerPreferencesClient.setPointsPerBatchPreference(amount);
   }
 
   @override
   Future<void> setTrackingFrequencyPreference(int seconds) async {
-    await _userPreferencesClient.setTrackingFrequencyPreference(seconds);
+    await _trackerPreferencesClient.setTrackingFrequencyPreference(seconds);
   }
 
   @override
   Future<void> setLocationAccuracyPreference(int accuracy) async {
-    await _userPreferencesClient.setLocationAccuracyPreference(accuracy);
+    await _trackerPreferencesClient.setLocationAccuracyPreference(accuracy);
+  }
+
+  @override
+  Future<void> setMinimumPointDistancePreference(int meters) async {
+    await _trackerPreferencesClient.setMinimumPointDistancePreference(meters);
+  }
+
+  @override
+  Future<void> setTrackerId(String newId) async {
+    await _trackerPreferencesClient.setTrackerId(newId);
+  }
+
+  @override
+  Future<String> resetTrackerId() async {
+    String trackerId = await _hardwareRepository.getDeviceModel();
+    await _trackerPreferencesClient.setTrackerId(await _hardwareRepository.getDeviceModel());
+    return trackerId;
   }
 
   @override
   Future<bool> getAutomaticTrackingPreference() async {
 
-    Option<bool> preferenceResult = await _userPreferencesClient.getAutomaticTrackingPreference();
+    Option<bool> preferenceResult = await _trackerPreferencesClient.getAutomaticTrackingPreference();
 
     switch (preferenceResult) {
 
@@ -58,7 +75,7 @@ class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
   @override
   Future<int> getPointsPerBatchPreference() async {
 
-    Option<int> preferenceResult = await _userPreferencesClient.getPointsPerBatchPreference();
+    Option<int> preferenceResult = await _trackerPreferencesClient.getPointsPerBatchPreference();
 
     switch (preferenceResult) {
 
@@ -76,7 +93,7 @@ class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
   @override
   Future<int> getTrackingFrequencyPreference() async {
 
-    Option<int> preferenceResult = await _userPreferencesClient.getTrackingFrequencyPreference();
+    Option<int> preferenceResult = await _trackerPreferencesClient.getTrackingFrequencyPreference();
 
     switch (preferenceResult) {
 
@@ -94,7 +111,7 @@ class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
   @override
   Future<int> getLocationAccuracyPreference() async {
 
-    Option<int> preferenceResult = await _userPreferencesClient.getLocationAccuracyPreference();
+    Option<int> preferenceResult = await _trackerPreferencesClient.getLocationAccuracyPreference();
 
     switch (preferenceResult) {
 
@@ -106,7 +123,40 @@ class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
         return Platform.isIOS ? LocationAccuracy.best.index : LocationAccuracy.high.index;
       }
     }
+  }
 
+  @override
+  Future<int> getMinimumPointDistancePreference() async {
+
+    Option<int> preferenceResult = await _trackerPreferencesClient.getMinimumPointDistancePreference();
+
+    switch (preferenceResult) {
+
+      case Some(value: int preference): {
+        return preference;
+      }
+
+      case None(): {
+        return 0;
+      }
+    }
+  }
+
+  @override
+  Future<String> getTrackerId() async {
+
+    Option<String> preferenceResult = await _trackerPreferencesClient.getTrackerId();
+
+    switch (preferenceResult) {
+
+      case Some(value: String trackerId): {
+        return trackerId;
+      }
+
+      case None(): {
+        return await _hardwareRepository.getDeviceModel();
+      }
+    }
   }
 
 

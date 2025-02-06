@@ -7,10 +7,12 @@ import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data/repositories/connect_repository.dart';
+import 'package:dawarich/data/repositories/hardware_repository.dart';
 import 'package:dawarich/data/repositories/local_point_repository.dart';
 import 'package:dawarich/data/repositories/api_point_repository.dart';
 import 'package:dawarich/data/repositories/stats_repository.dart';
 import 'package:dawarich/data/repositories/tracker_preferences_repository.dart';
+import 'package:dawarich/data/repositories/user_storage_repository.dart';
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
 import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
 import 'package:dawarich/data/sources/api/v1/stats/stats_client.dart';
@@ -18,16 +20,18 @@ import 'package:dawarich/data/sources/api/v1/users/users_client.dart';
 import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
 import 'package:dawarich/data/sources/hardware/device_data_client.dart';
 import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
-import 'package:dawarich/data/sources/hardware/wifi_data_client.dart';
+import 'package:dawarich/data/sources/hardware/connectivity_data_client.dart';
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
 import 'package:dawarich/data/sources/local/shared_preferences/user_storage_client.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:dawarich/ui/models/local/batch_explorer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
@@ -45,8 +49,8 @@ Future<void> injectDependencies() async {
   getIt.registerLazySingleton<IApiConfigSource>(() => ApiConfigClient());
   getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
   getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
-  getIt.registerLazySingleton<BatteryDataSource>(() => BatteryDataSource());
-  getIt.registerLazySingleton<WiFiDataClient>(() => WiFiDataClient());
+  getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
+  getIt.registerLazySingleton<ConnectivityDataClient>(() => ConnectivityDataClient());
   getIt.registerLazySingleton<PointsClient>(() => PointsClient(getIt<ApiConfigClient>()));
   getIt.registerLazySingleton<BatchesClient>(() => BatchesClient(getIt<ApiConfigClient>()));
   getIt.registerLazySingleton<StatsClient>(() => StatsClient(getIt<ApiConfigClient>()));
@@ -59,11 +63,13 @@ Future<void> injectDependencies() async {
 
 
   // Repositories
+   getIt.registerLazySingleton<IUserStorageRepository>(() => UserStorageRepository(getIt<UserStorageClient>()));
+  getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataClient>(), getIt<ConnectivityDataClient>()));
   getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<ApiConfigClient>(), getIt<UsersClient>(), getIt<UserStorageClient>()));
   getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>(), getIt<BatchesClient>()));
-  getIt.registerLazySingleton<ILocalPointInterfaces>(() => LocalPointRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataSource>(), getIt<WiFiDataClient>(), getIt<UserStorageClient>(), getIt<TrackerPreferencesClient>()));
+  getIt.registerLazySingleton<ILocalPointInterfaces>(() => LocalPointRepository(getIt<IHardwareRepository>(), getIt<IUserStorageRepository>(), getIt<ITrackerPreferencesRepository>()));
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
-  getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>()));
+  getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>(), getIt<IHardwareRepository>()));
 
 
   // Services

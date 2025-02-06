@@ -3,13 +3,13 @@ import 'package:option_result/option_result.dart';
 
 class GpsDataClient {
 
-  Future<Result<Position, String>> getPosition(LocationAccuracy locationAccuracy) async {
+  Future<Result<Position, String>> getPosition({required LocationAccuracy locationAccuracy, required int minimumDistance}) async {
 
     try {
       Position position = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
           accuracy: locationAccuracy,
-          distanceFilter: 0,
+          distanceFilter: minimumDistance,
           timeLimit: null,
         ),
       );

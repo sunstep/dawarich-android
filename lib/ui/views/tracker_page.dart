@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:dawarich/main.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
@@ -22,20 +24,20 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
 
   Widget _pageContent(BuildContext context) {
     TrackerPageViewModel viewModel = context.watch<TrackerPageViewModel>();
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _lastPointInformation(context, viewModel),
-          const SizedBox(height: 12),
-
-          const Divider(height: 32),
-
-          Expanded(
-            child: _trackerConfigurations(context, viewModel),
-          ),
-        ],
+    final size = MediaQuery.of(context).size;
+    return SizedBox(
+      height: size.height,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _lastPointInformation(context, context.watch<TrackerPageViewModel>()),
+            const SizedBox(height: 12),
+            const Divider(height: 32),
+            _trackerConfigurations(context, context.watch<TrackerPageViewModel>()),
+          ],
+        ),
       ),
     );
   }
@@ -58,6 +60,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
     );
   }
 
+
   Widget _lastPointInformation(BuildContext context, TrackerPageViewModel viewModel) {
     return SizedBox(
       width: double.infinity,
@@ -68,39 +71,78 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Text(
-                  "Last Point Information",
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+              // Header Row: Title and eye icon (unblurred)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Last Point Information",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      viewModel.hideLastPoint ? Icons.visibility_off : Icons.visibility,
+                      size: 20,
+                    ),
+                    tooltip: viewModel.hideLastPoint ? "Show Details" : "Hide Details",
+                    onPressed: () {
+                      viewModel.setHideLastPoint(!viewModel.hideLastPoint);
+                    },
+                  ),
+                ],
               ),
-
               const SizedBox(height: 8),
-
-              _keyValueRow("Timestamp:", viewModel.lastPoint?.timestamp ?? "No Data"),
-              const SizedBox(height: 4),
-              _keyValueRow("Longitude:", viewModel.lastPoint?.longitude.toString() ?? "No Data"),
-              const SizedBox(height: 4),
-              _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
-              const SizedBox(height: 4),
-              _keyValueRow("Points in batch:", viewModel.batchPointCount.toString()),
-
+              // Details section wrapped in a Stack to apply blur if needed.
+              Stack(
+                children: [
+                  // This container holds the key-value rows.
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _keyValueRow("Timestamp:", viewModel.lastPoint?.timestamp ?? "No Data"),
+                      const SizedBox(height: 4),
+                      _keyValueRow("Longitude:", viewModel.lastPoint?.longitude.toString() ?? "No Data"),
+                      const SizedBox(height: 4),
+                      _keyValueRow("Latitude:", viewModel.lastPoint?.latitude.toString() ?? "No Data"),
+                      const SizedBox(height: 4),
+                      _keyValueRow("Points in batch:", viewModel.batchPointCount.toString()),
+                    ],
+                  ),
+                  // Only overlay a blur if _lastPointBlur is true.
+                  if (viewModel.hideLastPoint)
+                    Positioned.fill(
+                      child: ClipRect( // Ensure the blur doesn't bleed outside
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          child: Container(
+                            color: Colors.transparent,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 12),
+              // Buttons row (unblurred)
               Center(
                 child: SizedBox(
                   width: double.infinity,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Evenly distributes buttons
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       OutlinedButton(
-                        onPressed: viewModel.isTracking? null : () async {
+                        onPressed: viewModel.isTracking
+                            ? null
+                            : () async {
                           Result<void, String> result = await viewModel.trackPoint();
-
                           if (result case Err(value: String error)) {
                             _displayPopup("Tracking failed", error);
                           }
                         },
-                        child: viewModel.isTracking ? const CircularProgressIndicator() : const Text("Track point"),
+                        child: viewModel.isTracking
+                            ? const CircularProgressIndicator()
+                            : const Text("Track point"),
                       ),
                       OutlinedButton(
                         onPressed: () {
@@ -111,13 +153,14 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
                     ],
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
 
   Widget _keyValueRow(String key, String value) {
     return Row(
@@ -137,85 +180,158 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header with a toggle button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Automatic Tracking"),
-                Switch(
-                  value: viewModel.isTrackingEnabled,
-                  onChanged: viewModel.toggleAutomaticTracking,
+                Text(
+                  viewModel.showAdvancedSettings ? "Advanced Settings" : "Basic Settings",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                  onPressed: viewModel.toggleAdvancedSettings,
+                  child: Text(viewModel.showAdvancedSettings ? "Show Basic" : "Show Advanced"),
                 ),
               ],
             ),
-
-            const SizedBox(height: 16),
-
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Points Per Batch"),
-                Slider(
-                  value: viewModel.maxPointsPerBatch.toDouble(),
-                  min: 50,
-                  max: 1000,
-                  divisions: 19,
-                  label: "${viewModel.maxPointsPerBatch}",
-                  onChanged: (value) =>
-                      viewModel.setMaxPointsPerBatch(value.toInt()),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Tracking Frequency (seconds)"),
-                Slider(
-                  value: viewModel.trackingFrequency.toDouble(),
-                  min: 5,
-                  max: 60,
-                  divisions: 11,
-                  label: "${viewModel.trackingFrequency} s",
-                  onChanged: (value) =>
-                      viewModel.setTrackingFrequency(value.toInt()),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Location tracking accuracy"),
-                const SizedBox(height: 8),
-                DropdownButton<LocationAccuracy>(
-                  value: viewModel.locationAccuracy,
-                  onChanged: (LocationAccuracy? newValue) {
-                    if (newValue != null) {
-                      viewModel.setLocationAccuracy(newValue);
-                    }
-                  },
-                  items: viewModel.accuracyOptions.map((option) {
-                    return DropdownMenuItem<LocationAccuracy>(
-                      value: option['value'] as LocationAccuracy,
-                      child: Text(option['label'] as String),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-
-
+            const Divider(),
+            // Conditionally render settings based on the view model flag
+            if (!viewModel.showAdvancedSettings)
+              ..._buildBasicSettings(context, viewModel)
+            else
+              ..._buildAdvancedSettings(context, viewModel),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> _buildBasicSettings(BuildContext context, TrackerPageViewModel viewModel) {
+    return [
+      // Automatic Tracking switch
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text("Automatic Tracking"),
+          Switch(
+            value: viewModel.isTrackingEnabled,
+            onChanged: viewModel.toggleAutomaticTracking,
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      // Points Per Batch slider
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Points Per Batch"),
+          Slider(
+            value: viewModel.maxPointsPerBatch.toDouble(),
+            min: 50,
+            max: 1000,
+            divisions: 19,
+            label: "${viewModel.maxPointsPerBatch}",
+            onChanged: (value) => viewModel.setMaxPointsPerBatch(value.toInt()),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      // Tracking Frequency slider
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Tracking Frequency (seconds)"),
+          Slider(
+            value: viewModel.trackingFrequency.toDouble(),
+            min: 5,
+            max: 60,
+            divisions: 11,
+            label: "${viewModel.trackingFrequency} s",
+            onChanged: (value) => viewModel.setTrackingFrequency(value.toInt()),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+
+    ];
+  }
+
+  List<Widget> _buildAdvancedSettings(BuildContext context, TrackerPageViewModel viewModel) {
+    return [
+      // Location Tracking Accuracy dropdown
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Location tracking accuracy"),
+          const SizedBox(height: 8),
+          DropdownButton<LocationAccuracy>(
+            value: viewModel.locationAccuracy,
+            onChanged: (LocationAccuracy? newValue) {
+              if (newValue != null) {
+                viewModel.setLocationAccuracy(newValue);
+              }
+            },
+            items: viewModel.accuracyOptions.map((option) {
+              return DropdownMenuItem<LocationAccuracy>(
+                value: option['value'] as LocationAccuracy,
+                child: Text(option['label'] as String),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Minimum Distance Between Points (m)"),
+          Slider(
+            value: viewModel.minimumPointDistance.toDouble(),
+            min: 0,
+            max: 100,
+            divisions: 100,
+            label: "${viewModel.minimumPointDistance} m",
+            onChanged: (value) => viewModel.setMinimumPointDistance(value.toInt()),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      // Tracker ID input field with tooltip for additional context
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text("Tracker ID"),
+              const SizedBox(width: 4),
+              Tooltip(
+                triggerMode: TooltipTriggerMode.tap,
+                message: "The Tracker ID identifies your device when uploading points. If left empty, your device model will be used.",
+                showDuration: Duration(seconds:5),
+                child: Icon(
+                  Icons.help_outline,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+
+          TextField(
+            controller: viewModel.trackerIdController,
+            decoration: InputDecoration(
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                tooltip: "Reset to device model",
+                onPressed: () {
+                  viewModel.resetTrackerId();
+                },
+              ),
+            ),
+            onChanged: viewModel.setTrackerId,
+          ),
+        ],
+      ),
+    ];
   }
 
   Widget _pageBase(BuildContext context, TrackerPageViewModel viewModel) {
@@ -246,14 +362,22 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _viewModel.persistPreferences();
+    }
+
     if (state == AppLifecycleState.resumed) {
-      _viewModel.initialize();
+      _viewModel.getLastPoint();
+      _viewModel.getPointInBatchCount();
     }
   }
 
+
   @override
-  void didPopNext() {
-    _viewModel.initialize();
+  void didPop() {
+    _viewModel.persistPreferences();
+    super.didPop();
   }
 
   @override
@@ -264,6 +388,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
 
   @override
   void dispose() {
+    _viewModel.persistPreferences();
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();

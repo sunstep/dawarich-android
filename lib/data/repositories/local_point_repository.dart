@@ -4,12 +4,11 @@ import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_batch_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_properties_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/additional_point_data_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
-import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
@@ -17,100 +16,45 @@ import 'package:option_result/option_result.dart';
 import 'package:drift/drift.dart';
 
 
-class LocalPointRepository implements ILocalPointInterfaces {
+class LocalPointRepository implements ILocalPointRepository {
 
-  final IHardwareRepository _hardwareRepository;
   final IUserStorageRepository _userStorageRepository;
-  final ITrackerPreferencesRepository _trackerPreferencesRepository;
 
   final SQLiteClient _database = SQLiteClient();
 
-  LocalPointRepository(
-      this._hardwareRepository,
-      this._userStorageRepository,
-      this._trackerPreferencesRepository
+  LocalPointRepository(this._userStorageRepository);
+
+  @override
+  Future<ApiBatchPointDto> createPoint(Position position, AdditionalPointDataDto additionalData) async {
+
+    BatchPointGeometryDto geometry = BatchPointGeometryDto(type: "Point", coordinates: [position.longitude, position.latitude]);
+    BatchPointPropertiesDto pointProperties = BatchPointPropertiesDto(
+      timestamp: position.timestamp
+        .toUtc()
+        // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
+        .toIso8601String(),
+      altitude: position.altitude,
+      speed: position.speed,
+      horizontalAccuracy: position.accuracy,
+      verticalAccuracy: position.altitudeAccuracy,
+      motion: [],
+      pauses: false,
+      activity: "",
+      desiredAccuracy: 0.0,
+      deferred: 0.0,
+      significantChange: "",
+      locationsInPayload: additionalData.currentPointsInBatch,
+      deviceId: additionalData.deviceId,
+      wifi: additionalData.wifi,
+      batteryState: additionalData.batteryState,
+      batteryLevel: additionalData.batteryLevel
     );
 
-  @override
-  Future<Result<ApiBatchPointDto, String>> createPoint() async {
-
-    int accuracyIndex = await _trackerPreferencesRepository.getLocationAccuracyPreference();
-    int minimumPointDistance = await _trackerPreferencesRepository.getMinimumPointDistancePreference();
-
-    LocationAccuracy accuracy = LocationAccuracy.high;
-
-    if (accuracyIndex >= 0 && accuracyIndex < LocationAccuracy.values.length) {
-      accuracy = LocationAccuracy.values[accuracyIndex];
-    }
-
-    Result<Position, String> positionResult = await _hardwareRepository.getPosition(locationAccuracy: accuracy, minimumDistance: minimumPointDistance);
-
-    if (positionResult case Ok(value: Position position)) {
-
-      BatchPointGeometryDto geometry = BatchPointGeometryDto(type: "Point", coordinates: [position.longitude, position.latitude]);
-      BatchPointPropertiesDto pointProperties = BatchPointPropertiesDto(
-          timestamp: position.timestamp
-              .toUtc()
-               // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
-              .toIso8601String(),
-          altitude: position.altitude,
-          speed: position.speed,
-          horizontalAccuracy: position.accuracy,
-          verticalAccuracy: position.altitudeAccuracy,
-          motion: [],
-          pauses: false,
-          activity: "",
-          desiredAccuracy: 0.0,
-          deferred: 0.0,
-          significantChange: "",
-          locationsInPayload: await getBatchPointCount(),
-          deviceId: await _trackerPreferencesRepository.getTrackerId(),
-          wifi: await _hardwareRepository.getWiFiStatus(),
-          batteryState: await _hardwareRepository.getBatteryState(),
-          batteryLevel: await _hardwareRepository.getBatteryLevel()
-      );
-
-      return Ok(ApiBatchPointDto(type: "Feature", geometry: geometry, properties: pointProperties));
-    }
-
-    String error = positionResult.unwrapErr();
-    return Err(error);
-  }
-
-  @override
-  Future<Option<ApiBatchPointDto>> createCachedPoint() async {
-
-    Option<Position> positionResult = await _hardwareRepository.getCachedPosition();
-
-    if (positionResult case Some(value: Position position)) {
-      BatchPointGeometryDto geometry = BatchPointGeometryDto(type: "Point", coordinates: [position.longitude, position.latitude]);
-      BatchPointPropertiesDto pointProperties = BatchPointPropertiesDto(
-          timestamp: position.timestamp
-              .toUtc()
-              // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
-              .toIso8601String(),
-          altitude: position.altitude,
-          speed: position.speed,
-          horizontalAccuracy: position.accuracy,
-          verticalAccuracy: position.altitudeAccuracy,
-          motion: [],
-          pauses: false,
-          activity: "",
-          desiredAccuracy: 0.0,
-          deferred: 0.0,
-          significantChange: "",
-          locationsInPayload: await getBatchPointCount(),
-          deviceId: await _trackerPreferencesRepository.getTrackerId(),
-          wifi: await _hardwareRepository.getWiFiStatus(),
-          batteryState: await _hardwareRepository.getBatteryState(),
-          batteryLevel: await _hardwareRepository.getBatteryLevel()
-      );
-
-      return Some(ApiBatchPointDto(type: "Feature", geometry: geometry, properties: pointProperties));
-    }
-
-
-    return const None();
+    return ApiBatchPointDto(
+      type: "Feature",
+      geometry: geometry,
+      properties: pointProperties
+    );
   }
 
   @override

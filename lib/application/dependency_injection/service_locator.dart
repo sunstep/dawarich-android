@@ -67,7 +67,7 @@ Future<void> injectDependencies() async {
   getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataClient>(), getIt<ConnectivityDataClient>()));
   getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<ApiConfigClient>(), getIt<UsersClient>(), getIt<UserStorageClient>()));
   getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>(), getIt<BatchesClient>()));
-  getIt.registerLazySingleton<ILocalPointInterfaces>(() => LocalPointRepository(getIt<IHardwareRepository>(), getIt<IUserStorageRepository>(), getIt<ITrackerPreferencesRepository>()));
+  getIt.registerLazySingleton<ILocalPointRepository>(() => LocalPointRepository(getIt<IUserStorageRepository>()));
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
   getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>(), getIt<IHardwareRepository>()));
 
@@ -79,7 +79,7 @@ Future<void> injectDependencies() async {
   getIt.registerLazySingleton<MapService>(() => MapService(getIt<ApiPointService>()));
   getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointInterfaces>()));
   getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>()));
-  getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<ILocalPointInterfaces>(), getIt<TrackerPreferencesService>()));
+  getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<IHardwareRepository>()));
   getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));
 
 

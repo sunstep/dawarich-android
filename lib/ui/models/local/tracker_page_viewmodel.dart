@@ -136,7 +136,7 @@ class TrackerPageViewModel with ChangeNotifier {
     _setIsTracking(true);
     await persistPreferences();
 
-    Result<ApiBatchPoint, String> pointResult = await _pointService.createPoint();
+    Result<ApiBatchPoint, String> pointResult = await _pointService.createManualPoint();
 
     if (pointResult case Ok(value: ApiBatchPoint pointEntity)) {
 

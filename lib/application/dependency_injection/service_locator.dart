@@ -42,7 +42,7 @@ import 'package:get_it/get_it.dart';
 
 final GetIt getIt = GetIt.instance;
 
-Future<void> injectDependencies() async {
+void injectDependencies() {
 
   // Sources
   getIt.registerLazySingleton<ApiConfigClient>(() => ApiConfigClient());
@@ -117,5 +117,4 @@ Future<void> injectDependencies() async {
     }
   );
 
-  await getIt.allReady();
 }

@@ -47,10 +47,8 @@ class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
   }
 
   @override
-  Future<String> resetTrackerId() async {
-    String trackerId = await _hardwareRepository.getDeviceModel();
-    await _trackerPreferencesClient.setTrackerId(await _hardwareRepository.getDeviceModel());
-    return trackerId;
+  Future<bool> resetTrackerId() async {
+    return await _trackerPreferencesClient.deleteTrackerId();
   }
 
   @override

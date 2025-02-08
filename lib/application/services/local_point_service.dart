@@ -105,6 +105,17 @@ class LocalPointService {
 
   Future<bool> _isPointAcceptable(ApiBatchPoint point) async {
 
+    LastPoint? lastPoint = await getLastPoint();
+
+    if (lastPoint != null) {
+      DateTime candidateTime = DateTime.parse(point.properties.timestamp);
+      DateTime lastTime = DateTime.parse(lastPoint.timestamp);
+
+      if (candidateTime.isBefore(lastTime)) {
+        return false;
+      }
+    }
+
     LocationAccuracy requiredAccuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
 
     double requiredAccuracyMeters = getAccuracyThreshold(requiredAccuracy);

@@ -9,7 +9,7 @@ abstract interface class ITrackerPreferencesRepository {
   Future<void> setLocationAccuracyPreference(int accuracy);
   Future<void> setMinimumPointDistancePreference(int meters);
   Future<void> setTrackerId(String newId);
-  Future<String> resetTrackerId();
+  Future<bool> resetTrackerId();
 
   Future<bool> getAutomaticTrackingPreference();
   Future<int> getPointsPerBatchPreference();

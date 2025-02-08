@@ -122,6 +122,7 @@ class TrackerPageViewModel with ChangeNotifier {
   Future<Result<void, String>> trackPoint() async {
 
     _setIsTracking(true);
+    await persistPreferences();
 
     Result<ApiBatchPoint, String> pointResult = await _pointService.createPoint();
 
@@ -246,9 +247,14 @@ class TrackerPageViewModel with ChangeNotifier {
 
   Future<void> resetTrackerId() async {
 
-    String resetTrackerId = await _trackerPreferencesService.resetTrackerId();
-    setTrackerId(resetTrackerId);
-    trackerIdController.text = resetTrackerId;
+    bool reset = await _trackerPreferencesService.resetTrackerId();
+
+    if (reset) {
+      String trackerId = await _trackerPreferencesService.getTrackerId();
+      setTrackerId(trackerId);
+      trackerIdController.text = trackerId;
+    }
+
   }
 
   Future<void> _getTrackerId() async {

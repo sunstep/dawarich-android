@@ -35,7 +35,7 @@ class TrackerPreferencesService {
     await _trackerPreferencesRepository.setTrackerId(newId);
   }
 
-  Future<String> resetTrackerId() async {
+  Future<bool> resetTrackerId() async {
 
     return await _trackerPreferencesRepository.resetTrackerId();
   }

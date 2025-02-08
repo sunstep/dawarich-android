@@ -35,16 +35,15 @@ class LocalPointRepository implements ILocalPointInterfaces {
   Future<Result<ApiBatchPointDto, String>> createPoint() async {
 
     int accuracyIndex = await _trackerPreferencesRepository.getLocationAccuracyPreference();
+    int minimumPointDistance = await _trackerPreferencesRepository.getMinimumPointDistancePreference();
 
     LocationAccuracy accuracy = LocationAccuracy.high;
 
     if (accuracyIndex >= 0 && accuracyIndex < LocationAccuracy.values.length) {
-      LocationAccuracy.values[accuracyIndex];
-    } else {
-       LocationAccuracy.high;
+      accuracy = LocationAccuracy.values[accuracyIndex];
     }
 
-    Result<Position, String> positionResult = await _hardwareRepository.getPosition(locationAccuracy: accuracy, minimumDistance: 0);
+    Result<Position, String> positionResult = await _hardwareRepository.getPosition(locationAccuracy: accuracy, minimumDistance: minimumPointDistance);
 
     if (positionResult case Ok(value: Position position)) {
 
@@ -65,7 +64,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           deferred: 0.0,
           significantChange: "",
           locationsInPayload: await getBatchPointCount(),
-          deviceId: await _hardwareRepository.getDeviceModel(),
+          deviceId: await _trackerPreferencesRepository.getTrackerId(),
           wifi: await _hardwareRepository.getWiFiStatus(),
           batteryState: await _hardwareRepository.getBatteryState(),
           batteryLevel: await _hardwareRepository.getBatteryLevel()
@@ -101,7 +100,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           deferred: 0.0,
           significantChange: "",
           locationsInPayload: await getBatchPointCount(),
-          deviceId: await _hardwareRepository.getDeviceModel(),
+          deviceId: await _trackerPreferencesRepository.getTrackerId(),
           wifi: await _hardwareRepository.getWiFiStatus(),
           batteryState: await _hardwareRepository.getBatteryState(),
           batteryLevel: await _hardwareRepository.getBatteryLevel()

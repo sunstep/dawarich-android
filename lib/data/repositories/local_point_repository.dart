@@ -1,62 +1,49 @@
 import 'dart:convert';
 import 'package:dawarich/data/sources/local/database/extensions/mappers/point_mapper.dart';
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
-import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
-import 'package:dawarich/data/sources/local/shared_preferences/user_storage_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_batch_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_properties_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
+import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
-import 'package:dawarich/data/sources/hardware/device_data_client.dart';
-import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
-import 'package:dawarich/data/sources/hardware/wifi_data_client.dart';
 import 'package:option_result/option_result.dart';
 import 'package:drift/drift.dart';
 
 
 class LocalPointRepository implements ILocalPointInterfaces {
 
-  final GpsDataClient _gpsDataClient;
-  final DeviceDataClient _deviceDataClient;
-  final BatteryDataSource _batteryDataClient;
-  final WiFiDataClient _wiFiDataClient;
-
-  final UserStorageClient _userStorageClient;
-  final TrackerPreferencesClient _trackerPreferencesClient;
+  final IHardwareRepository _hardwareRepository;
+  final IUserStorageRepository _userStorageRepository;
+  final ITrackerPreferencesRepository _trackerPreferencesRepository;
 
   final SQLiteClient _database = SQLiteClient();
 
   LocalPointRepository(
-      this._gpsDataClient,
-      this._deviceDataClient,
-      this._batteryDataClient,
-      this._wiFiDataClient,
-      this._userStorageClient,
-      this._trackerPreferencesClient
+      this._hardwareRepository,
+      this._userStorageRepository,
+      this._trackerPreferencesRepository
     );
 
   @override
   Future<Result<ApiBatchPointDto, String>> createPoint() async {
 
-    Option<int> accuracyResult = await _trackerPreferencesClient.getLocationAccuracyPreference();
+    int accuracyIndex = await _trackerPreferencesRepository.getLocationAccuracyPreference();
+    int minimumPointDistance = await _trackerPreferencesRepository.getMinimumPointDistancePreference();
 
     LocationAccuracy accuracy = LocationAccuracy.high;
 
-    if (accuracyResult case Some(value: int accuracyIndex)) {
-      if (accuracyIndex >= 0 && accuracyIndex < LocationAccuracy.values.length) {
-        LocationAccuracy.values[accuracyIndex];
-      } else {
-         LocationAccuracy.high;
-      }
+    if (accuracyIndex >= 0 && accuracyIndex < LocationAccuracy.values.length) {
+      accuracy = LocationAccuracy.values[accuracyIndex];
     }
 
-    Result<Position, String> positionResult = await _gpsDataClient.getPosition(accuracy);
+    Result<Position, String> positionResult = await _hardwareRepository.getPosition(locationAccuracy: accuracy, minimumDistance: minimumPointDistance);
 
     if (positionResult case Ok(value: Position position)) {
 
@@ -77,10 +64,10 @@ class LocalPointRepository implements ILocalPointInterfaces {
           deferred: 0.0,
           significantChange: "",
           locationsInPayload: await getBatchPointCount(),
-          deviceId: await _deviceDataClient.getDeviceId(),
-          wifi: await _wiFiDataClient.getWiFiStatus(),
-          batteryState: await _batteryDataClient.getBatteryState(),
-          batteryLevel: await _batteryDataClient.getBatteryLevel()
+          deviceId: await _trackerPreferencesRepository.getTrackerId(),
+          wifi: await _hardwareRepository.getWiFiStatus(),
+          batteryState: await _hardwareRepository.getBatteryState(),
+          batteryLevel: await _hardwareRepository.getBatteryLevel()
       );
 
       return Ok(ApiBatchPointDto(type: "Feature", geometry: geometry, properties: pointProperties));
@@ -93,7 +80,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
   @override
   Future<Option<ApiBatchPointDto>> createCachedPoint() async {
 
-    Option<Position> positionResult = await _gpsDataClient.getCachedPosition();
+    Option<Position> positionResult = await _hardwareRepository.getCachedPosition();
 
     if (positionResult case Some(value: Position position)) {
       BatchPointGeometryDto geometry = BatchPointGeometryDto(type: "Point", coordinates: [position.longitude, position.latitude]);
@@ -113,10 +100,10 @@ class LocalPointRepository implements ILocalPointInterfaces {
           deferred: 0.0,
           significantChange: "",
           locationsInPayload: await getBatchPointCount(),
-          deviceId: await _deviceDataClient.getDeviceId(),
-          wifi: await _wiFiDataClient.getWiFiStatus(),
-          batteryState: await _batteryDataClient.getBatteryState(),
-          batteryLevel: await _batteryDataClient.getBatteryLevel()
+          deviceId: await _trackerPreferencesRepository.getTrackerId(),
+          wifi: await _hardwareRepository.getWiFiStatus(),
+          batteryState: await _hardwareRepository.getBatteryState(),
+          batteryLevel: await _hardwareRepository.getBatteryLevel()
       );
 
       return Some(ApiBatchPointDto(type: "Feature", geometry: geometry, properties: pointProperties));
@@ -134,7 +121,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           type: Value(point.type),
           geometryId: Value(await _storeGeometry(point.geometry)),
           propertiesId: Value(await _storeProperties(point.properties)),
-          userId: Value(await _userStorageClient.getLoggedInUserId()),
+          userId: Value(await _userStorageRepository.getLoggedInUserId()),
         )
       );
       return const Ok(null); // Indicate success
@@ -179,7 +166,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
   Future<Option<LastPointDto>> getLastPoint() async {
     try {
       // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
-      final int userId = await _userStorageClient.getLoggedInUserId();
+      final int userId = await _userStorageRepository.getLoggedInUserId();
 
       final JoinedSelectStatement queryResult = _database.select(_database.pointsTable)
         .join([
@@ -224,7 +211,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
           _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
         ),
       ])
-        ..where(_database.pointsTable.isUploaded.equals(false) & _database.pointsTable.userId.equals(await _userStorageClient.getLoggedInUserId()));
+        ..where(_database.pointsTable.isUploaded.equals(false) & _database.pointsTable.userId.equals(await _userStorageRepository.getLoggedInUserId()));
 
       final List<BatchPointDto> batchPoints = await query.map((row) => row.toPointDto(_database))
           .get();
@@ -295,7 +282,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
   @override
   Future<Result<void, String>> deletePoint(int pointId) async {
     try {
-      final int userId = await _userStorageClient.getLoggedInUserId();
+      final int userId = await _userStorageRepository.getLoggedInUserId();
 
       final deletedCount = await (_database.delete(_database.pointsTable)
         ..where((t) => t.id.equals(pointId) & t.userId.equals(userId))
@@ -314,7 +301,7 @@ class LocalPointRepository implements ILocalPointInterfaces {
   @override
   Future<Result<void, String>> clearBatch() async {
     try {
-      final int userId = await _userStorageClient.getLoggedInUserId();
+      final int userId = await _userStorageRepository.getLoggedInUserId();
 
       await (_database.delete(_database.pointsTable)
         ..where((t) => t.isUploaded.equals(false) & t.userId.equals(userId))

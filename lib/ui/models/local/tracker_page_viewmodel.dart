@@ -8,6 +8,7 @@ import 'package:dawarich/ui/converters/last_point_converter.dart';
 import 'package:dawarich/ui/models/api/v1/overland/batches/request/api_batch_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/ui/models/local/last_point_viewmodel.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
@@ -16,11 +17,17 @@ class TrackerPageViewModel with ChangeNotifier {
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
 
+  bool _hideLastPoint = true;
+  bool get hideLastPoint => _hideLastPoint;
+
   int _pointInBatchCount = 0;
   int get batchPointCount => _pointInBatchCount;
 
-  bool _dataModified = false;
-  bool get dataModified => _dataModified;
+  bool _showAdvancedSettings = false;
+  bool get showAdvancedSettings => _showAdvancedSettings;
+
+  bool _isRetrievingSettings = true;
+  bool get isRetrievingSettings => _isRetrievingSettings;
 
   bool _isTrackingEnabled = false;
   bool _isUpdatingTracking = false;
@@ -39,6 +46,15 @@ class TrackerPageViewModel with ChangeNotifier {
   LocationAccuracy _locationAccuracy = Platform.isAndroid ? LocationAccuracy.high : LocationAccuracy.best;
   LocationAccuracy get locationAccuracy => _locationAccuracy;
 
+  int _minimumPointDistance = 0;
+  int get minimumPointDistance => _minimumPointDistance;
+
+  String _trackerId = "";
+  String get trackerId => _trackerId;
+
+  final TextEditingController trackerIdController = TextEditingController();
+
+
   final LocalPointService _pointService;
   final TrackerPreferencesService _trackerPreferencesService;
 
@@ -54,12 +70,30 @@ class TrackerPageViewModel with ChangeNotifier {
     await getPointInBatchCount();
 
     // Retrieve settings
-    await getAutomaticTrackingPreference();
-    await getMaxPointsPerBatchPreference();
-    await getTrackingFrequencyPreference();
-    await getLocationAccuracyPreference();
+    await _getAutomaticTrackingPreference();
+    await _getMaxPointsPerBatchPreference();
+    await _getTrackingFrequencyPreference();
+    await _getLocationAccuracyPreference();
+    await _getMinimumPointDistancePreference();
+    await _getTrackerId();
 
+    setIsRetrievingSettings(false);
+  }
 
+  Future<void> persistPreferences() async {
+
+    await storeAutomaticTracking();
+    await storeMaxPointsPerBatch();
+    await storeTrackingFrequency();
+    await storeLocationAccuracy();
+    await storeMinimumPointDistance();
+    await storeTrackerId();
+  }
+
+  void toggleAdvancedSettings() {
+
+    _showAdvancedSettings = !_showAdvancedSettings;
+    notifyListeners();
   }
 
   void setLastPoint(LastPointViewModel? point) {
@@ -70,8 +104,18 @@ class TrackerPageViewModel with ChangeNotifier {
 
   Future<void> getLastPoint() async {
 
-    LastPoint? lastPoint =  await _pointService.getLastPoint();
-    setLastPoint(lastPoint?.toViewModel());
+    Option<LastPoint> lastPointResult =  await _pointService.getLastPoint();
+
+    if (lastPointResult case Some(value: LastPoint lastPoint)) {
+      setLastPoint(lastPoint.toViewModel());
+    }
+
+  }
+
+  void setHideLastPoint(bool trueOrFalse) {
+
+    _hideLastPoint = trueOrFalse;
+    notifyListeners();
   }
 
 
@@ -82,14 +126,15 @@ class TrackerPageViewModel with ChangeNotifier {
 
   Future<void> getPointInBatchCount() async => setPointInBatchCount(await _pointService.getBatchPointsCount());
 
-  void setDataModified(bool trueOrFalse) {
-    _dataModified = trueOrFalse;
+  void setIsRetrievingSettings(bool trueOrFalse) {
+    _isRetrievingSettings = trueOrFalse;
     notifyListeners();
   }
 
   Future<Result<void, String>> trackPoint() async {
 
     _setIsTracking(true);
+    await persistPreferences();
 
     Result<ApiBatchPoint, String> pointResult = await _pointService.createPoint();
 
@@ -117,7 +162,7 @@ class TrackerPageViewModel with ChangeNotifier {
     }
 
     _setIsTracking(false);
-    return Err("Failed to create point: $error Please try again later or set a higher location accuracy threshold.");
+    return Err("Failed to create point: $error");
   }
 
   void _setIsTracking(bool trueOrFalse) {
@@ -125,54 +170,110 @@ class TrackerPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setMaxPointsPerBatch(int? amount) async {
+  void setMaxPointsPerBatch(int? amount) {
     amount ??= 50; // If null somehow, just fall back to default
     _maxPointsPerBatch = amount;
-    await _trackerPreferencesService.setPointsPerBatchPreference(amount);
     notifyListeners();
   }
 
-  Future<void> getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(await _trackerPreferencesService.getPointsPerBatchPreference());
+  Future<void> storeMaxPointsPerBatch() async {
+    await _trackerPreferencesService.setPointsPerBatchPreference(_maxPointsPerBatch);
+  }
 
+  Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(await _trackerPreferencesService.getPointsPerBatchPreference());
 
   Future<void> toggleAutomaticTracking(bool trueOrFalse) async {
+
     if (!isUpdatingTracking) {
-      await setAutomaticTracking(trueOrFalse);
+
+      _isUpdatingTracking = true;
+
+      setAutomaticTracking(trueOrFalse);
+      await storeAutomaticTracking();
+
+      _isUpdatingTracking = false;
     }
   }
 
-  Future<void> setAutomaticTracking(bool trueOrFalse) async {
-    _isUpdatingTracking = true;
-    _isTrackingEnabled = trueOrFalse;
-    await _trackerPreferencesService.setAutomaticTrackingPreference(trueOrFalse);
+  void setAutomaticTracking(bool trueOrFalse)  {
 
-    _isUpdatingTracking = false;
+    _isTrackingEnabled = trueOrFalse;
     notifyListeners();
   }
 
-  Future<void> getAutomaticTrackingPreference() async => await setAutomaticTracking(await _trackerPreferencesService.getAutomaticTrackingPreference());
+  Future<void> storeAutomaticTracking() async {
+    await _trackerPreferencesService.setAutomaticTrackingPreference(_isTrackingEnabled);
+  }
+
+  Future<void> _getAutomaticTrackingPreference() async => setAutomaticTracking(await _trackerPreferencesService.getAutomaticTrackingPreference());
 
 
-  Future<void> setTrackingFrequency(int? seconds) async {
+  void setTrackingFrequency(int? seconds) {
     seconds ??= 10;
     _trackingFrequency = seconds;
-    await _trackerPreferencesService.setTrackingFrequencyPreference(seconds);
+
     notifyListeners();
   }
 
-  Future<void> getTrackingFrequencyPreference() async => await setTrackingFrequency(await _trackerPreferencesService.getTrackingFrequencyPreference());
+  Future<void> storeTrackingFrequency() async {
+    await _trackerPreferencesService.setTrackingFrequencyPreference(_trackingFrequency);
+  }
+
+  Future<void> _getTrackingFrequencyPreference() async => setTrackingFrequency(await _trackerPreferencesService.getTrackingFrequencyPreference());
 
 
-  Future<void> setLocationAccuracy(LocationAccuracy accuracy) async {
+  void setLocationAccuracy(LocationAccuracy accuracy) {
 
     _locationAccuracy = accuracy;
-    await _trackerPreferencesService.setLocationAccuracyPreference(accuracy);
-    _pointService.getAccuracyThreshold(locationAccuracy);
     notifyListeners();
   }
 
-  Future<void> getLocationAccuracyPreference() async {
-    await setLocationAccuracy(await _trackerPreferencesService.getLocationAccuracyPreference());
+  Future<void> storeLocationAccuracy() async {
+
+    await _trackerPreferencesService.setLocationAccuracyPreference(_locationAccuracy);
+  }
+
+  Future<void> _getLocationAccuracyPreference() async {
+    setLocationAccuracy(await _trackerPreferencesService.getLocationAccuracyPreference());
+  }
+
+  void setMinimumPointDistance(int meters) {
+    _minimumPointDistance = meters;
+    notifyListeners();
+  }
+
+  Future<void> storeMinimumPointDistance() async {
+    await _trackerPreferencesService.setMinimumPointDistancePreference(_minimumPointDistance);
+  }
+
+  Future<void> _getMinimumPointDistancePreference() async => setMinimumPointDistance(await _trackerPreferencesService.getMinimumPointDistancePreference());
+
+  void setTrackerId(String id) {
+    _trackerId = id;
+    notifyListeners();
+  }
+
+  Future<void> storeTrackerId() async {
+    await _trackerPreferencesService.setTrackerId(_trackerId);
+  }
+
+  Future<void> resetTrackerId() async {
+
+    bool reset = await _trackerPreferencesService.resetTrackerId();
+
+    if (reset) {
+      String trackerId = await _trackerPreferencesService.getTrackerId();
+      setTrackerId(trackerId);
+      trackerIdController.text = trackerId;
+    }
+
+  }
+
+  Future<void> _getTrackerId() async {
+
+    String trackerId = await _trackerPreferencesService.getTrackerId();
+    setTrackerId(trackerId);
+    trackerIdController.text = trackerId;
   }
 
   List<Map<String, dynamic>> get accuracyOptions {

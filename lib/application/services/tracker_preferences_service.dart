@@ -27,6 +27,19 @@ class TrackerPreferencesService {
     await _trackerPreferencesRepository.setLocationAccuracyPreference(accuracy.index);
   }
 
+  Future<void> setMinimumPointDistancePreference(int meters) async {
+    await _trackerPreferencesRepository.setMinimumPointDistancePreference(meters);
+  }
+
+  Future<void> setTrackerId(String newId) async {
+    await _trackerPreferencesRepository.setTrackerId(newId);
+  }
+
+  Future<bool> resetTrackerId() async {
+
+    return await _trackerPreferencesRepository.resetTrackerId();
+  }
+
   Future<bool> getAutomaticTrackingPreference() async {
     return await _trackerPreferencesRepository.getAutomaticTrackingPreference();
   }
@@ -50,6 +63,13 @@ class TrackerPreferencesService {
     }
   }
 
+  Future<int> getMinimumPointDistancePreference() async {
 
+    return await _trackerPreferencesRepository.getMinimumPointDistancePreference();
+  }
+
+  Future<String> getTrackerId() async {
+    return await _trackerPreferencesRepository.getTrackerId();
+  }
 
 }

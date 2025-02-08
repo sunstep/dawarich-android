@@ -64,7 +64,7 @@ class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
 
     // Fall back to this if the user does not have this setting stored yet. Preferences are never stored and fall back to default values until the user manually changes them.
       case None(): {
-        return true;
+        return false;
       }
     }
 

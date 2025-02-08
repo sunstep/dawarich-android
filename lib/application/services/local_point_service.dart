@@ -1,13 +1,18 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:dawarich/application/converters/additional_point_data_converter.dart';
 import 'package:dawarich/application/converters/batch/api_batch_point_converter.dart';
 import 'package:dawarich/application/converters/batch/point_batch_converter.dart';
 import 'package:dawarich/application/converters/last_point_converter.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_batch_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/local/additional_point_data_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
+import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
+import 'package:dawarich/domain/entities/local/additional_point_data.dart';
 import 'package:dawarich/domain/entities/local/database/batch/point_batch.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
 import 'package:dawarich/domain/entities/local/point_pair.dart';
@@ -18,36 +23,98 @@ import 'package:option_result/option_result.dart';
 
 class LocalPointService {
 
-  final ILocalPointInterfaces _localPointInterfaces;
+  // StreamSubscription<Result<Position, String>>? _stream;
+  // Timer? _heartbeatTimer;
+
+  final ILocalPointRepository _localPointInterfaces;
+  final IHardwareRepository _hardwareInterfaces;
   final TrackerPreferencesService _trackerPreferencesService;
 
-  LocalPointService(this._localPointInterfaces, this._trackerPreferencesService);
 
-  Future<Result<ApiBatchPoint, String>> createPoint() async {
+  LocalPointService(this._localPointInterfaces, this._trackerPreferencesService, this._hardwareInterfaces);
 
-    Option<ApiBatchPointDto> cachedPointResult = await _localPointInterfaces.createCachedPoint();
+  // Future<void> startTracking() async {
+  //
+  //   LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
+  //   int minimumDistance = await _trackerPreferencesService.getMinimumPointDistancePreference();
+  //   int trackingFrequency = await _trackerPreferencesService.getTrackingFrequencyPreference();
+  //
+  //   _heartbeatTimer = Timer.periodic(Duration(seconds: trackingFrequency), (timer) async {
+  //
+  //   });
+  //
+  //   Stream<Result<Position, String>> positionStream = _hardwareInterfaces.getPositionStream(accuracy: accuracy, minimumDistance: minimumDistance);
+  //   _stream = positionStream.listen((result) {
+  //
+  //     if (result case Ok(value: Position position)) {
+  //
+  //     }
+  //   });
+  // }
+  //
+  // Future<Result<ApiBatchPoint, String>> createAutomaticPoint() async {
+  //
+  //
+  // }
 
-    if (cachedPointResult case Some(value: ApiBatchPointDto cachedPointDto)) {
+  // Future<void> stopAutomaticPointCreation() async {
+  //   _heartbeatTimer?.cancel();
+  //   _heartbeatTimer = null;
+  //   await _stream?.cancel();
+  //   _stream = null;
+  // }
 
-      ApiBatchPoint cachedPoint = cachedPointDto.toEntity();
+  Future<Result<ApiBatchPoint, String>> createManualPoint() async {
 
-      if (await _isUniquePoint(cachedPoint) && await _isPointNewerThanLastPoint(cachedPoint) && await _isPointDistanceGreaterThanPreference(cachedPoint) &&  await _isPointAccurateEnough(cachedPoint)) {
-        await _localPointInterfaces.storePoint(cachedPointDto);
-        return Ok(cachedPoint);
-      } else {
-        if (kDebugMode) {
-          debugPrint("[DEBUG] Cached point was not acceptable for usage.");
-        }
-      }
-    } else {
-      if (kDebugMode) {
-        debugPrint("[DEBUG] Cached point was not available.");
-      }
+    Option<ApiBatchPoint> cachedPointOption = await _tryCreateCachedPoint();
+
+    if (cachedPointOption case Some(value: ApiBatchPoint cachedPoint)) {
+      return Ok(cachedPoint);
     }
 
-    Result<ApiBatchPointDto, String> creationResult = await _localPointInterfaces.createPoint();
+    return await _createNewPoint();
+  }
 
-    if (creationResult case Ok(value: ApiBatchPointDto newPointDto)) {
+  Future<Option<ApiBatchPoint>> _tryCreateCachedPoint() async {
+
+    Option<Position> positionResult = await _hardwareInterfaces.getCachedPosition();
+    AdditionalPointData additionalData = await _getAdditionalPointData();
+
+    if (positionResult case Some(value: Position postion)) {
+      AdditionalPointDataDto additionalPointDataDto = additionalData.toDto();
+      ApiBatchPointDto cachedPointDto = await _localPointInterfaces.createPoint(postion, additionalPointDataDto);
+
+      ApiBatchPoint cachedPoint = cachedPointDto.toEntity();
+      Result<(), String> validationResult = await _validatePoint(cachedPoint);
+
+      if (validationResult case Ok()) {
+        await _localPointInterfaces.storePoint(cachedPointDto);
+        return Some(cachedPoint);
+      }
+
+      if (kDebugMode) {
+        debugPrint("[DEBUG] Cached point was not acceptable for usage.");
+      }
+
+    }
+
+    if (kDebugMode) {
+      debugPrint("[DEBUG] Cached point was not available.");
+    }
+
+    return const None();
+  }
+
+  Future<Result<ApiBatchPoint, String>> _createNewPoint() async {
+
+    LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
+    Result<Position, String> positionResult = await _hardwareInterfaces.getPosition(accuracy);
+    AdditionalPointData additionalData = await _getAdditionalPointData();
+
+    if (positionResult case Ok(value: Position position)) {
+
+      AdditionalPointDataDto additionalPointDataDto = additionalData.toDto();
+      ApiBatchPointDto newPointDto = await _localPointInterfaces.createPoint(position, additionalPointDataDto);
 
       ApiBatchPoint newPoint = newPointDto.toEntity();
       Result<(), String> validationResult = await _validatePoint(newPoint);
@@ -64,15 +131,29 @@ class LocalPointService {
       }
     } else {
       if (kDebugMode) {
-        debugPrint("[DEBUG]  point not created.");
+        debugPrint("[DEBUG] point not created.");
       }
 
-      String error = creationResult.unwrapErr();
+      String error = positionResult.unwrapErr();
       return Err("Failed to create point: $error");
     }
+  }
 
+  Future<AdditionalPointData> _getAdditionalPointData() async {
 
+    int pointsInBatch = await _localPointInterfaces.getBatchPointCount();
+    String trackerId = await _trackerPreferencesService.getTrackerId();
+    String wifi = await _hardwareInterfaces.getWiFiStatus();
+    String batteryState = await _hardwareInterfaces.getBatteryState();
+    double batteryLevel = await _hardwareInterfaces.getBatteryLevel();
 
+    return AdditionalPointData(
+      currentPointsInBatch: pointsInBatch,
+      deviceId: trackerId,
+      wifi: wifi,
+      batteryState: batteryState,
+      batteryLevel: batteryLevel
+    );
   }
 
   Future<bool> markBatchAsUploaded(PointBatch batch) async {

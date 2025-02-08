@@ -25,9 +25,9 @@ class HardwareRepository implements IHardwareRepository {
   );
 
   @override
-  Future<Result<Position, String>> getPosition({required LocationAccuracy locationAccuracy, required int minimumDistance}) async {
+  Future<Result<Position, String>> getPosition(LocationAccuracy locationAccuracy) async {
 
-    return await _gpsDataClient.getPosition(locationAccuracy: locationAccuracy, minimumDistance: minimumDistance);
+    return await _gpsDataClient.getPosition(locationAccuracy);
 
 
   }
@@ -35,6 +35,17 @@ class HardwareRepository implements IHardwareRepository {
   @override
   Future<Option<Position>> getCachedPosition() async {
     return await _gpsDataClient.getCachedPosition();
+  }
+
+  @override
+  Stream<Result<Position, String>> getPositionStream({
+    required LocationAccuracy accuracy,
+    required int minimumDistance,
+  }) {
+    return _gpsDataClient.getPositionStream(
+      accuracy: accuracy,
+      distanceFilter: minimumDistance,
+    );
   }
 
   @override

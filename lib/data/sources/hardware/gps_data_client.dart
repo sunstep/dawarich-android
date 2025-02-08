@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 class GpsDataClient {
 
-  Future<Result<Position, String>> getPosition({required LocationAccuracy locationAccuracy, required int minimumDistance}) async {
+  Future<Result<Position, String>> getPosition(LocationAccuracy locationAccuracy) async {
 
     try {
       Position position = await Geolocator.getCurrentPosition(
@@ -34,4 +36,26 @@ class GpsDataClient {
     }
 
   }
+
+  Stream<Result<Position, String>> getPositionStream({
+    required LocationAccuracy accuracy,
+    required int distanceFilter,
+  }) {
+    return Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: accuracy,
+        distanceFilter: distanceFilter,
+      ),
+    ).transform(
+      StreamTransformer<Position, Result<Position, String>>.fromHandlers(
+        handleData: (position, sink) {
+          sink.add(Ok<Position, String>(position));
+        },
+        handleError: (error, stackTrace, sink) {
+          sink.add(Err(error.toString()));
+        },
+      ),
+    );
+  }
+
 }

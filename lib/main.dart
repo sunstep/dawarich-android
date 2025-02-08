@@ -6,9 +6,9 @@ import 'package:dawarich/ui/routing/app_router.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await injectDependencies();
+  injectDependencies();
   runApp(const AppBase());
 }
 

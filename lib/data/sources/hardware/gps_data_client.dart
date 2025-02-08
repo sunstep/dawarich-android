@@ -9,8 +9,8 @@ class GpsDataClient {
       Position position = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
           accuracy: locationAccuracy,
-          distanceFilter: minimumDistance,
-          timeLimit: null,
+          distanceFilter: 0,
+          timeLimit: const Duration(seconds: 10),
         ),
       );
 

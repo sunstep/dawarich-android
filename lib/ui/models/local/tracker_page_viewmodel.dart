@@ -14,9 +14,6 @@ import 'package:option_result/option_result.dart';
 
 class TrackerPageViewModel with ChangeNotifier {
 
-  bool _showAdvancedSettings = false;
-  bool get showAdvancedSettings => _showAdvancedSettings;
-
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
 
@@ -25,6 +22,12 @@ class TrackerPageViewModel with ChangeNotifier {
 
   int _pointInBatchCount = 0;
   int get batchPointCount => _pointInBatchCount;
+
+  bool _showAdvancedSettings = false;
+  bool get showAdvancedSettings => _showAdvancedSettings;
+
+  bool _isRetrievingSettings = true;
+  bool get isRetrievingSettings => _isRetrievingSettings;
 
   bool _isTrackingEnabled = false;
   bool _isUpdatingTracking = false;
@@ -74,6 +77,7 @@ class TrackerPageViewModel with ChangeNotifier {
     await _getMinimumPointDistancePreference();
     await _getTrackerId();
 
+    setIsRetrievingSettings(false);
   }
 
   Future<void> persistPreferences() async {
@@ -100,8 +104,12 @@ class TrackerPageViewModel with ChangeNotifier {
 
   Future<void> getLastPoint() async {
 
-    LastPoint? lastPoint =  await _pointService.getLastPoint();
-    setLastPoint(lastPoint?.toViewModel());
+    Option<LastPoint> lastPointResult =  await _pointService.getLastPoint();
+
+    if (lastPointResult case Some(value: LastPoint lastPoint)) {
+      setLastPoint(lastPoint.toViewModel());
+    }
+
   }
 
   void setHideLastPoint(bool trueOrFalse) {
@@ -118,6 +126,10 @@ class TrackerPageViewModel with ChangeNotifier {
 
   Future<void> getPointInBatchCount() async => setPointInBatchCount(await _pointService.getBatchPointsCount());
 
+  void setIsRetrievingSettings(bool trueOrFalse) {
+    _isRetrievingSettings = trueOrFalse;
+    notifyListeners();
+  }
 
   Future<Result<void, String>> trackPoint() async {
 
@@ -150,7 +162,7 @@ class TrackerPageViewModel with ChangeNotifier {
     }
 
     _setIsTracking(false);
-    return Err("Failed to create point: $error Please try again later or set a higher location accuracy threshold.");
+    return Err("Failed to create point: $error");
   }
 
   void _setIsTracking(bool trueOrFalse) {

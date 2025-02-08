@@ -32,10 +32,10 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _lastPointInformation(context, context.watch<TrackerPageViewModel>()),
+            _lastPointInformation(context, viewModel),
             const SizedBox(height: 12),
             const Divider(height: 32),
-            _trackerConfigurations(context, context.watch<TrackerPageViewModel>()),
+            _trackerConfigurations(context, viewModel),
           ],
         ),
       ),
@@ -175,7 +175,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
   Widget _trackerConfigurations(BuildContext context, TrackerPageViewModel viewModel) {
     return Card(
       elevation: 4,
-      child: Padding(
+      child: viewModel.isRetrievingSettings? const Center(child: CircularProgressIndicator()) : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

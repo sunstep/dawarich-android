@@ -32,7 +32,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _lastPointInformation(context, viewModel),
+            _lastPointCard(context, viewModel),
             const SizedBox(height: 12),
             const Divider(height: 32),
             _trackerConfigurations(context, viewModel),
@@ -61,7 +61,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
   }
 
 
-  Widget _lastPointInformation(BuildContext context, TrackerPageViewModel viewModel) {
+  Widget _lastPointCard(BuildContext context, TrackerPageViewModel viewModel) {
     return SizedBox(
       width: double.infinity,
       child: Card(
@@ -172,6 +172,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
     );
   }
 
+
   Widget _trackerConfigurations(BuildContext context, TrackerPageViewModel viewModel) {
     return Card(
       elevation: 4,
@@ -185,28 +186,61 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  viewModel.showAdvancedSettings ? "Advanced Settings" : "Basic Settings",
+                  viewModel.showSettings ? "Settings" : "Track Recording",
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 TextButton(
+                  child: Text(viewModel.showSettings ? "Show Recording" : "Show Settings",),
                   onPressed: viewModel.toggleAdvancedSettings,
-                  child: Text(viewModel.showAdvancedSettings ? "Show Basic" : "Show Advanced"),
+                  
                 ),
               ],
             ),
             const Divider(),
-            // Conditionally render settings based on the view model flag
-            if (!viewModel.showAdvancedSettings)
-              ..._buildBasicSettings(context, viewModel)
+            if (!viewModel.showSettings)
+              ..._recordingCard(context, viewModel)
             else
-              ..._buildAdvancedSettings(context, viewModel),
+              ..._basicSettings(context, viewModel),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildBasicSettings(BuildContext context, TrackerPageViewModel viewModel) {
+  List<Widget> _recordingCard(BuildContext context, TrackerPageViewModel viewModel) {
+    return [
+      // Status header
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            viewModel.isRecording ? "Recording in Progress" : "Not Recording",
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      // Additional information only when recording.
+      if (viewModel.isRecording) ...[
+        _keyValueRow("Track ID:", viewModel.currentTrackId),
+        const SizedBox(height: 4),
+        _keyValueRow("Points Recorded:", viewModel.trackPointsCount.toString()),
+        const SizedBox(height: 4),
+        _keyValueRow("Tracking Duration:", viewModel.recordDuration),
+        // Optionally, you can add more information such as average speed, battery info, etc.
+      ],
+      const SizedBox(height: 16),
+      // Toggle recording button.
+      Center(
+        child: ElevatedButton(
+          onPressed: viewModel.toggleRecording,
+          child: Text(viewModel.isRecording ? "Stop Recording" : "Start Recording"),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _basicSettings(BuildContext context, TrackerPageViewModel viewModel) {
     return [
       // Automatic Tracking switch
       Row(
@@ -256,7 +290,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
     ];
   }
 
-  List<Widget> _buildAdvancedSettings(BuildContext context, TrackerPageViewModel viewModel) {
+  List<Widget> _advancedSettings(BuildContext context, TrackerPageViewModel viewModel) {
     return [
       // Location Tracking Accuracy dropdown
       Column(

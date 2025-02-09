@@ -23,6 +23,28 @@ class TrackerPageViewModel with ChangeNotifier {
   int _pointInBatchCount = 0;
   int get batchPointCount => _pointInBatchCount;
 
+  bool _isRecording = false;
+  bool get isRecording => _isRecording;
+
+  String _currentTrackId = "";
+  String get currentTrackId => _currentTrackId;
+
+  int _trackPointsCount = 0;
+  int get trackPointsCount => _trackPointsCount;
+
+  Duration _recordDuration = Duration();
+  String get recordDuration {
+    final hours = _recordDuration.inHours;
+    final minutes = _recordDuration.inMinutes % 60;
+    final seconds = _recordDuration.inSeconds % 60;
+    return '${hours.toString().padLeft(2, '0')}:'
+        '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
+  }
+
+  bool _showSettings = false;
+  bool get showSettings => _showSettings;
+
   bool _showAdvancedSettings = false;
   bool get showAdvancedSettings => _showAdvancedSettings;
 
@@ -88,6 +110,15 @@ class TrackerPageViewModel with ChangeNotifier {
     await storeLocationAccuracy();
     await storeMinimumPointDistance();
     await storeTrackerId();
+  }
+
+  void toggleRecording() {
+
+  }
+
+  void toggleSettings() {
+    _showSettings = !_showSettings;
+    notifyListeners();
   }
 
   void toggleAdvancedSettings() {

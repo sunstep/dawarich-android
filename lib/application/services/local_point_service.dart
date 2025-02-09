@@ -23,59 +23,16 @@ import 'package:option_result/option_result.dart';
 
 class LocalPointService {
 
-  // StreamSubscription<Result<Position, String>>? _stream;
-  // Timer? _heartbeatTimer;
+
 
   final ILocalPointRepository _localPointInterfaces;
   final IHardwareRepository _hardwareInterfaces;
   final TrackerPreferencesService _trackerPreferencesService;
 
-
   LocalPointService(this._localPointInterfaces, this._trackerPreferencesService, this._hardwareInterfaces);
 
-  // Future<void> startTracking() async {
-  //
-  //   LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
-  //   int minimumDistance = await _trackerPreferencesService.getMinimumPointDistancePreference();
-  //   int trackingFrequency = await _trackerPreferencesService.getTrackingFrequencyPreference();
-  //
-  //   _heartbeatTimer = Timer.periodic(Duration(seconds: trackingFrequency), (timer) async {
-  //
-  //   });
-  //
-  //   Stream<Result<Position, String>> positionStream = _hardwareInterfaces.getPositionStream(accuracy: accuracy, minimumDistance: minimumDistance);
-  //   _stream = positionStream.listen((result) {
-  //
-  //     if (result case Ok(value: Position position)) {
-  //
-  //     }
-  //   });
-  // }
-  //
-  // Future<Result<ApiBatchPoint, String>> createAutomaticPoint() async {
-  //
-  //
-  // }
 
-  // Future<void> stopAutomaticPointCreation() async {
-  //   _heartbeatTimer?.cancel();
-  //   _heartbeatTimer = null;
-  //   await _stream?.cancel();
-  //   _stream = null;
-  // }
-
-  Future<Result<ApiBatchPoint, String>> createManualPoint() async {
-
-    Option<ApiBatchPoint> cachedPointOption = await _tryCreateCachedPoint();
-
-    if (cachedPointOption case Some(value: ApiBatchPoint cachedPoint)) {
-      return Ok(cachedPoint);
-    }
-
-    return await _createNewPoint();
-  }
-
-  Future<Option<ApiBatchPoint>> _tryCreateCachedPoint() async {
+  Future<Option<ApiBatchPoint>> tryCreateCachedPoint() async {
 
     Option<Position> positionResult = await _hardwareInterfaces.getCachedPosition();
     AdditionalPointData additionalData = await _getAdditionalPointData();
@@ -105,7 +62,7 @@ class LocalPointService {
     return const None();
   }
 
-  Future<Result<ApiBatchPoint, String>> _createNewPoint() async {
+  Future<Result<ApiBatchPoint, String>> createNewPoint() async {
 
     LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
     Result<Position, String> positionResult = await _hardwareInterfaces.getPosition(accuracy);
@@ -138,6 +95,7 @@ class LocalPointService {
       return Err("Failed to create point: $error");
     }
   }
+
 
   Future<AdditionalPointData> _getAdditionalPointData() async {
 

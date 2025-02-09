@@ -4,6 +4,7 @@ import 'package:dawarich/application/services/location_service.dart';
 import 'package:dawarich/application/services/map_service.dart';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/api_point_service.dart';
+import 'package:dawarich/application/services/point_automation_service.dart';
 import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data/repositories/connect_repository.dart';
@@ -80,6 +81,7 @@ void injectDependencies() {
   getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointInterfaces>()));
   getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>()));
   getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<IHardwareRepository>()));
+  getIt.registerLazySingleton<PointAutomationService>(() => PointAutomationService(getIt<TrackerPreferencesService>(), getIt<IHardwareRepository>(), getIt<LocalPointService>()));
   getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));
 
 

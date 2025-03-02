@@ -1,17 +1,15 @@
 import 'dart:convert';
 import 'package:dawarich/data/sources/local/database/extensions/mappers/point_mapper.dart';
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_batch_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_geometry_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/batch_point_properties_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/local/additional_point_data_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/batch_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/local/database/batch/point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:drift/drift.dart';
 
@@ -19,46 +17,12 @@ import 'package:drift/drift.dart';
 class LocalPointRepository implements ILocalPointRepository {
 
   final IUserStorageRepository _userStorageRepository;
-
   final SQLiteClient _database = SQLiteClient();
 
   LocalPointRepository(this._userStorageRepository);
 
   @override
-  Future<ApiBatchPointDto> createPoint(Position position, AdditionalPointDataDto additionalData) async {
-
-    BatchPointGeometryDto geometry = BatchPointGeometryDto(type: "Point", coordinates: [position.longitude, position.latitude]);
-    BatchPointPropertiesDto pointProperties = BatchPointPropertiesDto(
-      timestamp: position.timestamp
-        .toUtc()
-        // .millisecondsSinceEpoch Sadly the API does not play nice having this, so I'll keep this commented for now.
-        .toIso8601String(),
-      altitude: position.altitude,
-      speed: position.speed,
-      horizontalAccuracy: position.accuracy,
-      verticalAccuracy: position.altitudeAccuracy,
-      motion: [],
-      pauses: false,
-      activity: "",
-      desiredAccuracy: 0.0,
-      deferred: 0.0,
-      significantChange: "",
-      locationsInPayload: additionalData.currentPointsInBatch,
-      deviceId: additionalData.deviceId,
-      wifi: additionalData.wifi,
-      batteryState: additionalData.batteryState,
-      batteryLevel: additionalData.batteryLevel
-    );
-
-    return ApiBatchPointDto(
-      type: "Feature",
-      geometry: geometry,
-      properties: pointProperties
-    );
-  }
-
-  @override
-  Future<Result<void, String>> storePoint(ApiBatchPointDto point) async {
+  Future<Result<(), String>> storePoint(LocalPointDto point) async {
     try {
       await _database.into(_database.pointsTable).insert(
         PointsTableCompanion(
@@ -68,13 +32,13 @@ class LocalPointRepository implements ILocalPointRepository {
           userId: Value(await _userStorageRepository.getLoggedInUserId()),
         )
       );
-      return const Ok(null); // Indicate success
+      return const Ok(()); // Indicate success
     } catch (e) {
       return Err("Failed to store point: $e");
     }
   }
 
-  Future<int> _storeGeometry(BatchPointGeometryDto geometry) async {
+  Future<int> _storeGeometry(LocalPointGeometryDto geometry) async {
     return await _database.into(_database.pointGeometryTable).insert(
       PointGeometryTableCompanion(
         type: Value(geometry.type),
@@ -83,25 +47,22 @@ class LocalPointRepository implements ILocalPointRepository {
     );
   }
 
-  Future<int> _storeProperties(BatchPointPropertiesDto properties) async {
+  Future<int> _storeProperties(LocalPointPropertiesDto properties) async {
     return await _database.into(_database.pointPropertiesTable).insert(
       PointPropertiesTableCompanion(
-        timestamp: Value(properties.timestamp),
-        altitude: Value(properties.altitude),
-        speed: Value(properties.speed),
-        horizontalAccuracy: Value(properties.horizontalAccuracy),
-        verticalAccuracy: Value(properties.verticalAccuracy),
-        motion: Value(properties.motion.join(',')), // Convert List to String
-        pauses: Value(properties.pauses),
-        activity: Value(properties.activity),
-        desiredAccuracy: Value(properties.desiredAccuracy),
-        deferred: Value(properties.deferred),
-        significantChange: Value(properties.significantChange),
-        locationsInPayload: Value(properties.locationsInPayload),
-        deviceId: Value(properties.deviceId),
-        wifi: Value(properties.wifi),
         batteryState: Value(properties.batteryState),
         batteryLevel: Value(properties.batteryLevel),
+        wifi: Value(properties.wifi),
+        timestamp: Value(properties.timestamp),
+        horizontalAccuracy: Value(properties.horizontalAccuracy),
+        verticalAccuracy: Value(properties.verticalAccuracy),
+        altitude: Value(properties.altitude),
+        speed: Value(properties.speed),
+        speedAccuracy: Value(properties.speedAccuracy),
+        course: Value(properties.course),
+        courseAccuracy: Value(properties.courseAccuracy),
+        trackId: const Value(null),
+        deviceId: Value(properties.deviceId),
       ),
     );
   }
@@ -127,7 +88,7 @@ class LocalPointRepository implements ILocalPointRepository {
         ..limit(1)
         ..where(_database.pointsTable.userId.equals(userId));
 
-      BatchPointDto point = await queryResult.map((row) => row.toPointDto(_database)).getSingle();
+      LocalPointDto point = await queryResult.map((row) => row.toPointDto(_database)).getSingle();
 
       return Some(LastPointDto(longitude: point.geometry.coordinates[0], latitude: point.geometry.coordinates[1], timestamp: point.properties.timestamp));
 
@@ -142,7 +103,7 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<PointBatchDto> getCurrentBatch() async {
+  Future<LocalPointBatchDto> getCurrentBatch() async {
 
     try {
       final query = _database.select(_database.pointsTable).join([
@@ -157,10 +118,10 @@ class LocalPointRepository implements ILocalPointRepository {
       ])
         ..where(_database.pointsTable.isUploaded.equals(false) & _database.pointsTable.userId.equals(await _userStorageRepository.getLoggedInUserId()));
 
-      final List<BatchPointDto> batchPoints = await query.map((row) => row.toPointDto(_database))
+      final List<LocalPointDto> batchPoints = await query.map((row) => row.toPointDto(_database))
           .get();
 
-      return PointBatchDto(points: batchPoints);
+      return LocalPointBatchDto(points: batchPoints);
     } catch (e) {
       throw Exception("Failed to retrieve batch points: $e");
     }
@@ -183,7 +144,7 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<bool> isDuplicatePoint(BatchPointDto point) async {
+  Future<bool> isDuplicatePoint(DawarichPointDto point) async {
     final String serializedCoordinates = jsonEncode(point.geometry.coordinates);
 
     final count = await (_database.selectOnly(_database.pointsTable)

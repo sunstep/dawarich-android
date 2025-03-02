@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
-import 'package:dawarich/ui/converters/batch/api_point_converter.dart';
+import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
+import 'package:dawarich/ui/converters/batch/local/local_point_converter.dart';
 import 'package:dawarich/ui/converters/last_point_converter.dart';
-import 'package:dawarich/ui/models/api/v1/overland/batches/request/api_batch_point.dart';
+import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/ui/models/local/last_point_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -136,11 +136,11 @@ class TrackerPageViewModel with ChangeNotifier {
     _setIsTracking(true);
     await persistPreferences();
 
-    Result<ApiBatchPoint, String> pointResult = await _pointService.createManualPoint();
+    Result<LocalPoint, String> pointResult = await _pointService.createManualPoint();
 
-    if (pointResult case Ok(value: ApiBatchPoint pointEntity)) {
+    if (pointResult case Ok(value: LocalPoint pointEntity)) {
 
-      ApiBatchPointViewModel point = pointEntity.toViewModel();
+      LocalPointViewModel point = pointEntity.toViewModel();
 
       String formattedTimestamp = point.properties.timestamp;
       double longitude = point.geometry.coordinates[0];

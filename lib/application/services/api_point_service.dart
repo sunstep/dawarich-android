@@ -1,7 +1,7 @@
-import 'package:dawarich/application/converters/batch/api_point_batch_converter.dart';
+import 'package:dawarich/application/converters/batch/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_point_batch.dart';
+import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/slim_api_point.dart';
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
@@ -13,7 +13,7 @@ class ApiPointService {
   final IApiPointInterfaces _pointInterfaces;
   ApiPointService(this._pointInterfaces);
 
-  Future<bool> uploadBatch(ApiPointBatch batch) async {
+  Future<bool> uploadBatch(DawarichPointBatch batch) async {
 
     Result<void, String> result = await _pointInterfaces.uploadBatch(batch.toDto());
     return result.isOk();

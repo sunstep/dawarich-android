@@ -107,7 +107,9 @@ class TrackerPageViewModel with ChangeNotifier {
     Option<LastPoint> lastPointResult =  await _pointService.getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      setLastPoint(lastPoint.toViewModel());
+
+      LastPointViewModel lastPointViewModel = lastPoint.toViewModel();
+      setLastPoint(lastPointViewModel);
     }
 
   }

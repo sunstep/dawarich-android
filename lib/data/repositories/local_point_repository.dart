@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:dawarich/data/sources/local/database/extensions/mappers/point_mapper.dart';
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
@@ -32,7 +30,7 @@ class LocalPointRepository implements ILocalPointRepository {
           userId: Value(await _userStorageRepository.getLoggedInUserId()),
         )
       );
-      return const Ok(()); // Indicate success
+      return const Ok(());
     } catch (e) {
       return Err("Failed to store point: $e");
     }
@@ -103,7 +101,33 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<LocalPointBatchDto> getCurrentBatch() async {
+  Future<Result<LocalPointBatchDto, String>> getFullBatch() async {
+
+    try {
+      final query = _database.select(_database.pointsTable).join([
+        innerJoin(
+          _database.pointGeometryTable,
+          _database.pointGeometryTable.id.equalsExp(_database.pointsTable.geometryId),
+        ),
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
+        ),
+      ])
+        ..where(_database.pointsTable.userId.equals(await _userStorageRepository.getLoggedInUserId()));
+
+      final List<LocalPointDto> batchPoints = await query.map((row) => row
+          .toPointDto(_database))
+          .get();
+
+      return Ok(LocalPointBatchDto(points: batchPoints));
+    } catch (e) {
+      return Err("Failed to retrieve batch points: $e");
+    }
+  }
+
+  @override
+  Future<Result<LocalPointBatchDto, String>> getCurrentBatch() async {
 
     try {
       final query = _database.select(_database.pointsTable).join([
@@ -118,17 +142,18 @@ class LocalPointRepository implements ILocalPointRepository {
       ])
         ..where(_database.pointsTable.isUploaded.equals(false) & _database.pointsTable.userId.equals(await _userStorageRepository.getLoggedInUserId()));
 
-      final List<LocalPointDto> batchPoints = await query.map((row) => row.toPointDto(_database))
+      final List<LocalPointDto> batchPoints = await query.map((row) => row
+          .toPointDto(_database))
           .get();
 
-      return LocalPointBatchDto(points: batchPoints);
+      return Ok(LocalPointBatchDto(points: batchPoints));
     } catch (e) {
-      throw Exception("Failed to retrieve batch points: $e");
+      return Err("Failed to retrieve batch points: $e");
     }
   }
 
   @override
-  Future<int> getBatchPointCount() async {
+  Future<Result<int, String>> getBatchPointCount() async {
     try {
 
       final countQuery = await (_database.selectOnly(_database.pointsTable)
@@ -136,37 +161,11 @@ class LocalPointRepository implements ILocalPointRepository {
         ..where(_database.pointsTable.isUploaded.equals(false)))
           .getSingle();
 
-      return countQuery.read(_database.pointsTable.id.count()) ?? 0;
+      return Ok(countQuery.read(_database.pointsTable.id.count()) ?? 0);
     } catch (e) {
       debugPrint("Error fetching not uploaded points count: $e");
-      return 0;
+      return Err("Failed to get point count of batch: $e");
     }
-  }
-
-  @override
-  Future<bool> isDuplicatePoint(DawarichPointDto point) async {
-    final String serializedCoordinates = jsonEncode(point.geometry.coordinates);
-
-    final count = await (_database.selectOnly(_database.pointsTable)
-      ..addColumns([_database.pointsTable.id])
-      ..join([
-        innerJoin(
-          _database.pointPropertiesTable,
-          _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
-        ),
-        innerJoin(
-          _database.pointGeometryTable,
-          _database.pointGeometryTable.id.equalsExp(_database.pointsTable.geometryId),
-        ),
-      ])
-      ..where(
-        _database.pointPropertiesTable.timestamp.equals(point.properties.timestamp) &
-        _database.pointGeometryTable.coordinates.equals(serializedCoordinates),
-      )
-      ..limit(1))
-        .get();
-
-    return count.isNotEmpty;
   }
 
   @override

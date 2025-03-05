@@ -308,6 +308,7 @@ class LocalPointService {
       DateTime batchPointTime = DateTime.parse(batchPointTimeString);
 
       answer = !candidateTime.isAtSameMomentAs(batchPointTime);
+      batchIndex++;
     }
 
     return answer;

@@ -1,8 +1,16 @@
+import 'package:intl/intl.dart';
+
 class LocalPointPropertiesViewModel {
   final String batteryState;
   final double batteryLevel;
   final String wifi;
   final String timestamp;
+  String get formattedTimestamp {
+    return DateFormat('dd MMM yyyy HH:mm:ss')
+        .format(DateTime.parse(timestamp)
+        .toLocal()
+    );
+  }
   final double horizontalAccuracy;
   final double verticalAccuracy;
   final double altitude;

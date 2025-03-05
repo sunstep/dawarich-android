@@ -144,11 +144,11 @@ class TrackerPageViewModel with ChangeNotifier {
 
       LocalPointViewModel point = pointEntity.toViewModel();
 
-      String formattedTimestamp = point.properties.timestamp;
+      String timestamp = point.properties.timestamp;
       double longitude = point.geometry.coordinates[0];
       double latitude = point.geometry.coordinates[1];
 
-      LastPointViewModel lastPoint = LastPointViewModel(timestamp: formattedTimestamp, longitude: longitude, latitude: latitude);
+      LastPointViewModel lastPoint = LastPointViewModel(rawTimestamp: timestamp, longitude: longitude, latitude: latitude);
 
       setLastPoint(lastPoint);
       await getPointInBatchCount();

@@ -42,7 +42,7 @@ class BatchExplorerPage extends StatelessWidget{
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   child: ListTile(
                     title: Text(
-                      point.properties.timestamp,
+                      point.properties.formattedTimestamp,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(

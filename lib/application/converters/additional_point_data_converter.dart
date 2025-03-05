@@ -1,4 +1,3 @@
-
 import 'package:dawarich/data_contracts/data_transfer_objects/local/additional_point_data_dto.dart';
 import 'package:dawarich/domain/entities/local/additional_point_data.dart';
 

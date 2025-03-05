@@ -100,7 +100,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _keyValueRow("Timestamp:", viewModel.lastPoint?.timestamp ?? "No Data"),
+                      _keyValueRow("Timestamp:", viewModel.lastPoint?.formattedTimestamp ?? "No Data"),
                       const SizedBox(height: 4),
                       _keyValueRow("Longitude:", viewModel.lastPoint?.longitude.toString() ?? "No Data"),
                       const SizedBox(height: 4),

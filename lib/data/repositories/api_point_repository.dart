@@ -1,5 +1,5 @@
 import 'package:dawarich/data/sources/api/v1/overland/batches/batches_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/overland/batches/request/api_point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
@@ -15,7 +15,7 @@ class ApiPointRepository implements IApiPointInterfaces {
   ApiPointRepository(this._pointsClient, this._batchesClient);
 
   @override
-  Future<Result<void, String>> uploadBatch(ApiPointBatchDto batch) async {
+  Future<Result<void, String>> uploadBatch(DawarichPointBatchDto batch) async {
 
     Result<dynamic, String> result = await _batchesClient.post(batch);
 

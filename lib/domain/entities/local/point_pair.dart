@@ -7,7 +7,7 @@ class PointPair {
 
   const PointPair(this.A, this.B);
 
-  bool isAntiPodal(){
+  bool _isAntiPodal(){
 
     double latA = degToRadian(A.latitude);
     double lngA = degToRadian(A.longitude);
@@ -25,7 +25,7 @@ class PointPair {
     const Distance distanceVincenty = DistanceVincenty();
     const Distance distanceHaversine = DistanceHaversine();
 
-    if (isAntiPodal()) {
+    if (_isAntiPodal()) {
       return distanceHaversine.as(LengthUnit.Meter, A, B);
     }
 

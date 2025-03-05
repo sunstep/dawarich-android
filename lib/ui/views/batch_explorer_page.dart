@@ -1,6 +1,6 @@
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
-import 'package:dawarich/ui/models/api/v1/overland/batches/request/point_viewmodel.dart';
 import 'package:dawarich/ui/models/local/batch_explorer_viewmodel.dart';
+import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.dart';
 import 'package:dawarich/ui/widgets/appbars/batch_explorer_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,7 +42,7 @@ class BatchExplorerPage extends StatelessWidget{
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   child: ListTile(
                     title: Text(
-                      point.properties.timestamp,
+                      point.properties.formattedTimestamp,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
@@ -82,7 +82,7 @@ class BatchExplorerPage extends StatelessWidget{
     );
   }
 
-  void _confirmDeletePoint(BuildContext context, BatchExplorerViewModel viewModel, BatchPointViewModel point) {
+  void _confirmDeletePoint(BuildContext context, BatchExplorerViewModel viewModel, LocalPointViewModel point) {
     showDialog(
       context: context,
       builder: (BuildContext ctx) {

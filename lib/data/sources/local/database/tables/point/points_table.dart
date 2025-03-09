@@ -1,5 +1,5 @@
-import 'package:dawarich/data/sources/local/database/tables/point_geometry_table.dart';
-import 'package:dawarich/data/sources/local/database/tables/point_properties_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/point_geometry_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/point_properties_table.dart';
 import 'package:drift/drift.dart';
 
 class PointsTable extends Table {

@@ -1,6 +1,6 @@
-import 'package:dawarich/data/sources/local/database/tables/point_properties_table.dart';
-import 'package:dawarich/data/sources/local/database/tables/point_geometry_table.dart';
-import 'package:dawarich/data/sources/local/database/tables/points_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/point_properties_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/point_geometry_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/points_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';

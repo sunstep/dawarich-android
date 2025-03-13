@@ -2,21 +2,23 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dawarich/data/sources/api/v1/users/users_client.dart';
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
-import 'package:dawarich/data/sources/local/shared_preferences/user_storage_client.dart';
+import 'package:dawarich/data/sources/local/database/user_storage_client.dart';
+import 'package:dawarich/data/sources/local/shared_preferences/user_session.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/health/response/health_dto.dart';
 import 'package:option_result/option_result.dart';
 
 class ConnectRepository implements IConnectRepository {
 
   final ApiConfigClient _apiConfigClient;
-  final UsersClient _usersClient;
+  final UsersApiClient _usersApiClient;
   final UserStorageClient _userStorageClient;
+  final UserSessionClient _userSessionClient;
 
-  ConnectRepository(this._apiConfigClient, this._usersClient, this._userStorageClient);
+  ConnectRepository(this._apiConfigClient, this._usersApiClient, this._userStorageClient, this._userSessionClient);
 
   @override
   Future<bool> testHost(String host) async {
@@ -26,7 +28,7 @@ class ConnectRepository implements IConnectRepository {
       _apiConfigClient.setHost(host);
 
       final Uri uri = Uri.parse("$host/api/v1/health");
-      final http.Response response = await http.get(uri);
+      final Response response = await get(uri);
 
       if (response.statusCode == 200) {
         final dynamic resultBody = jsonDecode(response.body);
@@ -57,14 +59,14 @@ class ConnectRepository implements IConnectRepository {
   Future<bool> tryApiKey(String apiKey) async {
 
     _apiConfigClient.setApiKey(apiKey);
-    final Result<UserDto, String> result = await _usersClient.getMe();
+    final Result<UserDto, String> result = await _usersApiClient.getUser();
 
     switch (result) {
       case(Ok(value: UserDto user)): {
 
-        _userStorageClient.setUser(user);
-        _userStorageClient.storeUser();
-        _apiConfigClient.storeApiConfig();
+        final int userId = await _userStorageClient.tryStoreUser(user);
+        await _userSessionClient.saveSession(userId);
+        await _apiConfigClient.storeApiConfig();
         return true;
       }
 

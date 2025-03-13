@@ -1,0 +1,117 @@
+import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_settings_dto.dart';
+import 'package:drift/drift.dart';
+import 'package:option_result/option.dart';
+
+
+class UserStorageClient {
+
+  final SQLiteClient _database = SQLiteClient();
+
+  Future<Option<UserDto>> _findDawarichUser(int dawarichId, String endpoint) async {
+
+    final userQuery = _database
+      .select(_database.userTable)
+        ..where((u) =>
+          u.dawarichId.equals(dawarichId) &
+          u.dawarichEndpoint.equals(endpoint)
+    );
+
+    final UserTableData? userResult = await userQuery.getSingleOrNull();
+
+    if (userResult != null) {
+
+      final settingsQuery = _database
+        .select(_database.userSettingsTable)
+          ..where((s) => s.userId.equals(userResult.id)
+      );
+
+      final UserSettingsTableData? userSettingsResult = await settingsQuery.getSingleOrNull();
+
+      if (userSettingsResult != null) {
+        return Some(UserDto.fromDatabase(userResult, userSettingsResult));
+      }
+    }
+    return const None();
+  }
+
+  Future<int> tryStoreUser(UserDto userDto) async {
+
+    if (userDto.dawarichId != null && userDto.dawarichEndpoint != null) {
+      Option<UserDto> userResult = await _findDawarichUser(userDto.dawarichId!, userDto.dawarichEndpoint!);
+
+      if (userResult case Some(value: UserDto user)){
+        return user.id;
+      }
+    }
+    
+    return await _database.into(_database.userTable).insert(
+      UserTableCompanion(
+        dawarichId: Value(userDto.id),
+        email: Value(userDto.email),
+        createdAt: Value(userDto.createdAt),
+        updatedAt: Value(userDto.updatedAt),
+        theme: Value(userDto.theme),
+        admin: Value(userDto.admin)
+      ),
+    );
+  }
+
+  // Future<Option<UserSettingsDto>> _getUserSettings(int userId) async {
+  //
+  //   final query = _database
+  //     .select(_database.userSettingsTable)
+  //       ..where((tbl) => tbl.userId.equals(userId)
+  //   );
+  //   final UserSettingsTableData? result = await query.getSingleOrNull();
+  //   if (result != null) {
+  //     return Some(UserSettingsDto.fromDatabase(result));
+  //   }
+  //
+  //   return const None();
+  //
+  // }
+  
+  Future<void> storeUserSettings(int localUserId, UserSettingsDto userSettings) async {
+
+    _database.into(_database.userSettingsTable).insert(
+      UserSettingsTableCompanion(
+        immichUrl: Value(userSettings.immichUrl),
+        immichApiKey: Value(userSettings.immichApiKey),
+        photoprismUrl: Value(userSettings.photoprismUrl),
+        photoprismApiKey: Value(userSettings.photoprismApiKey),
+        userId: Value(localUserId)
+      )
+    );
+  }
+
+  // Future<Option<UserDto>> getStoredUser() async {
+  //
+  //   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   UserDto? user = prefs.getObject<UserDto>("user", (json) => UserDto.fromJson(json));
+  //
+  //   if (user != null){
+  //     return Some(user);
+  //   }
+  //
+  //   return const None();
+  // }
+  //
+  // Future<int> getLoggedInUserId() async {
+  //
+  //   Option<UserDto> userResult = await getStoredUser();
+  //
+  //   switch (userResult) {
+  //
+  //     case Some(value: UserDto user): {
+  //       return user.id;
+  //     }
+  //
+  //     case None(): {
+  //       throw StateError("A user id should be present at this point.");
+  //     }
+  //   }
+  // }
+
+}

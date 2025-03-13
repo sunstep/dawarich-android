@@ -16,14 +16,14 @@ class LocalPointRepository implements ILocalPointRepository {
   final SQLiteClient _database = SQLiteClient();
 
   @override
-  Future<Result<(), String>> storePoint(LocalPointDto point, int userId) async {
+  Future<Result<(), String>> storePoint(LocalPointDto point) async {
     try {
       await _database.into(_database.pointsTable).insert(
         PointsTableCompanion(
           type: Value(point.type),
           geometryId: Value(await _storeGeometry(point.geometry)),
           propertiesId: Value(await _storeProperties(point.properties)),
-          userId: Value(userId),
+          userId: Value(point.userId),
         )
       );
       return const Ok(());

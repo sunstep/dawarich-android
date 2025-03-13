@@ -13,7 +13,13 @@ extension LocalBatchPointToDto on LocalPoint {
   LocalPointDto toDto() {
     LocalPointGeometryDto geometry = this.geometry.toDto();
     LocalPointPropertiesDto properties = this.properties.toDto();
-    return LocalPointDto(id: id, type: type, geometry: geometry, properties: properties);
+    return LocalPointDto(
+      id: id,
+      type: type,
+      geometry: geometry,
+      properties: properties,
+      userId: userId
+    );
   }
 }
 
@@ -22,7 +28,13 @@ extension LocalPointDtoToEntity on LocalPointDto {
   LocalPoint toEntity() {
     LocalPointGeometry geometry = this.geometry.toEntity();
     LocalPointProperties properties = this.properties.toEntity();
-    return LocalPoint(id: id, type: type, geometry: geometry, properties: properties);
+    return LocalPoint(
+      id: id,
+      type: type,
+      geometry: geometry,
+      properties: properties,
+      userId: userId
+    );
   }
 }
 

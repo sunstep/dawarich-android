@@ -9,6 +9,7 @@ import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
 import 'package:dawarich/domain/entities/local/additional_point_data.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
 import 'package:dawarich/domain/entities/local/point_pair.dart';
@@ -26,12 +27,13 @@ class LocalPointService {
   // StreamSubscription<Result<Position, String>>? _stream;
   // Timer? _heartbeatTimer;
 
+  final IUserSessionRepository _userSession;
   final ILocalPointRepository _localPointInterfaces;
   final IHardwareRepository _hardwareInterfaces;
   final TrackerPreferencesService _trackerPreferencesService;
 
 
-  LocalPointService(this._localPointInterfaces, this._trackerPreferencesService, this._hardwareInterfaces);
+  LocalPointService(this._userSession, this._localPointInterfaces, this._trackerPreferencesService, this._hardwareInterfaces);
 
   // Future<void> startTracking() async {
   //
@@ -66,6 +68,8 @@ class LocalPointService {
 
   Future<Result<LocalPoint, String>> createManualPoint() async {
 
+    final int userId = await _userSession.getCurrentUserId();
+
     Result<LocalPoint, String> newPointResult = await _createNewPoint();
 
     if (newPointResult case Ok(value: LocalPoint newPoint)) {
@@ -74,7 +78,7 @@ class LocalPointService {
 
       if (validationResult case Ok()) {
         LocalPointDto newPointDto = newPoint.toDto();
-        await _localPointInterfaces.storePoint(newPointDto);
+        await _localPointInterfaces.storePoint(newPointDto, userId);
         return Ok(newPoint);
       } else {
 
@@ -97,6 +101,7 @@ class LocalPointService {
 
   Future<Option<LocalPoint>> _tryCreateCachedPoint() async {
 
+    final int userId = await _userSession.getCurrentUserId();
     Option<Position> positionResult = await _hardwareInterfaces.getCachedPosition();
     AdditionalPointData additionalData = await _getAdditionalPointData();
 
@@ -108,7 +113,7 @@ class LocalPointService {
       if (validationResult case Ok()) {
 
         LocalPointDto cachedPointDto = cachedPoint.toDto();
-        await _localPointInterfaces.storePoint(cachedPointDto);
+        await _localPointInterfaces.storePoint(cachedPointDto, userId);
         return Some(cachedPoint);
       }
 
@@ -191,6 +196,8 @@ class LocalPointService {
 
   Future<bool> markBatchAsUploaded(LocalPointBatch batch) async {
 
+    final int userId = await _userSession.getCurrentUserId();
+
     final List<int> batchIds = batch.points
         .map((point) => point.id)
         .whereType<int>()
@@ -205,7 +212,7 @@ class LocalPointService {
       return false;
     }
 
-    Result<int, String> result = await _localPointInterfaces.markBatchAsUploaded(batchIds);
+    Result<int, String> result = await _localPointInterfaces.markBatchAsUploaded(batchIds, userId);
 
     switch (result) {
 
@@ -316,7 +323,9 @@ class LocalPointService {
 
   Future<Option<LastPoint>> getLastPoint() async {
 
-    Option<LastPointDto> pointResult = await _localPointInterfaces.getLastPoint();
+    final int userId = await _userSession.getCurrentUserId();
+
+    Option<LastPointDto> pointResult = await _localPointInterfaces.getLastPoint(userId);
 
     switch (pointResult) {
 
@@ -332,7 +341,8 @@ class LocalPointService {
 
   Future<LocalPointBatch> _getFullBatch() async {
 
-    Result<LocalPointBatchDto, String> result = await _localPointInterfaces.getFullBatch();
+    final int userId = await _userSession.getCurrentUserId();
+    Result<LocalPointBatchDto, String> result = await _localPointInterfaces.getFullBatch(userId);
 
     if (result case Ok(value: LocalPointBatchDto pointBatchDto)) {
       LocalPointBatch batch = pointBatchDto.toEntity();
@@ -346,7 +356,8 @@ class LocalPointService {
 
   Future<int> getBatchPointsCount() async {
 
-    Result<int, String> result = await _localPointInterfaces.getBatchPointCount();
+    final int userId = await _userSession.getCurrentUserId();
+    Result<int, String> result = await _localPointInterfaces.getBatchPointCount(userId);
 
     if (result case Ok(value: int pointCount)) {
       return pointCount;
@@ -358,7 +369,8 @@ class LocalPointService {
 
   Future<LocalPointBatch> getCurrentBatch() async {
 
-    Result<LocalPointBatchDto, String> batchResult =  await _localPointInterfaces.getCurrentBatch();
+    final int userId = await _userSession.getCurrentUserId();
+    Result<LocalPointBatchDto, String> batchResult =  await _localPointInterfaces.getCurrentBatch(userId);
 
     if (batchResult case Ok(value: LocalPointBatchDto pointBatchDto)) {
       LocalPointBatch pointBatch =  pointBatchDto.toEntity();
@@ -370,13 +382,15 @@ class LocalPointService {
   }
 
   Future<bool> deletePoint(int pointId) async {
-    
-    final result = await _localPointInterfaces.deletePoint(pointId);
+
+    final int userId = await _userSession.getCurrentUserId();
+    final result = await _localPointInterfaces.deletePoint(pointId, userId);
     return result.isOk();
   }
 
   Future<bool> clearBatch() async {
-    final result = await _localPointInterfaces.clearBatch();
+    final int userId = await _userSession.getCurrentUserId();
+    final result = await _localPointInterfaces.clearBatch(userId);
     return result.isOk();
   }
 

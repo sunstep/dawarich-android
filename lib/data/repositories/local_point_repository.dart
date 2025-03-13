@@ -6,7 +6,6 @@ import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
-import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 import 'package:drift/drift.dart';
@@ -14,20 +13,17 @@ import 'package:drift/drift.dart';
 
 class LocalPointRepository implements ILocalPointRepository {
 
-  final IUserStorageRepository _userStorageRepository;
   final SQLiteClient _database = SQLiteClient();
 
-  LocalPointRepository(this._userStorageRepository);
-
   @override
-  Future<Result<(), String>> storePoint(LocalPointDto point) async {
+  Future<Result<(), String>> storePoint(LocalPointDto point, int userId) async {
     try {
       await _database.into(_database.pointsTable).insert(
         PointsTableCompanion(
           type: Value(point.type),
           geometryId: Value(await _storeGeometry(point.geometry)),
           propertiesId: Value(await _storeProperties(point.properties)),
-          userId: Value(await _userStorageRepository.getLoggedInUserId()),
+          userId: Value(userId),
         )
       );
       return const Ok(());
@@ -66,10 +62,9 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Option<LastPointDto>> getLastPoint() async {
+  Future<Option<LastPointDto>> getLastPoint(int userId) async {
     try {
       // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
-      final int userId = await _userStorageRepository.getLoggedInUserId();
 
       final JoinedSelectStatement queryResult = _database.select(_database.pointsTable)
         .join([
@@ -101,7 +96,7 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<LocalPointBatchDto, String>> getFullBatch() async {
+  Future<Result<LocalPointBatchDto, String>> getFullBatch(int userId) async {
 
     try {
       final query = _database.select(_database.pointsTable).join([
@@ -114,7 +109,7 @@ class LocalPointRepository implements ILocalPointRepository {
           _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
         ),
       ])
-        ..where(_database.pointsTable.userId.equals(await _userStorageRepository.getLoggedInUserId()));
+        ..where(_database.pointsTable.userId.equals(userId));
 
       final List<LocalPointDto> batchPoints = await query.map((row) => row
           .toPointDto(_database))
@@ -127,20 +122,21 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<LocalPointBatchDto, String>> getCurrentBatch() async {
+  Future<Result<LocalPointBatchDto, String>> getCurrentBatch(int userId) async {
 
     try {
-      final query = _database.select(_database.pointsTable).join([
-        innerJoin(
-          _database.pointGeometryTable,
-          _database.pointGeometryTable.id.equalsExp(_database.pointsTable.geometryId),
-        ),
-        innerJoin(
-          _database.pointPropertiesTable,
-          _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
-        ),
-      ])
-        ..where(_database.pointsTable.isUploaded.equals(false) & _database.pointsTable.userId.equals(await _userStorageRepository.getLoggedInUserId()));
+      final query = _database
+        .select(_database.pointsTable)
+        .join([
+          innerJoin(
+            _database.pointGeometryTable,
+            _database.pointGeometryTable.id.equalsExp(_database.pointsTable.geometryId),
+          ),
+          innerJoin(
+            _database.pointPropertiesTable,
+            _database.pointPropertiesTable.id.equalsExp(_database.pointsTable.propertiesId),
+          ),
+        ])..where(_database.pointsTable.isUploaded.equals(false) & _database.pointsTable.userId.equals(userId));
 
       final List<LocalPointDto> batchPoints = await query.map((row) => row
           .toPointDto(_database))
@@ -153,13 +149,17 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<int, String>> getBatchPointCount() async {
+  Future<Result<int, String>> getBatchPointCount(int userId) async {
     try {
 
-      final countQuery = await (_database.selectOnly(_database.pointsTable)
-        ..addColumns([_database.pointsTable.id.count()])
-        ..where(_database.pointsTable.isUploaded.equals(false)))
-          .getSingle();
+      final countQuery = await (_database
+        .selectOnly(_database.pointsTable)
+          ..addColumns([_database.pointsTable.id.count()])
+          ..where(
+              _database.pointsTable.isUploaded.equals(false) &
+              _database.pointsTable.userId.equals(userId))
+          )
+        .getSingle();
 
       return Ok(countQuery.read(_database.pointsTable.id.count()) ?? 0);
     } catch (e) {
@@ -169,12 +169,12 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<int, String>> markBatchAsUploaded(List<int> batchIds) async {
+  Future<Result<int, String>> markBatchAsUploaded(List<int> batchIds, int userId) async {
     try {
 
-      int rowsAffected = await (_database
+      final int rowsAffected = await (_database
         .update(_database.pointsTable)
-          ..where((t) => t.id.isIn(batchIds)))
+          ..where((t) => t.id.isIn(batchIds) & t.userId.equals(userId)))
         .write(const PointsTableCompanion(isUploaded: Value(true)));
 
       return Ok(rowsAffected);
@@ -184,11 +184,10 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<void, String>> deletePoint(int pointId) async {
+  Future<Result<void, String>> deletePoint(int pointId, int userId) async {
     try {
-      final int userId = await _userStorageRepository.getLoggedInUserId();
 
-      final deletedCount = await (_database.delete(_database.pointsTable)
+      final int deletedCount = await (_database.delete(_database.pointsTable)
         ..where((t) => t.id.equals(pointId) & t.userId.equals(userId))
       ).go();
 
@@ -203,9 +202,8 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<void, String>> clearBatch() async {
+  Future<Result<void, String>> clearBatch(int userId) async {
     try {
-      final int userId = await _userStorageRepository.getLoggedInUserId();
 
       await (_database.delete(_database.pointsTable)
         ..where((t) => t.isUploaded.equals(false) & t.userId.equals(userId))

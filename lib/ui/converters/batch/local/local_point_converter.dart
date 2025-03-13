@@ -12,7 +12,13 @@ extension BatchPointToViewModel on LocalPoint {
   LocalPointViewModel toViewModel() {
     LocalPointGeometryViewModel geometry = this.geometry.toViewModel();
     LocalPointPropertiesViewModel properties = this.properties.toViewModel();
-    return LocalPointViewModel(id: id, type: type, geometry: geometry, properties: properties);
+    return LocalPointViewModel(
+      id: id,
+      type: type,
+      geometry: geometry,
+      properties: properties,
+      userId: userId
+    );
   }
 }
 
@@ -21,7 +27,13 @@ extension PointDtoToEntity on LocalPointViewModel {
   LocalPoint toEntity() {
     LocalPointGeometry geometry = this.geometry.toEntity();
     LocalPointProperties properties = this.properties.toEntity();
-    return LocalPoint(id: id, type: type, geometry: geometry, properties: properties);
+    return LocalPoint(
+      id: id,
+      type: type,
+      geometry: geometry,
+      properties: properties,
+      userId: userId
+    );
   }
 }
 

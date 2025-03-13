@@ -1,13 +1,20 @@
-import 'package:dawarich/data/sources/local/database/tables/point_properties_table.dart';
-import 'package:dawarich/data/sources/local/database/tables/point_geometry_table.dart';
-import 'package:dawarich/data/sources/local/database/tables/points_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/point_properties_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/point_geometry_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/point/points_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/user/user_settings_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/user/user_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
 part 'sqlite_client.g.dart';
 
-@DriftDatabase(tables: [PointsTable, PointGeometryTable, PointPropertiesTable])
+@DriftDatabase(
+  tables: [
+    UserTable, UserSettingsTable,
+    PointsTable, PointGeometryTable, PointPropertiesTable
+  ]
+)
 class SQLiteClient extends _$SQLiteClient {
   SQLiteClient() : super(_openConnection());
 

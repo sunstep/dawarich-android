@@ -52,7 +52,7 @@ class ConnectViewModel with ChangeNotifier {
     bool isValid = await _connectService.tryApiKey(apiKey);
 
     if (isValid) {
-      _setLoggingIn(true);
+      _setLoggingIn(false);
       return true;
     }
 

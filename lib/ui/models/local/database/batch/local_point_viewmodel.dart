@@ -7,12 +7,14 @@ class LocalPointViewModel {
   final String type;
   final LocalPointGeometryViewModel geometry;
   final LocalPointPropertiesViewModel properties;
+  final int userId;
 
   LocalPointViewModel({
     required this.id,
     required this.type,
     required this.geometry,
     required this.properties,
+    required this.userId
   });
 
   Map<String, dynamic> toJson() {
@@ -20,6 +22,7 @@ class LocalPointViewModel {
       'type': type,
       'geometry': geometry.toJson(),
       'properties': properties.toJson(),
+      'userId': userId
     };
   }
 }

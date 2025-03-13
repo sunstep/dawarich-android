@@ -68,8 +68,6 @@ class LocalPointService {
 
   Future<Result<LocalPoint, String>> createManualPoint() async {
 
-    final int userId = await _userSession.getCurrentUserId();
-
     Result<LocalPoint, String> newPointResult = await _createNewPoint();
 
     if (newPointResult case Ok(value: LocalPoint newPoint)) {
@@ -78,7 +76,7 @@ class LocalPointService {
 
       if (validationResult case Ok()) {
         LocalPointDto newPointDto = newPoint.toDto();
-        await _localPointInterfaces.storePoint(newPointDto, userId);
+        await _localPointInterfaces.storePoint(newPointDto);
         return Ok(newPoint);
       } else {
 
@@ -135,9 +133,10 @@ class LocalPointService {
     LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
     Result<Position, String> positionResult = await _hardwareInterfaces.getPosition(accuracy);
     AdditionalPointData additionalData = await _getAdditionalPointData();
+    final int userId = await _userSession.getCurrentUserId();
 
     if (positionResult case Ok(value: Position position)) {
-      LocalPoint newPoint = _constructPoint(position, additionalData);
+      LocalPoint newPoint = _constructPoint(position, additionalData, userId);
 
       return Ok(newPoint);
     }
@@ -163,7 +162,7 @@ class LocalPointService {
     );
   }
 
-  LocalPoint _constructPoint(Position position, AdditionalPointData additionalData) {
+  LocalPoint _constructPoint(Position position, AdditionalPointData additionalData, int userId) {
 
     final geometry = LocalPointGeometry(
       type: "Point",
@@ -191,6 +190,7 @@ class LocalPointService {
       type: "Feature",
       geometry: geometry,
       properties: properties,
+      userId: userId
     );
   }
 

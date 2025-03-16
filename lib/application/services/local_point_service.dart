@@ -73,7 +73,7 @@ class LocalPointService {
 
   Future<Result<LocalPoint, String>> createManualPoint() async {
 
-    Result<LocalPoint, String> newPointResult = await _createNewPoint();
+    Result<LocalPoint, String> newPointResult = await createNewPoint();
 
     if (newPointResult case Ok(value: LocalPoint newPoint)) {
 
@@ -102,7 +102,7 @@ class LocalPointService {
     return Err("Failed to create point: $error");
   }
 
-  Future<Option<LocalPoint>> _tryCreateCachedPoint() async {
+  Future<Option<LocalPoint>> tryCreateCachedPoint() async {
 
     final int userId = await _userSession.getCurrentUserId();
     final Option<Position> positionResult = await _hardwareInterfaces.getCachedPosition();
@@ -133,7 +133,7 @@ class LocalPointService {
     return const None();
   }
 
-  Future<Result<LocalPoint, String>> _createNewPoint() async {
+  Future<Result<LocalPoint, String>> createNewPoint() async {
 
     final int userId = await _userSession.getCurrentUserId();
     final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();

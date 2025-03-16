@@ -1,9 +1,8 @@
-
 import 'dart:async';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
+import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
@@ -53,8 +52,9 @@ class PointAutomationService {
 
   Future<void> _cachedTimerHandler(Timer timer) async {
 
-    Option<ApiBatchPoint> cachedPointResult = await _localPointService.tryCreateCachedPoint();
-    if (cachedPointResult case Some(value: ApiBatchPoint point)) {
+    Option<LocalPoint> cachedPointResult = await _localPointService.tryCreateCachedPoint();
+
+    if (cachedPointResult case Some(value: LocalPoint point)) {
       _restartGpsTimer();
     }
 

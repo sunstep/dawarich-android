@@ -1,6 +1,7 @@
 import 'package:dawarich/data/sources/local/database/tables/point/point_properties_table.dart';
 import 'package:dawarich/data/sources/local/database/tables/point/point_geometry_table.dart';
 import 'package:dawarich/data/sources/local/database/tables/point/points_table.dart';
+import 'package:dawarich/data/sources/local/database/tables/track/track_table.dart';
 import 'package:dawarich/data/sources/local/database/tables/user/user_settings_table.dart';
 import 'package:dawarich/data/sources/local/database/tables/user/user_table.dart';
 import 'package:drift/drift.dart';
@@ -12,7 +13,7 @@ part 'sqlite_client.g.dart';
 @DriftDatabase(
   tables: [
     UserTable, UserSettingsTable,
-    PointsTable, PointGeometryTable, PointPropertiesTable
+    PointsTable, PointGeometryTable, PointPropertiesTable, TrackTable
   ]
 )
 class SQLiteClient extends _$SQLiteClient {

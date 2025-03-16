@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
+import 'package:dawarich/ui/widgets/dynamic_truncated_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
@@ -222,11 +223,11 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
       const SizedBox(height: 8),
       // Additional information only when recording.
       if (viewModel.isRecording) ...[
-        _keyValueRow("Track ID:", viewModel.currentTrackId),
-        const SizedBox(height: 4),
-        _keyValueRow("Points Recorded:", viewModel.trackPointsCount.toString()),
-        const SizedBox(height: 4),
-        _keyValueRow("Tracking Duration:", viewModel.recordDuration),
+          DynamicTruncatedTooltip(text: "Track Id: ${viewModel.currentTrack!.trackId}")
+        // const SizedBox(height: 4),
+        // _keyValueRow("Points Recorded:", viewModel.trackPointCount.toString()),
+        // const SizedBox(height: 4),
+        // _keyValueRow("Tracking Duration:", viewModel.recordDuration),
         // Optionally, you can add more information such as average speed, battery info, etc.
       ],
       const SizedBox(height: 16),

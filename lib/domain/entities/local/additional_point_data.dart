@@ -3,6 +3,7 @@ class AdditionalPointData {
 
   final int currentPointsInBatch;
   final String deviceId;
+  final String? trackId;
   final String wifi;
   final String batteryState;
   final double batteryLevel;
@@ -10,6 +11,7 @@ class AdditionalPointData {
   AdditionalPointData({
     required this.currentPointsInBatch,
     required this.deviceId,
+    this.trackId,
     required this.wifi,
     required this.batteryState,
     required this.batteryLevel

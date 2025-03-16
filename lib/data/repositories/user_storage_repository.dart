@@ -1,7 +1,6 @@
 import 'package:dawarich/data/sources/local/database/user_storage_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
-import 'package:option_result/option.dart';
 
 class UserStorageRepository implements IUserStorageRepository {
 

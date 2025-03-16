@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:dawarich/application/converters/batch/local/local_point_batch_converter.dart';
 import 'package:dawarich/application/converters/batch/local/local_point_converter.dart';
 import 'package:dawarich/application/converters/last_point_converter.dart';
+import 'package:dawarich/application/converters/track_converter.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/track/track_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
 import 'package:dawarich/domain/entities/local/additional_point_data.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
@@ -17,6 +20,7 @@ import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_batch.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_geometry.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_properties.dart';
+import 'package:dawarich/domain/entities/track/track.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -31,9 +35,10 @@ class LocalPointService {
   final ILocalPointRepository _localPointInterfaces;
   final IHardwareRepository _hardwareInterfaces;
   final TrackerPreferencesService _trackerPreferencesService;
+  final ITrackRepository _trackRepository;
 
 
-  LocalPointService(this._userSession, this._localPointInterfaces, this._trackerPreferencesService, this._hardwareInterfaces);
+  LocalPointService(this._userSession, this._localPointInterfaces, this._trackerPreferencesService, this._trackRepository, this._hardwareInterfaces);
 
   // Future<void> startTracking() async {
   //
@@ -101,7 +106,7 @@ class LocalPointService {
 
     final int userId = await _userSession.getCurrentUserId();
     final Option<Position> positionResult = await _hardwareInterfaces.getCachedPosition();
-    final AdditionalPointData additionalData = await _getAdditionalPointData();
+    final AdditionalPointData additionalData = await _getAdditionalPointData(userId);
 
     if (positionResult case Some(value: Position postion)) {
       LocalPoint cachedPoint = _constructPoint(postion, additionalData, userId);
@@ -130,10 +135,10 @@ class LocalPointService {
 
   Future<Result<LocalPoint, String>> _createNewPoint() async {
 
+    final int userId = await _userSession.getCurrentUserId();
     final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
     final Result<Position, String> positionResult = await _hardwareInterfaces.getPosition(accuracy);
-    final AdditionalPointData additionalData = await _getAdditionalPointData();
-    final int userId = await _userSession.getCurrentUserId();
+    final AdditionalPointData additionalData = await _getAdditionalPointData(userId);
 
     if (positionResult case Ok(value: Position position)) {
       LocalPoint newPoint = _constructPoint(position, additionalData, userId);
@@ -145,17 +150,28 @@ class LocalPointService {
     return Err(error);
   }
 
-  Future<AdditionalPointData> _getAdditionalPointData() async {
+  Future<AdditionalPointData> _getAdditionalPointData(int userId) async {
 
     int pointsInBatch = await getBatchPointsCount();
-    String trackerId = await _trackerPreferencesService.getTrackerId();
-    String wifi = await _hardwareInterfaces.getWiFiStatus();
-    String batteryState = await _hardwareInterfaces.getBatteryState();
-    double batteryLevel = await _hardwareInterfaces.getBatteryLevel();
+
+    final String wifi = await _hardwareInterfaces.getWiFiStatus();
+    final String batteryState = await _hardwareInterfaces.getBatteryState();
+    final double batteryLevel = await _hardwareInterfaces.getBatteryLevel();
+    final String deviceId = await _trackerPreferencesService.getTrackerId();
+    final Option<TrackDto> trackerIdResult = await _trackRepository.getActiveTrack(userId);
+
+    String? trackId;
+
+    if (trackerIdResult case Some(value: TrackDto trackDto)) {
+      Track track = trackDto.toEntity();
+      trackId = track.trackId;
+    }
+
 
     return AdditionalPointData(
       currentPointsInBatch: pointsInBatch,
-      deviceId: trackerId,
+      deviceId: deviceId,
+      trackId: trackId,
       wifi: wifi,
       batteryState: batteryState,
       batteryLevel: batteryLevel

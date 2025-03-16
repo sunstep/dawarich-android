@@ -5,6 +5,7 @@ import 'package:dawarich/application/services/map_service.dart';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/application/services/stats_service.dart';
+import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/application/services/user_session_service.dart';
 import 'package:dawarich/data/repositories/connect_repository.dart';
@@ -12,6 +13,7 @@ import 'package:dawarich/data/repositories/hardware_repository.dart';
 import 'package:dawarich/data/repositories/local_point_repository.dart';
 import 'package:dawarich/data/repositories/api_point_repository.dart';
 import 'package:dawarich/data/repositories/stats_repository.dart';
+import 'package:dawarich/data/repositories/track_repository.dart';
 import 'package:dawarich/data/repositories/tracker_preferences_repository.dart';
 import 'package:dawarich/data/repositories/user_session_repository.dart';
 import 'package:dawarich/data/repositories/user_storage_repository.dart';
@@ -33,6 +35,7 @@ import 'package:dawarich/data_contracts/interfaces/hardware_repository_interface
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
@@ -76,6 +79,7 @@ void injectDependencies() {
   getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>(), getIt<BatchesClient>()));
   getIt.registerLazySingleton<ILocalPointRepository>(() => LocalPointRepository());
   getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
+  getIt.registerLazySingleton<ITrackRepository>(() => TrackRepository());
   getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>(), getIt<IHardwareRepository>()));
 
 
@@ -86,8 +90,9 @@ void injectDependencies() {
   getIt.registerLazySingleton<LocationService>(() => LocationService());
   getIt.registerLazySingleton<MapService>(() => MapService(getIt<ApiPointService>()));
   getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointInterfaces>()));
+  getIt.registerLazySingleton<TrackService>(() => TrackService(getIt<ITrackRepository>(), getIt<IUserSessionRepository>()));
   getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>()));
-  getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<IUserSessionRepository>(), getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<IHardwareRepository>()));
+  getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<IUserSessionRepository>(), getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<ITrackRepository>(), getIt<IHardwareRepository>()));
   getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));
 
 
@@ -113,7 +118,7 @@ void injectDependencies() {
 
   getIt.registerFactory<TrackerPageViewModel>(
     () {
-      final TrackerPageViewModel viewModel = TrackerPageViewModel(getIt<LocalPointService>(), getIt<TrackerPreferencesService>());
+      final TrackerPageViewModel viewModel = TrackerPageViewModel(getIt<LocalPointService>(), getIt<TrackService>(), getIt<TrackerPreferencesService>());
       return viewModel;
     }
   );

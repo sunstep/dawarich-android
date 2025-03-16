@@ -1,11 +1,15 @@
 import 'dart:io';
 import 'package:dawarich/application/services/local_point_service.dart';
+import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
-import 'package:dawarich/domain/entities/api/v1/overland/batches/request/api_batch_point.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
-import 'package:dawarich/ui/converters/batch/api_point_converter.dart';
+import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
+import 'package:dawarich/domain/entities/track/track.dart';
+import 'package:dawarich/ui/converters/batch/local/local_point_converter.dart';
 import 'package:dawarich/ui/converters/last_point_converter.dart';
-import 'package:dawarich/ui/models/api/v1/overland/batches/request/api_batch_point.dart';
+import 'package:dawarich/ui/converters/track_converter.dart';
+import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.dart';
+import 'package:dawarich/ui/models/track/track_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/ui/models/local/last_point_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +26,50 @@ class TrackerPageViewModel with ChangeNotifier {
 
   int _pointInBatchCount = 0;
   int get batchPointCount => _pointInBatchCount;
+
+  TrackViewModel? _currentTrack;
+  TrackViewModel? get currentTrack => _currentTrack;
+  void setCurrentTrack(TrackViewModel track) {
+    _currentTrack = track;
+    notifyListeners();
+  }
+
+  bool _isRecording = false;
+  bool get isRecording => _isRecording;
+
+  void setIsRecording(bool trueOrFalse) {
+    _isRecording = trueOrFalse;
+    notifyListeners();
+  }
+
+  String _currentTrackId = "";
+  String get currentTrackId => _currentTrackId;
+
+  void setCurrentTrackId(String id) {
+    _currentTrackId = id;
+    notifyListeners();
+  }
+
+  int _trackPointCount = 0;
+  int get trackPointCount => _trackPointCount;
+
+  void setTrackPointCount(int count) {
+    _trackPointCount = count;
+    notifyListeners();
+  }
+
+  // Duration _recordDuration = Duration();
+  // String get recordDuration {
+  //   final hours = _recordDuration.inHours;
+  //   final minutes = _recordDuration.inMinutes % 60;
+  //   final seconds = _recordDuration.inSeconds % 60;
+  //   return '${hours.toString().padLeft(2, '0')}:'
+  //       '${minutes.toString().padLeft(2, '0')}:'
+  //       '${seconds.toString().padLeft(2, '0')}';
+  // }
+
+  bool _showSettings = false;
+  bool get showSettings => _showSettings;
 
   bool _showAdvancedSettings = false;
   bool get showAdvancedSettings => _showAdvancedSettings;
@@ -57,8 +105,9 @@ class TrackerPageViewModel with ChangeNotifier {
 
   final LocalPointService _pointService;
   final TrackerPreferencesService _trackerPreferencesService;
+  final TrackService _trackService;
 
-  TrackerPageViewModel(this._pointService, this._trackerPreferencesService) {
+  TrackerPageViewModel(this._pointService, this._trackService, this._trackerPreferencesService) {
     initialize();
   }
 
@@ -75,7 +124,7 @@ class TrackerPageViewModel with ChangeNotifier {
     await _getTrackingFrequencyPreference();
     await _getLocationAccuracyPreference();
     await _getMinimumPointDistancePreference();
-    await _getTrackerId();
+    await _getTrackRecordingStatus();
 
     setIsRetrievingSettings(false);
   }
@@ -88,6 +137,39 @@ class TrackerPageViewModel with ChangeNotifier {
     await storeLocationAccuracy();
     await storeMinimumPointDistance();
     await storeTrackerId();
+  }
+
+  Future<void> _getTrackRecordingStatus() async {
+
+    Option<Track> trackResult = await _trackService.getActiveTrack();
+
+    if (trackResult case Some(value: Track track)) {
+      TrackViewModel trackVm = track.toViewModel();
+      setCurrentTrack(trackVm);
+      setIsRecording(true);
+    }
+  }
+
+  void toggleRecording() async {
+
+
+
+    if (isRecording) {
+      _trackService.stopTracking();
+
+    } else {
+      Track track = await _trackService.startTracking();
+      TrackViewModel trackVm = track.toViewModel();
+      setCurrentTrackId(trackVm.trackId);
+    }
+
+    setIsRecording(!isRecording);
+
+  }
+
+  void toggleSettings() {
+    _showSettings = !_showSettings;
+    notifyListeners();
   }
 
   void toggleAdvancedSettings() {
@@ -107,7 +189,9 @@ class TrackerPageViewModel with ChangeNotifier {
     Option<LastPoint> lastPointResult =  await _pointService.getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      setLastPoint(lastPoint.toViewModel());
+
+      LastPointViewModel lastPointViewModel = lastPoint.toViewModel();
+      setLastPoint(lastPointViewModel);
     }
 
   }
@@ -136,17 +220,17 @@ class TrackerPageViewModel with ChangeNotifier {
     _setIsTracking(true);
     await persistPreferences();
 
-    Result<ApiBatchPoint, String> pointResult = await _pointService.createNewPoint();
+    Result<LocalPoint, String> pointResult = await _pointService.createManualPoint();
 
-    if (pointResult case Ok(value: ApiBatchPoint pointEntity)) {
+    if (pointResult case Ok(value: LocalPoint pointEntity)) {
 
-      ApiBatchPointViewModel point = pointEntity.toViewModel();
+      LocalPointViewModel point = pointEntity.toViewModel();
 
-      String formattedTimestamp = point.properties.timestamp;
+      String timestamp = point.properties.timestamp;
       double longitude = point.geometry.coordinates[0];
       double latitude = point.geometry.coordinates[1];
 
-      LastPointViewModel lastPoint = LastPointViewModel(timestamp: formattedTimestamp, longitude: longitude, latitude: latitude);
+      LastPointViewModel lastPoint = LastPointViewModel(rawTimestamp: timestamp, longitude: longitude, latitude: latitude);
 
       setLastPoint(lastPoint);
       await getPointInBatchCount();

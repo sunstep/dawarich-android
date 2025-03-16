@@ -1,4 +1,6 @@
 
+import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
+
 class UserSettingsDto {
 
   String immichUrl;
@@ -22,13 +24,22 @@ class UserSettingsDto {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      "immich_url": immichUrl,
-      "immich_api_key": immichApiKey,
-      "photoprism_url": photoprismUrl,
-      "photoprism_api_key": photoprismApiKey
-    };
+  factory UserSettingsDto.fromDatabase(UserSettingsTableData userSettings) {
+    return UserSettingsDto(
+      immichUrl: userSettings.immichUrl,
+      immichApiKey: userSettings.immichApiKey,
+      photoprismUrl: userSettings.photoprismUrl,
+      photoprismApiKey: userSettings.photoprismApiKey
+    );
   }
+
+  // Map<String, dynamic> toJson() {
+  //   return {
+  //     "immich_url": immichUrl,
+  //     "immich_api_key": immichApiKey,
+  //     "photoprism_url": photoprismUrl,
+  //     "photoprism_api_key": photoprismApiKey
+  //   };
+  // }
 
 }

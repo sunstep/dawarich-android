@@ -184,7 +184,7 @@ class LocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<void, String>> deletePoint(int pointId, int userId) async {
+  Future<Result<(), String>> deletePoint(int pointId, int userId) async {
     try {
 
       final int deletedCount = await (_database.delete(_database.pointsTable)
@@ -195,21 +195,21 @@ class LocalPointRepository implements ILocalPointRepository {
         return const Err("Point not found.");
       }
 
-      return const Ok(null);
+      return const Ok(());
     } catch (e) {
       return Err("Failed to delete point: $e");
     }
   }
 
   @override
-  Future<Result<void, String>> clearBatch(int userId) async {
+  Future<Result<(), String>> clearBatch(int userId) async {
     try {
 
       await (_database.delete(_database.pointsTable)
         ..where((t) => t.isUploaded.equals(false) & t.userId.equals(userId))
       ).go();
 
-      return const Ok(null);
+      return const Ok(());
     } catch (e) {
       return Err("Failed to clear batch: $e");
     }

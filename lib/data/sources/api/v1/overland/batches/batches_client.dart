@@ -30,7 +30,7 @@ class BatchesClient {
 
 
     if (response.statusCode == 201) {
-      final dynamic responseBody = jsonDecode(response.body);
+      final dynamic _ = jsonDecode(response.body);
 
       return const Ok(());
     }

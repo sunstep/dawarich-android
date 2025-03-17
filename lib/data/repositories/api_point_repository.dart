@@ -15,14 +15,14 @@ class ApiPointRepository implements IApiPointInterfaces {
   ApiPointRepository(this._pointsClient, this._batchesClient);
 
   @override
-  Future<Result<void, String>> uploadBatch(DawarichPointBatchDto batch) async {
+  Future<Result<(), String>> uploadBatch(DawarichPointBatchDto batch) async {
 
     Result<dynamic, String> result = await _batchesClient.post(batch);
 
     switch (result) {
 
-      case Ok(value: dynamic variable): {
-        return const Ok(null);
+      case Ok(value: dynamic _): {
+        return const Ok(());
       }
 
       case Err(value: String error): {

@@ -68,11 +68,45 @@ class TrackerPageViewModel with ChangeNotifier {
   //       '${seconds.toString().padLeft(2, '0')}';
   // }
 
-  bool _showSettings = false;
-  bool get showSettings => _showSettings;
+  int _currentPage = 0;
+  int get currentPage => _currentPage;
 
-  bool _showAdvancedSettings = false;
-  bool get showAdvancedSettings => _showAdvancedSettings;
+  // void previousPage() {
+  //   if (_currentPage > 0) {
+  //     _currentPage--;
+  //   } else {
+  //     _currentPage = 2;
+  //   }
+  //
+  //   notifyListeners();
+  // }
+
+  void nextPage() {
+    if (_currentPage < 2) {
+      _currentPage++;
+    } else {
+      _currentPage = 0;
+    }
+    notifyListeners();
+  }
+
+  String get pageTitle {
+    switch (_currentPage) {
+      case 0: return "Track Recording";
+      case 1: return "Basic Settings";
+      case 2: return "Advanced Settings";
+      default: return "";
+    }
+  }
+
+  String get toggleButtonText {
+    switch (_currentPage) {
+      case 0: return "Show Basic Settings";
+      case 1: return "Show Advanced Settings";
+      case 2: return "Show Track Recording";
+      default: return "";
+    }
+  }
 
   bool _isRetrievingSettings = true;
   bool get isRetrievingSettings => _isRetrievingSettings;
@@ -167,17 +201,6 @@ class TrackerPageViewModel with ChangeNotifier {
 
   }
 
-  void toggleSettings() {
-    _showSettings = !_showSettings;
-    notifyListeners();
-  }
-
-  void toggleAdvancedSettings() {
-
-    _showAdvancedSettings = !_showAdvancedSettings;
-    notifyListeners();
-  }
-
   void setLastPoint(LastPointViewModel? point) {
 
     _lastPoint = point;
@@ -220,7 +243,7 @@ class TrackerPageViewModel with ChangeNotifier {
     _setIsTracking(true);
     await persistPreferences();
 
-    Result<LocalPoint, String> pointResult = await _pointService.createManualPoint();
+    Result<LocalPoint, String> pointResult = await _pointService.createPointFromGps();
 
     if (pointResult case Ok(value: LocalPoint pointEntity)) {
 

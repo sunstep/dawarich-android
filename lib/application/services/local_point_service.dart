@@ -28,9 +28,6 @@ import 'package:option_result/option_result.dart';
 
 class LocalPointService {
 
-  // StreamSubscription<Result<Position, String>>? _stream;
-  // Timer? _heartbeatTimer;
-
   final IUserSessionRepository _userSession;
   final ILocalPointRepository _localPointInterfaces;
   final IHardwareRepository _hardwareInterfaces;
@@ -40,114 +37,54 @@ class LocalPointService {
 
   LocalPointService(this._userSession, this._localPointInterfaces, this._trackerPreferencesService, this._trackRepository, this._hardwareInterfaces);
 
-  // Future<void> startTracking() async {
-  //
-  //   LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
-  //   int minimumDistance = await _trackerPreferencesService.getMinimumPointDistancePreference();
-  //   int trackingFrequency = await _trackerPreferencesService.getTrackingFrequencyPreference();
-  //
-  //   _heartbeatTimer = Timer.periodic(Duration(seconds: trackingFrequency), (timer) async {
-  //
-  //   });
-  //
-  //   Stream<Result<Position, String>> positionStream = _hardwareInterfaces.getPositionStream(accuracy: accuracy, minimumDistance: minimumDistance);
-  //   _stream = positionStream.listen((result) {
-  //
-  //     if (result case Ok(value: Position position)) {
-  //
-  //     }
-  //   });
-  // }
-  //
-  // Future<Result<ApiBatchPoint, String>> createAutomaticPoint() async {
-  //
-  //
-  // }
-
-  // Future<void> stopAutomaticPointCreation() async {
-  //   _heartbeatTimer?.cancel();
-  //   _heartbeatTimer = null;
-  //   await _stream?.cancel();
-  //   _stream = null;
-  // }
-
-  Future<Result<LocalPoint, String>> createManualPoint() async {
-
-    Result<LocalPoint, String> newPointResult = await createNewPoint();
-
-    if (newPointResult case Ok(value: LocalPoint newPoint)) {
-
-      Result<(), String> validationResult = await _validatePoint(newPoint);
-
-      if (validationResult case Ok()) {
-        LocalPointDto newPointDto = newPoint.toDto();
-        await _localPointInterfaces.storePoint(newPointDto);
-        return Ok(newPoint);
-      } else {
-
-        if (kDebugMode) {
-          debugPrint("[DEBUG] Created point did not pass validation.");
-        }
-
-        String error = validationResult.unwrapErr();
-        return Err(error);
-      }
-    }
-
-    if (kDebugMode) {
-      debugPrint("[DEBUG] point not created.");
-    }
-
-    String error = newPointResult.unwrapErr();
-    return Err("Failed to create point: $error");
-  }
-
-  Future<Option<LocalPoint>> tryCreateCachedPoint() async {
+  /// Creates a full point using a position object.
+  Future<Result<LocalPoint, String>> createAndStorePoint(Position position) async {
 
     final int userId = await _userSession.getCurrentUserId();
-    final Option<Position> positionResult = await _hardwareInterfaces.getCachedPosition();
     final AdditionalPointData additionalData = await _getAdditionalPointData(userId);
+    LocalPoint point = _constructPoint(position, additionalData, userId);
 
-    if (positionResult case Some(value: Position postion)) {
-      LocalPoint cachedPoint = _constructPoint(postion, additionalData, userId);
+    Result<(), String> validationResult = await _validatePoint(point);
 
-      Result<(), String> validationResult = await _validatePoint(cachedPoint);
-
-      if (validationResult case Ok()) {
-
-        LocalPointDto cachedPointDto = cachedPoint.toDto();
-        await _localPointInterfaces.storePoint(cachedPointDto);
-        return Some(cachedPoint);
-      }
-
-      if (kDebugMode) {
-        debugPrint("[DEBUG] Cached point was not acceptable for usage.");
-      }
-
+    if (validationResult case Err(value: String validationError)) {
+      return Err("Point validation did not pass: $validationError");
     }
 
-    if (kDebugMode) {
-      debugPrint("[DEBUG] Cached point was not available.");
-    }
+    LocalPointDto pointDto = point.toDto();
+    final Result<(), String> storeResult = await _localPointInterfaces.storePoint(pointDto);
 
-    return const None();
+    return storeResult is Ok ? Ok(point) : Err("Failed to store point: ${storeResult.unwrapErr()}");
   }
 
-  Future<Result<LocalPoint, String>> createNewPoint() async {
 
-    final int userId = await _userSession.getCurrentUserId();
+  /// The method that handles manually creating a point.
+  Future<Result<LocalPoint, String>> createPointFromGps() async {
     final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
-    final Result<Position, String> positionResult = await _hardwareInterfaces.getPosition(accuracy);
-    final AdditionalPointData additionalData = await _getAdditionalPointData(userId);
+    final Result<Position, String> posResult = await _hardwareInterfaces.getPosition(accuracy);
 
-    if (positionResult case Ok(value: Position position)) {
-      LocalPoint newPoint = _constructPoint(position, additionalData, userId);
-
-      return Ok(newPoint);
+    if (posResult case Err(value: final String error)) {
+      return Err(error);
     }
 
-    String error = positionResult.unwrapErr();
-    return Err(error);
+    final Position position = posResult.unwrap();
+    final Result<LocalPoint, String> pointResult = await createAndStorePoint(position);
+
+    return pointResult;
+  }
+
+
+  /// Creates a full point, position data is retrieved from cache.
+  Future<Result<LocalPoint, String>> createPointFromCache() async {
+    final Option<Position> posResult = await _hardwareInterfaces.getCachedPosition();
+
+    if (posResult case None()) {
+      return const Err("Failed to create point from cached position: no valid cached position available.");
+    }
+
+    final Position position = posResult.unwrap();
+    final Result<LocalPoint, String> pointResult = await createAndStorePoint(position);
+
+    return pointResult;
   }
 
   Future<AdditionalPointData> _getAdditionalPointData(int userId) async {
@@ -215,9 +152,9 @@ class LocalPointService {
     final int userId = await _userSession.getCurrentUserId();
 
     final List<int> batchIds = batch.points
-        .map((point) => point.id)
-        .whereType<int>()
-        .toList();
+      .map((point) => point.id)
+      .whereType<int>()
+      .toList();
 
     if (batchIds.isEmpty) {
 

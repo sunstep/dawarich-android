@@ -136,7 +136,7 @@ class PointAutomationService with ChangeNotifier {
   /// (based on user’s preference).
   Future<void> startGpsTimer() async {
 
-    if (_gpsTimer == null || !_gpsTimer.isActive) {
+    if (_gpsTimer == null || !_gpsTimer!.isActive) {
       final int trackingFrequency =
       await _trackerPreferencesService.getTrackingFrequencyPreference();
       _gpsTimer = Timer.periodic(

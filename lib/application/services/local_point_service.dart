@@ -74,23 +74,23 @@ class LocalPointService {
 
 
   /// Creates a full point, position data is retrieved from cache.
-    Future<Option<LocalPoint>> createPointFromCache() async {
+    Future<Result<LocalPoint, String>> createPointFromCache() async {
 
     final Option<Position> posResult = await _hardwareInterfaces.getCachedPosition();
 
     if (posResult case None()) {
-      return const None();
+      return const Err("[DEBUG] NO cached point was available");
     }
 
     final Position position = posResult.unwrap();
     final Result<LocalPoint, String> pointResult = await createAndStorePoint(position);
 
-    // We do not care about any error scenario's when creating cached points, that is why we only handle successful cases.
-    if (pointResult case Ok(value: LocalPoint point)) {
-      return Some(point);
+    if (pointResult case Err(value: String error)) {
+      return Err("[DEBUG] Cached point was rejected: $error");
     }
 
-    return const None();
+    final LocalPoint point = pointResult.unwrap();
+    return Ok(point);
   }
 
   Future<AdditionalPointData> _getAdditionalPointData(int userId) async {

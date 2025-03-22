@@ -97,8 +97,9 @@ class PointAutomationService with ChangeNotifier {
       debugPrint("[DEBUG] Creating point from cache");
     }
 
-    final Option<LocalPoint> optionPoint = await _localPointService.createPointFromCache();
-    if (optionPoint case Some(value: LocalPoint point)) {
+    final Result<LocalPoint, String> optionPoint = await _localPointService.createPointFromCache();
+
+    if (optionPoint case Ok(value: LocalPoint point)) {
       // We actually got a new point from the phone’s cache, so reset the GPS timer.
       // This basically says “we got a point anyway, so hold off on forcing another one too soon.”
       _newPointController.add(point);
@@ -107,6 +108,8 @@ class PointAutomationService with ChangeNotifier {
       if (kDebugMode) {
         debugPrint("[DEBUG: automatic point tracking] Cached point found! Storing it...");
       }
+    } else if (kDebugMode){
+      debugPrint("[DEBUG] Cached point was rejected");
     }
 
 

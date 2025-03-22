@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dawarich/application/services/local_point_service.dart';
+import 'package:dawarich/application/services/point_automation_service.dart';
 import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
@@ -111,9 +112,9 @@ class TrackerPageViewModel with ChangeNotifier {
   bool _isRetrievingSettings = true;
   bool get isRetrievingSettings => _isRetrievingSettings;
 
-  bool _isTrackingEnabled = false;
+  bool _isTrackingAutomatically = false;
   bool _isUpdatingTracking = false;
-  bool get isTrackingEnabled => _isTrackingEnabled;
+  bool get isTrackingAutomatically => _isTrackingAutomatically;
   bool get isUpdatingTracking => _isUpdatingTracking;
 
   bool _isTracking = false;
@@ -138,14 +139,28 @@ class TrackerPageViewModel with ChangeNotifier {
 
 
   final LocalPointService _pointService;
+  final PointAutomationService _pointAutomationService;
   final TrackerPreferencesService _trackerPreferencesService;
   final TrackService _trackService;
 
-  TrackerPageViewModel(this._pointService, this._trackService, this._trackerPreferencesService) {
+  TrackerPageViewModel(this._pointService, this._pointAutomationService, this._trackService, this._trackerPreferencesService) {
     initialize();
   }
 
   Future<void> initialize() async {
+
+    _pointAutomationService.newPointStream.listen((LocalPoint point) async {
+
+      final LocalPointViewModel pointViewModel = point.toViewModel();
+      final LastPointViewModel lastPoint = LastPointViewModel.fromPoint(pointViewModel);
+      setLastPoint(lastPoint);
+      await getPointInBatchCount();
+      notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint("[DEBUG] Point created automatically");
+      }
+    });
 
     // Get last point;
     await _trackerPreferencesService.initialize();
@@ -302,14 +317,21 @@ class TrackerPageViewModel with ChangeNotifier {
     }
   }
 
-  void setAutomaticTracking(bool trueOrFalse)  {
+  Future<void> setAutomaticTracking(bool trueOrFalse)  async {
 
-    _isTrackingEnabled = trueOrFalse;
+    _isTrackingAutomatically = trueOrFalse;
+
+    if (isTrackingAutomatically) {
+      await _pointAutomationService.startTracking();
+    } else {
+      _pointAutomationService.stopTracking();
+    }
+
     notifyListeners();
   }
 
   Future<void> storeAutomaticTracking() async {
-    await _trackerPreferencesService.setAutomaticTrackingPreference(_isTrackingEnabled);
+    await _trackerPreferencesService.setAutomaticTrackingPreference(_isTrackingAutomatically);
   }
 
   Future<void> _getAutomaticTrackingPreference() async => setAutomaticTracking(await _trackerPreferencesService.getAutomaticTrackingPreference());

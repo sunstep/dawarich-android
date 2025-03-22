@@ -1,4 +1,5 @@
 
+import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.dart';
 import 'package:intl/intl.dart';
 
 class LastPointViewModel {
@@ -18,4 +19,10 @@ class LastPointViewModel {
     required this.longitude,
     required this.latitude,
   });
+
+  factory LastPointViewModel.fromPoint(LocalPointViewModel point) {
+    final double longitude = point.geometry.coordinates[0];
+    final double latitude = point.geometry.coordinates[1];
+    return LastPointViewModel(rawTimestamp: point.properties.timestamp, longitude: longitude, latitude: latitude);
+  }
 }

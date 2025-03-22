@@ -57,7 +57,7 @@ class LocalPointService {
   }
 
 
-  /// The method that handles manually creating a point.
+  /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
   Future<Result<LocalPoint, String>> createPointFromGps() async {
     final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
     final Result<Position, String> posResult = await _hardwareInterfaces.getPosition(accuracy);
@@ -74,17 +74,23 @@ class LocalPointService {
 
 
   /// Creates a full point, position data is retrieved from cache.
-  Future<Result<LocalPoint, String>> createPointFromCache() async {
+    Future<Option<LocalPoint>> createPointFromCache() async {
+
     final Option<Position> posResult = await _hardwareInterfaces.getCachedPosition();
 
     if (posResult case None()) {
-      return const Err("Failed to create point from cached position: no valid cached position available.");
+      return const None();
     }
 
     final Position position = posResult.unwrap();
     final Result<LocalPoint, String> pointResult = await createAndStorePoint(position);
 
-    return pointResult;
+    // We do not care about any error scenario's when creating cached points, that is why we only handle successful cases.
+    if (pointResult case Ok(value: LocalPoint point)) {
+      return Some(point);
+    }
+
+    return const None();
   }
 
   Future<AdditionalPointData> _getAdditionalPointData(int userId) async {

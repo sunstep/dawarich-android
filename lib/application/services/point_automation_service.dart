@@ -3,15 +3,17 @@ import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
-class PointAutomationService {
+class PointAutomationService with ChangeNotifier {
 
+  final StreamController<LocalPoint> _newPointController = StreamController.broadcast();
+  Stream<LocalPoint> get newPointStream => _newPointController.stream;
   StreamSubscription<Result<Position, String>>? _stream;
   Timer? _cachedTimer;
   Timer? _gpsTimer;
-  Position? _cachedPosition;
 
   final TrackerPreferencesService _trackerPreferencesService;
   final IHardwareRepository _hardwareRepository;
@@ -21,77 +23,133 @@ class PointAutomationService {
 
   Future<void> startTracking() async {
 
+    // Start all three core pieces: stream + periodic timers.
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Starting automatic tracking...");
+    }
 
-
+    await startCachedTimer();
+    // await startStreamSubscription();
+    // await startGpsTimer();
   }
 
-  Future<void> startCachedTimer() async {
-    _cachedTimer = Timer.periodic(const Duration(seconds: 3), _cachedTimerHandler);
+  /// Stop everything if user logs out, or toggles the preference off.
+  Future<void> stopTracking() async {
+
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Stopping automatic tracking...");
+    }
+
+    await stopCachedTimer();
+    // await stopStreamSubscription();
+    // await stopGpsTimer();
   }
 
-  Future<void> startGpsTimer() async {
-
-    int trackingFrequency = await _trackerPreferencesService.getTrackingFrequencyPreference();
-    _gpsTimer = Timer.periodic(Duration(seconds: trackingFrequency), _gpsTimerHandler);
-  }
-
+  /// Subscribes to live location events from the OS.
   Future<void> startStreamSubscription() async {
+    // Retrieve user’s desired accuracy and min distance from preferences
+    final LocationAccuracy accuracy =
+    await _trackerPreferencesService.getLocationAccuracyPreference();
+    final int minimumDistance =
+    await _trackerPreferencesService.getMinimumPointDistancePreference();
 
-    LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
-    int minimumDistance = await _trackerPreferencesService.getMinimumPointDistancePreference();
-
-    Stream<Result<Position, String>> positionStream = _hardwareRepository
-        .getPositionStream(
-        accuracy: accuracy,
-        minimumDistance: minimumDistance
+    // Subscribe to the position stream from our hardware repository
+    final Stream<Result<Position, String>> positionStream =
+    _hardwareRepository.getPositionStream(
+      accuracy: accuracy,
+      minimumDistance: minimumDistance,
     );
 
     _stream = positionStream.listen(_streamHandler);
   }
 
-
-  Future<void> _cachedTimerHandler(Timer timer) async {
-
-    Option<LocalPoint> cachedPointResult = await _localPointService.tryCreateCachedPoint();
-
-    if (cachedPointResult case Some(value: LocalPoint point)) {
-      _restartGpsTimer();
-    }
-
-  }
-
-  Future<void> _gpsTimerHandler(Timer timer) async {
-
-  }
-
+  /// We are notified here whenever the OS produces a new location event.
+  /// We attempt to store that position using LocalPointService.
   Future<void> _streamHandler(Result<Position, String> result) async {
-
     if (result case Ok(value: Position position)) {
-
-
+      final Result<LocalPoint, String> storeResult = await _localPointService.createAndStorePoint(position);
+      if (storeResult case Ok(value: LocalPoint point)) {
+        _newPointController.add(point); // Publish the new point.
+      } else if (storeResult case Err(value: String err)) {
+        debugPrint("[PointAutomation] Stream location not stored: $err");
+      }
+    } else if (result case Err(value: String error)) {
+      debugPrint("[PointAutomation] Location stream error: $error");
     }
-  }
-
-  Future<void> _restartGpsTimer() async {
-    await stopGpsTimer();
-    await startGpsTimer();
-  }
-
-  Future<void> stopCachedTimer() async {
-
-    _cachedTimer?.cancel();
-    _cachedTimer = null;
-  }
-
-  Future<void> stopGpsTimer() async {
-    _gpsTimer?.cancel();
-    _gpsTimer = null;
-
   }
 
   Future<void> stopStreamSubscription() async {
     await _stream?.cancel();
     _stream = null;
+  }
+
+  /// A small timer that periodically tries to store the phone’s “cached” position.
+  /// If it succeeds in storing a brand-new cached point, we reset the GPS timer
+  /// to avoid extra fetches for a bit.
+  Future<void> startCachedTimer() async {
+    // This repeats every 3 seconds, see your sample code
+    _cachedTimer = Timer.periodic(const Duration(seconds: 5), _cachedTimerHandler);
+  }
+
+  Future<void> _cachedTimerHandler(Timer timer) async {
+
+    if (kDebugMode) {
+      debugPrint("[DEBUG] Creating point from cache");
+    }
+
+    final Option<LocalPoint> optionPoint = await _localPointService.createPointFromCache();
+    if (optionPoint case Some(value: LocalPoint point)) {
+      // We actually got a new point from the phone’s cache, so reset the GPS timer.
+      // This basically says “we got a point anyway, so hold off on forcing another one too soon.”
+      _newPointController.add(point);
+      await _restartGpsTimer();
+
+      if (kDebugMode) {
+        debugPrint("[DEBUG: automatic point tracking] Cached point found! Storing it...");
+      }
+    }
+
+
+  }
+
+  Future<void> stopCachedTimer() async {
+    _cachedTimer?.cancel();
+    _cachedTimer = null;
+  }
+
+  /// A timer that forces a brand new location fetch from Geolocator every N seconds
+  /// (based on user’s preference).
+  Future<void> startGpsTimer() async {
+    final int trackingFrequency =
+    await _trackerPreferencesService.getTrackingFrequencyPreference();
+    _gpsTimer = Timer.periodic(
+      Duration(seconds: trackingFrequency),
+      _gpsTimerHandler,
+    );
+  }
+
+  /// Forces a new position fetch by calling localPointService.createNewPoint().
+  Future<void> _gpsTimerHandler(Timer timer) async {
+
+    final result = await _localPointService.createPointFromGps();
+
+    if (result case Ok(value: LocalPoint point)) {
+      _newPointController.add(point);
+    } else if (result case Err(value: String err)) {
+      debugPrint("[PointAutomation] Forced GPS point not stored: $err");
+    }
+  }
+
+  Future<void> stopGpsTimer() async {
+    _gpsTimer?.cancel();
+    _gpsTimer = null;
+  }
+
+  /// Cancels and restarts the GPS timer. Called when we’ve just stored a cached point
+  /// so we don’t spam the device with forced GPS calls too soon.
+  Future<void> _restartGpsTimer() async {
+    await stopGpsTimer();
+    await startGpsTimer();
   }
 
 

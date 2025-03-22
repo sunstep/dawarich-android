@@ -191,8 +191,8 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 TextButton(
-                  child: Text(viewModel.toggleButtonText),
                   onPressed: viewModel.nextPage,
+                  child: Text(viewModel.toggleButtonText),
                   
                 ),
               ],
@@ -251,7 +251,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
         children: [
           const Text("Automatic Tracking"),
           Switch(
-            value: viewModel.isTrackingEnabled,
+            value: viewModel.isTrackingAutomatically,
             onChanged: viewModel.toggleAutomaticTracking,
           ),
         ],

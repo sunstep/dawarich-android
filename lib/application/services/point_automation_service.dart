@@ -15,6 +15,8 @@ class PointAutomationService with ChangeNotifier {
   Timer? _cachedTimer;
   Timer? _gpsTimer;
 
+  bool _isTracking = false;
+
   final TrackerPreferencesService _trackerPreferencesService;
   final IHardwareRepository _hardwareRepository;
   final LocalPointService _localPointService;
@@ -23,14 +25,18 @@ class PointAutomationService with ChangeNotifier {
 
   Future<void> startTracking() async {
 
-    // Start all three core pieces: stream + periodic timers.
+
     if (kDebugMode) {
       debugPrint("[PointAutomation] Starting automatic tracking...");
     }
 
-    await startCachedTimer();
-    // await startStreamSubscription();
-    // await startGpsTimer();
+    if (!_isTracking) {
+      _isTracking = true;
+      // Start all three core pieces: stream + periodic timers.
+      await startCachedTimer();
+      // await startStreamSubscription();
+      // await startGpsTimer();
+    }
   }
 
   /// Stop everything if user logs out, or toggles the preference off.
@@ -40,9 +46,14 @@ class PointAutomationService with ChangeNotifier {
       debugPrint("[PointAutomation] Stopping automatic tracking...");
     }
 
-    await stopCachedTimer();
-    // await stopStreamSubscription();
-    // await stopGpsTimer();
+    if (_isTracking) {
+      _isTracking = false;
+      await stopCachedTimer();
+      // await stopStreamSubscription();
+      // await stopGpsTimer();
+    }
+
+
   }
 
   /// Subscribes to live location events from the OS.
@@ -109,25 +120,31 @@ class PointAutomationService with ChangeNotifier {
       debugPrint("[DEBUG] Creating point from cache");
     }
 
-    final Result<LocalPoint, String> optionPoint = await _localPointService.createPointFromCache();
+    if (_isTracking) {
+      final Result<LocalPoint, String> optionPoint = await _localPointService.createPointFromCache();
 
-    if (optionPoint case Ok(value: LocalPoint point)) {
-      // We actually got a new point from the phone’s cache, so reset the GPS timer.
-      // This basically says “we got a point anyway, so hold off on forcing another one too soon.”
-      _newPointController.add(point);
-      await _restartGpsTimer();
+      if (optionPoint case Ok(value: LocalPoint point)) {
+        // We actually got a new point from the phone’s cache, so reset the GPS timer.
+        // This basically says “we got a point anyway, so hold off on forcing another one too soon.”
+        _newPointController.add(point);
+        await _restartGpsTimer();
 
-      if (kDebugMode) {
-        debugPrint("[DEBUG: automatic point tracking] Cached point found! Storing it...");
+        if (kDebugMode) {
+          debugPrint("[DEBUG: automatic point tracking] Cached point found! Storing it...");
+        }
+      } else if (kDebugMode){
+        debugPrint("[DEBUG] Cached point was rejected");
       }
-    } else if (kDebugMode){
-      debugPrint("[DEBUG] Cached point was rejected");
     }
-
 
   }
 
   Future<void> stopCachedTimer() async {
+
+    if (kDebugMode) {
+      debugPrint("[DEBUG] Stopping cached points timer");
+    }
+
     _cachedTimer?.cancel();
     _cachedTimer = null;
   }
@@ -153,13 +170,16 @@ class PointAutomationService with ChangeNotifier {
   /// Forces a new position fetch by calling localPointService.createNewPoint().
   Future<void> _gpsTimerHandler(Timer timer) async {
 
-    final result = await _localPointService.createPointFromGps();
+    if (_isTracking) {
+      final result = await _localPointService.createPointFromGps();
 
-    if (result case Ok(value: LocalPoint point)) {
-      _newPointController.add(point);
-    } else if (result case Err(value: String err)) {
-      debugPrint("[PointAutomation] Forced GPS point not stored: $err");
+      if (result case Ok(value: LocalPoint point)) {
+        _newPointController.add(point);
+      } else if (result case Err(value: String err)) {
+        debugPrint("[PointAutomation] Forced GPS point not stored: $err");
+      }
     }
+
   }
 
   Future<void> stopGpsTimer() async {

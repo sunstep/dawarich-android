@@ -47,20 +47,26 @@ class PointAutomationService with ChangeNotifier {
 
   /// Subscribes to live location events from the OS.
   Future<void> startStreamSubscription() async {
-    // Retrieve user’s desired accuracy and min distance from preferences
-    final LocationAccuracy accuracy =
-    await _trackerPreferencesService.getLocationAccuracyPreference();
-    final int minimumDistance =
-    await _trackerPreferencesService.getMinimumPointDistancePreference();
 
-    // Subscribe to the position stream from our hardware repository
-    final Stream<Result<Position, String>> positionStream =
-    _hardwareRepository.getPositionStream(
-      accuracy: accuracy,
-      minimumDistance: minimumDistance,
-    );
+    if (_stream == null || _stream!.isPaused) {
+      // Retrieve user’s desired accuracy and min distance from preferences
+      final LocationAccuracy accuracy =
+      await _trackerPreferencesService.getLocationAccuracyPreference();
+      final int minimumDistance =
+      await _trackerPreferencesService.getMinimumPointDistancePreference();
 
-    _stream = positionStream.listen(_streamHandler);
+      // Subscribe to the position stream from our hardware repository
+      final Stream<Result<Position, String>> positionStream =
+      _hardwareRepository.getPositionStream(
+        accuracy: accuracy,
+        minimumDistance: minimumDistance,
+      );
+
+      _stream = positionStream.listen(_streamHandler);
+    } else if (kDebugMode) {
+      debugPrint("[DEBUG: Position stream] A position stream is already being listened to, not starting another one");
+    }
+
   }
 
   /// We are notified here whenever the OS produces a new location event.
@@ -87,8 +93,14 @@ class PointAutomationService with ChangeNotifier {
   /// If it succeeds in storing a brand-new cached point, we reset the GPS timer
   /// to avoid extra fetches for a bit.
   Future<void> startCachedTimer() async {
-    // This repeats every 3 seconds, see your sample code
-    _cachedTimer = Timer.periodic(const Duration(seconds: 5), _cachedTimerHandler);
+
+    if (_cachedTimer == null || !_cachedTimer!.isActive) {
+      _cachedTimer = Timer.periodic(const Duration(seconds: 5), _cachedTimerHandler);
+
+    } else if (kDebugMode){
+      debugPrint("[PointAutomation] Cached timer is already running; not starting a new one.");
+    }
+
   }
 
   Future<void> _cachedTimerHandler(Timer timer) async {
@@ -123,12 +135,19 @@ class PointAutomationService with ChangeNotifier {
   /// A timer that forces a brand new location fetch from Geolocator every N seconds
   /// (based on user’s preference).
   Future<void> startGpsTimer() async {
-    final int trackingFrequency =
-    await _trackerPreferencesService.getTrackingFrequencyPreference();
-    _gpsTimer = Timer.periodic(
-      Duration(seconds: trackingFrequency),
-      _gpsTimerHandler,
-    );
+
+    if (_gpsTimer == null || !_gpsTimer.isActive) {
+      final int trackingFrequency =
+      await _trackerPreferencesService.getTrackingFrequencyPreference();
+      _gpsTimer = Timer.periodic(
+        Duration(seconds: trackingFrequency),
+        _gpsTimerHandler,
+      );
+    } else if (kDebugMode) {
+      debugPrint("[DEBUG: GPS Timer] A GPS timer is already active, not starting another one.");
+    }
+
+
   }
 
   /// Forces a new position fetch by calling localPointService.createNewPoint().

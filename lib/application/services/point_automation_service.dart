@@ -34,8 +34,8 @@ class PointAutomationService with ChangeNotifier {
       _isTracking = true;
       // Start all three core pieces: stream + periodic timers.
       await startCachedTimer();
-      // await startStreamSubscription();
-      // await startGpsTimer();
+      await startStreamSubscription();
+      await startGpsTimer();
     }
   }
 
@@ -49,8 +49,8 @@ class PointAutomationService with ChangeNotifier {
     if (_isTracking) {
       _isTracking = false;
       await stopCachedTimer();
-      // await stopStreamSubscription();
-      // await stopGpsTimer();
+      await stopStreamSubscription();
+      await stopGpsTimer();
     }
 
 

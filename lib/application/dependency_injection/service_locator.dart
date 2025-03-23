@@ -4,6 +4,7 @@ import 'package:dawarich/application/services/location_service.dart';
 import 'package:dawarich/application/services/map_service.dart';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/api_point_service.dart';
+import 'package:dawarich/application/services/point_automation_service.dart';
 import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
@@ -93,6 +94,7 @@ void injectDependencies() {
   getIt.registerLazySingleton<TrackService>(() => TrackService(getIt<ITrackRepository>(), getIt<IUserSessionRepository>()));
   getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>()));
   getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<IUserSessionRepository>(), getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<ITrackRepository>(), getIt<IHardwareRepository>()));
+  getIt.registerLazySingleton<PointAutomationService>(() => PointAutomationService(getIt<TrackerPreferencesService>(), getIt<IHardwareRepository>(), getIt<LocalPointService>()));
   getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));
 
 
@@ -118,7 +120,7 @@ void injectDependencies() {
 
   getIt.registerFactory<TrackerPageViewModel>(
     () {
-      final TrackerPageViewModel viewModel = TrackerPageViewModel(getIt<LocalPointService>(), getIt<TrackService>(), getIt<TrackerPreferencesService>());
+      final TrackerPageViewModel viewModel = TrackerPageViewModel(getIt<LocalPointService>(), getIt<PointAutomationService>(), getIt<TrackService>(), getIt<TrackerPreferencesService>());
       return viewModel;
     }
   );

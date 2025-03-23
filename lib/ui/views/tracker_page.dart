@@ -187,21 +187,23 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  viewModel.showSettings ? "Settings" : "Track Recording",
+                  viewModel.pageTitle,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 TextButton(
-                  child: Text(viewModel.showSettings ? "Show Recording" : "Show Settings",),
-                  onPressed: viewModel.toggleAdvancedSettings,
+                  onPressed: viewModel.nextPage,
+                  child: Text(viewModel.toggleButtonText),
                   
                 ),
               ],
             ),
             const Divider(),
-            if (!viewModel.showSettings)
+            if (viewModel.currentPage == 0)
               ..._recordingCard(context, viewModel)
-            else
-              ..._basicSettings(context, viewModel),
+            else if (viewModel.currentPage == 1)
+              ..._basicSettings(context, viewModel)
+            else if (viewModel.currentPage == 2)
+                ..._advancedSettings(context, viewModel),
           ],
         ),
       ),
@@ -249,7 +251,7 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
         children: [
           const Text("Automatic Tracking"),
           Switch(
-            value: viewModel.isTrackingEnabled,
+            value: viewModel.isTrackingAutomatically,
             onChanged: viewModel.toggleAutomaticTracking,
           ),
         ],

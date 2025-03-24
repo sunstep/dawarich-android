@@ -1,46 +1,47 @@
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
-import 'package:dawarich/data_contracts/interfaces/connect_repository.dart';
-import 'package:http/http.dart' as http;
+import 'package:dawarich/data/sources/api/v1/users/users_client.dart';
+import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
+import 'package:dawarich/data/sources/local/database/user_storage_client.dart';
+import 'package:dawarich/data/sources/local/shared_preferences/user_session.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
+import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/health/response/health_dto.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:option_result/option_result.dart';
 
 class ConnectRepository implements IConnectRepository {
 
-  final IApiConfigSource _apiConfig;
-  late ApiConfigDTO _apiInfo;
+  final ApiConfigClient _apiConfigClient;
+  final UsersApiClient _usersApiClient;
+  final UserStorageClient _userStorageClient;
+  final UserSessionClient _userSessionClient;
 
-  ConnectRepository(this._apiConfig);
-
-  Future<void> _initialize() async {
-    await _apiConfig.initialize();
-    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
-
-    if (!apiInfo.isConfigured()) {
-      throw StateError("Cannot query points without a configured endpoint");
-    }
-    _apiInfo = apiInfo;
-  }
+  ConnectRepository(this._apiConfigClient, this._usersApiClient, this._userStorageClient, this._userSessionClient);
 
   @override
-  Future<bool> testHost() async {
+  Future<bool> testHost(String host) async {
 
     try {
-      await _initialize();
-      final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/health");
-      final http.Response response = await http.get(uri);
+
+      _apiConfigClient.setHost(host);
+
+      final Uri uri = Uri.parse("$host/api/v1/health");
+      final Response response = await get(uri);
 
       if (response.statusCode == 200) {
         final dynamic resultBody = jsonDecode(response.body);
         final HealthDto health = HealthDto(resultBody);
+        String? dawarichResponse = response.headers["x-dawarich-response"];
 
-        return health.status == "ok";
+        return health.status == "ok" && dawarichResponse == "Hey, I'm alive!";
       } else {
 
-        debugPrint("Host gave a status code other than 200: ${response.reasonPhrase}");
+        if (kDebugMode){
+          debugPrint("Host gave a status code other than 200: ${response.reasonPhrase}");
+        }
+
         return false;
       }
     } on SocketException catch (e) {
@@ -55,20 +56,31 @@ class ConnectRepository implements IConnectRepository {
   }
 
   @override
-  Future<bool> tryApiKey() async {
+  Future<bool> tryApiKey(String apiKey) async {
 
-    await _initialize();
-    final Uri uri = Uri.parse('${_apiInfo.host}/api/v1/points/?api_key=${_apiInfo.apiKey}&end_at=0000-01-01');
-    final http.Response response = await http.get(uri);
-    bool isValid = false;
+    _apiConfigClient.setApiKey(apiKey);
+    final Result<UserDto, String> result = await _usersApiClient.getUser();
 
-    if (response.statusCode == 200) {
-      isValid = true;
+    switch (result) {
+      case(Ok(value: UserDto user)): {
+
+        final int userId = await _userStorageClient.tryStoreUser(user);
+        await _userSessionClient.saveSession(userId);
+        await _apiConfigClient.storeApiConfig();
+        return true;
+      }
+
+      case(Err(value: String error)): {
+
+        if (kDebugMode) {
+          debugPrint("Api key verification failed: $error");
+        }
+
+        return false;
+      }
     }
 
-    return isValid;
   }
-
 
 
 }

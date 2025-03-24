@@ -1,12 +1,12 @@
-import 'package:dawarich/data/sources/api/v1/stats/stats_source.dart';
+import 'package:dawarich/data/sources/api/v1/stats/stats_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/stats/response/stats_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/stats_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 class StatsRepository implements IStatsRepository {
 
-  final StatsSource _source;
+  final StatsClient _source;
   StatsRepository(this._source);
 
   @override

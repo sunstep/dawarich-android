@@ -1,12 +1,10 @@
-import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:dawarich/application/services/connect_service.dart';
 import 'package:flutter/foundation.dart';
 
 class ConnectViewModel with ChangeNotifier {
 
-  final ApiConfigService _apiConfigService;
   final ConnectService _connectService;
-  ConnectViewModel(this._apiConfigService, this._connectService);
+  ConnectViewModel(this._connectService);
 
   bool _isVerifyingHost = false;
   bool _isLoggingIn = false;
@@ -44,23 +42,6 @@ class ConnectViewModel with ChangeNotifier {
     }
   }
 
-  Future<bool> logIn(String email, String password) async {
-    _setLoggingIn(true);
-    _setErrorMessage(null);
-
-    await Future.delayed(const Duration(seconds: 2));
-    final result = email == 'test@example.com' && password == 'password123'; // Mock logic
-
-    _setLoggingIn(false);
-
-    if (result) {
-      return true;
-    } else {
-      _setErrorMessage("Invalid email or password.");
-      return false;
-    }
-  }
-
   Future<bool> tryLoginApiKey(String apiKey) async {
 
     _setLoggingIn(true);
@@ -71,8 +52,7 @@ class ConnectViewModel with ChangeNotifier {
     bool isValid = await _connectService.tryApiKey(apiKey);
 
     if (isValid) {
-      await _apiConfigService.storeApiConfig();
-      _setLoggingIn(true);
+      _setLoggingIn(false);
       return true;
     }
 

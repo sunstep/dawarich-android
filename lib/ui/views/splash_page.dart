@@ -23,7 +23,7 @@ class SplashPage extends StatelessWidget {
               }
 
               if (snapshot.hasData) {
-                final isLoggedIn = snapshot.data!;
+                final bool isLoggedIn = snapshot.data!;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushNamedAndRemoveUntil(
                     isLoggedIn ? AppRouter.map : AppRouter.connect,

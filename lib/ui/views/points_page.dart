@@ -1,4 +1,3 @@
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/models/api/v1/points/response/api_point_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
@@ -6,7 +5,6 @@ import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:intl/intl.dart';
 import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
 import 'package:provider/provider.dart';
-
 
 class PointsPage extends StatelessWidget {
 
@@ -409,10 +407,12 @@ class PointsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    PointsPageViewModel viewModel = getIt<PointsPageViewModel>();
-    return ChangeNotifierProvider.value(
-      value: viewModel,
-      child: Builder(builder: (context) => _pageBase(context)),
+    PointsPageViewModel viewModel = PointsPageViewModel();
+    return ChangeNotifierProvider.value(value:
+    viewModel,
+      child: Builder(
+        builder: (context) => _pageBase(context)
+      ),
     );
   }
 

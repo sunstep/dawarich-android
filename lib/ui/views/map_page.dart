@@ -205,9 +205,7 @@ class MapPage extends StatelessWidget {
     return ChangeNotifierProvider.value(
       value: mapViewModel,
       child: Builder(
-        builder: (context) {
-          return _pageBase(context);
-        },
+        builder: (context) => _pageBase(context),
       ),
     );
   }

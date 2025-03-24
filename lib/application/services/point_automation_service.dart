@@ -190,8 +190,11 @@ class PointAutomationService with ChangeNotifier {
   /// Cancels and restarts the GPS timer. Called when we’ve just stored a cached point
   /// so we don’t spam the device with forced GPS calls too soon.
   Future<void> _restartGpsTimer() async {
-    await stopGpsTimer();
-    await startGpsTimer();
+
+    if (_isTracking) {
+      await stopGpsTimer();
+      await startGpsTimer();
+    }
   }
 
 

@@ -143,13 +143,19 @@ class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, R
                         },
                         child: viewModel.isTracking
                             ? const CircularProgressIndicator()
-                            : const Text("Track point"),
+                            : Text(
+                              "Track point",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                       ),
                       OutlinedButton(
                         onPressed: () {
                           Navigator.pushNamed(context, "/batchExplorer");
                         },
-                        child: const Text("View Batch"),
+                        child: Text(
+                          "View Batch",
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ),
                     ],
                   ),

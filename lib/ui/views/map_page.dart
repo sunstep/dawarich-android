@@ -178,7 +178,7 @@ class MapPage extends StatelessWidget {
                     points: mapModel.points,
                     strokeWidth: 6.0,
                     color: Colors.blue.withValues(alpha: 0.8),
-                    borderStrokeWidth: 2.0, // Adds a subtle border for contrast
+                    borderStrokeWidth: 2.0,
                     borderColor: Colors.white.withValues(alpha: 0.7),
                   ),
                 ],
@@ -188,8 +188,8 @@ class MapPage extends StatelessWidget {
                 markers: mapModel.points.map((point) {
                   return Marker(
                     point: point,
-                    width: 10,
-                    height: 10,
+                    width: 5,
+                    height: 5,
                     child: Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,

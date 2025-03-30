@@ -1,6 +1,6 @@
+import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:flutter_map/flutter_map.dart';

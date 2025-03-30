@@ -1,4 +1,4 @@
-import "package:dawarich/application/dependency_injection/service_locator.dart";
+import "package:dawarich/application/startup/dependency_injector.dart";
 import "package:dawarich/ui/models/local/splash_page_viewmodel.dart";
 import "package:dawarich/ui/routing/app_router.dart";
 import "package:flutter/material.dart";

@@ -1,11 +1,11 @@
 import 'dart:ui';
 
+import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/dynamic_truncated_tooltip.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';

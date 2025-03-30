@@ -9,6 +9,7 @@ import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/application/services/user_session_service.dart';
+import 'package:dawarich/data/repositories/api_config_repository.dart';
 import 'package:dawarich/data/repositories/connect_repository.dart';
 import 'package:dawarich/data/repositories/hardware_repository.dart';
 import 'package:dawarich/data/repositories/local_point_repository.dart';
@@ -30,7 +31,7 @@ import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dar
 import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
 import 'package:dawarich/data/sources/local/database/user_storage_client.dart';
 import 'package:dawarich/data/sources/local/shared_preferences/user_session.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
@@ -55,7 +56,6 @@ void injectDependencies() {
   // Sources
   getIt.registerLazySingleton<UserSessionClient>(() => UserSessionClient());
   getIt.registerLazySingleton<ApiConfigClient>(() => ApiConfigClient());
-  getIt.registerLazySingleton<IApiConfigSource>(() => ApiConfigClient());
   getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
   getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
   getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
@@ -73,6 +73,7 @@ void injectDependencies() {
 
 
   // Repositories
+  getIt.registerLazySingleton<IApiConfigRepository>(() => ApiConfigRepository(getIt<ApiConfigClient>()));
   getIt.registerLazySingleton<IUserSessionRepository>(() => UserSessionRepository(getIt<UserSessionClient>()));
   getIt.registerLazySingleton<IUserStorageRepository>(() => UserStorageRepository(getIt<UserStorageClient>()));
   getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataClient>(), getIt<ConnectivityDataClient>()));

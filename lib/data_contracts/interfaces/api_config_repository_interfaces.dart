@@ -1,6 +1,6 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 
-abstract interface class IApiConfigSource {
+abstract interface class IApiConfigRepository {
 
   Future<void> initialize();
   Future<void> setHost(String host);

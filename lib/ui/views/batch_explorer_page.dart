@@ -1,4 +1,4 @@
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
+import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/models/local/batch_explorer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.dart';
 import 'package:dawarich/ui/widgets/appbars/batch_explorer_appbar.dart';

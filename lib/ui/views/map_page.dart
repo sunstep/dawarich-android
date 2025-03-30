@@ -104,9 +104,9 @@ class MapPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.grey.withValues(alpha: 0.2 * 255),
-                        Colors.grey.withValues(alpha: 0.6 * 255),
-                        Colors.grey.withValues(alpha: 0.2 * 255),
+                        Colors.grey.withValues(alpha: 0.2),
+                        Colors.grey.withValues(alpha: 0.6),
+                        Colors.grey.withValues(alpha: 0.2),
                       ],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
@@ -171,17 +171,35 @@ class MapPage extends StatelessWidget {
               userAgentPackageName: 'app.dawarich',
               maxNativeZoom: 19,
             ),
-            PolylineLayer(
-              polylines: [
-                Polyline(
-                  points: mapModel.points,
-                  strokeWidth: 6.0,
-                  color: Colors.blue.withValues(alpha: 0.8 * 255),
-                  borderStrokeWidth: 2.0, // Adds a subtle border for contrast
-                  borderColor: Colors.white.withValues(alpha: 0.7 * 255),
-                ),
-              ],
-            ),
+            if (mapModel.points.isNotEmpty)
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: mapModel.points,
+                    strokeWidth: 6.0,
+                    color: Colors.blue.withValues(alpha: 0.8),
+                    borderStrokeWidth: 2.0,
+                    borderColor: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ],
+              ),
+            if (mapModel.points.isNotEmpty)
+              MarkerLayer(
+                markers: mapModel.points.map((point) {
+                  return Marker(
+                    point: point,
+                    width: 5,
+                    height: 5,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             CurrentLocationLayer(),
           ],
         ),

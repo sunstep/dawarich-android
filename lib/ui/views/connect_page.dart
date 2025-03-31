@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:provider/provider.dart';
 
-class ConnectPage extends StatelessWidget {
+final class ConnectPage extends StatelessWidget {
 
   ConnectPage({super.key});
 

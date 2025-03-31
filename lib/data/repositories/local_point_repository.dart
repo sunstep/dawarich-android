@@ -11,7 +11,7 @@ import 'package:option_result/option_result.dart';
 import 'package:drift/drift.dart';
 
 
-class LocalPointRepository implements ILocalPointRepository {
+final class LocalPointRepository implements ILocalPointRepository {
 
   final SQLiteClient _database = SQLiteClient();
 

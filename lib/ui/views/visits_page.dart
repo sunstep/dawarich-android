@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 
-class VisitsPage extends StatefulWidget {
+final class VisitsPage extends StatefulWidget {
 
   const VisitsPage({super.key});
 
@@ -10,7 +10,7 @@ class VisitsPage extends StatefulWidget {
   VisitsPageState createState() => VisitsPageState();
 }
 
-class VisitsPageState extends State<VisitsPage> {
+final class VisitsPageState extends State<VisitsPage> {
 
 
   Widget _pageContent() {

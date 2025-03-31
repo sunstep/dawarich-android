@@ -5,7 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:option_result/option.dart';
 
 
-class UserStorageClient {
+final class UserStorageClient {
 
   final SQLiteClient _database = SQLiteClient();
 

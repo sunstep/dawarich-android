@@ -5,7 +5,7 @@ import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_d
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 
-class BatchesClient {
+final class BatchesClient {
 
   final ApiConfigClient _apiConfig;
   late ApiConfigDTO _apiInfo;

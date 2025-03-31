@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-class UserSessionClient {
+final class UserSessionClient {
 
   static final UserSessionClient _instance = UserSessionClient._internal();
   factory UserSessionClient() => _instance;

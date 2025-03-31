@@ -3,7 +3,7 @@ import 'package:dawarich/data/utils/preference_keys/tracker_keys.dart';
 import 'package:option_result/option.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class TrackerPreferencesClient {
+final class TrackerPreferencesClient {
 
   int _userId = 0;
 

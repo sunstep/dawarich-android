@@ -5,7 +5,7 @@ import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repositor
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option.dart';
 
-class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
+final class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
 
   final TrackerPreferencesClient _trackerPreferencesClient;
   final IHardwareRepository _hardwareRepository;

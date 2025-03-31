@@ -6,7 +6,7 @@ import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_d
 import 'package:http/http.dart';
 import 'package:option_result/option_result.dart';
 
-class UsersApiClient {
+final class UsersApiClient {
 
   ApiConfigClient _apiConfigClient;
   late ApiConfigDTO _apiInfo;

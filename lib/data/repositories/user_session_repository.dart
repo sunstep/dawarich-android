@@ -1,7 +1,7 @@
 import 'package:dawarich/data/sources/local/shared_preferences/user_session.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
 
-class UserSessionRepository implements IUserSessionRepository {
+final class UserSessionRepository implements IUserSessionRepository {
 
   final UserSessionClient _userSession;
   UserSessionRepository(this._userSession);

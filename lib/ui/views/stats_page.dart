@@ -5,7 +5,7 @@ import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:provider/provider.dart';
 
-class StatsPage extends StatelessWidget {
+final class StatsPage extends StatelessWidget {
 
   const StatsPage({super.key});
 

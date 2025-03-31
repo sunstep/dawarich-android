@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
-class PointsClient {
+final class PointsClient {
 
   final ApiConfigClient _apiConfig;
   late ApiConfigDTO _apiInfo;

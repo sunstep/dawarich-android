@@ -10,7 +10,7 @@ import 'package:dawarich/ui/views/imports_page.dart';
 import 'package:dawarich/ui/views/exports_page.dart';
 import 'package:dawarich/ui/views/settings_page.dart';
 
-class AppRouter {
+final class AppRouter {
 
   static const String splash = '/splash';
   static const String connect = '/connect';

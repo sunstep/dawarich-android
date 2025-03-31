@@ -1,6 +1,6 @@
 import 'package:device_info_plus/device_info_plus.dart';
 
-class DeviceDataClient {
+final class DeviceDataClient {
 
   Future<String> getAndroidDeviceModel() async {
     final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();

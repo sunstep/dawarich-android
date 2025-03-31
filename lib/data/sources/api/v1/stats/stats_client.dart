@@ -6,7 +6,7 @@ import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
 
-class StatsClient {
+final class StatsClient {
 
   final ApiConfigClient _apiConfig;
   late ApiConfigDTO _apiInfo;

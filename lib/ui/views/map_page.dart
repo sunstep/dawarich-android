@@ -8,7 +8,7 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-class MapPage extends StatelessWidget {
+final class MapPage extends StatelessWidget {
 
   const MapPage({super.key});
 

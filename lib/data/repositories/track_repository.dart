@@ -6,7 +6,7 @@ import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
 import 'package:drift/drift.dart';
 import 'package:option_result/option.dart';
 
-class TrackRepository implements ITrackRepository {
+final class TrackRepository implements ITrackRepository {
 
   final SQLiteClient _database = SQLiteClient();
 

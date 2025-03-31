@@ -3,7 +3,7 @@ import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dar
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 
-class ApiConfigRepository implements IApiConfigRepository {
+final class ApiConfigRepository implements IApiConfigRepository {
 
   final ApiConfigClient _apiConfigClient;
   ApiConfigRepository(this._apiConfigClient);

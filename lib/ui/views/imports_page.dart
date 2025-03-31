@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 
-class ImportsPage extends StatefulWidget {
+final class ImportsPage extends StatefulWidget {
 
   const ImportsPage({super.key});
 
@@ -10,7 +10,7 @@ class ImportsPage extends StatefulWidget {
   ImportsPageState createState() => ImportsPageState();
 }
 
-class ImportsPageState extends State<ImportsPage> {
+final class ImportsPageState extends State<ImportsPage> {
 
   @override
   Widget build(BuildContext context) {

@@ -11,7 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
 
-class TrackerPage extends StatefulWidget {
+final class TrackerPage extends StatefulWidget {
 
   const TrackerPage({super.key});
 
@@ -19,7 +19,7 @@ class TrackerPage extends StatefulWidget {
   State<TrackerPage> createState() => TrackerPageState();
 }
 
-class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, RouteAware {
+final class TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, RouteAware {
 
   late TrackerPageViewModel _viewModel;
 

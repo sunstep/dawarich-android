@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-class PointsPage extends StatelessWidget {
+final class PointsPage extends StatelessWidget {
 
   const PointsPage({super.key});
 

@@ -2,7 +2,7 @@ import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_d
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 
-class ApiConfigClient {
+final class ApiConfigClient {
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final ApiConfigDTO _apiConfig = ApiConfigDTO();

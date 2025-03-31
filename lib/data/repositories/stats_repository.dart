@@ -4,7 +4,7 @@ import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.d
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
-class StatsRepository implements IStatsRepository {
+final class StatsRepository implements IStatsRepository {
 
   final StatsClient _source;
   StatsRepository(this._source);

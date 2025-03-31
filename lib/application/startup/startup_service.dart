@@ -1,6 +1,6 @@
 import 'package:dawarich/application/startup/dependency_injector.dart';
 
-class StartupService {
+final class StartupService {
 
   static void initializeApp() {
 

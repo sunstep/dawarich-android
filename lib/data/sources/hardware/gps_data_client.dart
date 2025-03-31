@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
-class GpsDataClient {
+final class GpsDataClient {
 
   Future<Result<Position, String>> getPosition(LocationAccuracy locationAccuracy) async {
 

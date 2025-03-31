@@ -11,7 +11,7 @@ import 'package:http/http.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/health/response/health_dto.dart';
 import 'package:option_result/option_result.dart';
 
-class ConnectRepository implements IConnectRepository {
+final class ConnectRepository implements IConnectRepository {
 
   final ApiConfigClient _apiConfigClient;
   final UsersApiClient _usersApiClient;

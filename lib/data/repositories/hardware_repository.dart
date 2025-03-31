@@ -10,7 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:option_result/option_result.dart';
 
-class HardwareRepository implements IHardwareRepository {
+final class HardwareRepository implements IHardwareRepository {
 
   final GpsDataClient _gpsDataClient;
   final DeviceDataClient _deviceDataClient;

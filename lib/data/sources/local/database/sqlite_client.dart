@@ -16,7 +16,7 @@ part 'sqlite_client.g.dart';
     PointsTable, PointGeometryTable, PointPropertiesTable, TrackTable
   ]
 )
-class SQLiteClient extends _$SQLiteClient {
+final class SQLiteClient extends _$SQLiteClient {
   SQLiteClient() : super(_openConnection());
 
   @override

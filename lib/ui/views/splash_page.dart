@@ -4,7 +4,7 @@ import "package:dawarich/ui/routing/app_router.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 
-class SplashPage extends StatelessWidget {
+final class SplashPage extends StatelessWidget {
 
   const SplashPage({super.key});
 

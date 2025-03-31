@@ -5,7 +5,7 @@ import 'package:dawarich/ui/widgets/appbars/batch_explorer_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class BatchExplorerPage extends StatelessWidget{
+final class BatchExplorerPage extends StatelessWidget{
 
   const BatchExplorerPage({super.key});
 

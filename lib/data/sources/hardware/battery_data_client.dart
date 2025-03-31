@@ -1,6 +1,6 @@
 import 'package:battery_plus/battery_plus.dart';
 
-class BatteryDataClient {
+final class BatteryDataClient {
 
   late Battery _battery;
 

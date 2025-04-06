@@ -79,7 +79,7 @@ final class DependencyInjector {
     getIt.registerLazySingleton<IUserStorageRepository>(() => UserStorageRepository(getIt<UserStorageClient>()));
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataClient>(), getIt<ConnectivityDataClient>()));
     getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<ApiConfigClient>(), getIt<UsersApiClient>(), getIt<UserStorageClient>(), getIt<UserSessionClient>()));
-    getIt.registerLazySingleton<IApiPointInterfaces>(() => ApiPointRepository(getIt<PointsClient>(), getIt<BatchesClient>()));
+    getIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(getIt<PointsClient>(), getIt<BatchesClient>()));
     getIt.registerLazySingleton<ILocalPointRepository>(() => LocalPointRepository());
     getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
     getIt.registerLazySingleton<ITrackRepository>(() => TrackRepository());
@@ -88,11 +88,11 @@ final class DependencyInjector {
 
     // Services
     getIt.registerLazySingleton<UserSessionService>(() => UserSessionService(getIt<IUserSessionRepository>()));
-    getIt.registerLazySingleton<ApiConfigService>(() => ApiConfigService(getIt<ApiConfigClient>()));
+    getIt.registerLazySingleton<ApiConfigService>(() => ApiConfigService(getIt<IApiConfigRepository>()));
     getIt.registerLazySingleton<ConnectService>(() => ConnectService(getIt<IConnectRepository>()));
     getIt.registerLazySingleton<LocationService>(() => LocationService());
     getIt.registerLazySingleton<MapService>(() => MapService(getIt<ApiPointService>()));
-    getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointInterfaces>()));
+    getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointRepository>()));
     getIt.registerLazySingleton<TrackService>(() => TrackService(getIt<ITrackRepository>(), getIt<IUserSessionRepository>()));
     getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>()));
     getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<IUserSessionRepository>(), getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<ITrackRepository>(), getIt<IHardwareRepository>()));

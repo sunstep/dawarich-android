@@ -8,7 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 
-final class ApiPointRepository implements IApiPointInterfaces {
+final class ApiPointRepository implements IApiPointRepository {
 
   final PointsClient _pointsClient;
   final BatchesClient _batchesClient;

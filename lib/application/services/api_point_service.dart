@@ -10,12 +10,12 @@ import 'package:option_result/option_result.dart';
 
 class ApiPointService {
 
-  final IApiPointInterfaces _pointInterfaces;
+  final IApiPointRepository _pointInterfaces;
   ApiPointService(this._pointInterfaces);
 
   Future<bool> uploadBatch(DawarichPointBatch batch) async {
 
-    Result<void, String> result = await _pointInterfaces.uploadBatch(batch.toDto());
+    Result<(), String> result = await _pointInterfaces.uploadBatch(batch.toDto());
     return result.isOk();
   }
 

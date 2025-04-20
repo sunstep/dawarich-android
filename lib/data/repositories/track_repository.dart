@@ -8,7 +8,8 @@ import 'package:option_result/option.dart';
 
 final class TrackRepository implements ITrackRepository {
 
-  final SQLiteClient _database = SQLiteClient();
+  final SQLiteClient _database;
+  TrackRepository(this._database);
 
   @override
   Future<void> storeTrack(TrackDto track) async {

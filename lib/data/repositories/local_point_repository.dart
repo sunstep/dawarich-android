@@ -13,7 +13,8 @@ import 'package:drift/drift.dart';
 
 final class LocalPointRepository implements ILocalPointRepository {
 
-  final SQLiteClient _database = SQLiteClient();
+  final SQLiteClient _database;
+  LocalPointRepository(this._database);
 
   @override
   Future<Result<(), String>> storePoint(LocalPointDto point) async {

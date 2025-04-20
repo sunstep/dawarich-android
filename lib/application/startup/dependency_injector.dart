@@ -27,6 +27,7 @@ import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
 import 'package:dawarich/data/sources/hardware/device_data_client.dart';
 import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
 import 'package:dawarich/data/sources/hardware/connectivity_data_client.dart';
+import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
 import 'package:dawarich/data/sources/local/database/user_storage_client.dart';
@@ -55,6 +56,7 @@ final class DependencyInjector {
 
   static void injectDependencies() {
     // Sources
+    getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
     getIt.registerLazySingleton<UserSessionClient>(() => UserSessionClient());
     getIt.registerLazySingleton<ApiConfigClient>(() => ApiConfigClient());
     getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
@@ -80,9 +82,9 @@ final class DependencyInjector {
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(getIt<GpsDataClient>(), getIt<DeviceDataClient>(), getIt<BatteryDataClient>(), getIt<ConnectivityDataClient>()));
     getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(getIt<ApiConfigClient>(), getIt<UsersApiClient>(), getIt<UserStorageClient>(), getIt<UserSessionClient>()));
     getIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(getIt<PointsClient>(), getIt<BatchesClient>()));
-    getIt.registerLazySingleton<ILocalPointRepository>(() => LocalPointRepository());
+    getIt.registerLazySingleton<ILocalPointRepository>(() => LocalPointRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
-    getIt.registerLazySingleton<ITrackRepository>(() => TrackRepository());
+    getIt.registerLazySingleton<ITrackRepository>(() => TrackRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>(), getIt<IHardwareRepository>()));
 
 

@@ -82,12 +82,11 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => DrawerViewModel(getIt<ApiConfigService>()),
-      child: Builder(
-        builder: (context) => Drawer(
-          child: _drawerContent(context),
-        ),
+    final DrawerViewModel viewModel = getIt<DrawerViewModel>();
+    return ChangeNotifierProvider.value(
+      value: viewModel,
+      child: Consumer<DrawerViewModel>(
+          builder: (context, vm, child) => _drawerContent(context)
       ),
     );
   }

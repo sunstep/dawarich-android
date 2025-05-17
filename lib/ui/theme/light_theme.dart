@@ -1,100 +1,89 @@
 import 'package:flutter/material.dart';
 
 final class LightTheme {
-
   static final ThemeData primaryTheme = ThemeData(
     brightness: Brightness.light,
-    primaryColor: Colors.white,
-    scaffoldBackgroundColor: Colors.white,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-    ),
-    drawerTheme: const DrawerThemeData(
-      backgroundColor: Colors.white,
-    ),
+
+    // overall backgrounds
+    scaffoldBackgroundColor: const Color(0xFFF5F5F5),   // very light grey
+    cardColor: Colors.white,
+
+    // primary & accent
     colorScheme: const ColorScheme.light(
-      primary: Colors.black,
-      onPrimary: Colors.white,
-      secondary: Colors.blueAccent,
+      primary: Colors.black,            // main “ink” color (titles, icons)
+      onPrimary: Colors.white,          // for icons/text on a primary-colored background
+      secondary: Color(0xFF1E88E5),     // a richer blue accent
+      onSecondary: Colors.white,
+      surface: Colors.white,
+      onSurface: Colors.black,
+      error: Colors.redAccent,
+      onError: Colors.white,
     ),
+
+    // AppBar sits flat on the grey background
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFFF5F5F5),
+      elevation: 0,
+      iconTheme: IconThemeData(color: Colors.black),
+    ),
+
+    // Text styles
     textTheme: const TextTheme(
-      bodyLarge: TextStyle(
-          color: Colors.black,
-          fontSize: 20,
-          fontWeight: FontWeight.bold
+      headlineSmall: TextStyle(
+        color: Colors.black,
+        fontSize: 26,
+        fontWeight: FontWeight.bold,
       ),
-      bodyMedium: TextStyle(
-          color: Colors.black,
-          fontSize: 18,
-          fontWeight: FontWeight.bold
-      ),
-      bodySmall: TextStyle(
-          color: Colors.black,
-          fontSize: 13,
-          fontWeight: FontWeight.bold
+      bodyLarge: TextStyle(color: Colors.black, fontSize: 20),
+      bodyMedium: TextStyle(color: Colors.black87, fontSize: 18),
+      bodySmall: TextStyle(color: Colors.black54, fontSize: 14),
+    ),
+
+    // Buttons
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF1E88E5), // same as secondary
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-        style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.all<Color>(Colors.white)
-        )
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.black,
-        elevation: 5,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Colors.black),
-        ),
-        textStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFF1E88E5),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     ),
-    inputDecorationTheme: const InputDecorationTheme(
-      enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-              color: Colors.black
-          )
-      ),
-      focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-              color: Colors.black
-          )
-      ),
-      errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-              color: Colors.red
-          )
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-              color: Colors.red
-          )
-      ),
-      floatingLabelStyle: TextStyle(
-          color: Colors.black,
-          fontWeight: FontWeight.bold
-      ),
-    ),
-    iconTheme: const IconThemeData(color: Colors.black),
-    bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Colors.white
-    ),
-    dividerColor: Colors.black,
-    toggleButtonsTheme: ToggleButtonsThemeData(
-      fillColor: Colors.blueAccent.withValues(alpha: 0.3),
-      selectedBorderColor: Colors.blueAccent,
-      borderColor: Colors.black,
-      selectedColor: Colors.blueAccent,
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8.0),
-    ),
-  );
 
+    // Input fields
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: Colors.grey.shade100,      // very light input background
+      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      enabledBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black26),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Color(0xFF1E88E5), width: 2),
+      ),
+      errorBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.redAccent),
+      ),
+      focusedErrorBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.redAccent, width: 2),
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: Color(0xFF1E88E5),
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+
+    // Icons (including our cloud/avatar)
+    iconTheme: const IconThemeData(color: Colors.black87),
+
+    // Dividers inside the stepper, etc.
+    dividerColor: Colors.grey.shade300,
+  );
 }

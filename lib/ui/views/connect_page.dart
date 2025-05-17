@@ -2,264 +2,330 @@ import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/ui/widgets/appbar.dart';
 import 'package:provider/provider.dart';
 
-final class ConnectPage extends StatelessWidget {
+class ConnectPage extends StatefulWidget {
+  const ConnectPage({super.key});
 
-  ConnectPage({super.key});
+  @override
+  ConnectPageState createState() => ConnectPageState();
+}
 
-  final TextEditingController _hostController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _apiKeyController = TextEditingController();
+class ConnectPageState extends State<ConnectPage> {
+  final _hostFormKey = GlobalKey<FormState>();
+  final _apiFormKey  = GlobalKey<FormState>();
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final _hostController = TextEditingController();
+  // final _emailController = TextEditingController();
+  // final _passwordController = TextEditingController();
+  final _apiKeyController = TextEditingController();
 
-  List<Widget> _hostFormContent(BuildContext context, ConnectViewModel viewModel) {
-    return [
-      TextFormField(
-        controller: _hostController,
-        decoration: const InputDecoration(
-          labelText: 'Host',
-        ).applyDefaults(Theme.of(context).inputDecorationTheme),
-        keyboardType: TextInputType.url,
-        validator: (value) => value != null && value.isNotEmpty
-            ? null
-            : 'Please enter a valid host URL.',
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        cursorColor: Theme.of(context).primaryColor
-      ),
-      const SizedBox(height: 24),
-      ElevatedButton(
-        style: Theme.of(context).elevatedButtonTheme.style,
-        onPressed: viewModel.isVerifyingHost
-          ? null
-          : () async {
-            final messenger = ScaffoldMessenger.of(context);
+  int _currentStep = 0;
 
-            if (_formKey.currentState!.validate()) {
-              final success = await viewModel.testHost(_hostController.text);
-              if (success) {
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Successfully connected to Dawarich!')),
-                );
-              } else {
-                messenger.showSnackBar(
-                  SnackBar(content: Text(viewModel.errorMessage ?? 'Host verification failed.')),
-                );
-              }
-            }
-          },
-        child: viewModel.isVerifyingHost
-          ? const Padding(
-            padding: EdgeInsets.all(8.0), // Add some space around the indicator
-            child: SizedBox(
-              height: 18,
-              width: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: Colors.white,
-              ),
-            ),
-          )
-          : const Text('Connect'),
-      ),
-    ];
-  }
-
-  List<Widget> _loginFormContent(BuildContext context, ConnectViewModel viewModel) {
-
-    final FocusNode emailFocusNode = FocusNode();
-    AutovalidateMode emailAutoValidateMode = AutovalidateMode.disabled;
-
-    emailFocusNode.addListener(() {
-      if (!emailFocusNode.hasFocus) {
-        emailAutoValidateMode = AutovalidateMode.onUserInteraction;
-      }
-    });
-
-    return [
-      TextFormField(
-        controller: _emailController,
-        decoration: const InputDecoration(
-          labelText: 'Email',
-        ).applyDefaults(Theme.of(context).inputDecorationTheme),
-        cursorColor: Theme.of(context).textTheme.bodySmall!.color,
-        keyboardType: TextInputType.emailAddress,
-        validator: (value) => value != null && value.contains('@')
-            ? null
-            : 'Please enter a valid email address.',
-        autovalidateMode: emailAutoValidateMode,
-      ),
-      const SizedBox(height: 16),
-      TextFormField(
-        controller: _passwordController,
-        decoration: InputDecoration(
-          labelText: 'Password',
-          suffixIcon: IconButton(
-            icon: Icon(
-              viewModel.passwordVisible ? Icons.visibility : Icons.visibility_off,
-              color: Theme.of(context).textTheme.bodySmall!.color,
-            ),
-            onPressed: () => {
-              viewModel.setPasswordVisibility(!viewModel.passwordVisible)
-            },
-          )
-        ).applyDefaults(Theme.of(context).inputDecorationTheme),
-        cursorColor: Theme.of(context).textTheme.bodySmall!.color,
-        obscureText: !viewModel.passwordVisible,
-      ),
-      const SizedBox(height: 24),
-      ElevatedButton(
-        style: Theme.of(context).elevatedButtonTheme.style,
-        onPressed: null,
-        child: viewModel.isLoggingIn
-            ? const Padding(
-          padding: EdgeInsets.all(8.0), // Add some space around the indicator
-          child: SizedBox(
-            height: 18, // Control the size of the spinner
-            width: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: Colors.white,
-            ),
-          ),
-        )
-            : const Text('Login'),
-      ),
-      TextButton(
-        onPressed: () => {
-          viewModel.setApiKeyPreference(true)
-        },
-        child: Text(
-            "Login with API key",
-            style: Theme.of(context).textTheme.bodySmall,
-        )
-      )
-    ];
-  }
-
-  List<Widget> _apiKeyLoginFormContent(BuildContext context, ConnectViewModel viewModel) {
-    return [
-      TextFormField(
-        controller: _apiKeyController,
-        decoration: InputDecoration(
-          labelText: 'Api Key',
-            suffixIcon: IconButton(
-              icon: Icon(
-                viewModel.apiKeyVisible ? Icons.visibility : Icons.visibility_off,
-                color: Theme.of(context).textTheme.bodySmall!.color,
-              ),
-              onPressed: () => {
-                viewModel.setApiKeyVisibility(!viewModel.apiKeyVisible)
-              },
-            )
-        ).applyDefaults(Theme.of(context).inputDecorationTheme),
-        cursorColor: Theme.of(context).textTheme.bodySmall!.color,
-        obscureText: !viewModel.apiKeyVisible,
-      ),
-      const SizedBox(height: 16),
-      ElevatedButton(
-        style: Theme.of(context).elevatedButtonTheme.style,
-        onPressed: viewModel.isLoggingIn
-          ? null :
-          () async {
-            if (_formKey.currentState!.validate()) {
-
-              final success = await viewModel.tryLoginApiKey(
-                _apiKeyController.text
-              );
-
-              if (context.mounted && success) {
-                Navigator.pushReplacementNamed(context, AppRouter.map);
-              } else if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(viewModel.errorMessage ?? 'Login failed.')),
-                );
-              }
-            }
-          },
-        child: viewModel.isLoggingIn
-            ? const Padding(
-          padding: EdgeInsets.all(8.0), // Add some space around the indicator
-          child: SizedBox(
-            height: 18, // Control the size of the spinner
-            width: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: Colors.white,
-            ),
-          ),
-        )
-            : const Text('Login'),
-      ),
-      TextButton(
-        onPressed: () => {
-          viewModel.setApiKeyPreference(false)
-        },
-        child: Text(
-          "Login with Dawarich account",
-          style: Theme.of(context).textTheme.bodySmall,
-        )
-      )
-    ];
-  }
-
-
-  List<Widget> _getFormContent(BuildContext context, ConnectViewModel viewModel) {
-    if (viewModel.hostVerified) {
-      return viewModel.apiKeyPreferred
-          ? _apiKeyLoginFormContent(context, viewModel)
-          : _loginFormContent(context, viewModel);
-    }
-    return _hostFormContent(context, viewModel);
-  }
-
-  Widget _formBase(BuildContext context) {
-    final ConnectViewModel viewModel = Provider.of<ConnectViewModel>(context);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (viewModel.snackbarMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(viewModel.snackbarMessage!)),
-        );
-        viewModel.clearSnackbarMessage();
-      }
-    });
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: _getFormContent(context, viewModel)
-    );
-  }
-
-  Widget _pageContent(BuildContext context) {
-    return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-            key: _formKey,
-            child: _formBase(context)
-        )
-    );
-  }
-
-  Widget _pageBase(BuildContext context) {
-    return Scaffold(
-        appBar: const Appbar(
-          title: "Connect to Dawarich",
-          fontSize: 28,
-        ),
-        body: _pageContent(context),
-    );
+  @override
+  void dispose() {
+    _hostController.dispose();
+    // _emailController.dispose();
+    // _passwordController.dispose();
+    _apiKeyController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => getIt<ConnectViewModel>(),
-      child: Builder(builder: (context) => _pageBase(context)),
+      child: Scaffold(
+        body: _buildGradientBackground(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: _buildFormCard(context),
+            ),
+          ),
+        ),
+      ),
     );
+  }
+
+  Widget _buildGradientBackground({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildFormCard(BuildContext context) {
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 24),
+            Consumer<ConnectViewModel>(builder: (ctx, vm, _) {
+              return Stepper(
+                physics: const ClampingScrollPhysics(),
+                currentStep: _currentStep,
+                onStepContinue: () => _nextStep(ctx, vm),
+                onStepCancel: _currentStep > 0
+                  ? () {
+                    if (_currentStep == 1) {
+                      vm.resetHostVerification();
+                    }
+                    setState(() => _currentStep--);
+                  } : null,
+                controlsBuilder: (ctx, details) => _buildControls(ctx, details),
+                steps: [
+                  _serverStep(ctx, vm),
+                  _loginStep(ctx, vm),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Consumer<ConnectViewModel>(
+      builder: (ctx, vm, _) {
+        return Column(
+          children: [
+            // animated switcher to smooth the icon change
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: CircleAvatar(
+                key: ValueKey<bool>(vm.hostVerified),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                radius: 36,
+                child: Icon(
+                  vm.hostVerified ? Icons.cloud_done : Icons.cloud,
+                  size: 36,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Connect to Dawarich',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Step _serverStep(BuildContext context, ConnectViewModel vm) {
+    return Step(
+      title: const Text('Server'),
+      isActive: _currentStep >= 0,
+      state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+      content: Form(
+        key: _hostFormKey,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _hostController,
+                decoration: InputDecoration(
+                  labelText: 'Host URL',
+                  prefixIcon: const Icon(Icons.link),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding:
+                  const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                ),
+                keyboardType: TextInputType.url,
+                validator: (v) =>
+                (v != null && v.isNotEmpty) ? null : 'Please enter a host URL.',
+              ),
+              const SizedBox(height: 16),
+              if (vm.errorMessage != null && _currentStep == 0) ...[
+                Text(
+                  vm.errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Step _loginStep(BuildContext context, ConnectViewModel vm) {
+    return Step(
+      title: const Text('Login'),
+      isActive: _currentStep >= 1,
+      state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+      content: Form(
+        key: _apiFormKey,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24.0),
+          child: _buildApiKeyForm(context, vm)
+        ),
+      )
+    );
+  }
+
+  Widget _buildApiKeyForm(BuildContext context, ConnectViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,  // makes it fill the width
+      children: [
+        TextFormField(
+          controller: _apiKeyController,
+          onChanged: (_) => vm.clearErrorMessage(),
+          decoration: InputDecoration(
+            labelText: 'API Key',
+            prefixIcon: const Icon(Icons.vpn_key),
+            filled: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            suffixIcon: IconButton(
+              icon: Icon(vm.apiKeyVisible ? Icons.visibility : Icons.visibility_off),
+              onPressed: () => vm.setApiKeyVisibility(!vm.apiKeyVisible),
+            ),
+          ),
+          obscureText: !vm.apiKeyVisible,
+          validator: (v) => (v != null && v.isNotEmpty) ? null : 'Enter API key',
+        ),
+        if (vm.errorMessage != null && _currentStep == 1) ...[
+          const SizedBox(height: 8),
+          Text(
+            vm.errorMessage!,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
+        const SizedBox(height: 24),
+        TextButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Coming Soon'),
+                content: const Text('Email/password login is not supported yet.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: const Text('Use Email / Password'),
+        ),
+      ],
+    );
+  }
+
+  // Widget _buildCredentialForm(BuildContext context, ConnectViewModel vm) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       TextFormField(
+  //         controller: _emailController,
+  //         decoration: InputDecoration(
+  //           labelText: 'Email',
+  //           prefixIcon: const Icon(Icons.email),
+  //           filled: true,
+  //           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+  //         ),
+  //         keyboardType: TextInputType.emailAddress,
+  //         validator: (v) => (v != null && v.contains('@')) ? null : 'Enter a valid email',
+  //       ),
+  //       const SizedBox(height: 12),
+  //       TextFormField(
+  //         controller: _passwordController,
+  //         obscureText: !vm.passwordVisible,
+  //         decoration: InputDecoration(
+  //           labelText: 'Password',
+  //           prefixIcon: const Icon(Icons.lock),
+  //           suffixIcon: IconButton(
+  //             icon: Icon(vm.passwordVisible ? Icons.visibility : Icons.visibility_off),
+  //             onPressed: () => vm.setPasswordVisibility(!vm.passwordVisible),
+  //           ),
+  //           filled: true,
+  //           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+  //         ),
+  //         validator: (v) => (v != null && v.isNotEmpty) ? null : 'Enter your password',
+  //       ),
+  //       const SizedBox(height: 12),
+  //       TextButton(
+  //         onPressed: () => vm.setApiKeyPreference(true),
+  //         child: const Text('Use API Key Instead'),
+  //       ),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildControls(BuildContext context, ControlsDetails details) {
+    final isLast = _currentStep == 1;
+    final vm = Provider.of<ConnectViewModel>(context, listen: false);
+    final busy = vm.isVerifyingHost || vm.isLoggingIn;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          if (_currentStep > 0)
+            TextButton(
+              onPressed: details.onStepCancel,
+              child: const Text('Back'),
+            ),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: busy ? null : details.onStepContinue,
+              child: busy
+                  ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+              )
+                  : Text(isLast ? 'Sign in' : 'Next'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _nextStep(BuildContext context, ConnectViewModel vm) async {
+    if (_currentStep == 0) {
+      if (!_hostFormKey.currentState!.validate()) {
+        return;
+      }
+      final ok = await vm.testHost(_hostController.text.trim());
+
+        if (ok) {
+          setState(() => _currentStep = 1);
+        }
+
+    }
+    else if (_currentStep == 1) {
+      if (!_apiFormKey.currentState!.validate()) return;
+      final ok = await vm.tryLoginApiKey(_apiKeyController.text.trim());
+      if (ok && context.mounted) {
+        Navigator.pushReplacementNamed(context, AppRouter.map);
+      }
+    }
   }
 }

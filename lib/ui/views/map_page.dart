@@ -12,8 +12,7 @@ final class MapPage extends StatelessWidget {
 
   const MapPage({super.key});
 
-  Widget _bottomsheetContent(
-      BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
+  Widget _bottomsheetContent(BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).bottomSheetTheme.backgroundColor,
@@ -219,7 +218,7 @@ final class MapPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mapViewModel = getIt<MapViewModel>();
+    final MapViewModel mapViewModel = getIt<MapViewModel>();
     return ChangeNotifierProvider.value(
       value: mapViewModel,
       child: Builder(

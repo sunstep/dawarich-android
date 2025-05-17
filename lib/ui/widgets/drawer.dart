@@ -6,7 +6,7 @@ import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:provider/provider.dart';
 
 
-class CustomDrawer extends StatelessWidget {
+final class CustomDrawer extends StatelessWidget {
 
   const CustomDrawer({super.key});
 
@@ -79,6 +79,12 @@ class CustomDrawer extends StatelessWidget {
     );
   }
 
+  Widget _drawerBase(BuildContext context) {
+    return Drawer(
+      child: _drawerContent(context)
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +92,7 @@ class CustomDrawer extends StatelessWidget {
     return ChangeNotifierProvider.value(
       value: viewModel,
       child: Consumer<DrawerViewModel>(
-          builder: (context, vm, child) => _drawerContent(context)
+          builder: (context, vm, child) => _drawerBase(context)
       ),
     );
   }

@@ -46,11 +46,17 @@ final class ConnectRepository implements IConnectRepository {
       }
     } on SocketException catch (e) {
 
-      debugPrint("SocketException: ${e.message}");
+      if (kDebugMode) {
+        debugPrint("SocketException: ${e.message}");
+      }
+
       return false;
     } catch (e) {
 
-      debugPrint("Error in testHost: $e");
+      if (kDebugMode) {
+        debugPrint("Error in testHost: $e");
+      }
+
       return false;
     }
   }

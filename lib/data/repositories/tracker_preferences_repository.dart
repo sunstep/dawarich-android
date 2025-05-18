@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
-import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option.dart';
@@ -8,8 +7,7 @@ import 'package:option_result/option.dart';
 final class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
 
   final TrackerPreferencesClient _trackerPreferencesClient;
-  final IHardwareRepository _hardwareRepository;
-  TrackerPreferencesRepository(this._trackerPreferencesClient, this._hardwareRepository);
+  TrackerPreferencesRepository(this._trackerPreferencesClient);
 
   @override
   Future<void> initialize() async => await _trackerPreferencesClient.initialize();
@@ -141,20 +139,15 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
   }
 
   @override
-  Future<String> getTrackerId() async {
+  Future<Option<String>> getTrackerId() async {
 
-    Option<String> preferenceResult = await _trackerPreferencesClient.getTrackerId();
+    final Option<String> possibleTrackerId = await _trackerPreferencesClient.getTrackerId();
 
-    switch (preferenceResult) {
-
-      case Some(value: String trackerId): {
-        return trackerId;
-      }
-
-      case None(): {
-        return await _hardwareRepository.getDeviceModel();
-      }
+    if (possibleTrackerId case Some(value: String trackerId)) {
+      return Some(trackerId);
     }
+
+    return const None();
   }
 
 

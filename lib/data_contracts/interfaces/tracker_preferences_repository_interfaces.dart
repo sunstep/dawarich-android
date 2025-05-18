@@ -1,3 +1,4 @@
+import 'package:option_result/option_result.dart';
 
 abstract interface class ITrackerPreferencesRepository {
 
@@ -16,5 +17,5 @@ abstract interface class ITrackerPreferencesRepository {
   Future<int> getTrackingFrequencyPreference();
   Future<int> getLocationAccuracyPreference();
   Future<int> getMinimumPointDistancePreference();
-  Future<String> getTrackerId();
+  Future<Option<String>> getTrackerId();
 }

@@ -3,18 +3,30 @@ plugins {
     id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+}
+
 android {
     namespace = "app.dawarich.dawarich"
     compileSdk = 35
     ndkVersion "27.2.12479018"
 
     compileOptions {
-        sourceCompatibility "21"
-        targetCompatibility "21"
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 
     kotlinOptions {
         jvmTarget = "21"
+    }
+
+
+
+    kotlin {
+        jvmToolchain(21)
     }
 
     defaultConfig {

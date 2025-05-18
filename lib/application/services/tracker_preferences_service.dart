@@ -1,10 +1,13 @@
+import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:option_result/option_result.dart';
 
 class TrackerPreferencesService {
 
- final ITrackerPreferencesRepository _trackerPreferencesRepository;
-  TrackerPreferencesService(this._trackerPreferencesRepository);
+  final ITrackerPreferencesRepository _trackerPreferencesRepository;
+  final IHardwareRepository _hardwareRepository;
+  TrackerPreferencesService(this._trackerPreferencesRepository, this._hardwareRepository);
 
   Future<void> initialize() async {
     await _trackerPreferencesRepository.initialize();
@@ -69,7 +72,17 @@ class TrackerPreferencesService {
   }
 
   Future<String> getTrackerId() async {
-    return await _trackerPreferencesRepository.getTrackerId();
+
+    final Option<String> possibleTrackerId =  await _trackerPreferencesRepository.getTrackerId();
+
+    if (possibleTrackerId case Some(value: String trackerId)) {
+
+      return trackerId;
+    }
+
+    final String deviceModel = await _hardwareRepository.getDeviceModel();
+
+    return deviceModel;
   }
 
 }

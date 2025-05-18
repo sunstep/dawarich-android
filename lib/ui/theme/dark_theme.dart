@@ -1,94 +1,110 @@
 import 'package:flutter/material.dart';
 
-final class DarkTheme {
-
+class DarkTheme {
   static final ThemeData primaryTheme = ThemeData(
-      brightness: Brightness.dark,
-      primaryColor: const Color(0xFF101110),
-      scaffoldBackgroundColor: const Color(0xFF101110),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF101110),
+    brightness: Brightness.dark,
+
+    // overall backgrounds
+    scaffoldBackgroundColor: const Color(0xFF121212),
+    cardColor: Colors.black,
+    cardTheme: CardTheme(
+      color: Colors.black,
+      elevation: 12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      drawerTheme: const DrawerThemeData(
-        backgroundColor: Color(0xFF101110),
+    ),
+
+    // AppBar & drawer
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF121212),
+      elevation: 0,
+      iconTheme: IconThemeData(color: Colors.white),
+    ),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Color(0xFF121212),
+    ),
+
+    // Core colors
+    colorScheme: const ColorScheme.dark(
+      primary: Colors.white,           // main “ink” color
+      onPrimary: Colors.black,         // for text/icons on white
+      secondary: Color(0xFF90CAF9),    // a soft sky-blue accent
+      onSecondary: Colors.black,
+      surface: Color(0xFF1E1E1E),
+      onSurface: Colors.white,
+      error: Colors.redAccent,
+      onError: Colors.black,
+    ),
+
+    // Text styles
+    textTheme: const TextTheme(
+      headlineSmall: TextStyle(  // page title
+        color: Colors.white,
+        fontSize: 26,
+        fontWeight: FontWeight.bold,
       ),
-      colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF101110),
-        onPrimary: Colors.white,
-        secondary: Colors.grey,
+      bodyLarge: TextStyle(color: Colors.white70, fontSize: 20),
+      bodyMedium: TextStyle(color: Colors.white60, fontSize: 18),
+      bodySmall: TextStyle(color: Colors.white54, fontSize: 14),
+    ),
+
+    // Buttons
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF90CAF9), // secondary
+        foregroundColor: Colors.black,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
-      textTheme: TextTheme(
-        bodyLarge: TextStyle(
-            color: Colors.grey.shade200,
-            fontSize: 20,
-            fontWeight: FontWeight.bold
-        ),
-        bodyMedium: TextStyle(
-            color: Colors.grey.shade200,
-            fontSize: 18,
-            fontWeight: FontWeight.bold
-        ),
-        bodySmall: TextStyle(
-            color: Colors.grey.shade200,
-            fontSize: 13,
-            fontWeight: FontWeight.bold
-        ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFF90CAF9),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
-      textButtonTheme: TextButtonThemeData(
-          style: ButtonStyle(
-              foregroundColor: WidgetStateProperty.all<Color>(Colors.grey.shade50)
-          )
+    ),
+
+    // Inputs
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFF2A2A2A),           // dark input background
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 20, horizontal: 16,
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
-          backgroundColor: Colors.white,
-          elevation: 5,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: const BorderSide(color: Colors.white),
-          ),
-          textStyle: const TextStyle(
-            color: Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.white24),
+        borderRadius: BorderRadius.circular(8),
       ),
-      inputDecorationTheme: const InputDecorationTheme(
-          enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  color: Colors.white
-              )
-          ),
-          focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  color: Colors.white
-              )
-          ),
-          errorBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  color: Colors.red
-              )
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  color: Colors.red
-              )
-          ),
-          floatingLabelStyle: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold
-          )
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xFF90CAF9), width: 2),
+        borderRadius: BorderRadius.circular(8),
       ),
-      iconTheme: const IconThemeData(color: Colors.white),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF101110),
+      errorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.redAccent),
+        borderRadius: BorderRadius.circular(8),
       ),
-      dividerColor: Colors.white,
-      toggleButtonsTheme: const ToggleButtonsThemeData(
-        selectedColor: Colors.grey,
-      )
+      focusedErrorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: Color(0xFF90CAF9),
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+
+    // Icon theme
+    iconTheme: const IconThemeData(color: Colors.white70),
+
+    // Divider (e.g. in Stepper connectors)
+    dividerColor: Colors.white24,
+
+    // Bottom sheets, dialogs, etc.
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF1E1E1E),
+    ),
   );
 }

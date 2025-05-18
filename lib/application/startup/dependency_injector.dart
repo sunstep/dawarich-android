@@ -1,5 +1,4 @@
 import 'package:dawarich/application/services/api_config_service.dart';
-import 'package:dawarich/application/services/background_tracking_service.dart';
 import 'package:dawarich/application/services/connect_service.dart';
 import 'package:dawarich/application/services/location_service.dart';
 import 'package:dawarich/application/services/map_service.dart';
@@ -50,6 +49,7 @@ import 'package:dawarich/ui/models/local/batch_explorer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/drawer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/splash_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
@@ -126,6 +126,13 @@ final class DependencyInjector {
       () {
         final StatsPageViewModel viewModel = StatsPageViewModel(getIt<StatsService>());
         viewModel.fetchStats();
+        return viewModel;
+      }
+    );
+
+    getIt.registerFactory<PointsPageViewModel>(
+      () {
+        final PointsPageViewModel viewModel = PointsPageViewModel();
         return viewModel;
       }
     );

@@ -1,11 +1,19 @@
 import 'package:dawarich/application/services/connect_service.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
-class ConnectViewModel with ChangeNotifier {
-
+final class ConnectViewModel with ChangeNotifier {
   final ConnectService _connectService;
   ConnectViewModel(this._connectService);
 
+  final GlobalKey<FormState> _hostFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _apiKeyFormKey  = GlobalKey<FormState>();
+  // final GlobalKey _emailController = TextEditingController();
+  // final GlobalKey _passwordController = TextEditingController();
+
+  final TextEditingController _hostController = TextEditingController();
+  final TextEditingController _apiKeyController = TextEditingController();
+
+  int _currentStep = 0;
   bool _isVerifyingHost = false;
   bool _isLoggingIn = false;
   bool _hostVerified = false;
@@ -15,6 +23,15 @@ class ConnectViewModel with ChangeNotifier {
   String? _snackbarMessage;
   String? _errorMessage;
 
+  // Public getters
+
+  GlobalKey<FormState> get hostFormKey => _hostFormKey;
+  GlobalKey<FormState> get apiFormKey => _apiKeyFormKey;
+
+  TextEditingController get hostController => _hostController;
+  TextEditingController get apiKeyController => _apiKeyController;
+
+  int get currentStep => _currentStep;
   bool get isVerifyingHost => _isVerifyingHost;
   bool get isLoggingIn => _isLoggingIn;
   bool get hostVerified => _hostVerified;
@@ -24,42 +41,117 @@ class ConnectViewModel with ChangeNotifier {
   String? get snackbarMessage => _snackbarMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<bool> testHost(String host) async {
 
+
+  /// Verifies connectivity to the given [host].
+  Future<bool> testHost(String host) async {
     _setVerifyingHost(true);
     _setErrorMessage(null);
 
-    final bool result = await _connectService.testHost(host);
+    final bool result = await _connectService.testHost(host.trim());
 
     _setVerifyingHost(false);
-
     if (result) {
       _setHostVerified(true);
       return true;
-    } else {
-      _setErrorMessage("Unable to reach the host. Please try again.");
-      return false;
-    }
-  }
-
-  Future<bool> tryLoginApiKey(String apiKey) async {
-
-    _setLoggingIn(true);
-    _setErrorMessage(null);
-
-    apiKey = apiKey.trim();
-
-    bool isValid = await _connectService.tryApiKey(apiKey);
-
-    if (isValid) {
-      _setLoggingIn(false);
-      return true;
     }
 
-    _setLoggingIn(false);
+    _setErrorMessage('Unable to reach the host. Please try again.');
     return false;
   }
 
+  /// Call this when the user goes back to step 1
+  void resetHostVerification() {
+    _setHostVerified(false);
+    clearErrorMessage();
+  }
+
+  /// Attempts API-key based authentication.
+  Future<bool> tryLoginApiKey(String apiKey) async {
+    _setLoggingIn(true);
+    _setErrorMessage(null);
+
+    final bool isValid = await _connectService.tryApiKey(apiKey.trim());
+    _setLoggingIn(false);
+
+    if (isValid) {
+      clearErrorMessage();
+      return true;
+    }
+
+      _setErrorMessage('Invalid API key. Please check and try again.');
+      return false;
+
+  }
+
+  /// Attempts email/password based authentication.
+  // Future<bool> tryLoginCredentials(String email, String password) async {
+  //   _setLoggingIn(true);
+  //   _setErrorMessage(null);
+  //
+  //   final bool success = await _connectService.loginWithCredentials(
+  //     email.trim(), password,
+  //   );
+  //   _setLoggingIn(false);
+  //
+  //   if (success) return true;
+  //
+  //   _setErrorMessage('Invalid email or password.');
+  //   return false;
+  // }
+
+  void goToNextStep() {
+    _currentStep++;
+    notifyListeners();
+  }
+
+  void goToPreviousStep() {
+    _currentStep--;
+    clearErrorMessage();
+    notifyListeners();
+  }
+
+  void setCurrentStep(int step) {
+    _currentStep = step;
+    notifyListeners();
+  }
+
+  // Toggle API key vs credential login
+  void setApiKeyPreference(bool useApiKey) {
+    _apiKeyPreferred = useApiKey;
+    notifyListeners();
+  }
+
+  // Toggle visibility of password
+  void setPasswordVisibility(bool visible) {
+    _passwordVisible = visible;
+    notifyListeners();
+  }
+
+  // Toggle visibility of API key
+  void setApiKeyVisibility(bool visible) {
+    _apiKeyVisible = visible;
+    notifyListeners();
+  }
+
+  /// Manually set a one-time snack message.
+  void setSnackbarMessage(String message) {
+    _snackbarMessage = message;
+    notifyListeners();
+  }
+
+  /// Clears currently queued snack message.
+  void clearSnackbarMessage() {
+    _snackbarMessage = null;
+    notifyListeners();
+  }
+
+  void clearErrorMessage() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // Private setters with notification
   void _setVerifyingHost(bool value) {
     _isVerifyingHost = value;
     notifyListeners();
@@ -72,31 +164,6 @@ class ConnectViewModel with ChangeNotifier {
 
   void _setHostVerified(bool value) {
     _hostVerified = value;
-    notifyListeners();
-  }
-
-  void setApiKeyPreference(bool trueOrFalse) {
-    _apiKeyPreferred = trueOrFalse;
-    notifyListeners();
-  }
-
-  void setPasswordVisibility(bool trueOrFalse) {
-    _passwordVisible = trueOrFalse;
-    notifyListeners();
-  }
-
-  void setApiKeyVisibility(bool trueOrFalse) {
-    _apiKeyVisible = trueOrFalse;
-    notifyListeners();
-  }
-
-  void setSnackbarMessage(String message) {
-    _snackbarMessage = message;
-    notifyListeners();
-  }
-
-  void clearSnackbarMessage() {
-    _snackbarMessage = null;
     notifyListeners();
   }
 

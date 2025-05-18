@@ -5,6 +5,7 @@ final class StartupService {
   static void initializeApp() {
 
     DependencyInjector.injectDependencies();
+    // BackgroundTrackingService.();
   }
 
 }

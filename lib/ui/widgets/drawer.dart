@@ -1,100 +1,198 @@
-import 'package:dawarich/application/services/api_config_service.dart';
+import 'dart:ui';
 import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/models/local/drawer_viewmodel.dart';
+import 'package:dawarich/ui/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:provider/provider.dart';
 
 
-final class CustomDrawer extends StatelessWidget {
-
+class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
-
-  Widget _drawerContent(BuildContext context){
-    final DrawerViewModel viewModel = context.read<DrawerViewModel>();
-    return Column(
-      children: [
-        Expanded(child:
-          ListView(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.map),
-                title: const Text("Timeline"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.map);
-                }
-              ),
-              ListTile(
-                leading: const Icon(Icons.analytics),
-                title: const Text("Stats"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.stats);
-                }
-              ),
-              ListTile(
-                leading: const Icon(Icons.place),
-                title: const Text("Points"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.points);
-                }
-              ),
-              ListTile(
-                leading: const Icon(Icons.gps_fixed),
-                title: const Text("Tracker"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.tracker);
-                }
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings),
-                title: const Text("Settings"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.settings);
-                }
-              ),
-            ],
-          )
-        ),
-        const Divider(),
-        ListTile(
-          leading: const Icon(Icons.logout, color: Colors.red),
-          title: const Text(
-            "Logout",
-            style: TextStyle(color: Colors.red),
-          ),
-          onTap: () async {
-            Navigator.pop(context);
-            await viewModel.logout();
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.connect, (route) => false);
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _drawerBase(BuildContext context) {
-    return Drawer(
-      child: _drawerContent(context)
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    final DrawerViewModel viewModel = getIt<DrawerViewModel>();
+    final viewModel = getIt<DrawerViewModel>();
     return ChangeNotifierProvider.value(
       value: viewModel,
       child: Consumer<DrawerViewModel>(
-          builder: (context, vm, child) => _drawerBase(context)
+        builder: (ctx, vm, _) => _buildDrawer(ctx),
       ),
     );
   }
 
+  Widget _buildDrawer(BuildContext context) {
+    // full‐height safe area
+    return SafeArea(
+      child: Drawer(
+        backgroundColor: Colors.transparent,
+        width: MediaQuery.of(context).size.width * 0.75,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.horizontal(right: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+              child: _buildContent(context),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    final vm = context.read<DrawerViewModel>();
+    const textColor    = Colors.white;
+    const iconColor    = Colors.white70;
+    const selectedBg   = Colors.white12;
+    final selectedIcon = Theme.of(context).colorScheme.secondary;
+
+    return Column(
+      children: [
+        // you can replace this with your own logo or user info
+        Container(
+          height: 120,
+          alignment: Alignment.bottomLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Text(
+            'Dawarich',
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(color: textColor, fontWeight: FontWeight.bold),
+          ),
+        ),
+
+        const Divider(color: Colors.white24, height: 1),
+
+        Expanded(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              _tile(
+                context,
+                icon: Icons.map,
+                label: 'Timeline',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).pushReplacementNamed(AppRouter.map);
+                },
+                textColor: textColor,
+                iconColor: iconColor,
+                selectedBg: selectedBg,
+                selectedIconColor: selectedIcon,
+              ),
+              _tile(
+                context,
+                icon: Icons.analytics,
+                label: 'Stats',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).pushReplacementNamed(AppRouter.stats);
+                },
+                textColor: textColor,
+                iconColor: iconColor,
+                selectedBg: selectedBg,
+                selectedIconColor: selectedIcon,
+              ),
+              _tile(
+                context,
+                icon: Icons.place,
+                label: 'Points',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).pushReplacementNamed(AppRouter.points);
+                },
+                textColor: textColor,
+                iconColor: iconColor,
+                selectedBg: selectedBg,
+                selectedIconColor: selectedIcon,
+              ),
+              _tile(
+                context,
+                icon: Icons.gps_fixed,
+                label: 'Tracker',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).pushReplacementNamed(AppRouter.tracker);
+                },
+                textColor: textColor,
+                iconColor: iconColor,
+                selectedBg: selectedBg,
+                selectedIconColor: selectedIcon,
+              ),
+              // _tile(
+              //   context,
+              //   icon: Icons.settings,
+              //   label: 'Settings',
+              //   onTap: () {
+              //     Navigator.pop(context);
+              //     Navigator.of(context).pushReplacementNamed(AppRouter.settings);
+              //   },
+              //   textColor: textColor,
+              //   iconColor: iconColor,
+              //   selectedBg: selectedBg,
+              //   selectedIconColor: selectedIcon,
+              // ),
+            ],
+          ),
+        ),
+
+        const Divider(color: Colors.white24, height: 1),
+
+        _tile(
+          context,
+          icon: Icons.logout,
+          label: 'Logout',
+          onTap: () async {
+            Navigator.pop(context);
+            await vm.logout();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                AppRouter.connect,
+                    (route) => false,
+              );
+            });
+          },
+          textColor: Colors.red.shade300,
+          iconColor: Colors.red.shade200,
+          selectedBg: Colors.red.shade900.withValues(alpha: 0.3),
+          selectedIconColor: Colors.redAccent,
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _tile(
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required VoidCallback onTap,
+        required Color textColor,
+        required Color iconColor,
+        required Color selectedBg,
+        required Color selectedIconColor,
+      }) {
+    // bump the content down a touch
+    const verticalPadding = 16.0;
+    const horizontalPadding = 24.0;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      leading: Icon(icon, color: iconColor, size: 28),
+      title: Text(label, style: TextStyle(color: textColor, fontSize: 18)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      hoverColor: selectedBg,
+      selectedTileColor: selectedBg,
+      selectedColor: selectedIconColor,
+      onTap: onTap,
+    );
+  }
 }

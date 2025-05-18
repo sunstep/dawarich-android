@@ -1,172 +1,251 @@
 import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
+import 'package:dawarich/ui/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
-import 'package:dawarich/ui/widgets/appbar.dart';
+import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
-final class StatsPage extends StatelessWidget {
-
+class StatsPage extends StatelessWidget {
   const StatsPage({super.key});
-
-  Widget _pageContent(BuildContext context){
-
-    StatsPageViewModel viewModel = context.watch<StatsPageViewModel>();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeaderSection(context, viewModel),
-          const SizedBox(height: 20),
-          Center(
-            child:
-            ElevatedButton(
-              onPressed: viewModel.isLoading ? null : viewModel.refreshStats,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                foregroundColor: Theme.of(context).primaryColor,
-              ),
-              child: SizedBox(
-                width: 100,
-                height: 32,
-                child: Center(
-                  child: viewModel.isLoading
-                      ? SizedBox(
-                    height: 32, // Size for the spinner
-                    width: 32,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  )
-                      : const Text('Update stats')
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          //_buildYearlyStats(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderSection(BuildContext context, StatsPageViewModel viewModel) {
-
-    List<Widget> statItems = [
-      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalCountries}', 'Countries visited', Colors.purple, 150, 90),
-      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalCities}', 'Cities visited', Colors.green, 150, 90),
-      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalPoints}', 'Geopoints Tracked', Colors.pink, 150, 90),
-      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalReverseGeocodedPoints}', 'Reverse geocoded', Colors.orange, 150, 90),
-      _buildHeaderItem(context, viewModel.isLoading? null : '${viewModel.stats?.totalDistance} km', 'Total distance', Colors.blue, 325, 90),
-    ];
-
-    return Column(
-      children: [
-        Wrap(
-          spacing: 20.0,
-          runSpacing: 20.0,
-          alignment: WrapAlignment.center,
-          children: statItems.length.isEven
-              ? statItems
-              : statItems.sublist(0, statItems.length - 1),
-        ),
-        if (statItems.length.isOdd)
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              statItems.last,
-            ],
-          ),
-      ],
-    );
-  }
-
-  Widget _buildHeaderItem(
-
-    BuildContext context, String? value, String label, Color color, double? width, double? height) {
-    final textSmall = Theme.of(context).textTheme.bodySmall;
-
-    return Container(
-      width: width,
-      height: height,
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // Use cardColor for better contrast
-        borderRadius: BorderRadius.circular(10.0),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.4), // Subtle border
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2), // Slightly darker shadow
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 2), // Adjusted offset for better lift effect
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 100),
-            child: value == null
-                ? Container(
-              width: 40.0,
-              height: 20.0,
-              color: Colors.grey.shade300,
-            )
-                : Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              key: ValueKey<String?>(value),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: textSmall,
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  // Widget _buildYearlyStats() {
-  //
-  // }
-
-  Widget _pageBase(BuildContext context) {
-    return Scaffold(
-      appBar: const Appbar(title: "Stats", fontSize: 40),
-      body: _pageContent(context),
-      drawer: const CustomDrawer(),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    final StatsPageViewModel viewModel = getIt<StatsPageViewModel>();
-    return ChangeNotifierProvider.value(
-      value: viewModel,
-      child: Builder(builder: (context) => _pageBase(context)
+    return ChangeNotifierProvider(
+      // This fires off the initial load so vm.isLoading kicks in right away
+      create: (_) => getIt<StatsPageViewModel>()..refreshStats(),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: Theme.of(context).pageBackground,
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: const CustomAppbar(
+            title: 'Stats',
+            titleFontSize: 32,
+            backgroundColor: Colors.transparent,
+          ),
+          drawer: const CustomDrawer(),
+          body: SafeArea(
+            child: Consumer<StatsPageViewModel>(
+              builder: (ctx, vm, _) {
+                // Branch on loading
+                return vm.isLoading
+                    ? _buildFullSkeleton(ctx)
+                    : _buildFullContent(ctx, vm);
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
 
+  Widget _buildFullSkeleton(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildOverviewSkeleton(context),
+          const SizedBox(height: 32),
+          _buildBreakdownSkeletonGrid(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewSkeleton(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor      = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final highlightColor = isDark ? Colors.grey.shade600 : Colors.grey.shade100;
+
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Shimmer.fromColors(
+              baseColor: baseColor,
+              highlightColor: highlightColor,
+              child: Container(width: 150, height: 24, color: baseColor),
+            ),
+            const SizedBox(height: 16),
+            Shimmer.fromColors(
+              baseColor: baseColor,
+              highlightColor: highlightColor,
+              child: Container(
+                width: 120,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBreakdownSkeletonGrid(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor      = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final highlightColor = isDark ? Colors.grey.shade600 : Colors.grey.shade100;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.0,
+      ),
+      itemCount: 5,
+      itemBuilder: (_, __) => Card(
+        elevation: 12,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(backgroundColor: baseColor, radius: 24),
+              const SizedBox(height: 12),
+              Shimmer.fromColors(
+                baseColor: baseColor,
+                highlightColor: highlightColor,
+                child: Container(width: 40, height: 20, color: baseColor),
+              ),
+              const SizedBox(height: 4),
+              Container(width: 60, height: 14, color: baseColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFullContent(BuildContext context, StatsPageViewModel vm) {
+    return RefreshIndicator(
+      onRefresh: vm.refreshStats,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildOverviewCard(context, vm),
+            const SizedBox(height: 32),
+            _buildBreakdownGrid(context, vm),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewCard(BuildContext context, StatsPageViewModel vm) {
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Center(
+              child: Text(
+                'Your Journey',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh Stats'),
+                style: Theme.of(context).elevatedButtonTheme.style,
+                onPressed: vm.isLoading ? null : vm.refreshStats,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBreakdownGrid(BuildContext context, StatsPageViewModel vm) {
+    final stats = vm.stats!;
+    final tiles = [
+      _StatTile(label: 'Countries', value: '${stats.totalCountries}', icon: Icons.public, color: Colors.purple),
+      _StatTile(label: 'Cities',    value: '${stats.totalCities}',   icon: Icons.location_city, color: Colors.green),
+      _StatTile(label: 'Points',    value: '${stats.totalPoints}',   icon: Icons.place,        color: Colors.pink),
+      _StatTile(label: 'Geo-coded', value: '${stats.totalReverseGeocodedPoints}', icon: Icons.map, color: Colors.orange),
+      _StatTile(label: 'Distance',  value: '${stats.totalDistance} km', icon: Icons.directions_walk, color: Colors.blue),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.0,
+      ),
+      itemCount: tiles.length,
+      itemBuilder: (_, i) => tiles[i],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  final Color color;
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withValues(alpha: 0.2),
+              radius: 24,
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            // auto-scale large numbers
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(
+                      color: color, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(label,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
 }

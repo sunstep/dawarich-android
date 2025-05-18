@@ -2,7 +2,7 @@ import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
-import 'package:dawarich/ui/widgets/appbar.dart';
+import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
@@ -199,7 +199,7 @@ final class MapPage extends StatelessWidget {
                   );
                 }).toList(),
               ),
-            CurrentLocationLayer(),
+            const CurrentLocationLayer(),
           ],
         ),
         _buildBottomSheet(mapModel)
@@ -210,7 +210,7 @@ final class MapPage extends StatelessWidget {
   Widget _pageBase(BuildContext context) {
     MapViewModel viewModel = context.watch<MapViewModel>();
     return Scaffold(
-      appBar: const Appbar(title: "Timeline", fontSize: 20),
+      appBar: const CustomAppbar(title: "Timeline", titleFontSize: 20),
       body: _pageContent(viewModel),
       drawer: const CustomDrawer(),
     );

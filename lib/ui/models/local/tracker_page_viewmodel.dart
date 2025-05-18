@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/point_automation_service.dart';
+import 'package:dawarich/application/services/system_settings_service.dart';
 import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
@@ -17,12 +19,12 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
-class TrackerPageViewModel with ChangeNotifier {
+class TrackerPageViewModel extends ChangeNotifier {
 
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
 
-  bool _hideLastPoint = true;
+  bool _hideLastPoint = false;
   bool get hideLastPoint => _hideLastPoint;
 
   int _pointInBatchCount = 0;
@@ -104,7 +106,7 @@ class TrackerPageViewModel with ChangeNotifier {
     switch (_currentPage) {
       case 0: return "Show Basic Settings";
       case 1: return "Show Advanced Settings";
-      case 2: return "Show Track Recording";
+      case 2: return "Show Recording";
       default: return "";
     }
   }
@@ -116,6 +118,9 @@ class TrackerPageViewModel with ChangeNotifier {
   bool _isUpdatingTracking = false;
   bool get isTrackingAutomatically => _isTrackingAutomatically;
   bool get isUpdatingTracking => _isUpdatingTracking;
+
+  final _settingsPromptController = StreamController<void>.broadcast();
+  Stream<void> get onSystemSettingsPrompt => _settingsPromptController.stream;
 
   bool _isTracking = false;
   bool get isTracking => _isTracking;
@@ -139,11 +144,13 @@ class TrackerPageViewModel with ChangeNotifier {
 
 
   final LocalPointService _pointService;
+  // final BackgroundTrackingService _backgroundTrackingService = BackgroundTrackingService();
   final PointAutomationService _pointAutomationService;
   final TrackerPreferencesService _trackerPreferencesService;
   final TrackService _trackService;
+  final SystemSettingsService _systemSettingsService;
 
-  TrackerPageViewModel(this._pointService, this._pointAutomationService, this._trackService, this._trackerPreferencesService) {
+  TrackerPageViewModel(this._pointService, this._pointAutomationService, this._trackService, this._trackerPreferencesService, this._systemSettingsService) {
     initialize();
   }
 
@@ -173,6 +180,7 @@ class TrackerPageViewModel with ChangeNotifier {
     await _getTrackingFrequencyPreference();
     await _getLocationAccuracyPreference();
     await _getMinimumPointDistancePreference();
+    await _getTrackerId();
     await _getTrackRecordingStatus();
 
     setIsRetrievingSettings(false);
@@ -200,8 +208,6 @@ class TrackerPageViewModel with ChangeNotifier {
   }
 
   void toggleRecording() async {
-
-
 
     if (isRecording) {
       _trackService.stopTracking();
@@ -253,7 +259,7 @@ class TrackerPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Result<void, String>> trackPoint() async {
+  Future<Result<(), String>> trackPoint() async {
 
     _setIsTracking(true);
     await persistPreferences();
@@ -274,7 +280,7 @@ class TrackerPageViewModel with ChangeNotifier {
       await getPointInBatchCount();
 
       _setIsTracking(false);
-      return const Ok(null);
+      return const Ok(());
     }
 
     String error = pointResult.unwrapErr();
@@ -317,17 +323,30 @@ class TrackerPageViewModel with ChangeNotifier {
     }
   }
 
-  Future<void> setAutomaticTracking(bool trueOrFalse)  async {
+  Future<void> setAutomaticTracking(bool onOrOff)  async {
 
-    _isTrackingAutomatically = trueOrFalse;
+    _isTrackingAutomatically = onOrOff;
 
     if (isTrackingAutomatically) {
+      // await _backgroundTrackingService.initialize();
       await _pointAutomationService.startTracking();
+
+      final bool needsFix = await _systemSettingsService.needsSystemSettingsFix();
+      if (needsFix) {
+        _settingsPromptController.add(null);
+      }
+
     } else {
-      _pointAutomationService.stopTracking();
+      // await _backgroundTrackingService.stop();
+      await _pointAutomationService.stopTracking();
     }
 
     notifyListeners();
+  }
+
+  Future<void> openSystemSettings() async {
+
+    await _systemSettingsService.openSystemSettings();
   }
 
   Future<void> storeAutomaticTracking() async {
@@ -427,5 +446,10 @@ class TrackerPageViewModel with ChangeNotifier {
     return [];
   }
 
+  @override
+  void dispose() {
+    _settingsPromptController.close();
+    super.dispose();
+  }
 
 }

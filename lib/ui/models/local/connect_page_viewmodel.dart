@@ -1,10 +1,19 @@
 import 'package:dawarich/application/services/connect_service.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
-class ConnectViewModel with ChangeNotifier {
+final class ConnectViewModel with ChangeNotifier {
   final ConnectService _connectService;
   ConnectViewModel(this._connectService);
 
+  final GlobalKey<FormState> _hostFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _apiKeyFormKey  = GlobalKey<FormState>();
+  // final GlobalKey _emailController = TextEditingController();
+  // final GlobalKey _passwordController = TextEditingController();
+
+  final TextEditingController _hostController = TextEditingController();
+  final TextEditingController _apiKeyController = TextEditingController();
+
+  int _currentStep = 0;
   bool _isVerifyingHost = false;
   bool _isLoggingIn = false;
   bool _hostVerified = false;
@@ -15,6 +24,14 @@ class ConnectViewModel with ChangeNotifier {
   String? _errorMessage;
 
   // Public getters
+
+  GlobalKey<FormState> get hostFormKey => _hostFormKey;
+  GlobalKey<FormState> get apiFormKey => _apiKeyFormKey;
+
+  TextEditingController get hostController => _hostController;
+  TextEditingController get apiKeyController => _apiKeyController;
+
+  int get currentStep => _currentStep;
   bool get isVerifyingHost => _isVerifyingHost;
   bool get isLoggingIn => _isLoggingIn;
   bool get hostVerified => _hostVerified;
@@ -23,6 +40,8 @@ class ConnectViewModel with ChangeNotifier {
   bool get apiKeyVisible => _apiKeyVisible;
   String? get snackbarMessage => _snackbarMessage;
   String? get errorMessage => _errorMessage;
+
+
 
   /// Verifies connectivity to the given [host].
   Future<bool> testHost(String host) async {
@@ -80,6 +99,22 @@ class ConnectViewModel with ChangeNotifier {
   //   _setErrorMessage('Invalid email or password.');
   //   return false;
   // }
+
+  void goToNextStep() {
+    _currentStep++;
+    notifyListeners();
+  }
+
+  void goToPreviousStep() {
+    _currentStep--;
+    clearErrorMessage();
+    notifyListeners();
+  }
+
+  void setCurrentStep(int step) {
+    _currentStep = step;
+    notifyListeners();
+  }
 
   // Toggle API key vs credential login
   void setApiKeyPreference(bool useApiKey) {

@@ -13,6 +13,7 @@ class PointsPageViewModel with ChangeNotifier {
   late DateTime _endDate;
 
   bool _isLoading = true;
+  bool _displayFilters = true;
   bool _selectAll = false;
   bool _sortByNew = true;
   int _currentPage = 1;
@@ -36,6 +37,7 @@ class PointsPageViewModel with ChangeNotifier {
   DateTime get endDate => _endDate;
 
   bool get isLoading => _isLoading;
+  bool get displayFilters => _displayFilters;
   bool get selectAll => _selectAll;
   bool get sortByNew => _sortByNew;
   int get currentPage => _currentPage;
@@ -59,6 +61,11 @@ class PointsPageViewModel with ChangeNotifier {
 
   void setLoading(bool trueOrFalse) {
     _isLoading = trueOrFalse;
+    notifyListeners();
+  }
+
+  void toggleDisplayFilters() {
+    _displayFilters = !_displayFilters;
     notifyListeners();
   }
 

@@ -6,7 +6,14 @@ class DarkTheme {
 
     // overall backgrounds
     scaffoldBackgroundColor: const Color(0xFF121212),
-    cardColor: const Color(0xFF1E1E1E),
+    cardColor: Colors.black,
+    cardTheme: CardTheme(
+      color: Colors.black,
+      elevation: 12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
 
     // AppBar & drawer
     appBarTheme: const AppBarTheme(
@@ -24,8 +31,6 @@ class DarkTheme {
       onPrimary: Colors.black,         // for text/icons on white
       secondary: Color(0xFF90CAF9),    // a soft sky-blue accent
       onSecondary: Colors.black,
-      background: Color(0xFF121212),
-      onBackground: Colors.white,
       surface: Color(0xFF1E1E1E),
       onSurface: Colors.white,
       error: Colors.redAccent,
@@ -33,8 +38,8 @@ class DarkTheme {
     ),
 
     // Text styles
-    textTheme: TextTheme(
-      headlineSmall: const TextStyle(  // page title
+    textTheme: const TextTheme(
+      headlineSmall: TextStyle(  // page title
         color: Colors.white,
         fontSize: 26,
         fontWeight: FontWeight.bold,
@@ -70,19 +75,19 @@ class DarkTheme {
       ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white24),
+        borderSide: const BorderSide(color: Colors.white24),
         borderRadius: BorderRadius.circular(8),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: const Color(0xFF90CAF9), width: 2),
+        borderSide: const BorderSide(color: Color(0xFF90CAF9), width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
       errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: Colors.redAccent),
         borderRadius: BorderRadius.circular(8),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.redAccent, width: 2),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
       floatingLabelStyle: const TextStyle(

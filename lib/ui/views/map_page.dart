@@ -167,7 +167,7 @@ final class MapPage extends StatelessWidget {
           children: [
             TileLayer(
               urlTemplate: 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=NWn5VTZI9avXmOoeAT00',
-              userAgentPackageName: 'app.dawarich',
+              userAgentPackageName: 'app.dawarich.android',
               maxNativeZoom: 19,
             ),
             if (mapModel.points.isNotEmpty)

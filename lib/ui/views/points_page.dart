@@ -66,6 +66,8 @@ class _PointsBody extends StatelessWidget {
         23,
         59,
         59,
+        999,
+        999
       );
       vm.setEndDate(endOfDay);
       // vm.searchPressed(); // Auto refresh: takes too long to load now.

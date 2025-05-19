@@ -310,8 +310,8 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   void toggleSort() {
-
     _sortByNew = !_sortByNew;
+    sortPoints();
     notifyListeners();
   }
 

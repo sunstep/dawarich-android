@@ -3,9 +3,10 @@ import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/ui/models/api/v1/points/response/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
-class PointsPageViewModel with ChangeNotifier {
+final class PointsPageViewModel with ChangeNotifier {
 
   final ApiPointService _pointService = GetIt.I<ApiPointService>();
 
@@ -35,6 +36,9 @@ class PointsPageViewModel with ChangeNotifier {
 
   DateTime get startDate => _startDate;
   DateTime get endDate => _endDate;
+
+  String get formattedStart => DateFormat.yMMMd().add_Hm().format(_startDate);
+  String get formattedEnd   => DateFormat.yMMMd().add_Hm().format(_endDate);
 
   bool get isLoading => _isLoading;
   bool get displayFilters => _displayFilters;
@@ -201,15 +205,15 @@ class PointsPageViewModel with ChangeNotifier {
 
   List<ApiPointViewModel> getCurrentPagePoints() {
 
-    final int start = (pagePoints.length - 1) * pointsPerPage;
+    final int start = (currentPage  - 1) * pointsPerPage;
     final int end = start + pointsPerPage;
 
-    if (start >= points.length) {
+    if (start >= points.length || start < 0) {
       return [];
     }
 
-    List<ApiPointViewModel> newList = points.sublist(start, end > points.length ? points.length : end);
-    return newList;
+    final int safeEnd = end > points.length ? points.length : end;
+    return points.sublist(start, safeEnd);
   }
 
   Future<void> deleteSelection() async {
@@ -310,8 +314,8 @@ class PointsPageViewModel with ChangeNotifier {
   }
 
   void toggleSort() {
-
     _sortByNew = !_sortByNew;
+    sortPoints();
     notifyListeners();
   }
 

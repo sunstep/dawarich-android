@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
-class PointsPage extends StatelessWidget {
+final class PointsPage extends StatelessWidget {
   const PointsPage({super.key});
 
   @override
@@ -36,8 +36,41 @@ class PointsPage extends StatelessWidget {
 class _PointsBody extends StatelessWidget {
   const _PointsBody();
 
-  Future<void> _pickStart(BuildContext c) async { /* … */ }
-  Future<void> _pickEnd(BuildContext c) async { /* … */ }
+  Future<void> _pickStart(BuildContext ctx) async {
+    final vm = ctx.read<PointsPageViewModel>();
+    final picked = await showDatePicker(
+      context: ctx,
+      initialDate: vm.startDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      vm.setStartDate(picked);
+      // vm.searchPressed(); // Auto refresh: takes too long to load now.
+    }
+  }
+
+  Future<void> _pickEnd(BuildContext ctx) async {
+    final vm = ctx.read<PointsPageViewModel>();
+    final picked = await showDatePicker(
+      context: ctx,
+      initialDate: vm.endDate,
+      firstDate: vm.startDate,
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      final endOfDay = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        23,
+        59,
+        59,
+      );
+      vm.setEndDate(endOfDay);
+      // vm.searchPressed(); // Auto refresh: takes too long to load now.
+    }
+  }
   Future<void> _confirmDeletion(BuildContext c) async { /* … */ }
 
   @override
@@ -205,9 +238,8 @@ class _FilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) {
-    final vm = c.watch<PointsPageViewModel>();
-    final startLabel = DateFormat.yMMMd().format(vm.startDate);
-    final endLabel   = DateFormat.yMMMd().format(vm.endDate);
+
+    final PointsPageViewModel vm = c.watch<PointsPageViewModel>();
 
     return Card(
       elevation: 12,
@@ -215,48 +247,68 @@ class _FilterCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         child: LayoutBuilder(builder: (ctx, constraints) {
-          // if there's less than 500px, wrap; otherwise a single row
-          final useWrap = constraints.maxWidth < 500;
-          final children = <Widget>[
-            Flexible(
-              flex: 1,
-              child: _DateChip(
-                label: 'Start',
-                value: startLabel,
-                onTap: onPickStart,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Flexible(
-              flex: 1,
-              child: _DateChip(
-                label: 'End',
-                value: endLabel,
-                onTap: onPickEnd,
-              ),
-            ),
-            const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: vm.searchPressed,
-              style: ElevatedButton.styleFrom(
-                padding:
-                const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Center(child: Text('Search')),
-            ),
-          ];
+          final isNarrow = constraints.maxWidth < 500;
 
-          if (useWrap) {
-            return Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              alignment: WrapAlignment.start,
-              children: children,
+          if (isNarrow) {
+            // NARROW: stack everything vertically
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _DateChip(
+                  label: 'Start',
+                  value: vm.formattedStart,
+                  onTap: onPickStart,
+                ),
+                const SizedBox(height: 16),
+                _DateChip(
+                  label: 'End',
+                  value: vm.formattedEnd,
+                  onTap: onPickEnd,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: vm.searchPressed,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Search'),
+                ),
+              ],
             );
           } else {
-            return Row(children: children);
+            // WIDE: two chips side-by-side + button
+            return Row(
+              children: [
+                Expanded(
+                  child: _DateChip(
+                    label: 'Start',
+                    value: vm.formattedStart,
+                    onTap: onPickStart,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _DateChip(
+                    label: 'End',
+                    value: vm.formattedEnd,
+                    onTap: onPickEnd,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: vm.searchPressed,
+                  style: ElevatedButton.styleFrom(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Search'),
+                ),
+              ],
+            );
           }
         }),
       ),

@@ -36,8 +36,33 @@ final class PointsPage extends StatelessWidget {
 class _PointsBody extends StatelessWidget {
   const _PointsBody();
 
-  Future<void> _pickStart(BuildContext c) async { /* … */ }
-  Future<void> _pickEnd(BuildContext c) async { /* … */ }
+  Future<void> _pickStart(BuildContext ctx) async {
+    final vm = ctx.read<PointsPageViewModel>();
+    final picked = await showDatePicker(
+      context: ctx,
+      initialDate: vm.startDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      vm.setStartDate(picked);
+      // vm.searchPressed(); // Auto refresh: takes too long to load now.
+    }
+  }
+
+  Future<void> _pickEnd(BuildContext ctx) async {
+    final vm = ctx.read<PointsPageViewModel>();
+    final picked = await showDatePicker(
+      context: ctx,
+      initialDate: vm.endDate,
+      firstDate: vm.startDate,
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      vm.setEndDate(picked);
+      // vm.searchPressed(); // Auto refresh: takes too long to load now.
+    }
+  }
   Future<void> _confirmDeletion(BuildContext c) async { /* … */ }
 
   @override

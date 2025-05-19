@@ -1,4 +1,4 @@
-package app.dawarich.dawarich
+package app.dawarich.android
 
 import android.content.Context
 import android.os.PowerManager
@@ -7,7 +7,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 class MainActivity: FlutterActivity() {
 
-    private val CHANNEL = "app.dawarich/system_settings"
+    private val CHANNEL = "app.dawarich.android/system_settings"
 
     // 1) Override configureFlutterEngine
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

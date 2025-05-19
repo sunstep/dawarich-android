@@ -29,7 +29,7 @@ final class PointsPageViewModel with ChangeNotifier {
   PointsPageViewModel() {
     DateTime now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
-    _endDate = DateTime(now.year, now.month, now.day, 23, 59, 999, 999);
+    _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);
 
     _initialize();
   }

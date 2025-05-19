@@ -3,6 +3,7 @@ import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/ui/models/api/v1/points/response/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointsPageViewModel with ChangeNotifier {
@@ -35,6 +36,9 @@ final class PointsPageViewModel with ChangeNotifier {
 
   DateTime get startDate => _startDate;
   DateTime get endDate => _endDate;
+
+  String get formattedStart => DateFormat.yMMMd().add_Hm().format(_startDate);
+  String get formattedEnd   => DateFormat.yMMMd().add_Hm().format(_endDate);
 
   bool get isLoading => _isLoading;
   bool get displayFilters => _displayFilters;

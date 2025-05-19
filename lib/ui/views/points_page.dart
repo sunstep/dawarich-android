@@ -59,7 +59,15 @@ class _PointsBody extends StatelessWidget {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      vm.setEndDate(picked);
+      final endOfDay = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        23,
+        59,
+        59,
+      );
+      vm.setEndDate(endOfDay);
       // vm.searchPressed(); // Auto refresh: takes too long to load now.
     }
   }
@@ -230,9 +238,8 @@ class _FilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) {
-    final vm         = c.watch<PointsPageViewModel>();
-    final startLabel = DateFormat.yMMMd().format(vm.startDate);
-    final endLabel   = DateFormat.yMMMd().format(vm.endDate);
+
+    final PointsPageViewModel vm = c.watch<PointsPageViewModel>();
 
     return Card(
       elevation: 12,
@@ -249,13 +256,13 @@ class _FilterCard extends StatelessWidget {
               children: [
                 _DateChip(
                   label: 'Start',
-                  value: startLabel,
+                  value: vm.formattedStart,
                   onTap: onPickStart,
                 ),
                 const SizedBox(height: 16),
                 _DateChip(
                   label: 'End',
-                  value: endLabel,
+                  value: vm.formattedEnd,
                   onTap: onPickEnd,
                 ),
                 const SizedBox(height: 16),
@@ -277,7 +284,7 @@ class _FilterCard extends StatelessWidget {
                 Expanded(
                   child: _DateChip(
                     label: 'Start',
-                    value: startLabel,
+                    value: vm.formattedStart,
                     onTap: onPickStart,
                   ),
                 ),
@@ -285,7 +292,7 @@ class _FilterCard extends StatelessWidget {
                 Expanded(
                   child: _DateChip(
                     label: 'End',
-                    value: endLabel,
+                    value: vm.formattedEnd,
                     onTap: onPickEnd,
                   ),
                 ),

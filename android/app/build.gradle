@@ -39,11 +39,19 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("UPLOAD_KEYSTORE_PATH") ?: "$rootDir/keystores/dawarich-upload.jks")
+            storePassword System.getenv("UPLOAD_STORE_PASSWORD") ?: "<YOUR_STORE_PASS>"
+            keyAlias "upload"
+            keyPassword System.getenv("UPLOAD_KEY_PASSWORD") ?: "<YOUR_KEY_PASS>"
+        }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

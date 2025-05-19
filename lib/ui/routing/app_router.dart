@@ -1,15 +1,16 @@
+import 'package:dawarich/ui/views/tracker/batch_explorer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/views/splash_page.dart';
-import 'package:dawarich/ui/views/connect_page.dart';
+import 'package:dawarich/ui/views/connect/connect_page.dart';
 import 'package:dawarich/ui/views/map_page.dart';
 import 'package:dawarich/ui/views/stats_page.dart';
 import 'package:dawarich/ui/views/points_page.dart';
-import 'package:dawarich/ui/views/tracker_page.dart';
+import 'package:dawarich/ui/views/tracker/tracker_page.dart';
 import 'package:dawarich/ui/views/imports_page.dart';
 import 'package:dawarich/ui/views/exports_page.dart';
 import 'package:dawarich/ui/views/settings_page.dart';
 
-class AppRouter {
+final class AppRouter {
 
   static const String splash = '/splash';
   static const String connect = '/connect';
@@ -17,6 +18,7 @@ class AppRouter {
   static const String stats = '/stats';
   static const String points = '/points';
   static const String tracker = '/tracker';
+  static const String batchExplorer = '/batchExplorer';
   static const String imports = '/imports';
   static const String exports = '/exports';
   static const String settings = '/settings';
@@ -28,7 +30,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SplashPage());
       }
       case connect: {
-        return MaterialPageRoute(builder: (_) => ConnectPage());
+        return MaterialPageRoute(builder: (_) => const ConnectPage());
       }
       case map: {
         return MaterialPageRoute(builder: (_) => const MapPage());
@@ -41,6 +43,9 @@ class AppRouter {
       }
       case tracker: {
         return MaterialPageRoute(builder: (_) => const TrackerPage());
+      }
+      case batchExplorer: {
+        return MaterialPageRoute(builder: (_) => const BatchExplorerPage());
       }
       case imports: {
         return MaterialPageRoute(builder: (_) => const ImportsPage());

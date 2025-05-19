@@ -1,32 +1,20 @@
-import 'package:dawarich/data_contracts/interfaces/api_config.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 
 class ApiConfigService {
 
-  final IApiConfigSource _source;
-  ApiConfigService(this._source);
+  final IApiConfigRepository _repository;
+  ApiConfigService(this._repository);
 
   Future<void> initialize() async {
-    await _source.initialize();
+    await _repository.initialize();
   }
 
   bool isConfigured() {
-    return _source.isConfigured();
-  }
-
-  Future<void> setApiHost(String host) async {
-    _source.setHost(host);
-  }
-
-  Future<void> setApiKey(String apiKey) async {
-    _source.setApiKey(apiKey);
-  }
-
-  Future<void> storeApiConfig() async {
-    await _source.storeApiConfig();
+    return _repository.isConfigured();
   }
 
   Future<void> clearApiConfig() async {
-    await _source.clearConfiguration();
+    await _repository.clearConfiguration();
   }
 
 }

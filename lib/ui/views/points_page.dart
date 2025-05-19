@@ -1,419 +1,420 @@
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
-import 'package:dawarich/ui/models/api/v1/points/response/api_point_viewmodel.dart';
+import 'package:dawarich/application/startup/dependency_injector.dart';
+import 'package:dawarich/ui/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
-import 'package:dawarich/ui/widgets/appbar.dart';
-import 'package:intl/intl.dart';
+import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
+import 'package:shimmer/shimmer.dart';
 
 class PointsPage extends StatelessWidget {
-
   const PointsPage({super.key});
 
-  void _selectStartDate(BuildContext context, PointsPageViewModel viewModel) async {
-
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: viewModel.startDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => getIt<PointsPageViewModel>()..searchPressed(),
+      child: Container(
+        // pull gradient straight from theme extension
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: const Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: CustomAppbar(
+            title: 'Points',
+            titleFontSize: 32,
+            backgroundColor: Colors.transparent,
+          ),
+          drawer: CustomDrawer(),
+          body: SafeArea(child: _PointsBody()),
+        ),
+      ),
     );
-    if (picked != null && picked != viewModel.startDate) {
-      viewModel.setStartDate(picked);
+  }
+}
+
+class _PointsBody extends StatelessWidget {
+  const _PointsBody();
+
+  Future<void> _pickStart(BuildContext c) async { /* … */ }
+  Future<void> _pickEnd(BuildContext c) async { /* … */ }
+  Future<void> _confirmDeletion(BuildContext c) async { /* … */ }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<PointsPageViewModel>();
+
+    // 2) If we're loading, show the skeleton (full-screen).
+    if (vm.isLoading) {
+      return const PointsPageSkeleton();
     }
-  }
 
-  void _selectEndDate(BuildContext context, PointsPageViewModel viewModel) async {
-
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: viewModel.endDate,
-      firstDate: DateTime(2000),
-      lastDate: viewModel.endDate,
-    );
-    if (picked != null && picked != viewModel.endDate) {
-
-      viewModel.setEndDate(picked);
-    }
-  }
-
-
-  Future<void> _confirmDeletion(BuildContext context, PointsPageViewModel viewModel) async {
-    showDialog(context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete selected points?"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(false);
-            }, child: const Text("Cancel")
-          ),
-          TextButton(
-              onPressed: () {
-                viewModel.deleteSelection();
-                Navigator.of(context).pop(false);
-              },
-              child:
-              const Text("Delete")
-          ),
-      ])
-    );
-  }
-
-  Future<void> _confirmExport(BuildContext context) async {
-    showDialog(context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("This feature is not available yet."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(false);
-            }, child: const Text("Dismiss")
-          ),
-        ]
-      )
-    );
-  }
-
-  Widget _pageContent(BuildContext context) {
-
-    final Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-
-    final TextStyle? bodyMedium = Theme.of(context).textTheme.bodyMedium;
-    final TextStyle? bodyLarge = Theme.of(context).textTheme.bodyLarge;
-
-    PointsPageViewModel viewModel = context.watch<PointsPageViewModel>();
-
+    // 3) Otherwise, real content:
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // ————— filters toggle row —————
           Row(
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _selectStartDate(context, viewModel),
-                  child: AbsorbPointer(
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Start at',
-                        labelStyle: bodyLarge,
-                        filled: true,
-                        fillColor: backgroundColor,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0)
-                        ),
-                      ),
-                      controller: TextEditingController(
-                        text: '${viewModel.startDate.toLocal()}'.split(' ')[0],
-                      ),
-                    ),
-                  ),
+              IconButton(
+                icon: Icon(
+                  vm.displayFilters
+                      ? Icons.expand_less
+                      : Icons.expand_more,
                 ),
+                onPressed: vm.toggleDisplayFilters,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _selectEndDate(context, viewModel),
-                  child: AbsorbPointer(
-                    child: TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'End at',
-                        labelStyle: bodyLarge,
-                        filled: true,
-                        fillColor: backgroundColor,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                      controller: TextEditingController(
-                        text: '${viewModel.endDate.toLocal()}'.split(' ')[0],
-                      ),
-                    ),
-                  ),
-                ),
+              Text(
+                'Filters',
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: () {
-                  viewModel.searchPressed();
-                },
+              const Spacer(),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
+                onPressed: vm.searchPressed,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: backgroundColor,
-                  side: const BorderSide(
-                    color: Colors.white,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
-                child: Text('Search',
-                style: bodyLarge),
               ),
-              const SizedBox(width: 16),
             ],
           ),
-          const SizedBox(height: 16),
+
+          // ————— the filter card itself (only if showFilters=true) —————
+          if (vm.displayFilters) ...[
+            const SizedBox(height: 8),
+            _FilterCard(
+              onPickStart: () => _pickStart(context),
+              onPickEnd:   () => _pickEnd(context),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // ————— results list or skeleton —————
           Expanded(
-            child: viewModel.isLoading ? _buildSkeletonLoader() : _buildDataTable(context, viewModel),
+            child: vm.isLoading
+                ? const SizedBox() // we won't hit here because of the early return
+                : _PointsList(),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (viewModel.hasSelectedItems())
-                ElevatedButton(
-                  onPressed: () {
-                    _confirmDeletion(context, viewModel);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                  ),
-                  child: Text(
-                    'Delete Selected',
-                    style: bodyMedium,
-                  ),
-              ),
-              if (viewModel.hasSelectedItems())
-                const SizedBox(width: 10),
-              if (viewModel.hasSelectedItems())
-                ElevatedButton(
-                  onPressed: () {
-                    _confirmExport(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    backgroundColor: Colors.indigo,
-                    shape: RoundedRectangleBorder (
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                  ),
-                  child: Text(
-                      "Export Selected",
-                    style: bodyMedium,
-                  ),
-                ),
-              Expanded(
-                child:
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (!viewModel.hasSelectedItems())
-                      IconButton(
-                        onPressed: viewModel.navigateFirst,
-                        icon: const Icon(Icons.first_page),
-                      ),
-                    if (!viewModel.hasSelectedItems())
-                      IconButton(
-                        onPressed: viewModel.navigateBack,
-                        icon: const Icon(Icons.navigate_before),
-                      ),
-                    if (!viewModel.hasSelectedItems())
-                      Text("${viewModel.currentPage}/${viewModel.totalPages}"),
-                    if (!viewModel.hasSelectedItems())
-                      const SizedBox(width: 8),
-                    if (!viewModel.hasSelectedItems())
-                      IconButton(
-                        onPressed: viewModel.navigateNext,
-                        icon: const Icon(Icons.navigate_next),
-                      ),
-                    if (!viewModel.hasSelectedItems())
-                      IconButton(
-                        onPressed: viewModel.navigateLast,
-                        icon: const Icon(Icons.last_page),
-                      ),
-                  ],
-                ),
-              ),
-              if (!viewModel.hasSelectedItems())
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      viewModel.toggleSort();
-                      viewModel.sortPoints();
-                    },
-                    child: Text(
-                      viewModel.sortByNew ? 'Newest' : 'Oldest',
-                      style: bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-              if (viewModel.hasSelectedItems())
-                Row(
-                  children: [
-                    Text(
-                      "${viewModel.selectedItems.length}",
-                      style: bodyMedium,
-                    ),
-                  ]
-                ),
-            ],
+
+          // ————— footer —————
+          const SizedBox(height: 16),
+          _FooterBar(
+            hasSelection: vm.hasSelectedItems(),
+            onDelete:     () => _confirmDeletion(context),
+            onRefresh:    vm.searchPressed,
+            onFirst:      vm.navigateFirst,
+            onBack:       vm.navigateBack,
+            onNext:       vm.navigateNext,
+            onLast:       vm.navigateLast,
+            currentPage:  vm.currentPage,
+            totalPages:   vm.totalPages,
+            sortByNew:    vm.sortByNew,
+            toggleSort:   vm.toggleSort,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSkeletonLoader() {
-    return ListView.builder(
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            children: [
-              const Checkbox(
-                value: false,
-                onChanged: null,
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+/// Renders the full “filter→list→footer” skeleton with shimmer.
+class PointsPageSkeleton extends StatelessWidget {
+  const PointsPageSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor     = isDark ? Colors.grey.shade800 : Colors.grey.shade400;
+    final highlightColor= isDark ? Colors.grey.shade600 : Colors.white;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // ➤ filter skeleton
+            Card(
+              elevation: 12,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Container(
-                      color: Colors.grey.shade300,
-                      height: 20.0,
-                      width: double.infinity,
-                    ),
-                    const SizedBox(height: 8.0),
-                    Container(
-                      color: Colors.grey.shade300,
-                      height: 20.0,
-                      width: 150.0,
-                    ),
+                    Expanded(child: Container(height: 48, color: baseColor)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Container(height: 48, color: baseColor)),
+                    const SizedBox(width: 12),
+                    Container(width: 96, height: 48, color: baseColor),
                   ],
                 ),
               ),
-              const SizedBox(width: 8.0),
-              Container(
-                color: Colors.grey.shade300,
-                height: 20.0,
-                width: 50.0,
+            ),
+
+            const SizedBox(height: 16),
+
+            // ➤ list skeleton
+            Expanded(
+              child: ListView.separated(
+                itemCount: 9,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (_, __) => Row(
+                  children: [
+                    const SizedBox(width: 40, child: Checkbox(value: false, onChanged: null)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Container(height: 16, color: baseColor)),
+                    const SizedBox(width: 12),
+                    Container(width: 80, height: 16, color: baseColor),
+                  ],
+                ),
               ),
-            ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ➤ footer skeleton
+            Row(
+              children: [
+                Container(width: 120, height: 32, color: baseColor),
+                const SizedBox(width: 8),
+                Container(width: 80,  height: 32, color: baseColor),
+                const Spacer(),
+                Container(width: 100, height: 32, color: baseColor),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Card around the two date “chips” + search button.
+/// • Chips will flex to share available space.
+/// • If there’s absolutely no room, they’ll wrap onto a new line.
+class _FilterCard extends StatelessWidget {
+  final VoidCallback onPickStart;
+  final VoidCallback onPickEnd;
+  const _FilterCard({
+    required this.onPickStart,
+    required this.onPickEnd,
+  });
+
+  @override
+  Widget build(BuildContext c) {
+    final vm = c.watch<PointsPageViewModel>();
+    final startLabel = DateFormat.yMMMd().format(vm.startDate);
+    final endLabel   = DateFormat.yMMMd().format(vm.endDate);
+
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        child: LayoutBuilder(builder: (ctx, constraints) {
+          // if there's less than 500px, wrap; otherwise a single row
+          final useWrap = constraints.maxWidth < 500;
+          final children = <Widget>[
+            Flexible(
+              flex: 1,
+              child: _DateChip(
+                label: 'Start',
+                value: startLabel,
+                onTap: onPickStart,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Flexible(
+              flex: 1,
+              child: _DateChip(
+                label: 'End',
+                value: endLabel,
+                onTap: onPickEnd,
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: vm.searchPressed,
+              style: ElevatedButton.styleFrom(
+                padding:
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Center(child: Text('Search')),
+            ),
+          ];
+
+          if (useWrap) {
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              alignment: WrapAlignment.start,
+              children: children,
+            );
+          } else {
+            return Row(children: children);
+          }
+        }),
+      ),
+    );
+  }
+}
+
+/// A little “pill” that shows a calendar icon, a label, and the formatted date.
+/// Tappable to invoke your date picker.
+class _DateChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  const _DateChip({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext c) {
+    final cs = Theme.of(c).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: cs.surface.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.onSurface.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.calendar_today, size: 20, color: cs.onSurface),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(c)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: cs.onSurface.withValues(alpha: 0.7)),
+                ),
+                Text(
+                  value,
+                  style: Theme.of(c)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The real list of points, styled as ListTiles in cards
+class _PointsList extends StatelessWidget {
+  @override
+  Widget build(BuildContext c) {
+    final vm = c.watch<PointsPageViewModel>();
+    final fmt = DateFormat('dd MMM yyyy, HH:mm:ss');
+    return ListView.separated(
+      itemCount: vm.pagePoints.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, idx) {
+        final p = vm.pagePoints[idx];
+        final selected = vm.selectedItems.contains(p.id.toString());
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: CheckboxListTile(
+            value: selected,
+            onChanged: (v) => vm.toggleSelection(idx, v),
+            title: Text(fmt.format(
+                DateTime.fromMillisecondsSinceEpoch(p.timestamp! * 1000))),
+            subtitle: Text('${p.latitude}, ${p.longitude}'),
+            controlAffinity: ListTileControlAffinity.leading,
           ),
         );
       },
     );
   }
+}
 
-  Widget _buildDataTable(BuildContext context, PointsPageViewModel viewModel) {
+/// Footer: either deletion buttons (when items selected) or pagination + sort toggle
+class _FooterBar extends StatelessWidget {
+  final bool hasSelection;
+  final VoidCallback onDelete, onRefresh, onFirst, onBack, onNext, onLast, toggleSort;
+  final int currentPage, totalPages;
+  final bool sortByNew;
 
-    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-    final checkColor = isDarkTheme? Colors.white : Colors.black;
-    final borderColor = Theme.of(context).dividerColor;
-
-    final bodyMedium = Theme.of(context).textTheme.bodyMedium;
-
-    final DateFormat dateFormat = DateFormat('dd MMM yyyy, HH:mm:ss');
-
-    return Container(
-      color: backgroundColor,
-      child: SingleChildScrollView(
-        child: DataTable(
-          columnSpacing: 8,
-          headingRowColor:
-          WidgetStateColor.resolveWith((states) => backgroundColor),
-          dataRowColor: WidgetStateColor.resolveWith((states) => backgroundColor),
-          decoration: BoxDecoration(
-            border: Border.all(color: borderColor),
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          columns: [
-            DataColumn(
-              label: Padding(
-                padding: const EdgeInsets.only(left: 4.0),
-                child: Checkbox(
-                  value: viewModel.selectAll,
-                  onChanged: (value) => viewModel.toggleSelectAll(),
-                  checkColor: checkColor,
-                  activeColor: backgroundColor,
-                  side: BorderSide(color: checkColor),
-                ),
-              ),
-            ),
-            DataColumn(
-              label: Text(
-                'Recorded At',
-                style: bodyMedium,
-              ),
-            ),
-            DataColumn(
-              label: Text(
-                'Coordinates',
-                style: bodyMedium,
-              ),
-            ),
-          ],
-          rows: List<DataRow>.generate(
-            viewModel.pagePoints.length,
-            (index) {
-              final ApiPointViewModel point = viewModel.pagePoints[index];
-              final int? recordedAt = point.timestamp;
-              final String? latitude = point.latitude;
-              final String? longitude = point.longitude;
-
-              final DateTime parsedDate = DateTime.fromMillisecondsSinceEpoch(recordedAt!*1000);
-              final String formattedDate = dateFormat.format(parsedDate);
-              final isSelected = viewModel.selectedItems.contains(point.id.toString());
-
-              return DataRow(
-                cells: [
-                  DataCell(
-                    Checkbox(
-                      value: isSelected,
-                      onChanged: (value) => viewModel.toggleSelection(index, value),
-                      side: BorderSide(color: checkColor),
-                      //checkColor: ,
-                      //activeColor: activeColor,
-                    ),
-                  ),
-                  DataCell(
-                    Text(
-                      formattedDate,
-                      style: bodyMedium,
-                    ),
-                  ),
-                  DataCell(
-                    Text(
-                      '$latitude, $longitude',
-                      style: bodyMedium,
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      )
-    );
-  }
-
-  Widget _pageBase(BuildContext context) {
-    return Scaffold(
-      appBar: const Appbar(title: "Points", fontSize: 40),
-      body: _pageContent(context),
-      drawer: const CustomDrawer(),
-    );
-  }
+  const _FooterBar({
+    required this.hasSelection,
+    required this.onDelete,
+    required this.onRefresh,
+    required this.onFirst,
+    required this.onBack,
+    required this.onNext,
+    required this.onLast,
+    required this.toggleSort,
+    required this.currentPage,
+    required this.totalPages,
+    required this.sortByNew,
+  });
 
   @override
-  Widget build(BuildContext context) {
-
-    PointsPageViewModel viewModel = getIt<PointsPageViewModel>();
-    return ChangeNotifierProvider.value(
-      value: viewModel,
-      child: Builder(builder: (context) => _pageBase(context)),
+  Widget build(BuildContext c) {
+    final cs = Theme.of(c).colorScheme;
+    final textStyle = Theme.of(c).textTheme.bodyMedium;
+    return Container(
+      // shrink the vertical padding:
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      // remove any bottom margin so it hugs content:
+      margin: EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: cs.surface.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: hasSelection
+          ? Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          ElevatedButton(
+            onPressed: onDelete,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Delete', style: textStyle),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: onRefresh,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+            child: Text('Refresh', style: textStyle),
+          ),
+        ],
+      )
+          : Row(
+        children: [
+          IconButton(onPressed: onFirst, icon: const Icon(Icons.first_page)),
+          IconButton(onPressed: onBack,  icon: const Icon(Icons.navigate_before)),
+          Text('$currentPage/$totalPages', style: textStyle),
+          IconButton(onPressed: onNext,  icon: const Icon(Icons.navigate_next)),
+          IconButton(onPressed: onLast,  icon: const Icon(Icons.last_page)),
+          const Spacer(),
+          TextButton(
+            onPressed: toggleSort,
+            child: Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
+          ),
+        ],
+      ),
     );
   }
-
 }

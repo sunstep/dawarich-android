@@ -1,19 +1,18 @@
+import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/application/dependency_injection/service_locator.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
-import 'package:dawarich/ui/widgets/appbar.dart';
+import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-class MapPage extends StatelessWidget {
+final class MapPage extends StatelessWidget {
 
   const MapPage({super.key});
 
-  Widget _bottomsheetContent(
-      BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
+  Widget _bottomsheetContent(BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).bottomSheetTheme.backgroundColor,
@@ -104,9 +103,9 @@ class MapPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.grey.withValues(alpha: 0.2 * 255),
-                        Colors.grey.withValues(alpha: 0.6 * 255),
-                        Colors.grey.withValues(alpha: 0.2 * 255),
+                        Colors.grey.withValues(alpha: 0.2),
+                        Colors.grey.withValues(alpha: 0.6),
+                        Colors.grey.withValues(alpha: 0.2),
                       ],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
@@ -168,21 +167,39 @@ class MapPage extends StatelessWidget {
           children: [
             TileLayer(
               urlTemplate: 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=NWn5VTZI9avXmOoeAT00',
-              userAgentPackageName: 'app.dawarich',
+              userAgentPackageName: 'app.dawarich.android',
               maxNativeZoom: 19,
             ),
-            PolylineLayer(
-              polylines: [
-                Polyline(
-                  points: mapModel.points,
-                  strokeWidth: 6.0,
-                  color: Colors.blue.withValues(alpha: 0.8 * 255),
-                  borderStrokeWidth: 2.0, // Adds a subtle border for contrast
-                  borderColor: Colors.white.withValues(alpha: 0.7 * 255),
-                ),
-              ],
-            ),
-            CurrentLocationLayer(),
+            if (mapModel.points.isNotEmpty)
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: mapModel.points,
+                    strokeWidth: 6.0,
+                    color: Colors.blue.withValues(alpha: 0.8),
+                    borderStrokeWidth: 2.0,
+                    borderColor: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ],
+              ),
+            if (mapModel.points.isNotEmpty)
+              MarkerLayer(
+                markers: mapModel.points.map((point) {
+                  return Marker(
+                    point: point,
+                    width: 5,
+                    height: 5,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            const CurrentLocationLayer(),
           ],
         ),
         _buildBottomSheet(mapModel)
@@ -193,7 +210,7 @@ class MapPage extends StatelessWidget {
   Widget _pageBase(BuildContext context) {
     MapViewModel viewModel = context.watch<MapViewModel>();
     return Scaffold(
-      appBar: const Appbar(title: "Timeline", fontSize: 20),
+      appBar: const CustomAppbar(title: "Timeline", titleFontSize: 20),
       body: _pageContent(viewModel),
       drawer: const CustomDrawer(),
     );
@@ -201,13 +218,11 @@ class MapPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mapViewModel = getIt<MapViewModel>();
+    final MapViewModel mapViewModel = getIt<MapViewModel>();
     return ChangeNotifierProvider.value(
       value: mapViewModel,
       child: Builder(
-        builder: (context) {
-          return _pageBase(context);
-        },
+        builder: (context) => _pageBase(context),
       ),
     );
   }

@@ -1,10 +1,10 @@
-import "package:dawarich/application/dependency_injection/service_locator.dart";
+import "package:dawarich/application/startup/dependency_injector.dart";
 import "package:dawarich/ui/models/local/splash_page_viewmodel.dart";
 import "package:dawarich/ui/routing/app_router.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 
-class SplashPage extends StatelessWidget {
+final class SplashPage extends StatelessWidget {
 
   const SplashPage({super.key});
 
@@ -23,7 +23,7 @@ class SplashPage extends StatelessWidget {
               }
 
               if (snapshot.hasData) {
-                final isLoggedIn = snapshot.data!;
+                final bool isLoggedIn = snapshot.data!;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushNamedAndRemoveUntil(
                     isLoggedIn ? AppRouter.map : AppRouter.connect,

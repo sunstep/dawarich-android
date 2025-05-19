@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/ui/widgets/appbar.dart';
+import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -15,9 +15,9 @@ class SettingsPageState extends State<SettingsPage> {
   @override
   build(BuildContext context){
     return Scaffold(
-      appBar: const Appbar(
+      appBar: const CustomAppbar(
           title: "Settings",
-          fontSize: 40),
+          titleFontSize: 40),
       body: _pageContent(),
       drawer: const CustomDrawer(),
     );

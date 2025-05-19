@@ -8,6 +8,10 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 android {
     namespace = "app.dawarich.android"
     compileSdk = 35
@@ -41,17 +45,34 @@ android {
 
     signingConfigs {
         release {
-            storeFile file(System.getenv("UPLOAD_KEYSTORE_PATH") ?: "$rootDir/keystores/dawarich-upload.jks")
-            storePassword System.getenv("UPLOAD_STORE_PASSWORD") ?: "<YOUR_STORE_PASS>"
-            keyAlias "upload"
-            keyPassword System.getenv("UPLOAD_KEY_PASSWORD") ?: "<YOUR_KEY_PASS>"
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            storeType     'pkcs12'
         }
+    }
 
     buildTypes {
         release {
+            // attach the signing config
             signingConfig signingConfigs.release
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            // optimizations
+            minifyEnabled    true
+            shrinkResources  true
+
+            // ProGuard/R8 rules
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                    'proguard-rules.pro'
+
+            // ensure no debug flags slip in
+            debuggable       false
+            jniDebuggable    false
+            renderscriptDebuggable false
+
+            // APK/AAB will be zip-aligned by default
+            zipAlignEnabled  true
         }
     }
 }

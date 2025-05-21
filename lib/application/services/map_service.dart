@@ -1,6 +1,9 @@
+import 'package:country/country.dart';
 import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/slim_api_point.dart';
 import 'package:dawarich/domain/entities/local/point_pair.dart';
+import 'package:device_region/device_region.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:option_result/option_result.dart';
 
@@ -67,6 +70,32 @@ class MapService {
       return LatLng(latitude, longitude);
     }).toList();
   }
+
+  Future<LatLng> getDefaultMapCenter() async {
+
+    // Use sim:
+    String? countryCode = await DeviceRegion.getSIMCountryCode();
+
+    if (countryCode == null) {
+      final dispatcher = WidgetsBinding.instance.platformDispatcher;
+
+      final Locale locale = dispatcher.locale;
+      countryCode = locale.countryCode ?? '';
+    }
+
+    // Look up a preset coordinate (or fallback to (0,0))
+    return _centroidForIso(countryCode) ?? const LatLng(0, 0);
+  }
+
+  LatLng _centroidForIso(String iso) {
+    final c = Countries.values.firstWhere(
+          (e) => e.alpha2.toUpperCase() == iso.toUpperCase(),
+      orElse: () => Countries.values.first, // fallback country
+    );
+    final coord = c.geo.coordinate;
+    return LatLng(coord.latitude, coord.longitude);
+  }
+
 
 
 }

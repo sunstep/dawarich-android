@@ -25,4 +25,5 @@ class LocationService {
 
     return position;
   }
+
 }

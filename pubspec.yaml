@@ -33,7 +33,9 @@ dependencies:
   android_intent_plus: ^5.3.0
   battery_plus: ^6.2.1
   connectivity_plus: ^6.1.4
+  country: ^6.0.0
   device_info_plus: ^11.4.0
+  device_region: ^1.4.0
   drift: ^2.26.1
   drift_flutter: ^0.2.4
   fl_chart: ^1.0.0

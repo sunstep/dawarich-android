@@ -53,10 +53,38 @@ class MapViewModel with ChangeNotifier {
 
   Future<void> initialize() async {
 
-    Position? position = await _locationService.getCurrentLocation();
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      setCurrentLocation(await _mapService.getDefaultMapCenter());
+      return;
+    }
+
+    var perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+    }
+
+    if (perm == LocationPermission.denied ||
+        perm == LocationPermission.deniedForever) {
+      setCurrentLocation(await _mapService.getDefaultMapCenter());
+      return;
+    }
+
+    Position? position;
+
+    try {
+      position = await _locationService.getCurrentLocation();
+    } catch (_) {
+      setCurrentLocation(await _mapService.getDefaultMapCenter());
+    }
+
+    position ??= await Geolocator.getLastKnownPosition();
 
     if (position != null) {
-      setCurrentLocation(LatLng(position.latitude, position.longitude));
+      setCurrentLocation(
+        LatLng(position.latitude, position.longitude),
+      );
+    } else {
+      setCurrentLocation(await _mapService.getDefaultMapCenter());
     }
 
     await loadToday();

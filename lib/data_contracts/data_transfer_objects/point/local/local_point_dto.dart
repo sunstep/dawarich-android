@@ -17,12 +17,4 @@ class LocalPointDto {
     required this.userId
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'type': type,
-      'geometry': geometry.toJson(),
-      'properties': properties.toJson(),
-      'userId': userId
-    };
-  }
 }

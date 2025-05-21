@@ -6,9 +6,4 @@ class LocalPointBatchDto {
 
   LocalPointBatchDto({required this.points});
 
-  Map<String, dynamic> toJson() {
-    return {
-      'locations': points.map((point) => point.toJson()).toList(),
-    };
-  }
 }

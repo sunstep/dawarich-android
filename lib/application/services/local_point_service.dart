@@ -252,7 +252,7 @@ class LocalPointService {
     bool answer = false;
     LocationAccuracy requiredAccuracy = await _trackerPreferencesService.getLocationAccuracyPreference();
 
-    double requiredAccuracyMeters = getAccuracyThreshold(requiredAccuracy);
+    double requiredAccuracyMeters = _getAccuracyThreshold(requiredAccuracy);
 
     answer = candidate.properties.horizontalAccuracy < requiredAccuracyMeters;
 
@@ -354,7 +354,7 @@ class LocalPointService {
   }
 
 
-  double getAccuracyThreshold(LocationAccuracy accuracy) {
+  double _getAccuracyThreshold(LocationAccuracy accuracy) {
     if (Platform.isIOS) {
       switch (accuracy) {
         case LocationAccuracy.lowest:

@@ -31,23 +31,4 @@ class LocalPointPropertiesDto {
     required this.deviceId,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'battery_state': batteryState,
-      'battery_level': batteryLevel,
-      'wifi': wifi,
-      'timestamp': timestamp,
-      'horizontal_accuracy': horizontalAccuracy,
-      'vertical_accuracy': verticalAccuracy,
-      'altitude': altitude,
-      'speed': speed,
-      'speed_accuracy': speedAccuracy,
-      'course': course,
-      'course_accuracy': courseAccuracy,
-      'track_id': trackId,
-      'device_id': deviceId,
-    };
-  }
-
-
 }

@@ -3,6 +3,9 @@ import 'package:dawarich/application/converters/batch/local/local_point_properti
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
+import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point.dart';
+import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_geometry.dart';
+import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_properties.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_geometry.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_properties.dart';
@@ -21,6 +24,14 @@ extension LocalBatchPointToDto on LocalPoint {
       userId: userId,
       isUploaded: isUploaded
     );
+  }
+}
+
+extension LocalPointToApi on LocalPoint {
+  DawarichPoint toApi() {
+    DawarichPointGeometry geometry = this.geometry.toApi();
+    DawarichPointProperties properties = this.properties.toApi();
+    return DawarichPoint(type: type, geometry: geometry, properties: properties);
   }
 }
 

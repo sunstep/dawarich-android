@@ -4,6 +4,7 @@ import 'package:dawarich/application/converters/batch/local/local_point_batch_co
 import 'package:dawarich/application/converters/batch/local/local_point_converter.dart';
 import 'package:dawarich/application/converters/last_point_converter.dart';
 import 'package:dawarich/application/converters/track_converter.dart';
+import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_batch_dto.dart';
@@ -13,6 +14,7 @@ import 'package:dawarich/data_contracts/interfaces/hardware_repository_interface
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
+import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
 import 'package:dawarich/domain/entities/local/additional_point_data.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
 import 'package:dawarich/domain/entities/local/point_pair.dart';
@@ -28,6 +30,7 @@ import 'package:option_result/option_result.dart';
 
 class LocalPointService {
 
+  final ApiPointService _api;
   final IUserSessionRepository _userSession;
   final ILocalPointRepository _localPointInterfaces;
   final IHardwareRepository _hardwareInterfaces;
@@ -35,7 +38,59 @@ class LocalPointService {
   final ITrackRepository _trackRepository;
 
 
-  LocalPointService(this._userSession, this._localPointInterfaces, this._trackerPreferencesService, this._trackRepository, this._hardwareInterfaces);
+  LocalPointService(this._api, this._userSession, this._localPointInterfaces, this._trackerPreferencesService, this._trackRepository, this._hardwareInterfaces);
+
+  /// A private local point service helper method that checks if the current point batch is due for upload. This method gets called after a point gets stored locally.
+  Future<bool> _checkBatchThreshold() async {
+
+    final int userId = await _userSession.getCurrentUserId();
+    final int maxPoints = await _trackerPreferencesService.getPointsPerBatchPreference();
+    final Result<int, String> currentPointsResult = await _localPointInterfaces.getBatchPointCount(userId);
+
+    if (currentPointsResult case Err(value: String currentPointsError)) {
+
+      if (kDebugMode) {
+        debugPrint("[DEBUG] Failed to get the current amount of points in batch: $currentPointsError");
+        return false;
+      }
+    }
+
+    final int currentPoints = currentPointsResult.unwrap();
+
+    if (currentPoints < maxPoints) {
+      return false;
+    }
+
+    Result<LocalPointBatchDto, String> currentBatchResult = await _localPointInterfaces.getCurrentBatch(userId);
+
+    if (currentBatchResult case Err(value: String batchError)) {
+      if (kDebugMode) {
+        debugPrint("[DEBUG] Failed to get the current points in batch: $batchError");
+        return false;
+      }
+    }
+
+    // Upload batch
+    LocalPointBatchDto batchDto = currentBatchResult.unwrap();
+    LocalPointBatch batch = batchDto.toEntity();
+    DawarichPointBatch apiBatch = batch.toApi();
+
+    bool uploaded = await _api.uploadBatch(apiBatch);
+
+    if (uploaded) {
+      List<int> pointIds = batch.points
+        .map((point) => point.id)
+        .toList();
+      _localPointInterfaces.markBatchAsUploaded(pointIds, userId);
+    } else {
+      if (kDebugMode) {
+        debugPrint("[DEBUG] Failed to upload batch!");
+        return false;
+      }
+    }
+
+    return true;
+  }
 
   /// Creates a full point using a position object.
   Future<Result<LocalPoint, String>> createAndStorePoint(Position position) async {
@@ -52,9 +107,14 @@ class LocalPointService {
 
     LocalPointDto pointDto = point.toDto();
     final Result<(), String> storeResult = await _localPointInterfaces.storePoint(pointDto);
+    await _checkBatchThreshold();
+
+
 
     return storeResult is Ok ? Ok(point) : Err("Failed to store point: ${storeResult.unwrapErr()}");
   }
+
+
 
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.

@@ -104,7 +104,7 @@ final class DependencyInjector {
     getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointRepository>()));
     getIt.registerLazySingleton<TrackService>(() => TrackService(getIt<ITrackRepository>(), getIt<IUserSessionRepository>()));
     getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>(), getIt<IHardwareRepository>()));
-    getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<IUserSessionRepository>(), getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<ITrackRepository>(), getIt<IHardwareRepository>()));
+    getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<ApiPointService>(), getIt<IUserSessionRepository>(), getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<ITrackRepository>(), getIt<IHardwareRepository>()));
     // getIt.registerLazySingleton<BackgroundTrackingService>(() => BackgroundTrackingService());
     getIt.registerLazySingleton<PointAutomationService>(() => PointAutomationService(getIt<TrackerPreferencesService>(), getIt<IHardwareRepository>(), getIt<LocalPointService>()));
     getIt.registerLazySingleton<StatsService>(() => StatsService(getIt<IStatsRepository>()));

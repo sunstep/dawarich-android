@@ -11,7 +11,6 @@ class UserDto {
   final DateTime? updatedAt;
   final String apiKey;
   final String theme;
-  final UserSettingsDto userSettings;
   final bool admin;
 
   UserDto setDawarichEndpoint(String? endpoint) {
@@ -24,7 +23,6 @@ class UserDto {
       updatedAt: updatedAt,
       apiKey: apiKey,
       theme: theme,
-      userSettings: userSettings,
       admin: admin,
     );
   }
@@ -38,7 +36,6 @@ class UserDto {
     required this.updatedAt,
     required this.apiKey,
     required this.theme,
-    required this.userSettings,
     required this.admin
   });
   
@@ -52,7 +49,6 @@ class UserDto {
         updatedAt: DateTime.parse(json["updated_at"]),
         apiKey: json["api_key"],
         theme: json["theme"],
-        userSettings: UserSettingsDto.fromJson(json["settings"]),
         admin: json["admin"]
     );
   }
@@ -67,7 +63,6 @@ class UserDto {
         updatedAt: user.updatedAt,
         apiKey: "",
         theme: user.theme,
-        userSettings: UserSettingsDto.fromDatabase(userSettings),
         admin: user.admin
     );
   }

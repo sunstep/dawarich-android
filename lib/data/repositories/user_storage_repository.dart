@@ -11,7 +11,7 @@ final class UserStorageRepository implements IUserStorageRepository {
   Future<void> storeUser(UserDto user) async {
 
     int userId = await _client.tryStoreUser(user);
-    await _client.storeUserSettings(userId, user.userSettings);
+    // await _client.storeUserSettings(userId, user.userSettings);
   }
 
   // @override

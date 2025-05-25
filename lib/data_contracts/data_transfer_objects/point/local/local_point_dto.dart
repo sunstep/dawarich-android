@@ -8,13 +8,15 @@ class LocalPointDto {
   final LocalPointGeometryDto geometry;
   final LocalPointPropertiesDto properties;
   final int userId;
+  final bool isUploaded;
 
   LocalPointDto({
     required this.id,
     required this.type,
     required this.geometry,
     required this.properties,
-    required this.userId
+    required this.userId,
+    required this.isUploaded
   });
 
 }

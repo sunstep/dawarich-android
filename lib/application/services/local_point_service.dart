@@ -149,7 +149,8 @@ class LocalPointService {
       type: "Feature",
       geometry: geometry,
       properties: properties,
-      userId: userId
+      userId: userId,
+      isUploaded: false
     );
   }
 

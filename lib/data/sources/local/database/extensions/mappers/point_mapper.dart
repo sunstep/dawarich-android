@@ -40,7 +40,8 @@ extension PointMapper on TypedResult {
         trackId: propertiesRow.trackId,
         deviceId: propertiesRow.deviceId,
       ),
-      userId: pointRow.userId
+      userId: pointRow.userId,
+      isUploaded: pointRow.isUploaded
     );
   }
 }

@@ -18,7 +18,7 @@ extension LocalBatchDtoConverter on LocalPointBatchDto {
 
   LocalPointBatch toEntity() {
     List<LocalPoint> points = this.points
-        .map((pointDto) => pointDto.toEntity())
+        .map((pointDto) => pointDto.toDomain())
         .toList();
     return LocalPointBatch(points: points);
   }

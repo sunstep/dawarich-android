@@ -8,13 +8,15 @@ class LocalPointViewModel {
   final LocalPointGeometryViewModel geometry;
   final LocalPointPropertiesViewModel properties;
   final int userId;
+  final bool isUploaded;
 
   LocalPointViewModel({
     required this.id,
     required this.type,
     required this.geometry,
     required this.properties,
-    required this.userId
+    required this.userId,
+    required this.isUploaded
   });
 
   Map<String, dynamic> toJson() {

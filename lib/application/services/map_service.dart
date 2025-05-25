@@ -84,7 +84,7 @@ class MapService {
     }
 
     // Look up a preset coordinate (or fallback to (0,0))
-    return _centroidForIso(countryCode) ?? const LatLng(0, 0);
+    return _centroidForIso(countryCode);
   }
 
   LatLng _centroidForIso(String iso) {

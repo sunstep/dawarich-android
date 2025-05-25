@@ -26,7 +26,6 @@ final class _TrackerPageState extends State<TrackerPage> with WidgetsBindingObse
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // grab your DI instance
     _viewModel = getIt<TrackerPageViewModel>();
     _viewModel.initialize();
 

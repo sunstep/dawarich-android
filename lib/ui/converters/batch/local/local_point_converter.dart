@@ -17,7 +17,8 @@ extension BatchPointToViewModel on LocalPoint {
       type: type,
       geometry: geometry,
       properties: properties,
-      userId: userId
+      userId: userId,
+      isUploaded: isUploaded
     );
   }
 }
@@ -32,7 +33,8 @@ extension PointDtoToEntity on LocalPointViewModel {
       type: type,
       geometry: geometry,
       properties: properties,
-      userId: userId
+      userId: userId,
+      isUploaded: isUploaded
     );
   }
 }

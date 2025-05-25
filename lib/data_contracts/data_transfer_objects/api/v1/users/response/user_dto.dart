@@ -4,7 +4,7 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/respo
 class UserDto {
 
   final int id;
-  final int? dawarichId;
+  final int? remoteId;
   final String? dawarichEndpoint;
   final String email;
   final DateTime createdAt;
@@ -13,10 +13,10 @@ class UserDto {
   final String theme;
   final bool admin;
 
-  UserDto setDawarichEndpoint(String? endpoint) {
+  UserDto withDawarichEndpoint(String? endpoint) {
     return UserDto(
       id: id,
-      dawarichId: dawarichId,
+      remoteId: remoteId,
       dawarichEndpoint: endpoint,
       email: email,
       createdAt: createdAt,
@@ -29,7 +29,7 @@ class UserDto {
 
   UserDto({
     required this.id,
-    required this.dawarichId,
+    required this.remoteId,
     required this.dawarichEndpoint,
     required this.email,
     required this.createdAt,
@@ -42,7 +42,7 @@ class UserDto {
   factory UserDto.fromJson(Map<String, dynamic> json) {
     return UserDto(
         id: 0,
-        dawarichId: json["id"],
+        remoteId: json["id"],
         dawarichEndpoint: "",
         email: json["email"],
         createdAt: DateTime.parse(json["created_at"]),
@@ -53,10 +53,10 @@ class UserDto {
     );
   }
 
-  factory UserDto.fromDatabase(UserTableData user, UserSettingsTableData userSettings) {
+  factory UserDto.fromDatabase(UserTableData user) {
     return UserDto(
         id: user.id,
-        dawarichId: user.dawarichId,
+        remoteId: user.dawarichId,
         dawarichEndpoint: user.dawarichEndpoint,
         email: user.email,
         createdAt: user.createdAt,
@@ -67,18 +67,5 @@ class UserDto {
     );
   }
 
-  // Map<String, dynamic> toJson() {
-  //   return {
-  //     "id": id,
-  //     "dawarich"
-  //     "email": email,
-  //     "created_at": createdAt.toIso8601String(),
-  //     "updated_at": updatedAt.toIso8601String(),
-  //     "api_key": apiKey,
-  //     "theme": theme,
-  //     "settings": userSettings.toJson(),
-  //     "admin": admin
-  //   };
-  // }
 
 }

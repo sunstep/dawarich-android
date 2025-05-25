@@ -34,8 +34,8 @@ final class UsersApiClient {
         if (response.statusCode == 200) {
           final Map<String, dynamic> json = jsonDecode(response.body);
           UserDto userDto = UserDto.fromJson(json["user"]);
-          userDto.setDawarichEndpoint(_apiInfo.host);
-          return Ok(userDto);
+          UserDto userDtoCopy = userDto.withDawarichEndpoint(_apiInfo.host);
+          return Ok(userDtoCopy);
         } else {
           return Err("Failed to fetch user: ${response.statusCode} ${response.reasonPhrase}");
         }

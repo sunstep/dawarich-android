@@ -22,33 +22,25 @@ final class UserStorageClient {
 
     if (userResult != null) {
 
-      final settingsQuery = _database
-        .select(_database.userSettingsTable)
-          ..where((s) => s.userId.equals(userResult.id)
-      );
-
-      final UserSettingsTableData? userSettingsResult = await settingsQuery.getSingleOrNull();
-
-      if (userSettingsResult != null) {
-        return Some(UserDto.fromDatabase(userResult, userSettingsResult));
-      }
+      return Some(UserDto.fromDatabase(userResult));
     }
     return const None();
   }
 
   Future<int> tryStoreUser(UserDto userDto) async {
 
-    if (userDto.dawarichId != null && userDto.dawarichEndpoint != null) {
-      Option<UserDto> userResult = await _findDawarichUser(userDto.dawarichId!, userDto.dawarichEndpoint!);
+    if (userDto.remoteId != null && userDto.dawarichEndpoint != null) {
+      Option<UserDto> userResult = await _findDawarichUser(userDto.remoteId!, userDto.dawarichEndpoint!);
 
       if (userResult case Some(value: UserDto user)){
         return user.id;
       }
     }
     
-    return await _database.into(_database.userTable).insert(
+    return await _database.into(_database.userTable).insertOnConflictUpdate(
       UserTableCompanion(
-        dawarichId: Value(userDto.id),
+        dawarichId: Value(userDto.remoteId),
+        dawarichEndpoint: Value(userDto.dawarichEndpoint),
         email: Value(userDto.email),
         createdAt: Value(userDto.createdAt),
         updatedAt: Value(userDto.updatedAt),

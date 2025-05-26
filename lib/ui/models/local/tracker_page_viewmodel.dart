@@ -310,38 +310,38 @@ class TrackerPageViewModel extends ChangeNotifier {
 
   Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(await _trackerPreferencesService.getPointsPerBatchPreference());
 
-  Future<void> toggleAutomaticTracking(bool trueOrFalse) async {
+  void toggleAutomaticTracking(bool enable) {
+    if (_isUpdatingTracking) return;
 
-    if (!isUpdatingTracking) {
+    _isUpdatingTracking = true;
 
-      _isUpdatingTracking = true;
+    _isTrackingAutomatically = enable;
+    notifyListeners();
 
-      setAutomaticTracking(trueOrFalse);
-      await storeAutomaticTracking();
-
-      _isUpdatingTracking = false;
-    }
+    _applyAutomaticTracking(enable);
   }
 
-  Future<void> setAutomaticTracking(bool onOrOff)  async {
+  Future<void> _applyAutomaticTracking(bool enable) async {
+    try {
+      if (enable) {
+        await _pointAutomationService.startTracking();
 
-    _isTrackingAutomatically = onOrOff;
-
-    if (isTrackingAutomatically) {
-      // await _backgroundTrackingService.initialize();
-      await _pointAutomationService.startTracking();
-
-      final bool needsFix = await _systemSettingsService.needsSystemSettingsFix();
-      if (needsFix) {
-        _settingsPromptController.add(null);
+        final needsFix = await _systemSettingsService.needsSystemSettingsFix();
+        if (needsFix) {
+          _settingsPromptController.add(null);
+        }
+      } else {
+        await _pointAutomationService.stopTracking();
       }
 
-    } else {
-      // await _backgroundTrackingService.stop();
-      await _pointAutomationService.stopTracking();
+      await _trackerPreferencesService.setAutomaticTrackingPreference(enable);
+    } catch (e) {
+      _isTrackingAutomatically = !enable;
+      debugPrint('Error toggling automatic tracking: $e');
+    } finally {
+      _isUpdatingTracking = false;
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
   Future<void> openSystemSettings() async {
@@ -353,7 +353,7 @@ class TrackerPageViewModel extends ChangeNotifier {
     await _trackerPreferencesService.setAutomaticTrackingPreference(_isTrackingAutomatically);
   }
 
-  Future<void> _getAutomaticTrackingPreference() async => setAutomaticTracking(await _trackerPreferencesService.getAutomaticTrackingPreference());
+  Future<void> _getAutomaticTrackingPreference() async => _applyAutomaticTracking(await _trackerPreferencesService.getAutomaticTrackingPreference());
 
 
   void setTrackingFrequency(int? seconds) {

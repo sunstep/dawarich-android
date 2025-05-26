@@ -18,8 +18,6 @@ class AppBase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
     return MaterialApp(
       title: 'Dawarich',
       theme: LightTheme.primaryTheme,

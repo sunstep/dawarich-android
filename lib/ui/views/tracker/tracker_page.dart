@@ -29,11 +29,17 @@ final class _TrackerPageState extends State<TrackerPage> with WidgetsBindingObse
     _viewModel = getIt<TrackerPageViewModel>();
     _viewModel.initialize();
 
-    // listen for "please open system settings" prompts
-    _settingsSub = _viewModel.onSystemSettingsPrompt.listen((_) async {
+    // delay the actual showDialog until after build()
+    _settingsSub = _viewModel.onSystemSettingsPrompt.listen((_) {
       if (!mounted) return;
-      final open = await _showSystemSettingsConfirmation(context);
-      if (open) await _viewModel.openSystemSettings();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final open = await _showSystemSettingsConfirmation(context);
+        if (open) {
+          await _viewModel.openSystemSettings();
+        }
+      });
     });
   }
 

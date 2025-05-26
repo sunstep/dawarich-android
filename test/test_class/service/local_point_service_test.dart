@@ -2,46 +2,46 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
+import 'package:option_result/option_result.dart';
 import '../../mock/repository/local_point_repository_mock.dart';
 
 
 void main() {
-  late MockLocalPointRepository repository;
-  const int testUserId = 1;
-  const int anotherUserId = 2;
+  late MockLocalPointRepository repo;
+  const testUser = 1;
+  const otherUser = 2;
 
   setUp(() {
-    repository = MockLocalPointRepository();
+    repo = MockLocalPointRepository();
   });
 
-  // Helper function to create a test point
-  LocalPointDto createTestPoint({
+  LocalPointDto makePoint({
     required int userId,
-    required double longitude,
-    required double latitude,
-    required String timestamp,
+    required double lon,
+    required double lat,
+    required String ts,
   }) {
     return LocalPointDto(
       id: 0,
       type: 'Feature',
       geometry: LocalPointGeometryDto(
         type: 'Point',
-        coordinates: [longitude, latitude],
+        coordinates: [lon, lat],
       ),
       properties: LocalPointPropertiesDto(
-        batteryState: 'charging',
-        batteryLevel: 0.85,
-        wifi: 'connected',
-        timestamp: timestamp,
-        horizontalAccuracy: 10.0,
-        verticalAccuracy: 15.0,
-        altitude: 100.0,
-        speed: 5.0,
-        speedAccuracy: 1.0,
-        course: 90.0,
-        courseAccuracy: 5.0,
+        batteryState: 'ok',
+        batteryLevel: 0.5,
+        wifi: 'none',
+        timestamp: ts,
+        horizontalAccuracy: 1.0,
+        verticalAccuracy: 2.0,
+        altitude: 3.0,
+        speed: 4.0,
+        speedAccuracy: 5.0,
+        course: 6.0,
+        courseAccuracy: 7.0,
         trackId: '',
-        deviceId: 'test-device-id',
+        deviceId: 'dev1',
       ),
       userId: userId,
       isUploaded: false,
@@ -49,240 +49,369 @@ void main() {
   }
 
   group('MockLocalPointRepository', () {
-    test('storePoint should store a point and assign an ID', () async {
-      // Arrange
-      final point = createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      );
+    //----------------------------------------------------------------
+    // storePoint
+    //----------------------------------------------------------------
+    test('storePoint: success increments counter & stores point', () async {
+      final p = makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1');
+      repo.failStorePoint = false;
 
-      // Act
-      final result = await repository.storePoint(point);
+      final res = await repo.storePoint(p);
 
-      // Assert
-      expect(result.isOk(), true);
-      
-      // Verify the point was stored by checking the batch
-      final batchResult = await repository.getFullBatch(testUserId);
-      expect(batchResult.isOk(), true);
-      expect(batchResult.unwrap().points.length, 1);
-      expect(batchResult.unwrap().points[0].id, 1); // First ID should be 1
+      // Pattern‐match on Result
+      switch (res) {
+        case Ok():
+        // good
+          break;
+        case Err(value: final err):
+          fail('Expected Ok, got Err($err)');
+      }
+
+      // counter & arg
+      expect(repo.storePointCount, 1);
+      expect(repo.lastStoredPoint, equals(p));
+
+      // verify it really stored
+      final fullBatch = await repo.getFullBatch(testUser);
+      switch (fullBatch) {
+        case Ok(value: final batch):
+          expect(batch.points.length, 1);
+          expect(batch.points.first.id, 1);
+        case Err(value: final err):
+          fail('Expected Ok batch, got Err($err)');
+      }
     });
 
-    test('getLastPoint should return None when no points exist', () async {
-      // Act
-      final result = await repository.getLastPoint(testUserId);
-      
-      // Assert
-      expect(result.isNone(), true);
+    test('storePoint: failure flag returns Err and still increments', () async {
+      final p = makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1');
+      repo.failStorePoint = true;
+
+      final res = await repo.storePoint(p);
+
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final err):
+          expect(err, 'Forced storePoint failure');
+      }
+
+      expect(repo.storePointCount, 1);
+      expect(repo.lastStoredPoint, equals(p));
     });
 
-    test('getLastPoint should return the most recent point', () async {
-      // Arrange
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      ));
-      
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 11.0,
-        latitude: 21.0,
-        timestamp: '2023-06-15T11:00:00Z',
-      ));
+    //----------------------------------------------------------------
+    // getLastPoint
+    //----------------------------------------------------------------
+    test('getLastPoint: none when no points, counter+arg tracked', () async {
+      repo.failGetLastPoint = false;
+      final opt = await repo.getLastPoint(testUser);
 
-      // Act
-      final result = await repository.getLastPoint(testUserId);
-      
-      // Assert
-      expect(result.isSome(), true);
-      final lastPoint = result.unwrap();
-      expect(lastPoint.longitude, 11.0);
-      expect(lastPoint.latitude, 21.0);
-      expect(lastPoint.timestamp, '2023-06-15T11:00:00Z');
+      switch (opt) {
+        case Some():
+          fail('Expected None, got Some');
+        case None():
+        // good
+          break;
+      }
+
+      expect(repo.getLastPointCount, 1);
+      expect(repo.lastGetLastPointUserId, testUser);
     });
 
-    test('getFullBatch should return all points for a user', () async {
-      // Arrange
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      ));
-      
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 11.0,
-        latitude: 21.0,
-        timestamp: '2023-06-15T11:00:00Z',
-      ));
-      
-      await repository.storePoint(createTestPoint(
-        userId: anotherUserId, // Different user
-        longitude: 12.0,
-        latitude: 22.0,
-        timestamp: '2023-06-15T12:00:00Z',
-      ));
+    test('getLastPoint: success returns most recent, tracks args', () async {
+      // seed
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      repo.failGetLastPoint = false;
 
-      // Act
-      final result = await repository.getFullBatch(testUserId);
-      
-      // Assert
-      expect(result.isOk(), true);
-      expect(result.unwrap().points.length, 2); // Only points for testUserId
+      final opt = await repo.getLastPoint(testUser);
+
+      switch (opt) {
+        case Some(value: final last):
+          expect(last.longitude, 3);
+          expect(last.latitude, 4);
+          expect(last.timestamp, 't2');
+        case None():
+          fail('Expected Some, got None');
+      }
+
+      expect(repo.getLastPointCount, 1);
+      expect(repo.lastGetLastPointUserId, testUser);
     });
 
-    test('getCurrentBatch should return only non-uploaded points', () async {
-      // Arrange
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      ));
-      
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 11.0,
-        latitude: 21.0,
-        timestamp: '2023-06-15T11:00:00Z',
-      ));
-      
-      // Mark the first point as uploaded
-      await repository.markBatchAsUploaded([1], testUserId);
+    test('getLastPoint: failure flag yields None', () async {
+      // seed so non-empty
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      repo.failGetLastPoint = true;
 
-      // Act
-      final result = await repository.getCurrentBatch(testUserId);
-      
-      // Assert
-      expect(result.isOk(), true);
-      expect(result.unwrap().points.length, 1); // Only non-uploaded points
-      expect(result.unwrap().points[0].id, 2); // Second point ID
+      final opt = await repo.getLastPoint(testUser);
+
+      switch (opt) {
+        case Some():
+          fail('Expected None, got Some');
+        case None():
+        // good
+          break;
+      }
+
+      expect(repo.getLastPointCount, 1);
     });
 
-    test('getBatchPointCount should return count of non-uploaded points', () async {
-      // Arrange
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      ));
-      
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 11.0,
-        latitude: 21.0,
-        timestamp: '2023-06-15T11:00:00Z',
-      ));
-      
-      // Mark the first point as uploaded
-      await repository.markBatchAsUploaded([1], testUserId);
+    //----------------------------------------------------------------
+    // getFullBatch
+    //----------------------------------------------------------------
+    test('getFullBatch: success returns all for user, tracks args', () async {
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo.storePoint(makePoint(userId: otherUser, lon: 5, lat: 6, ts: 'tX'));
+      repo.failGetFullBatch = false;
 
-      // Act
-      final result = await repository.getBatchPointCount(testUserId);
-      
-      // Assert
-      expect(result.isOk(), true);
-      expect(result.unwrap(), 1); // Only one non-uploaded point
+      final res = await repo.getFullBatch(testUser);
+
+      switch (res) {
+        case Ok(value: final batch):
+          expect(batch.points.every((p) => p.userId == testUser), isTrue);
+          expect(batch.points.length, 1);
+        case Err(value: final err):
+          fail('Expected Ok, got Err($err)');
+      }
+
+      expect(repo.getFullBatchCount, 1);
+      expect(repo.lastGetFullBatchUserId, testUser);
     });
 
-    test('markBatchAsUploaded should mark points as uploaded', () async {
-      // Arrange
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      ));
-      
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 11.0,
-        latitude: 21.0,
-        timestamp: '2023-06-15T11:00:00Z',
-      ));
+    test('getFullBatch: failure flag returns Err', () async {
+      repo.failGetFullBatch = true;
+      final res = await repo.getFullBatch(testUser);
 
-      // Act
-      final result = await repository.markBatchAsUploaded([1, 2], testUserId);
-      
-      // Assert
-      expect(result.isOk(), true);
-      expect(result.unwrap(), 2); // Two points marked as uploaded
-      
-      // Verify via getCurrentBatch which should now be empty
-      final batchResult = await repository.getCurrentBatch(testUserId);
-      expect(batchResult.unwrap().points.isEmpty, true);
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final err):
+          expect(err, 'Forced getFullBatch failure');
+      }
+
+      expect(repo.getFullBatchCount, 1);
     });
 
-    test('deletePoint should remove a point', () async {
-      // Arrange
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      ));
+    //----------------------------------------------------------------
+    // getCurrentBatch
+    //----------------------------------------------------------------
+    test('getCurrentBatch: only non-uploaded points, tracks args', () async {
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo.markBatchAsUploaded([1], testUser);
+      repo.failGetCurrentBatch = false;
 
-      // Act
-      final result = await repository.deletePoint(1, testUserId);
-      
-      // Assert
-      expect(result.isOk(), true);
-      
-      // Verify the point was deleted
-      final batchResult = await repository.getFullBatch(testUserId);
-      expect(batchResult.unwrap().points.isEmpty, true);
+      final res = await repo.getCurrentBatch(testUser);
+
+      switch (res) {
+        case Ok(value: final batch):
+          expect(batch.points.length, 1);
+          expect(batch.points.first.id, 2);
+        case Err(value: final err):
+          fail('Expected Ok, got Err($err)');
+      }
+
+      expect(repo.getCurrentBatchCount, 1);
+      expect(repo.lastGetCurrentBatchUserId, testUser);
     });
 
-    test('deletePoint should fail for non-existent point', () async {
-      // Act
-      final result = await repository.deletePoint(999, testUserId);
-      
-      // Assert
-      expect(result.isErr(), true);
-      expect(result.unwrapErr(), contains("Point not found"));
+    test('getCurrentBatch: failure flag returns Err', () async {
+      repo.failGetCurrentBatch = true;
+      final res = await repo.getCurrentBatch(testUser);
+
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final err):
+          expect(err, 'Forced getCurrentBatch failure');
+      }
+
+      expect(repo.getCurrentBatchCount, 1);
     });
 
-    test('clearBatch should remove all non-uploaded points', () async {
-      // Arrange
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 10.0,
-        latitude: 20.0,
-        timestamp: '2023-06-15T10:00:00Z',
-      ));
-      
-      await repository.storePoint(createTestPoint(
-        userId: testUserId,
-        longitude: 11.0,
-        latitude: 21.0,
-        timestamp: '2023-06-15T11:00:00Z',
-      ));
-      
-      // Mark the first point as uploaded
-      await repository.markBatchAsUploaded([1], testUserId);
+    //----------------------------------------------------------------
+    // getBatchPointCount
+    //----------------------------------------------------------------
+    test('getBatchPointCount: correct count, tracks args', () async {
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo.markBatchAsUploaded([1], testUser);
+      repo.failGetBatchCount = false;
 
-      // Act
-      final result = await repository.clearBatch(testUserId);
-      
-      // Assert
-      expect(result.isOk(), true);
-      
-      // Verify non-uploaded points were cleared
-      final countResult = await repository.getBatchPointCount(testUserId);
-      expect(countResult.unwrap(), 0);
-      
-      // Verify uploaded points remain
-      final batchResult = await repository.getFullBatch(testUserId);
-      expect(batchResult.unwrap().points.length, 1);
-      expect(batchResult.unwrap().points[0].id, 1);
-      expect(batchResult.unwrap().points[0].isUploaded, true);
+      final res = await repo.getBatchPointCount(testUser);
+
+      switch (res) {
+        case Ok(value: final cnt):
+          expect(cnt, 1);
+        case Err(value: final err):
+          fail('Expected Ok, got Err($err)');
+      }
+
+      expect(repo.getBatchCountCount, 1);
+      expect(repo.lastGetBatchCountUserId, testUser);
+    });
+
+    test('getBatchPointCount: failure flag returns Err', () async {
+      repo.failGetBatchCount = true;
+      final res = await repo.getBatchPointCount(testUser);
+
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final err):
+          expect(err, 'Forced getBatchPointCount failure');
+      }
+
+      expect(repo.getBatchCountCount, 1);
+    });
+
+    //----------------------------------------------------------------
+    // markBatchAsUploaded
+    //----------------------------------------------------------------
+    test('markBatchAsUploaded: success', () async {
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      repo.failMarkUploaded = false;
+
+      final res = await repo.markBatchAsUploaded([1, 2], testUser);
+
+      switch (res) {
+        case Ok(value: final updated):
+          expect(updated, 2);
+        case Err(value: final err):
+          fail('Expected Ok, got Err($err)');
+      }
+
+      expect(repo.markUploadedCount, 1);
+      expect(repo.lastMarkUploadedIds, [1, 2]);
+      expect(repo.lastMarkUploadedUserId, testUser);
+
+      final after = await repo.getCurrentBatch(testUser);
+      switch (after) {
+        case Ok(value: final b):
+          expect(b.points, isEmpty);
+        case Err():
+          fail('Expected Ok after upload');
+      }
+    });
+
+    test('markBatchAsUploaded: failure flag returns Err', () async {
+      repo.failMarkUploaded = true;
+      final res = await repo.markBatchAsUploaded([1], testUser);
+
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final err):
+          expect(err, 'Forced markBatchAsUploaded failure');
+      }
+
+      expect(repo.markUploadedCount, 1);
+    });
+
+    //----------------------------------------------------------------
+    // deletePoint
+    //----------------------------------------------------------------
+    test('deletePoint: success', () async {
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      repo.failDeletePoint = false;
+
+      final res = await repo.deletePoint(1, testUser);
+
+      switch (res) {
+        case Ok():
+        // ok
+          break;
+        case Err(value: final e):
+          fail('Expected Ok, got Err($e)');
+      }
+
+      expect(repo.deletePointCount, 1);
+      expect(repo.lastDeletePointId, 1);
+      expect(repo.lastDeletePointUserId, testUser);
+
+      final batch = await repo.getFullBatch(testUser);
+      switch (batch) {
+        case Ok(value: final b):
+          expect(b.points, isEmpty);
+        case Err(value: final e):
+          fail('Expected Ok batch, got Err($e)');
+      }
+    });
+
+    test('deletePoint: not found', () async {
+      final res = await repo.deletePoint(999, testUser);
+
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final e):
+          expect(e, 'Point not found.');
+      }
+    });
+
+    test('deletePoint: failure flag returns Err', () async {
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      repo.failDeletePoint = true;
+
+      final res = await repo.deletePoint(1, testUser);
+
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final e):
+          expect(e, 'Forced deletePoint failure');
+      }
+
+      expect(repo.deletePointCount, 1);
+    });
+
+    //----------------------------------------------------------------
+    // clearBatch
+    //----------------------------------------------------------------
+    test('clearBatch: success', () async {
+      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo.markBatchAsUploaded([1], testUser);
+      repo.failClearBatch = false;
+
+      final res = await repo.clearBatch(testUser);
+
+      switch (res) {
+        case Ok():
+        // ok
+          break;
+        case Err(value: final e):
+          fail('Expected Ok, got Err($e)');
+      }
+
+      expect(repo.clearBatchCount, 1);
+      expect(repo.lastClearBatchUserId, testUser);
+
+      final full = await repo.getFullBatch(testUser);
+      switch (full) {
+        case Ok(value: final b):
+          expect(b.points.length, 1);
+          expect(b.points.first.id, 1);
+          expect(b.points.first.isUploaded, isTrue);
+        case Err(value: final e):
+          fail('Expected Ok, got Err($e)');
+      }
+    });
+
+    test('clearBatch: failure flag returns Err', () async {
+      repo.failClearBatch = true;
+      final res = await repo.clearBatch(testUser);
+
+      switch (res) {
+        case Ok():
+          fail('Expected Err, got Ok');
+        case Err(value: final e):
+          expect(e, 'Forced clearBatch failure');
+      }
+
+      expect(repo.clearBatchCount, 1);
     });
   });
 }

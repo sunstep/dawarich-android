@@ -7,7 +7,7 @@ class DarkTheme {
     // overall backgrounds
     scaffoldBackgroundColor: const Color(0xFF121212),
     cardColor: Colors.black,
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.black,
       elevation: 12,
       shape: RoundedRectangleBorder(

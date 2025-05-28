@@ -4,13 +4,29 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-final class MapPage extends StatelessWidget {
+
+final class MapPage extends StatefulWidget {
 
   const MapPage({super.key});
+
+  @override
+  State<MapPage> createState() => _MapPageState();
+}
+
+class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
+
+  late final AnimatedMapController _animatedMapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animatedMapController = AnimatedMapController(vsync: this);
+  }
 
   Widget _bottomsheetContent(BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
     return Container(
@@ -123,7 +139,6 @@ final class MapPage extends StatelessWidget {
     );
   }
 
-
   Widget _buildBottomSheet(MapViewModel mapModel) {
 
     return DraggableScrollableSheet(
@@ -133,6 +148,22 @@ final class MapPage extends StatelessWidget {
       builder: (BuildContext context, ScrollController scrollController) {
         return _bottomsheetContent(context, mapModel, scrollController);
       },
+    );
+  }
+
+  Widget _mapButton({required IconData icon, required VoidCallback onTap}) {
+    return Material(
+      shape: const CircleBorder(),
+      elevation: 2,
+      color: Colors.white,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, size: 20, color: Colors.black87),
+        ),
+      ),
     );
   }
 
@@ -160,6 +191,7 @@ final class MapPage extends StatelessWidget {
     return Stack(
       children: [
         FlutterMap(
+          mapController: _animatedMapController.mapController,
           options: MapOptions(
             initialCenter: mapModel.currentLocation!,
             initialZoom: 14.0,
@@ -202,7 +234,20 @@ final class MapPage extends StatelessWidget {
             const CurrentLocationLayer(),
           ],
         ),
-        _buildBottomSheet(mapModel)
+        _buildBottomSheet(mapModel),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: Column(
+            children: [
+              _mapButton(icon: Icons.add, onTap: () => mapModel.zoomIn()),
+              const SizedBox(height: 8),
+              _mapButton(icon: Icons.remove, onTap: () => mapModel.zoomOut()),
+              const SizedBox(height: 8),
+              _mapButton(icon: Icons.my_location, onTap: () => mapModel.centerMap()),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -222,9 +267,11 @@ final class MapPage extends StatelessWidget {
     return ChangeNotifierProvider.value(
       value: mapViewModel,
       child: Builder(
-        builder: (context) => _pageBase(context),
+        builder: (context) {
+          context.read<MapViewModel>().setAnimatedMapController(_animatedMapController);
+          return _pageBase(context);
+        },
       ),
     );
   }
-
 }

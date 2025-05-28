@@ -1,5 +1,4 @@
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_settings_dto.dart';
 
 class UserDto {
 

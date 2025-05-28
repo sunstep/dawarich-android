@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dawarich/application/services/location_service.dart';
 import 'package:dawarich/application/services/map_service.dart';
+import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
@@ -10,6 +11,7 @@ class MapViewModel with ChangeNotifier {
 
   final MapService _mapService;
   final LocationService _locationService;
+  AnimatedMapController? animatedMapController;
 
   MapViewModel(this._mapService, this._locationService);
 
@@ -25,6 +27,9 @@ class MapViewModel with ChangeNotifier {
   List<LatLng> _points = [];
   List<LatLng> get points => _points;
 
+  void setAnimatedMapController(AnimatedMapController controller) {
+    animatedMapController ??= controller;
+  }
 
   void setIsLoading(bool value) {
     _isLoading = value;
@@ -173,4 +178,22 @@ class MapViewModel with ChangeNotifier {
     }
   }
 
+  Future<void> zoomIn() async {
+    await animatedMapController?.animatedZoomIn();
+  }
+
+  Future<void> zoomOut() async {
+    await animatedMapController?.animatedZoomOut();
+  }
+
+  void centerMap() {
+    if (currentLocation != null) {
+      animatedMapController?.animateTo(
+        dest: currentLocation!,
+        zoom: animatedMapController?.mapController.camera.zoom,
+        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 500),
+      );
+    }
+  }
 }

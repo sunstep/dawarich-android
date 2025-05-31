@@ -184,7 +184,7 @@ class TrackerPageViewModel extends ChangeNotifier {
     await _getTrackingFrequencyPreference();
     await _getLocationAccuracyPreference();
     await _getMinimumPointDistancePreference();
-    await _getTrackerId();
+    await _getDeviceId();
     await _getTrackRecordingStatus();
 
     setIsRetrievingSettings(false);
@@ -197,7 +197,7 @@ class TrackerPageViewModel extends ChangeNotifier {
     await storeTrackingFrequency();
     await storeLocationAccuracy();
     await storeMinimumPointDistance();
-    await storeTrackerId();
+    await storeDeviceId();
   }
 
   Future<void> _getTrackRecordingStatus() async {
@@ -413,7 +413,7 @@ class TrackerPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> storeTrackerId() async {
+  Future<void> storeDeviceId() async {
     await _trackerPreferencesService.setTrackerId(_trackerId);
   }
 
@@ -429,7 +429,7 @@ class TrackerPageViewModel extends ChangeNotifier {
 
   }
 
-  Future<void> _getTrackerId() async {
+  Future<void> _getDeviceId() async {
 
     String trackerId = await _trackerPreferencesService.getTrackerId();
     setTrackerId(trackerId);

@@ -1,6 +1,6 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_geodata_dto.dart';
 
-class ReceivedApiPointDTO {
+class ApiPointDTO {
   int? id;
   String? batteryStatus;
   dynamic ping;
@@ -25,7 +25,7 @@ class ReceivedApiPointDTO {
   String? country;
   GeodataDTO? geodata;
 
-  ReceivedApiPointDTO(Map<String, dynamic> point) {
+  ApiPointDTO(Map<String, dynamic> point) {
     id = point['id'];
     batteryStatus = point['battery_status'];
     ping = point['ping'];

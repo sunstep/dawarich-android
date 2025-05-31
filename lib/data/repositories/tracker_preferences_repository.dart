@@ -1,8 +1,5 @@
-import 'dart:io';
-import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
 import 'package:dawarich/data/utils/preference_keys/tracker_keys.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

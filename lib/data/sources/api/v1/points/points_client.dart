@@ -20,7 +20,7 @@ final class PointsClient {
     _apiInfo = apiInfo;
   }
 
-  Future<Result<List<ReceivedApiPointDTO>, String>> getPoints(String startDate, String endDate, int perPage, int page) async {
+  Future<Result<List<ApiPointDTO>, String>> getPoints(String startDate, String endDate, int perPage, int page) async {
 
     final Uri uri = Uri.parse(
         '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
@@ -29,7 +29,7 @@ final class PointsClient {
     if (response.statusCode == 200) {
       final List<dynamic> responseData = jsonDecode(response.body);
       return Ok(responseData
-          .map((point) => ReceivedApiPointDTO(point))
+          .map((point) => ApiPointDTO(point))
           .toList());
     }
 
@@ -51,13 +51,13 @@ final class PointsClient {
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying slim points.");
   }
 
-  Future<Result<ReceivedApiPointDTO, String>> getLastPoint() async {
+  Future<Result<ApiPointDTO, String>> getLastPoint() async {
     final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&per_page=1&page=1&order=desc");
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
       final dynamic responseData = jsonDecode(response.body);
-      return Ok(ReceivedApiPointDTO(responseData));
+      return Ok(ApiPointDTO(responseData));
     }
 
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while retrieving last point.");

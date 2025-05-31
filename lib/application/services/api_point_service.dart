@@ -21,10 +21,10 @@ class ApiPointService {
 
   Future<Option<List<ApiPoint>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
 
-    Option<List<ReceivedApiPointDTO>> result = await _pointInterfaces.fetchAllPoints(startDate, endDate, perPage);
+    Option<List<ApiPointDTO>> result = await _pointInterfaces.fetchAllPoints(startDate, endDate, perPage);
 
     switch (result) {
-      case Some(value: List<ReceivedApiPointDTO> points): {
+      case Some(value: List<ApiPointDTO> points): {
         return Some(points
             .map((point) => ApiPoint(point))
             .toList());

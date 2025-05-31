@@ -14,9 +14,9 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   bool shouldDeleteFail       = false;
 
   Map<String, String?> stubHeaders         = {'x-total-pages': '1'};
-  List<ReceivedApiPointDTO> stubPoints     = [];
+  List<ApiPointDTO> stubPoints     = [];
   List<SlimApiPointDTO>    stubSlimPoints  = [];
-  ReceivedApiPointDTO?     stubLastPoint;
+  ApiPointDTO?     stubLastPoint;
 
   int uploadBatchCallCount     = 0;
   DawarichPointBatchDto?       lastUploadedBatch;
@@ -66,7 +66,7 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<ReceivedApiPointDTO>>> fetchAllPoints(DateTime start, DateTime end, int perPage) async {
+  Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime start, DateTime end, int perPage) async {
     fetchAllPointsCallCount++;
     lastFetchPointsStart   = start;
     lastFetchPointsEnd     = end;
@@ -100,7 +100,7 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<ReceivedApiPointDTO>> fetchLastPoint() async {
+  Future<Option<ApiPointDTO>> fetchLastPoint() async {
     fetchLastPointCallCount++;
     if (shouldFetchLastFail || stubLastPoint == null) return const None();
     return Some(stubLastPoint!);

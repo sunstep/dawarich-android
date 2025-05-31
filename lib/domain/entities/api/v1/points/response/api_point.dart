@@ -26,7 +26,7 @@ class ApiPoint {
   String? country;
   Geodata? geodata;
 
-  ApiPoint(ReceivedApiPointDTO dto) {
+  ApiPoint(ApiPointDTO dto) {
     id = dto.id;
     batteryStatus = dto.batteryStatus;
     ping = dto.ping;

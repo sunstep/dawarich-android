@@ -175,7 +175,6 @@ class TrackerPageViewModel extends ChangeNotifier {
     });
 
     // Get last point;
-    await _trackerPreferencesService.initialize();
     await getLastPoint();
     await getPointInBatchCount();
 

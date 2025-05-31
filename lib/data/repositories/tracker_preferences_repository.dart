@@ -1,149 +1,135 @@
 import 'dart:io';
 import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
+import 'package:dawarich/data/utils/preference_keys/tracker_keys.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
 
-  final TrackerPreferencesClient _trackerPreferencesClient;
-  TrackerPreferencesRepository(this._trackerPreferencesClient);
-
   @override
-  Future<void> initialize() async => await _trackerPreferencesClient.initialize();
+  Future<void> setAutomaticTrackingPreference(int userId, bool trueOrFalse) async {
 
-  @override
-  Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {
-
-    await _trackerPreferencesClient.setAutomaticTrackingPreference(trueOrFalse);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool(TrackerKeys.automaticTrackingKey(userId), trueOrFalse);
   }
 
   @override
-  Future<void> setPointsPerBatchPreference(int amount) async {
+  Future<void> setPointsPerBatchPreference(int userId, int amount) async {
 
-    await _trackerPreferencesClient.setPointsPerBatchPreference(amount);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt(TrackerKeys.pointsPerBatchKey(userId), amount);
   }
 
   @override
-  Future<void> setTrackingFrequencyPreference(int seconds) async {
-    await _trackerPreferencesClient.setTrackingFrequencyPreference(seconds);
+  Future<void> setTrackingFrequencyPreference(int userId, int seconds) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt(TrackerKeys.trackingFrequencyKey(userId), seconds);
   }
 
   @override
-  Future<void> setLocationAccuracyPreference(int accuracy) async {
-    await _trackerPreferencesClient.setLocationAccuracyPreference(accuracy);
+  Future<void> setLocationAccuracyPreference(int userId, int accuracy) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt(TrackerKeys.locationAccuracyKey(userId), accuracy);
   }
 
   @override
-  Future<void> setMinimumPointDistancePreference(int meters) async {
-    await _trackerPreferencesClient.setMinimumPointDistancePreference(meters);
+  Future<void> setMinimumPointDistancePreference(int userId, int meters) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt(TrackerKeys.minimumPointDistanceKey(userId), meters);
   }
 
   @override
-  Future<void> setTrackerId(String newId) async {
-    await _trackerPreferencesClient.setTrackerId(newId);
+  Future<void> setTrackerId(int userId, String newId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString(TrackerKeys.trackerIdKey(userId), newId);
   }
 
   @override
-  Future<bool> resetTrackerId() async {
-    return await _trackerPreferencesClient.deleteTrackerId();
+  Future<bool> deleteTrackerId(int userId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.remove(TrackerKeys.trackerIdKey(userId));
   }
 
   @override
-  Future<bool> getAutomaticTrackingPreference() async {
+  Future<Option<bool>> getAutomaticTrackingPreference(int userId) async {
 
-    Option<bool> preferenceResult = await _trackerPreferencesClient.getAutomaticTrackingPreference();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    switch (preferenceResult) {
+    bool? preference = prefs.getBool(TrackerKeys.automaticTrackingKey(userId));
 
-      case Some(value: bool preference): {
-        return preference;
-      }
-
-    // Fall back to this if the user does not have this setting stored yet. Preferences are never stored and fall back to default values until the user manually changes them.
-      case None(): {
-        return false;
-      }
+    if (preference != null) {
+      return Some(preference);
     }
 
+    return const None();
   }
 
   @override
-  Future<int> getPointsPerBatchPreference() async {
+  Future<Option<int>> getPointsPerBatchPreference(int userId) async {
 
-    Option<int> preferenceResult = await _trackerPreferencesClient.getPointsPerBatchPreference();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    switch (preferenceResult) {
+    int? preference = prefs.getInt(TrackerKeys.pointsPerBatchKey(userId));
 
-      case Some(value: int preference): {
-        return preference;
-      }
-
-      case None(): {
-        return 50;
-      }
+    if (preference != null) {
+      return Some(preference);
     }
 
+    return const None();
   }
 
   @override
-  Future<int> getTrackingFrequencyPreference() async {
+  Future<Option<int>> getTrackingFrequencyPreference(int userId) async {
 
-    Option<int> preferenceResult = await _trackerPreferencesClient.getTrackingFrequencyPreference();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    switch (preferenceResult) {
+    int? preference = prefs.getInt(TrackerKeys.trackingFrequencyKey(userId));
 
-      case Some(value: int preference): {
-        return preference;
-      }
-
-      case None(): {
-        return 10;
-      }
+    if (preference != null) {
+      return Some(preference);
     }
 
+    return const None();
   }
 
   @override
-  Future<int> getLocationAccuracyPreference() async {
+  Future<Option<int>> getLocationAccuracyPreference(int userId) async {
 
-    Option<int> preferenceResult = await _trackerPreferencesClient.getLocationAccuracyPreference();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    switch (preferenceResult) {
+    int? preference = prefs.getInt(TrackerKeys.locationAccuracyKey(userId));
 
-      case Some(value: int preference): {
-        return preference;
-      }
-
-      case None(): {
-        return Platform.isIOS ? LocationAccuracy.best.index : LocationAccuracy.high.index;
-      }
+    if (preference != null) {
+      return Some(preference);
     }
+
+    return const None();
   }
 
   @override
-  Future<int> getMinimumPointDistancePreference() async {
+  Future<Option<int>> getMinimumPointDistancePreference(int userId) async {
 
-    Option<int> preferenceResult = await _trackerPreferencesClient.getMinimumPointDistancePreference();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    switch (preferenceResult) {
+    int? preference = prefs.getInt(TrackerKeys.minimumPointDistanceKey(userId));
 
-      case Some(value: int preference): {
-        return preference;
-      }
-
-      case None(): {
-        return 0;
-      }
+    if (preference != null) {
+      return Some(preference);
     }
+
+    return const None();
   }
 
   @override
-  Future<Option<String>> getTrackerId() async {
+  Future<Option<String>> getTrackerId(int userId) async {
 
-    final Option<String> possibleTrackerId = await _trackerPreferencesClient.getTrackerId();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    if (possibleTrackerId case Some(value: String trackerId)) {
+    String? trackerId = prefs.getString(TrackerKeys.trackerIdKey(userId));
+
+    if (trackerId != null) {
       return Some(trackerId);
     }
 

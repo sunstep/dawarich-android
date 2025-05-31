@@ -74,7 +74,7 @@ final class DependencyInjector {
 
 
     getIt.registerLazySingleton<TrackerPreferencesClient>(
-        () => TrackerPreferencesClient(getIt<UserSessionClient>())
+        () => TrackerPreferencesClient()
     );
 
 
@@ -88,7 +88,7 @@ final class DependencyInjector {
     getIt.registerLazySingleton<ILocalPointRepository>(() => LocalPointRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<IStatsRepository>(() => StatsRepository(getIt<StatsClient>()));
     getIt.registerLazySingleton<ITrackRepository>(() => TrackRepository(getIt<SQLiteClient>()));
-    getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository(getIt<TrackerPreferencesClient>()));
+    getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository());
 
 
     // Services
@@ -100,7 +100,7 @@ final class DependencyInjector {
     getIt.registerLazySingleton<MapService>(() => MapService(getIt<ApiPointService>()));
     getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointRepository>()));
     getIt.registerLazySingleton<TrackService>(() => TrackService(getIt<ITrackRepository>(), getIt<IUserSessionRepository>()));
-    getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>(), getIt<IHardwareRepository>()));
+    getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(getIt<ITrackerPreferencesRepository>(), getIt<IHardwareRepository>(), getIt<UserSessionRepository>()));
     getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(getIt<ApiPointService>(), getIt<IUserSessionRepository>(), getIt<ILocalPointRepository>(), getIt<TrackerPreferencesService>(), getIt<ITrackRepository>(), getIt<IHardwareRepository>()));
     // getIt.registerLazySingleton<BackgroundTrackingService>(() => BackgroundTrackingService());
     getIt.registerLazySingleton<PointAutomationService>(() => PointAutomationService(getIt<TrackerPreferencesService>(), getIt<IHardwareRepository>(), getIt<LocalPointService>()));

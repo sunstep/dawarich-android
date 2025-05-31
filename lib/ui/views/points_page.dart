@@ -427,47 +427,51 @@ class _FooterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) {
-    final cs = Theme.of(c).colorScheme;
     final textStyle = Theme.of(c).textTheme.bodyMedium;
-    return Container(
-      // shrink the vertical padding:
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      // remove any bottom margin so it hugs content:
+
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: EdgeInsets.zero,
-      decoration: BoxDecoration(
-        color: cs.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: hasSelection
-          ? Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          ElevatedButton(
-            onPressed: onDelete,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Delete', style: textStyle),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: onRefresh,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
-            child: Text('Refresh', style: textStyle),
-          ),
-        ],
-      )
-          : Row(
-        children: [
-          IconButton(onPressed: onFirst, icon: const Icon(Icons.first_page)),
-          IconButton(onPressed: onBack,  icon: const Icon(Icons.navigate_before)),
-          Text('$currentPage/$totalPages', style: textStyle),
-          IconButton(onPressed: onNext,  icon: const Icon(Icons.navigate_next)),
-          IconButton(onPressed: onLast,  icon: const Icon(Icons.last_page)),
-          const Spacer(),
-          TextButton(
-            onPressed: toggleSort,
-            child: Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: hasSelection
+            ? Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            ElevatedButton(
+              onPressed: onDelete,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Delete', style: textStyle),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton(
+              onPressed: onRefresh,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Refresh', style: textStyle),
+            ),
+          ],
+        )
+            : Row(
+          children: [
+            IconButton(onPressed: onFirst, icon: const Icon(Icons.first_page)),
+            IconButton(onPressed: onBack, icon: const Icon(Icons.navigate_before)),
+            Text('$currentPage/$totalPages', style: textStyle),
+            IconButton(onPressed: onNext, icon: const Icon(Icons.navigate_next)),
+            IconButton(onPressed: onLast, icon: const Icon(Icons.last_page)),
+            const Spacer(),
+            TextButton(
+              onPressed: toggleSort,
+              child: Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
+            ),
+          ],
+        ),
       ),
     );
   }

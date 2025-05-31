@@ -45,14 +45,6 @@ class TrackerPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _currentTrackId = "";
-  String get currentTrackId => _currentTrackId;
-
-  void setCurrentTrackId(String id) {
-    _currentTrackId = id;
-    notifyListeners();
-  }
-
   int _trackPointCount = 0;
   int get trackPointCount => _trackPointCount;
 
@@ -219,7 +211,7 @@ class TrackerPageViewModel extends ChangeNotifier {
     } else {
       Track track = await _trackService.startTracking();
       TrackViewModel trackVm = track.toViewModel();
-      setCurrentTrackId(trackVm.trackId);
+      setCurrentTrack(trackVm);
     }
 
     setIsRecording(!isRecording);

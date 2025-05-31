@@ -407,7 +407,7 @@ class _RecordingSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         if (vm.isRecording)
-          Text('Track ID: ${vm.currentTrackId}', style: Theme.of(context).textTheme.bodySmall),
+          Text('Track ID: ${vm.currentTrack?.trackId}', style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 24),
         ElevatedButton(
           style: ElevatedButton.styleFrom(

@@ -1,7 +1,7 @@
 import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
-import 'package:dawarich/ui/theme/theme_extensions.dart';
+import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:dawarich/ui/views/connect/connect_steps.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

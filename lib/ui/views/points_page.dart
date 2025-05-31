@@ -1,5 +1,5 @@
 import 'package:dawarich/application/startup/dependency_injector.dart';
-import 'package:dawarich/ui/theme/theme_extensions.dart';
+import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:dawarich/ui/widgets/custom_appbar.dart';

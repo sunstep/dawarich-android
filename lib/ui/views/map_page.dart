@@ -1,4 +1,5 @@
 import 'package:dawarich/application/startup/dependency_injector.dart';
+import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:dawarich/ui/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
@@ -31,7 +32,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   Widget _bottomsheetContent(BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).bottomSheetTheme.backgroundColor,
+        gradient: Theme.of(context).pageBackground,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(40.0),
           topRight: Radius.circular(40.0),

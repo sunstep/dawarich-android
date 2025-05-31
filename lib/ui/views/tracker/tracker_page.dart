@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/main.dart';
-import 'package:dawarich/ui/theme/theme_extensions.dart';
+import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 import 'package:flutter/material.dart';
@@ -136,8 +136,9 @@ class LastPointCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm     = context.watch<TrackerPageViewModel>();
     final accent = Theme.of(context).colorScheme.secondary;
-    const white  = Colors.white;
-    const white70= Colors.white70;
+    final theme = Theme.of(context);
+    final white = theme.colorScheme.onSurface;
+    final white70 = white.withValues(alpha: 0.7);
 
     final isExpanded = !vm.hideLastPoint;
 
@@ -146,16 +147,16 @@ class LastPointCard extends StatelessWidget {
       return ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(icon, color: white),
-        title: Text(label, style: const TextStyle(color: white70)),
+        title: Text(label, style: TextStyle(color: white70)),
         trailing: Text(value,
-            style: const TextStyle(color: white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: white, fontWeight: FontWeight.bold)),
       );
     }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Card(
-        color: Colors.black,
+        color: Theme.of(context).cardColor,
         elevation: 16,
         shape:
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -193,7 +194,7 @@ class LastPointCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    const Divider(color: Colors.white30),
+                    Divider(color: Theme.of(context).dividerColor),
                     const SizedBox(height: 16),
 
                     // info rows
@@ -251,7 +252,7 @@ class LastPointCard extends StatelessWidget {
                             )
                                 : Icon(Icons.add_location_alt,
                                 color: accent),
-                            label: const Text('Track Point',
+                            label: Text('Track Point',
                                 style: TextStyle(color: white)),
                             onPressed:
                             vm.isTracking ? null : vm.trackPoint,
@@ -363,7 +364,7 @@ class _SettingsCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Divider(color: Colors.white54),
+                Divider(color: Theme.of(context).dividerColor),
               ],
             ),
 
@@ -388,6 +389,7 @@ class _RecordingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<TrackerPageViewModel>();
+    final theme = Theme.of(context);
     return Column(
       children: [
         Text(
@@ -400,8 +402,10 @@ class _RecordingSection extends StatelessWidget {
         const SizedBox(height: 24),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: vm.isRecording ? Colors.redAccent : Colors.greenAccent,
-            foregroundColor: Colors.black,
+            backgroundColor: vm.isRecording
+                ? theme.colorScheme.error.withValues(alpha: 0.85)
+                : theme.colorScheme.secondary.withValues(alpha: 0.85),
+            foregroundColor: theme.colorScheme.onPrimary,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: vm.toggleRecording,

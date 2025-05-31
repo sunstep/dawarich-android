@@ -96,15 +96,19 @@ class DarkTheme {
       ),
     ),
 
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF1C1C1C),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      elevation: 12,
+    ),
+
     // Icon theme
     iconTheme: const IconThemeData(color: Colors.white70),
 
     // Divider (e.g. in Stepper connectors)
     dividerColor: Colors.white24,
 
-    // Bottom sheets, dialogs, etc.
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Color(0xFF1E1E1E),
-    ),
   );
 }

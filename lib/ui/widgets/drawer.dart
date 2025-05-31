@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/models/local/drawer_viewmodel.dart';
-import 'package:dawarich/ui/theme/theme_extensions.dart';
+import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:provider/provider.dart';
@@ -43,9 +43,13 @@ class CustomDrawer extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     final vm = context.read<DrawerViewModel>();
-    const textColor    = Colors.white;
-    const iconColor    = Colors.white70;
-    const selectedBg   = Colors.white12;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final textColor = theme.colorScheme.onSurface.withValues(alpha: 0.95);
+    final iconColor = theme.colorScheme.onSurface.withValues(alpha: isDark ? 0.7 : 0.65);
+    final selectedBg = Colors.red.withValues(alpha: isDark ? 0.3 : 0.1);
+
     final selectedIcon = Theme.of(context).colorScheme.secondary;
 
     return Column(
@@ -64,7 +68,11 @@ class CustomDrawer extends StatelessWidget {
           ),
         ),
 
-        const Divider(color: Colors.white24, height: 1),
+        Divider(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          thickness: 1,
+          height: 1,
+        ),
 
         Expanded(
           child: ListView(
@@ -139,7 +147,11 @@ class CustomDrawer extends StatelessWidget {
           ),
         ),
 
-        const Divider(color: Colors.white24, height: 1),
+        Divider(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          thickness: 1,
+          height: 1,
+        ),
 
         _tile(
           context,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/main.dart';
+import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
@@ -56,6 +57,11 @@ final class _TrackerPageState extends State<TrackerPage> with WidgetsBindingObse
   void didChangeDependencies() {
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPushNext() {
+    _viewModel.persistPreferences();
   }
 
   @override
@@ -271,7 +277,7 @@ class LastPointCard extends StatelessWidget {
                             icon: const Icon(Icons.view_list),
                             label: const Text('View Batch'),
                             onPressed: () => Navigator.pushNamed(
-                                context, '/batchExplorer'),
+                                context, AppRouter.batchExplorer),
                           ),
                         ),
                       ],

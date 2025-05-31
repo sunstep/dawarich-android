@@ -83,8 +83,7 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.map,
                 label: 'Timeline',
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.map);
+                  Navigator.of(context).popAndPushNamed(AppRouter.map);
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -96,8 +95,7 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.analytics,
                 label: 'Stats',
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.stats);
+                  Navigator.of(context).popAndPushNamed(AppRouter.stats);
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -109,8 +107,7 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.place,
                 label: 'Points',
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.points);
+                  Navigator.of(context).popAndPushNamed(AppRouter.points);
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -122,8 +119,7 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.gps_fixed,
                 label: 'Tracker',
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).pushReplacementNamed(AppRouter.tracker);
+                  Navigator.of(context).popAndPushNamed(AppRouter.tracker);
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -135,8 +131,7 @@ class CustomDrawer extends StatelessWidget {
               //   icon: Icons.settings,
               //   label: 'Settings',
               //   onTap: () {
-              //     Navigator.pop(context);
-              //     Navigator.of(context).pushReplacementNamed(AppRouter.settings);
+              //     Navigator.of(context).popAndPushNamed(AppRouter.settings);
               //   },
               //   textColor: textColor,
               //   iconColor: iconColor,

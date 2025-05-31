@@ -129,7 +129,7 @@ class _PointsBody extends StatelessWidget {
           // ————— results list or skeleton —————
           Expanded(
             child: vm.isLoading
-                ? const SizedBox() // we won't hit here because of the early return
+                ? const SizedBox()
                 : _PointsList(),
           ),
 
@@ -268,6 +268,11 @@ class _FilterCard extends StatelessWidget {
                   onTap: onPickEnd,
                 ),
                 const SizedBox(height: 16),
+                SwitchListTile(
+                  value: vm.showUnprocessed,
+                  onChanged: vm.toggleShowUnprocessed,
+                  title: const Text('Hide unprocessed'),
+                ),
                 ElevatedButton(
                   onPressed: vm.searchPressed,
                   style: ElevatedButton.styleFrom(
@@ -299,6 +304,11 @@ class _FilterCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
+                SwitchListTile(
+                  value: vm.showUnprocessed,
+                  onChanged: vm.toggleShowUnprocessed,
+                  title: const Text('Show unprocessed'),
+                ),
                 ElevatedButton(
                   onPressed: vm.searchPressed,
                   style: ElevatedButton.styleFrom(

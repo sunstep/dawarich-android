@@ -30,7 +30,6 @@ import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
 import 'package:dawarich/data/sources/hardware/connectivity_data_client.dart';
 import 'package:dawarich/data/sources/local/database/sqlite_client.dart';
 import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
-import 'package:dawarich/data/sources/local/shared_preferences/tracker_preferences_client.dart';
 import 'package:dawarich/data/sources/local/database/user_storage_client.dart';
 import 'package:dawarich/data/sources/local/shared_preferences/user_session.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
@@ -71,12 +70,6 @@ final class DependencyInjector {
     getIt.registerLazySingleton<StatsClient>(() => StatsClient(getIt<ApiConfigClient>()));
     getIt.registerLazySingleton<UsersApiClient>(() => UsersApiClient(getIt<ApiConfigClient>()));
     getIt.registerLazySingleton<UserStorageClient>(() => UserStorageClient());
-
-
-    getIt.registerLazySingleton<TrackerPreferencesClient>(
-        () => TrackerPreferencesClient()
-    );
-
 
     // Repositories
     getIt.registerLazySingleton<IApiConfigRepository>(() => ApiConfigRepository(getIt<ApiConfigClient>()));

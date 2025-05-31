@@ -5,16 +5,15 @@ final class LightTheme {
     brightness: Brightness.light,
 
     // overall backgrounds
-    scaffoldBackgroundColor: const Color(0xFFF5F5F5),   // very light grey
+    scaffoldBackgroundColor: const Color(0xFFEDEDED),
     cardColor: Colors.white,
 
-    // primary & accent
     colorScheme: const ColorScheme.light(
-      primary: Colors.black,            // main “ink” color (titles, icons)
-      onPrimary: Colors.white,          // for icons/text on a primary-colored background
-      secondary: Color(0xFF1E88E5),     // a richer blue accent
+      primary: Colors.black,
+      onPrimary: Colors.white,
+      secondary: Color(0xFF1E88E5),
       onSecondary: Colors.white,
-      surface: Colors.white,
+      surface: Color(0xFFF8F8F8),       // slightly lifted from scaffold
       onSurface: Colors.black,
       error: Colors.redAccent,
       onError: Colors.white,
@@ -42,7 +41,7 @@ final class LightTheme {
     // Buttons
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF1E88E5), // same as secondary
+        backgroundColor: const Color(0xFF1E88E5),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -59,7 +58,7 @@ final class LightTheme {
     // Input fields
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.grey.shade100,      // very light input background
+      fillColor: Colors.grey.shade100,
       contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: const OutlineInputBorder(
@@ -83,7 +82,16 @@ final class LightTheme {
     // Icons (including our cloud/avatar)
     iconTheme: const IconThemeData(color: Colors.black87),
 
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFFF2F2F2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      elevation: 12,
+    ),
+
+
     // Dividers inside the stepper, etc.
-    dividerColor: Colors.grey.shade300,
+    dividerColor: Colors.grey.shade900,
   );
 }

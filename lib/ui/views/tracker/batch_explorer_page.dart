@@ -1,7 +1,7 @@
 import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/ui/models/local/batch_explorer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.dart';
-import 'package:dawarich/ui/theme/theme_extensions.dart';
+import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

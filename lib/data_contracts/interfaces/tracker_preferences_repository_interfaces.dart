@@ -2,20 +2,18 @@ import 'package:option_result/option_result.dart';
 
 abstract interface class ITrackerPreferencesRepository {
 
-  Future<void> initialize();
+  Future<void> setAutomaticTrackingPreference(int userId, bool trueOrFalse);
+  Future<void> setPointsPerBatchPreference(int userId, int amount);
+  Future<void> setTrackingFrequencyPreference(int userId, int seconds);
+  Future<void> setLocationAccuracyPreference(int userId, int accuracy);
+  Future<void> setMinimumPointDistancePreference(int userId, int meters);
+  Future<void> setTrackerId(int userId, String newId);
+  Future<bool> deleteTrackerId(int userId);
 
-  Future<void> setAutomaticTrackingPreference(bool trueOrFalse);
-  Future<void> setPointsPerBatchPreference(int amount);
-  Future<void> setTrackingFrequencyPreference(int seconds);
-  Future<void> setLocationAccuracyPreference(int accuracy);
-  Future<void> setMinimumPointDistancePreference(int meters);
-  Future<void> setTrackerId(String newId);
-  Future<bool> resetTrackerId();
-
-  Future<bool> getAutomaticTrackingPreference();
-  Future<int> getPointsPerBatchPreference();
-  Future<int> getTrackingFrequencyPreference();
-  Future<int> getLocationAccuracyPreference();
-  Future<int> getMinimumPointDistancePreference();
-  Future<Option<String>> getTrackerId();
+  Future<Option<bool>> getAutomaticTrackingPreference(int userId);
+  Future<Option<int>> getPointsPerBatchPreference(int userId);
+  Future<Option<int>> getTrackingFrequencyPreference(int userId);
+  Future<Option<int>> getLocationAccuracyPreference(int userId);
+  Future<Option<int>> getMinimumPointDistancePreference(int userId);
+  Future<Option<String>> getTrackerId(int userId);
 }

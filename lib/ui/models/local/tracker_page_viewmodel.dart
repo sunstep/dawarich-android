@@ -84,6 +84,11 @@ class TrackerPageViewModel extends ChangeNotifier {
   //   notifyListeners();
   // }
 
+  void setCurrentPage(int index) {
+    _currentPage = index;
+    notifyListeners();
+  }
+
   void nextPage() {
     if (_currentPage < 2) {
       _currentPage++;
@@ -140,7 +145,7 @@ class TrackerPageViewModel extends ChangeNotifier {
   String _trackerId = "";
   String get trackerId => _trackerId;
 
-  final TextEditingController trackerIdController = TextEditingController();
+  final TextEditingController deviceIdController = TextEditingController();
 
 
   final LocalPointService _pointService;
@@ -412,7 +417,7 @@ class TrackerPageViewModel extends ChangeNotifier {
     if (reset) {
       String trackerId = await _trackerPreferencesService.getTrackerId();
       setTrackerId(trackerId);
-      trackerIdController.text = trackerId;
+      deviceIdController.text = trackerId;
     }
 
   }
@@ -421,7 +426,7 @@ class TrackerPageViewModel extends ChangeNotifier {
 
     String trackerId = await _trackerPreferencesService.getTrackerId();
     setTrackerId(trackerId);
-    trackerIdController.text = trackerId;
+    deviceIdController.text = trackerId;
   }
 
   List<Map<String, dynamic>> get accuracyOptions {

@@ -122,6 +122,7 @@ class _TrackerBody extends StatelessWidget {
         children: [
           LastPointCard(),
           SizedBox(height: 32),
+
           _SettingsCard(),
         ],
       ),
@@ -154,7 +155,7 @@ class LastPointCard extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Card(
         color: Theme.of(context).cardColor,
         elevation: 16,
@@ -172,11 +173,11 @@ class LastPointCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: Center(child: Text(
                         'Last Point',
                         style: Theme.of(context).textTheme.headlineSmall!
                             .copyWith(color: white, fontWeight: FontWeight.bold),
-                      ),
+                      )),
                     ),
                     Icon(
                       isExpanded ? Icons.expand_less : Icons.expand_more,
@@ -290,6 +291,7 @@ class LastPointCard extends StatelessWidget {
     );
   }
 }
+
 /// A little “info tile” with an icon + multi-line value.
 class _InfoTile extends StatelessWidget {
   final IconData icon;
@@ -340,45 +342,46 @@ class _SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<TrackerPageViewModel>();
-    return Card(
-      elevation: 12,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ——— UNIFIED HEADER ———
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  vm.pageTitle,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: vm.nextPage,
-                    child: Text(vm.toggleButtonText),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Divider(color: Theme.of(context).dividerColor),
-              ],
-            ),
+    final theme = Theme.of(context);
 
-            const SizedBox(height: 16),
+    return DefaultTabController(
+      length: 3,
+      initialIndex: vm.currentPage,
+      child: Card(
+        elevation: 12,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            children: [
+              // ——— Tab Navigation Header ———
+              TabBar(
+                labelColor: theme.colorScheme.primary,
+                unselectedLabelColor: theme.textTheme.bodyMedium!.color,
+                indicatorColor: theme.colorScheme.primary,
+                onTap: vm.setCurrentPage,
+                tabs: const [
+                  Tab(text: 'Recording'),
+                  Tab(text: 'Basic'),
+                  Tab(text: 'Advanced'),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-            // ——— BODY CONTENT ———
-            if (vm.currentPage == 0) ...[
-              _RecordingSection(),
-            ] else if (vm.currentPage == 1) ...[
-              _BasicSettingsSection(),
-            ] else ...[
-              _AdvancedSettingsSection(),
+              // ——— Tab Content ———
+              SizedBox(
+                height: 400, // You can make this dynamic or wrap content
+                child: TabBarView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  children:  [
+                    _RecordingSection(),
+                    _BasicSettingsSection(),
+                    _AdvancedSettingsSection(),
+                  ],
+                ),
+              ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -420,30 +423,69 @@ class _BasicSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<TrackerPageViewModel>();
+    final theme = Theme.of(context);
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            const Icon(Icons.settings_remote, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'General',
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         SwitchListTile(
           title: const Text('Automatic Tracking'),
           value: vm.isTrackingAutomatically,
           onChanged: vm.toggleAutomaticTracking,
         ),
-        const SizedBox(height: 16),
+
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            const Icon(Icons.layers, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Batching',
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Text('Points per batch: ${vm.maxPointsPerBatch}'),
         Slider(
           value: vm.maxPointsPerBatch.toDouble(),
           min: 50,
           max: 1000,
           divisions: 19,
+          label: '${vm.maxPointsPerBatch}',
           onChanged: (v) => vm.setMaxPointsPerBatch(v.toInt()),
         ),
-        const SizedBox(height: 16),
+
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            const Icon(Icons.timer, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Frequency',
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Text('Tracking frequency: ${vm.trackingFrequency}s'),
         Slider(
           value: vm.trackingFrequency.toDouble(),
           min: 5,
           max: 60,
           divisions: 11,
+          label: '${vm.trackingFrequency}s',
           onChanged: (v) => vm.setTrackingFrequency(v.toInt()),
         ),
       ],
@@ -455,10 +497,22 @@ class _AdvancedSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<TrackerPageViewModel>();
+    final theme = Theme.of(context);
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Location accuracy'),
+        Row(
+          children: [
+            const Icon(Icons.precision_manufacturing, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Accuracy',
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         DropdownButton<LocationAccuracy>(
           value: vm.locationAccuracy,
           onChanged: (v) => v != null ? vm.setLocationAccuracy(v) : null,
@@ -469,23 +523,48 @@ class _AdvancedSettingsSection extends StatelessWidget {
             );
           }).toList(),
         ),
+
         const SizedBox(height: 24),
+        Row(
+          children: [
+            const Icon(Icons.social_distance, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Distance Threshold',
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Text('Minimum distance (m): ${vm.minimumPointDistance}'),
         Slider(
           value: vm.minimumPointDistance.toDouble(),
           min: 0,
           max: 100,
           divisions: 100,
+          label: '${vm.minimumPointDistance}m',
           onChanged: (v) => vm.setMinimumPointDistance(v.toInt()),
         ),
+
         const SizedBox(height: 24),
-        const Text('Device ID'),
+        Row(
+          children: [
+            const Icon(Icons.perm_device_information, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Device ID',
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         TextField(
-          controller: vm.trackerIdController,
+          controller: vm.deviceIdController,
           decoration: InputDecoration(
             suffixIcon: IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: vm.resetTrackerId,
+              tooltip: 'Reset ID',
             ),
           ),
           onChanged: vm.setTrackerId,

@@ -7,10 +7,4 @@ class ApiPointGeometryDTO {
     coordinates = json['coordinates'].cast<double>();
   }
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data =  <String, dynamic>{};
-    data['type'] = type;
-    data['coordinates'] = coordinates;
-    return data;
-  }
 }

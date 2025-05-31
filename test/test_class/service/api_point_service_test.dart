@@ -12,12 +12,12 @@ void main() {
     repo = ApiPointRepositoryMock()
       ..stubHeaders      = {'x-total-pages': '3'}
       ..stubPoints       = [
-        ReceivedApiPointDTO({
+        ApiPointDTO({
           'latitude': '10.0',
           'longitude': '20.0',
           'timestamp': 111,
         }),
-        ReceivedApiPointDTO({
+        ApiPointDTO({
           'latitude': '30.0',
           'longitude': '40.0',
           'timestamp': 222,
@@ -35,7 +35,7 @@ void main() {
           'timestamp': 444,
         }),
       ]
-      ..stubLastPoint    = ReceivedApiPointDTO({
+      ..stubLastPoint    = ApiPointDTO({
         'latitude': '55.5',
         'longitude': '66.6',
         'timestamp': 555,

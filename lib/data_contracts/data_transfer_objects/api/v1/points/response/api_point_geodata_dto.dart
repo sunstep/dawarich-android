@@ -18,15 +18,4 @@ class GeodataDTO {
         : null;
   }
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data =  <String, dynamic>{};
-    data['type'] = type;
-    if (geometry != null) {
-      data['geometry'] = geometry!.toJson();
-    }
-    if (properties != null) {
-      data['properties'] = properties!.toJson();
-    }
-    return data;
-  }
 }

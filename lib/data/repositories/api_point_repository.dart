@@ -34,7 +34,7 @@ final class ApiPointRepository implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<ReceivedApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
+  Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
 
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
@@ -45,18 +45,18 @@ final class ApiPointRepository implements IApiPointRepository {
 
       case Ok(value: Map<String, String?> headers): {
         int pages = int.parse(headers['x-total-pages']!);
-        final List<ReceivedApiPointDTO> allPoints = [];
+        final List<ApiPointDTO> allPoints = [];
 
-        final List<Future<Result<List<ReceivedApiPointDTO>, String>>> responses = [];
+        final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
         for (int page = 1; page <= pages; page++) {
           responses.add(_pointsClient.getPoints(startDateString, endDateString, perPage, page));
         }
 
-        final List<Result<List<ReceivedApiPointDTO>, String>> fetchResults = await Future.wait(responses);
-        for (final Result<List<ReceivedApiPointDTO>, String> fetchResult in fetchResults) {
+        final List<Result<List<ApiPointDTO>, String>> fetchResults = await Future.wait(responses);
+        for (final Result<List<ApiPointDTO>, String> fetchResult in fetchResults) {
 
           switch (fetchResult){
-            case Ok(value: List<ReceivedApiPointDTO> page): {
+            case Ok(value: List<ApiPointDTO> page): {
               allPoints.addAll(page);
             }
             case Err(value: String error): {
@@ -145,13 +145,13 @@ final class ApiPointRepository implements IApiPointRepository {
   }
 
   @override
-  Future<Option<ReceivedApiPointDTO>> fetchLastPoint() async {
+  Future<Option<ApiPointDTO>> fetchLastPoint() async {
 
-    Result<ReceivedApiPointDTO, String> result  = await _pointsClient.getLastPoint();
+    Result<ApiPointDTO, String> result  = await _pointsClient.getLastPoint();
 
     switch (result) {
 
-      case Ok(value: ReceivedApiPointDTO dto): return Some(dto);
+      case Ok(value: ApiPointDTO dto): return Some(dto);
       case Err(value: String error): {
         debugPrint("Failed to fetch last point: $error");
         return const None();

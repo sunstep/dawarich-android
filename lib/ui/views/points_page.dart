@@ -395,7 +395,7 @@ class _PointsList extends StatelessWidget {
             onChanged: (v) => vm.toggleSelection(idx, v),
             title: Text(fmt.format(
                 DateTime.fromMillisecondsSinceEpoch(p.timestamp! * 1000))),
-            subtitle: Text('${p.latitude}, ${p.longitude}'),
+            subtitle: Text('${p.geodata?.geometry?.coordinates?[0].toString()}, ${p.geodata?.geometry?.coordinates?[1].toString()}'),
             controlAffinity: ListTileControlAffinity.leading,
           ),
         );

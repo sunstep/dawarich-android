@@ -5,7 +5,7 @@ import 'package:dawarich/ui/models/api/v1/stats/response/stats_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
-class StatsPageViewModel extends ChangeNotifier {
+final class StatsPageViewModel extends ChangeNotifier {
 
   final StatsService _statsService;
   StatsPageViewModel(this._statsService);
@@ -34,7 +34,6 @@ class StatsPageViewModel extends ChangeNotifier {
 
   Future<void> refreshStats() async {
 
-
     setIsLoading(true);
     clearStats();
 
@@ -47,7 +46,7 @@ class StatsPageViewModel extends ChangeNotifier {
 
     switch (result) {
       case Some(value: Stats stats): {
-        setStats(StatsViewModel.fromEntity(stats));
+        setStats(StatsViewModel.fromDomain(stats));
       }
 
       case None(): {

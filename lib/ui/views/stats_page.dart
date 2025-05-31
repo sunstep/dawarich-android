@@ -1,4 +1,5 @@
 import 'package:dawarich/application/startup/dependency_injector.dart';
+import 'package:dawarich/ui/models/api/v1/stats/response/stats_viewmodel.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
 import 'package:dawarich/ui/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
@@ -177,13 +178,13 @@ class StatsPage extends StatelessWidget {
   }
 
   Widget _buildBreakdownGrid(BuildContext context, StatsPageViewModel vm) {
-    final stats = vm.stats!;
-    final tiles = [
-      _StatTile(label: 'Countries', value: '${stats.totalCountries}', icon: Icons.public, color: Colors.purple),
-      _StatTile(label: 'Cities',    value: '${stats.totalCities}',   icon: Icons.location_city, color: Colors.green),
-      _StatTile(label: 'Points',    value: '${stats.totalPoints}',   icon: Icons.place,        color: Colors.pink),
-      _StatTile(label: 'Geo-coded', value: '${stats.totalReverseGeocodedPoints}', icon: Icons.map, color: Colors.orange),
-      _StatTile(label: 'Distance',  value: '${stats.totalDistance} km', icon: Icons.directions_walk, color: Colors.blue),
+    final StatsViewModel stats = vm.stats!;
+    final List<_StatTile> tiles = [
+      _StatTile(label: 'Countries', value: stats.totalCountries(context), icon: Icons.public, color: Colors.purple),
+      _StatTile(label: 'Cities',    value: stats.totalCities(context),   icon: Icons.location_city, color: Colors.green),
+      _StatTile(label: 'Points',    value: stats.totalPoints(context),   icon: Icons.place,        color: Colors.pink),
+      _StatTile(label: 'Geo-coded', value: stats.totalReverseGeocodedPoints(context), icon: Icons.map, color: Colors.orange),
+      _StatTile(label: 'Distance',  value: '${stats.totalDistance(context)} km', icon: Icons.directions_walk, color: Colors.blue),
     ];
 
     return GridView.builder(

@@ -1,6 +1,6 @@
-import 'package:dawarich/data/repositories/user_session_repository.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
@@ -8,7 +8,7 @@ class TrackerPreferencesService {
 
   final ITrackerPreferencesRepository _trackerPreferencesRepository;
   final IHardwareRepository _hardwareRepository;
-  final UserSessionRepository _user;
+  final IUserSessionRepository _user;
   TrackerPreferencesService(this._trackerPreferencesRepository, this._hardwareRepository, this._user);
 
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {

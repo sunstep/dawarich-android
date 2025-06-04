@@ -1,10 +1,17 @@
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
+import 'package:flutter/foundation.dart';
+import 'package:option_result/option_result.dart';
 
-class ConnectService {
+final class ConnectService {
 
   final IConnectRepository _connectRepository;
+  final IUserStorageRepository _userStorageRepository;
+  final IUserSessionRepository _userSession;
 
-  ConnectService(this._connectRepository);
+  ConnectService(this._connectRepository, this._userStorageRepository, this._userSession);
 
   Future<bool> testHost(String host) async {
 
@@ -18,12 +25,24 @@ class ConnectService {
     return _connectRepository.testHost(fullUrl);
   }
 
-  Future<bool> tryApiKey(String apiKey) async {
+  Future<bool> loginApiKey(String apiKey) async {
 
     apiKey = apiKey.trim();
-    bool success = await _connectRepository.tryApiKey(apiKey);
+    Result<UserDto, String> loginResult = await _connectRepository.loginApiKey(apiKey);
 
-    return success;
+    if (loginResult case Ok(value: UserDto userDto)) {
+      final int userId = await _userStorageRepository.storeUser(userDto);
+      await _userSession.setCurrentUserId(userId);
+      return true;
+    }
+
+    final String error = loginResult.unwrapErr();
+
+    if (kDebugMode) {
+      debugPrint("[DEBUG] Login with API key failed: $error");
+    }
+
+    return false;
   }
 
 

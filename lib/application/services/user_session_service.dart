@@ -6,7 +6,6 @@ class UserSessionService {
   final IUserSessionRepository _sessionRepository;
   UserSessionService(this._sessionRepository);
 
-  bool get isLoggedIn => _sessionRepository.isLoggedIn;
 
   Future<int> getCurrentUserId() async {
 
@@ -15,7 +14,7 @@ class UserSessionService {
 
   Future<void> storeCurrentUserId(int userId) async {
 
-    await _sessionRepository.storeCurrentUserId(userId);
+    await _sessionRepository.setCurrentUserId(userId);
   }
 
   Future<void> clearCurrentUserId() async {

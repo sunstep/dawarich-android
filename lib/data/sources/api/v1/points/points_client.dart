@@ -1,23 +1,45 @@
-import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 import 'package:http/http.dart' as http;
 import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
 final class PointsClient {
 
-  final ApiConfigClient _apiConfig;
+  final IApiConfigRepository _apiConfig;
   late ApiConfigDTO _apiInfo;
 
-  PointsClient(this._apiConfig){
+  PointsClient(this._apiConfig) {
+
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
-    if (!apiInfo.isConfigured()) {
-      throw StateError("Cannot query points without a configured endpoint");
+    if (apiInfo == null || !apiInfo.isComplete) {
+      throw Exception("Cannot approach API without a complete api config");
     }
+
     _apiInfo = apiInfo;
+  }
+
+  Future<Result<(), String>> post(DawarichPointBatchDto batch) async {
+
+    final Uri uri = Uri.parse(
+      "${_apiInfo.host}/api/v1/points&api_key=${_apiInfo.apiKey}"
+    );
+
+    final String body = jsonEncode(batch);
+
+    final http.Response response = await http.post(uri, body: body);
+
+    if (response.statusCode == 201) {
+      final dynamic _ = jsonDecode(response.body);
+
+      return const Ok(());
+    }
+
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while uploading point batch.");
   }
 
   Future<Result<List<ApiPointDTO>, String>> getPoints(String startDate, String endDate, int perPage, int page) async {

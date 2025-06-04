@@ -1,25 +1,26 @@
 import 'dart:convert';
 
-import 'package:dawarich/data/sources/local/secure_storage/api_config_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 import 'package:http/http.dart';
 import 'package:option_result/option_result.dart';
 
 final class UsersApiClient {
 
-  ApiConfigClient _apiConfigClient;
+  final IApiConfigRepository _apiConfig;
   late ApiConfigDTO _apiInfo;
 
-  UsersApiClient(this._apiConfigClient);
+  UsersApiClient(this._apiConfig){
+    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
-  void setApiConfigClient(ApiConfigClient client) {
-    _apiConfigClient = client;
+    if (apiInfo == null || !apiInfo.isComplete) {
+      throw Exception("[UsersClient] Cannot approach API without a complete configuration");
+    }
+    _apiInfo = apiInfo;
   }
 
   Future<Result<UserDto, String>> getUser() async {
-
-    _apiInfo = _apiConfigClient.getApiConfig();
 
     final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/users/me");
     Map<String, String> headers = {

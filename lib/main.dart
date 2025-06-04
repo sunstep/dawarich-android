@@ -1,8 +1,8 @@
 import 'package:dawarich/application/startup/startup_service.dart';
+import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:dawarich/ui/theme/dark_theme.dart';
 import 'package:dawarich/ui/theme/light_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/ui/routing/app_router.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 

@@ -5,7 +5,6 @@ import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 
 final class SplashPage extends StatelessWidget {
-
   const SplashPage({super.key});
 
   @override
@@ -15,24 +14,47 @@ final class SplashPage extends StatelessWidget {
       child: Consumer<SplashViewModel>(
         builder: (context, viewModel, child) {
           return FutureBuilder<bool>(
-            future: viewModel.checkLoginStatusAsync(),
-            builder: (context, snapshot) {
+            future: viewModel.needsMigration(),
 
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+            builder: (context, migrationSnapshot) {
+              if (migrationSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
               }
 
-              if (snapshot.hasData) {
-                final bool isLoggedIn = snapshot.data!;
+              final bool migrateNeeded = migrationSnapshot.data ?? false;
+              if (migrateNeeded) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    isLoggedIn ? AppRouter.map : AppRouter.connect,
-                        (route) => false,
-                  );
+                  Navigator.of(context).pushReplacementNamed(AppRouter.migration);
                 });
+                return const SizedBox();
               }
 
-              return const SizedBox();
+              return FutureBuilder<bool>(
+                future: viewModel.checkLoginStatusAsync(),
+                builder: (context, loginSnapshot) {
+                  // While loginCheck is in progress, show a spinner.
+                  if (loginSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  // If loginSnapshot has an error or data == false, treat as “not logged in.”
+                  final bool isLoggedIn =
+                  (loginSnapshot.hasData && loginSnapshot.data == true);
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      isLoggedIn ? AppRouter.map : AppRouter.connect,
+                          (route) => false,
+                    );
+                  });
+
+                  return const SizedBox();
+                },
+              );
             },
           );
         },

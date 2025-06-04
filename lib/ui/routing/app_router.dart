@@ -1,3 +1,4 @@
+import 'package:dawarich/ui/views/migration/migration_page.dart';
 import 'package:dawarich/ui/views/tracker/batch_explorer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/ui/views/splash_page.dart';
@@ -13,6 +14,7 @@ import 'package:dawarich/ui/views/settings_page.dart';
 final class AppRouter {
 
   static const String splash = '/splash';
+  static const String migration = '/migration';
   static const String connect = '/connect';
   static const String map = '/map';
   static const String stats = '/stats';
@@ -28,6 +30,9 @@ final class AppRouter {
     switch (route.name) {
       case splash: {
         return MaterialPageRoute(builder: (_) => const SplashPage());
+      }
+      case migration: {
+        return MaterialPageRoute(builder: (_) => const MigrationPage());
       }
       case connect: {
         return MaterialPageRoute(builder: (_) => const ConnectPage());

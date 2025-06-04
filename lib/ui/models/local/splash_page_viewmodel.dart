@@ -1,22 +1,27 @@
 import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:dawarich/application/services/user_session_service.dart';
+import 'package:dawarich/data/drift/database/sqlite_client.dart';
 import 'package:flutter/foundation.dart';
 
-class SplashViewModel with ChangeNotifier {
+final class SplashViewModel with ChangeNotifier {
 
   final UserSessionService _sessionService;
   final ApiConfigService _apiService;
+  final SQLiteClient _sqLiteClient;
 
-  SplashViewModel(this._sessionService, this._apiService);
+  SplashViewModel(this._sessionService, this._apiService, this._sqLiteClient);
+
+  Future<bool> needsMigration() async {
+    final version = await _sqLiteClient.getUserVersion();
+    await _sqLiteClient.close();
+    return version < 2;
+  }
 
   Future<bool> checkLoginStatusAsync() async {
 
-    await _sessionService.getCurrentUserId();
-    if (_sessionService.isLoggedIn) {
-      await _apiService.initialize();
-    }
+    final int userId = await _sessionService.getCurrentUserId();
 
-    return _sessionService.isLoggedIn;
+    return userId > 0;
   }
 
 

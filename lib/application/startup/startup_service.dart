@@ -2,9 +2,9 @@ import 'package:dawarich/application/startup/dependency_injector.dart';
 
 final class StartupService {
 
-  static void initializeApp() {
+  static Future<void> initializeApp() async {
 
-    DependencyInjector.injectDependencies();
+    await DependencyInjector.injectDependencies();
     // BackgroundTrackingService.();
   }
 

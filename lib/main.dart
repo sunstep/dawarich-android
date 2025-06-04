@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  StartupService.initializeApp();
+  await StartupService.initializeApp();
   runApp(const AppBase());
 }
 

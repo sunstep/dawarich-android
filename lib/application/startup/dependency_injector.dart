@@ -52,7 +52,8 @@ final GetIt getIt = GetIt.instance;
 
 final class DependencyInjector {
 
-  static void injectDependencies() {
+  static Future<void> injectDependencies() async {
+
     // Sources
     getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
     getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
@@ -69,6 +70,8 @@ final class DependencyInjector {
       await repo.initialize();
       return repo;
     });
+
+    await getIt.isReady<IApiConfigRepository>();
 
     getIt.registerLazySingleton<IUserSessionRepository>(() => UserSessionRepository());
     getIt.registerLazySingleton<IUserStorageRepository>(() => UserStorageRepository(getIt<SQLiteClient>()));
@@ -142,6 +145,7 @@ final class DependencyInjector {
       final DrawerViewModel viewModel = DrawerViewModel(getIt<UserSessionService>(), getIt<ApiConfigService>());
       return viewModel;
     });
+
   }
 
 

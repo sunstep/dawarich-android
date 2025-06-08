@@ -1,10 +1,10 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point_geodata.dart';
 
-class ApiPoint {
+final class ApiPoint {
   int? id;
   String? batteryStatus;
-  dynamic ping;
+  int? ping;
   int? battery;
   String? trackerId;
   String? topic;
@@ -19,12 +19,16 @@ class ApiPoint {
   int? accuracy;
   int? timestamp;
   String? latitude;
-  dynamic mode;
-  dynamic inrids;
-  dynamic inRegions;
+  int? mode;
+  String? rawData;
+  String? importId;
   String? city;
   String? country;
+  String? createdAt;
+  String? updatedAt;
+  int? userId;
   Geodata? geodata;
+  int? visitId;
 
   ApiPoint(ApiPointDTO dto) {
     id = dto.id;
@@ -45,41 +49,15 @@ class ApiPoint {
     timestamp = dto.timestamp;
     latitude = dto.latitude;
     mode = dto.mode;
-    inrids = dto.inrids;
-    inRegions = dto.inRegions;
+    rawData = dto.rawData;
+    importId = dto.importId;
     city = dto.city;
     country = dto.country;
+    createdAt = dto.createdAt;
+    updatedAt = dto.updatedAt;
+    userId = dto.userId;
     geodata = dto.geodata != null ? Geodata(dto.geodata!) : null;
+    visitId = dto.visitId;
   }
 
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['id'] = id;
-    data['battery_status'] = batteryStatus;
-    data['ping'] = ping;
-    data['battery'] = battery;
-    data['tracker_id'] = trackerId;
-    data['topic'] = topic;
-    data['altitude'] = altitude;
-    data['longitude'] = longitude;
-    data['velocity'] = velocity;
-    data['trigger'] = trigger;
-    data['bssid'] = bssid;
-    data['ssid'] = ssid;
-    data['connection'] = connection;
-    data['vertical_accuracy'] = verticalAccuracy;
-    data['accuracy'] = accuracy;
-    data['timestamp'] = timestamp;
-    data['latitude'] = latitude;
-    data['mode'] = mode;
-    data['inrids'] = inrids;
-    data['in_regions'] = inRegions;
-    data['city'] = city;
-    data['country'] = country;
-    if (geodata != null) {
-      data['geodata'] = geodata!.toJson();
-    }
-    return data;
-  }
 }

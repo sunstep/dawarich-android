@@ -12,7 +12,6 @@ import 'package:dawarich/ui/views/tracker/tracker_page.dart';
 import 'package:dawarich/ui/views/imports_page.dart';
 import 'package:dawarich/ui/views/exports_page.dart';
 import 'package:dawarich/ui/views/settings_page.dart';
-import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 
 final class AppRouter {

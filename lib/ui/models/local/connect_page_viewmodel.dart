@@ -5,8 +5,6 @@ final class ConnectViewModel with ChangeNotifier {
   final ConnectService _connectService;
   ConnectViewModel(this._connectService);
 
-  final GlobalKey<FormState> _hostFormKey = GlobalKey<FormState>();
-  final GlobalKey<FormState> _apiKeyFormKey  = GlobalKey<FormState>();
   // final GlobalKey _emailController = TextEditingController();
   // final GlobalKey _passwordController = TextEditingController();
 
@@ -25,9 +23,6 @@ final class ConnectViewModel with ChangeNotifier {
 
   // Public getters
 
-  GlobalKey<FormState> get hostFormKey => _hostFormKey;
-  GlobalKey<FormState> get apiFormKey => _apiKeyFormKey;
-
   TextEditingController get hostController => _hostController;
   TextEditingController get apiKeyController => _apiKeyController;
 
@@ -40,8 +35,6 @@ final class ConnectViewModel with ChangeNotifier {
   bool get apiKeyVisible => _apiKeyVisible;
   String? get snackbarMessage => _snackbarMessage;
   String? get errorMessage => _errorMessage;
-
-
 
   /// Verifies connectivity to the given [host].
   Future<bool> testHost(String host) async {

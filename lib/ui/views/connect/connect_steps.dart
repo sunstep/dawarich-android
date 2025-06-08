@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ServerStepWidget extends StatelessWidget {
-  const ServerStepWidget({super.key});
+  final GlobalKey<FormState> formKey;
+  const ServerStepWidget({required this.formKey, super.key});
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ConnectViewModel>();
     return Form(
-      key: vm.hostFormKey,
+      key: formKey,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Column(
@@ -43,13 +44,15 @@ class ServerStepWidget extends StatelessWidget {
 }
 
 class LoginStepWidget extends StatelessWidget {
-  const LoginStepWidget({super.key});
+
+  final GlobalKey<FormState> formKey;
+  const LoginStepWidget({required this.formKey, super.key});
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ConnectViewModel>();
     return Form(
-      key: vm.apiFormKey,
+      key: formKey,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Column(

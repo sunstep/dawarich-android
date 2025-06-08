@@ -12,7 +12,7 @@ final class ConnectPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => getIt<ConnectViewModel>(),
+      create: (context) => getIt<ConnectViewModel>(),
       child: Container(
         decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
         child: const Scaffold(
@@ -29,8 +29,18 @@ final class ConnectPage extends StatelessWidget {
   }
 }
 
-final class _ConnectFormCard extends StatelessWidget {
+final class _ConnectFormCard extends StatefulWidget {
+
   const _ConnectFormCard();
+
+  @override
+  State<_ConnectFormCard> createState() => _ConnectFormCardState();
+}
+
+class _ConnectFormCardState extends State<_ConnectFormCard> {
+
+  final _hostFormKey = GlobalKey<FormState>();
+  final _apiFormKey  = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +70,7 @@ final class _ConnectFormCard extends StatelessWidget {
                   state: vm.currentStep > 0
                       ? StepState.complete
                       : StepState.indexed,
-                  content: const ServerStepWidget(),
+                  content: ServerStepWidget(formKey: _hostFormKey,),
                 ),
                 Step(
                   title: const Text('Login'),
@@ -68,7 +78,7 @@ final class _ConnectFormCard extends StatelessWidget {
                   state: vm.currentStep > 1
                       ? StepState.complete
                       : StepState.indexed,
-                  content: const LoginStepWidget(),
+                  content: LoginStepWidget(formKey: _apiFormKey),
                 ),
               ],
             ),
@@ -85,7 +95,7 @@ final class _ConnectFormCard extends StatelessWidget {
 
     if (vm.currentStep == 0) {
 
-      if (!(vm.hostFormKey.currentState?.validate() ?? false)){
+      if (!(_hostFormKey.currentState?.validate() ?? false)){
         return;
       }
 
@@ -96,7 +106,7 @@ final class _ConnectFormCard extends StatelessWidget {
       }
     } else {
 
-      if (!(vm.apiFormKey.currentState?.validate() ?? false)) {
+      if (!(_apiFormKey.currentState?.validate() ?? false)) {
         return;
       }
 
@@ -108,7 +118,6 @@ final class _ConnectFormCard extends StatelessWidget {
       }
     }
   }
-
 
   Widget _buildControls(BuildContext context, ControlsDetails d, ConnectViewModel vm) {
     final busy = vm.isVerifyingHost || vm.isLoggingIn;
@@ -139,7 +148,7 @@ final class _ConnectFormCard extends StatelessWidget {
   }
 }
 
-class _ConnectHeader extends StatelessWidget {
+final class _ConnectHeader extends StatelessWidget {
   const _ConnectHeader();
   @override
   Widget build(BuildContext context) {

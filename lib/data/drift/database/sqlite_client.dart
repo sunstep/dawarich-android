@@ -13,14 +13,25 @@ part 'sqlite_client.g.dart';
 @DriftDatabase(
   tables: [
     UserTable, UserSettingsTable,
-    PointsTable, PointGeometryTable, PointPropertiesTable, TrackTable
-  ]
+    PointsTable, PointGeometryTable, PointPropertiesTable, TrackTable]
 )
 final class SQLiteClient extends _$SQLiteClient {
   SQLiteClient() : super(_openConnection());
 
   @override
   int get schemaVersion => 1;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from == 2 && to == 1) {
+        // no schema changes, so just continue
+      }
+    },
+  );
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
@@ -33,19 +44,5 @@ final class SQLiteClient extends _$SQLiteClient {
     );
   }
 
-  Future<int> getUserVersion() async {
-
-    final QueryRow row = await customSelect('PRAGMA user_version;').getSingle();
-
-    final int value = row.read<int>('user_version');
-
-    return value;
-  }
-
-  /// Set the sqlite user_version to [newVersion]
-  Future<void> setUserVersion(int newVersion) async {
-    final sql = 'PRAGMA user_version = $newVersion;';
-    await customStatement(sql);
-  }
 
 }

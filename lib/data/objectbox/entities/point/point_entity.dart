@@ -6,14 +6,14 @@ import 'package:objectbox/objectbox.dart';
 @Entity()
 final class PointEntity {
 
-  @Id()
+  @Id(assignable: true)
   int id;
 
   String type;
   final ToOne<PointGeometryEntity> geometry = ToOne<PointGeometryEntity>();
   final ToOne<PointPropertiesEntity> properties = ToOne<PointPropertiesEntity>();
 
-  final ToOne<UserEntity> userId = ToOne<UserEntity>();
+  final ToOne<UserEntity> user = ToOne<UserEntity>();
   bool isUploaded;
 
   PointEntity({

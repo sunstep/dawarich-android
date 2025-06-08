@@ -4,13 +4,17 @@ import 'package:objectbox/objectbox.dart';
 @Entity()
 final class PointPropertiesEntity {
 
-  @Id()
+  @Id(assignable: true)
   int id;                    // `INTEGER PRIMARY KEY AUTOINCREMENT`
 
   String batteryState;       // e.g. "charging", "full"
   double batteryLevel;       // percentage as a double
   String wifi;               // Wi-Fi SSID
-  DateTime timestamp;          // kept as text (ISO8601 or epoch-string) for 1:1
+
+  // FOR OBX V2
+  // @Property(type: PropertyType.date)
+  String timestamp;          // kept as text (ISO8601 or epoch-string) for 1:1
+
   double altitude;           // in meters
   double speed;              // in m/s
   double horizontalAccuracy; // in meters

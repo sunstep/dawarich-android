@@ -4,7 +4,7 @@ import 'package:objectbox/objectbox.dart';
 @Entity()
 final class PointGeometryEntity {
 
-  @Id()
+  @Id(assignable: true)
   int id;
 
   String type;

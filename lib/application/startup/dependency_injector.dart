@@ -4,6 +4,7 @@ import 'package:dawarich/application/services/location_service.dart';
 import 'package:dawarich/application/services/map_service.dart';
 import 'package:dawarich/application/services/local_point_service.dart';
 import 'package:dawarich/application/services/api_point_service.dart';
+import 'package:dawarich/application/services/migration_service.dart';
 import 'package:dawarich/application/services/point_automation_service.dart';
 import 'package:dawarich/application/services/stats_service.dart';
 import 'package:dawarich/application/services/system_settings_service.dart';
@@ -38,15 +39,17 @@ import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
 import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
+import 'package:dawarich/objectbox.g.dart';
 import 'package:dawarich/ui/models/local/batch_explorer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/connect_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/drawer_viewmodel.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
+import 'package:dawarich/ui/models/local/migration_viewmodel.dart';
 import 'package:dawarich/ui/models/local/points_page_viewmodel.dart';
-import 'package:dawarich/ui/models/local/splash_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/stats_page_viewmodel.dart';
 import 'package:dawarich/ui/models/local/tracker_page_viewmodel.dart';
 import 'package:get_it/get_it.dart';
+import 'package:path_provider/path_provider.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -56,6 +59,10 @@ final class DependencyInjector {
 
     // Sources
     getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
+    getIt.registerSingletonAsync<Store>(() async {
+      final dir = await getApplicationDocumentsDirectory();
+      return openStore(directory: '${dir.path}/objectbox');
+    });
     getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
     getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
     getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
@@ -85,6 +92,10 @@ final class DependencyInjector {
 
 
     // Services
+    getIt.registerSingletonWithDependencies<MigrationService>(
+      () => MigrationService(getIt<SQLiteClient>(), getIt<Store>()),
+      dependsOn: [Store]
+    );
     getIt.registerLazySingleton<UserSessionService>(() => UserSessionService(getIt<IUserSessionRepository>()));
     getIt.registerLazySingleton<SystemSettingsService>(() => SystemSettingsService());
     getIt.registerLazySingleton<ApiConfigService>(() => ApiConfigService(getIt<IApiConfigRepository>()));
@@ -101,8 +112,12 @@ final class DependencyInjector {
 
 
     // ViewModels
-    getIt.registerFactory<SplashViewModel>(() => SplashViewModel(getIt<UserSessionService>(), getIt<ApiConfigService>(), getIt<SQLiteClient>()));
-    getIt.registerFactory<ConnectViewModel>(() => ConnectViewModel(getIt<ConnectService>()));
+    getIt.registerLazySingleton<ConnectViewModel>(() => ConnectViewModel(getIt<ConnectService>(), getIt<UserSessionService>(), getIt<ApiConfigService>()));
+
+    getIt.registerSingletonWithDependencies<MigrationViewModel>(
+      () => MigrationViewModel(getIt<MigrationService>()),
+      dependsOn: [MigrationService]
+    );
 
     getIt.registerFactory<MapViewModel>(
       () {

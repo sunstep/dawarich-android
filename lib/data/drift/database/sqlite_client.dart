@@ -1,4 +1,3 @@
-import 'package:dawarich/data/drift/entities/database/migrations_table.dart';
 import 'package:dawarich/data/drift/entities/point/point_geometry_table.dart';
 import 'package:dawarich/data/drift/entities/point/point_properties_table.dart';
 import 'package:dawarich/data/drift/entities/point/points_table.dart';
@@ -14,9 +13,7 @@ part 'sqlite_client.g.dart';
 @DriftDatabase(
   tables: [
     UserTable, UserSettingsTable,
-    PointsTable, PointGeometryTable, PointPropertiesTable, TrackTable,
-    MigrationsTable
-  ]
+    PointsTable, PointGeometryTable, PointPropertiesTable, TrackTable]
 )
 final class SQLiteClient extends _$SQLiteClient {
   SQLiteClient() : super(_openConnection());

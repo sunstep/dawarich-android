@@ -1,3 +1,4 @@
+import 'package:dawarich/application/startup/dependency_injector.dart';
 import 'package:dawarich/application/startup/startup_service.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:dawarich/ui/theme/dark_theme.dart';
@@ -7,8 +8,14 @@ import 'package:flutter/material.dart';
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 Future<void> main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
+
+  await DependencyInjector.injectDependencies();
+  await getIt.allReady();
+
   await StartupService.initializeApp();
+
   runApp(const AppBase());
 }
 
@@ -24,7 +31,7 @@ class AppBase extends StatelessWidget {
       darkTheme: DarkTheme.primaryTheme,
       themeMode: ThemeMode.system,
       onGenerateRoute: AppRouter.generateRoute,
-      initialRoute: AppRouter.splash,
+      initialRoute: StartupService.initialRoute,
       navigatorObservers: [routeObserver]
     );
   }

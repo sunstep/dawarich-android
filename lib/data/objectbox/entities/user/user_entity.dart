@@ -3,17 +3,19 @@ import 'package:objectbox/objectbox.dart';
 
 @Entity()
 class UserEntity {
-  @Id()
+  @Id(assignable: true)
   int id;
 
-  int? dawarichId;
+  int? remoteId;
 
-  String? dawarichEndpoint;
+  String? dawarichHost;
 
   String? email;
 
+  @Property(type: PropertyType.date)
   DateTime createdAt;
 
+  @Property(type: PropertyType.date)
   DateTime? updatedAt;
 
   String theme;
@@ -22,8 +24,8 @@ class UserEntity {
 
   UserEntity({
     this.id = 0,
-    this.dawarichId,
-    this.dawarichEndpoint,
+    this.remoteId,
+    this.dawarichHost,
     required this.email,
     required this.createdAt,
     this.updatedAt,

@@ -1,9 +1,9 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_geodata_dto.dart';
 
-class ApiPointDTO {
+final class ApiPointDTO {
   int? id;
   String? batteryStatus;
-  dynamic ping;
+  int? ping;
   int? battery;
   String? trackerId;
   String? topic;
@@ -18,17 +18,21 @@ class ApiPointDTO {
   int? accuracy;
   int? timestamp;
   String? latitude;
-  dynamic mode;
-  dynamic inrids;
-  dynamic inRegions;
+  int? mode;
+  String? rawData;
+  String? importId;
   String? city;
   String? country;
+  String? createdAt;
+  String? updatedAt;
+  int? userId;
   GeodataDTO? geodata;
+  int? visitId;
 
   ApiPointDTO(Map<String, dynamic> point) {
     id = point['id'];
     batteryStatus = point['battery_status'];
-    ping = point['ping'];
+    ping = point['ping'] as int;
     battery = point['battery'];
     trackerId = point['tracker_id'];
     topic = point['topic'];
@@ -44,10 +48,14 @@ class ApiPointDTO {
     timestamp = point['timestamp'];
     latitude = point['latitude'];
     mode = point['mode'];
-    inrids = point['inrids'];
-    inRegions = point['in_regions'];
+    rawData = point['raw_data'];
+    importId = point['import_id'];
     city = point['city'];
     country = point['country'];
+    createdAt = point['created_at'];
+    updatedAt = point['updated_at'];
+    userId = point['user_id'];
     geodata = point['geodata'] != null ? GeodataDTO(point['geodata']) : null;
+    visitId = point['visit_id'];
   }
 }

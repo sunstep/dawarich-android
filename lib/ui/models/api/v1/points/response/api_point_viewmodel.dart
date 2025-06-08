@@ -21,8 +21,6 @@ class ApiPointViewModel {
   int? timestamp;
   String? latitude;
   dynamic mode;
-  dynamic inrids;
-  dynamic inRegions;
   String? city;
   String? country;
   GeoDataViewModel? geodata;
@@ -46,8 +44,6 @@ class ApiPointViewModel {
     timestamp = point.timestamp;
     latitude = point.latitude;
     mode = point.mode;
-    inrids = point.inrids;
-    inRegions = point.inRegions;
     city = point.city;
     country = point.country;
     geodata = point.geodata != null ? GeoDataViewModel(point.geodata!) : null;

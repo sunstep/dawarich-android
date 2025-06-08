@@ -1,5 +1,5 @@
 import 'package:dawarich/application/converters/batch/dawarich/dawarich_point_batch_converter.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
@@ -8,7 +8,7 @@ import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfac
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
-class ApiPointService {
+final class ApiPointService {
 
   final IApiPointRepository _pointInterfaces;
   ApiPointService(this._pointInterfaces);
@@ -26,8 +26,8 @@ class ApiPointService {
     switch (result) {
       case Some(value: List<ApiPointDTO> points): {
         return Some(points
-            .map((point) => ApiPoint(point))
-            .toList());
+          .map((point) => ApiPoint(point))
+          .toList());
       }
       case None(): return const None();
     }
@@ -41,8 +41,8 @@ class ApiPointService {
     switch (result) {
       case Some(value: List<SlimApiPointDTO> points): {
         return Some(points
-            .map((dto) => SlimApiPoint(dto))
-            .toList());
+          .map((dto) => SlimApiPoint(dto))
+          .toList());
       }
       case None(): return const None();
     }

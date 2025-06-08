@@ -1,7 +1,7 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
 import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
@@ -31,12 +31,12 @@ final class ApiPointRepository implements IApiPointRepository {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
-    Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
+    final Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (headerResult) {
 
       case Ok(value: Map<String, String?> headers): {
-        int pages = int.parse(headers['x-total-pages']!);
+        final int pages = int.parse(headers['x-total-pages']!);
         final List<ApiPointDTO> allPoints = [];
 
         final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
@@ -75,12 +75,12 @@ final class ApiPointRepository implements IApiPointRepository {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
-    Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
+    final Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (headerResult) {
 
       case Ok(value: Map<String, String?> headers): {
-        int pages = int.parse(headers['x-total-pages']!);
+        final int pages = int.parse(headers['x-total-pages']!);
         final List<SlimApiPointDTO> allPoints = [];
 
         final List<Future<Result<List<SlimApiPointDTO>, String>>> responses = [];
@@ -119,7 +119,7 @@ final class ApiPointRepository implements IApiPointRepository {
     final String endDateString = _formatEndDate(endDate);
 
 
-    Result<Map<String, String?>, String> result = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
+    final Result<Map<String, String?>, String> result = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (result) {
 
@@ -139,7 +139,7 @@ final class ApiPointRepository implements IApiPointRepository {
   @override
   Future<Option<ApiPointDTO>> fetchLastPoint() async {
 
-    Result<ApiPointDTO, String> result  = await _pointsClient.getLastPoint();
+    final Result<ApiPointDTO, String> result  = await _pointsClient.getLastPoint();
 
     switch (result) {
 
@@ -179,7 +179,7 @@ final class ApiPointRepository implements IApiPointRepository {
   @override
   Future<Result<(), String>> deletePoint(String point) async {
 
-    Result<(), String> result = await _pointsClient.getDeletePoint(point);
+    final Result<(), String> result = await _pointsClient.deletePoint(point);
 
     switch (result)  {
 

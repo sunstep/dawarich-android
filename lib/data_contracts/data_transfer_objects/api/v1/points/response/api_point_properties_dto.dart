@@ -11,7 +11,7 @@ class ApiPointPropertiesDTO {
   String? postcode;
   String? osmValue;
   String? countrycode;
-  String? housenumber;
+  String? houseNumber;
 
 
   ApiPointPropertiesDTO(Map<String, dynamic> json) {
@@ -27,24 +27,7 @@ class ApiPointPropertiesDTO {
     postcode = json['postcode'];
     osmValue = json['osm_value'];
     countrycode = json['countrycode'];
-    housenumber = json['housenumber'];
+    houseNumber = json['housenumber'];
   }
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data =  <String, dynamic>{};
-    data['city'] = city;
-    data['type'] = type;
-    data['state'] = state;
-    data['osm_id'] = osmId;
-    data['street'] = street;
-    data['country'] = country;
-    data['osm_key'] = osmKey;
-    data['locality'] = locality;
-    data['osm_type'] = osmType;
-    data['postcode'] = postcode;
-    data['osm_value'] = osmValue;
-    data['countrycode'] = countrycode;
-    data['housenumber'] = housenumber;
-    return data;
-  }
 }

@@ -29,7 +29,7 @@ class ApiPointProperties {
     postcode = dto.postcode;
     osmValue = dto.osmValue;
     countrycode = dto.countrycode;
-    housenumber = dto.housenumber;
+    housenumber = dto.houseNumber;
   }
 
   Map<String, dynamic> toJson() {

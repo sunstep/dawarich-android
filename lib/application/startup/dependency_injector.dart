@@ -112,7 +112,7 @@ final class DependencyInjector {
 
 
     // ViewModels
-    getIt.registerLazySingleton<ConnectViewModel>(() => ConnectViewModel(getIt<ConnectService>(), getIt<UserSessionService>(), getIt<ApiConfigService>()));
+    getIt.registerFactory<ConnectViewModel>(() => ConnectViewModel(getIt<ConnectService>()));
 
     getIt.registerSingletonWithDependencies<MigrationViewModel>(
       () => MigrationViewModel(getIt<MigrationService>()),

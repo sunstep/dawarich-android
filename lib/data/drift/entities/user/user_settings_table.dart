@@ -2,7 +2,6 @@ import 'package:dawarich/data/drift/entities/user/user_table.dart';
 import 'package:drift/drift.dart';
 
 class UserSettingsTable extends Table {
-
   IntColumn get id => integer().autoIncrement()();
   TextColumn get immichUrl => text()();
   TextColumn get immichApiKey => text()();

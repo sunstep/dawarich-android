@@ -1,7 +1,6 @@
 import 'package:option_result/option_result.dart';
 
 abstract interface class ITrackerPreferencesRepository {
-
   Future<void> setAutomaticTrackingPreference(int userId, bool trueOrFalse);
   Future<void> setPointsPerBatchPreference(int userId, int amount);
   Future<void> setTrackingFrequencyPreference(int userId, int seconds);

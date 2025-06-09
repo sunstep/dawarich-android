@@ -13,8 +13,6 @@ class LocalPointPropertiesDto {
   final String? trackId;
   final String deviceId;
 
-
-
   LocalPointPropertiesDto({
     required this.batteryState,
     required this.batteryLevel,
@@ -30,5 +28,4 @@ class LocalPointPropertiesDto {
     this.trackId,
     required this.deviceId,
   });
-
 }

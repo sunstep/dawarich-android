@@ -2,7 +2,6 @@ import 'package:dawarich/ui/models/api/v1/points/request/dawarich_point_geometry
 import 'package:dawarich/ui/models/api/v1/points/request/dawarich_point_properties_viewmodel.dart';
 
 class DawarichPointViewModel {
-
   final String type;
   final DawarichPointGeometryViewModel geometry;
   final DawarichPointPropertiesViewModel properties;

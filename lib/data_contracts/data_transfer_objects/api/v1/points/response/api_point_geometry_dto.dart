@@ -6,5 +6,4 @@ class ApiPointGeometryDTO {
     type = json['type'];
     coordinates = json['coordinates'].cast<double>();
   }
-
 }

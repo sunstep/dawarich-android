@@ -2,7 +2,6 @@ import 'package:dawarich/data_contracts/interfaces/user_session_repository_inter
 import 'package:shared_preferences/shared_preferences.dart';
 
 final class UserSessionRepository implements IUserSessionRepository {
-
   @override
   Future<int> getCurrentUserId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -20,5 +19,4 @@ final class UserSessionRepository implements IUserSessionRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userId');
   }
-
 }

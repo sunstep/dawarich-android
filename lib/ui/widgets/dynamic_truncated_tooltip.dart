@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class DynamicTruncatedTooltip extends StatelessWidget {
@@ -55,10 +54,11 @@ class DynamicTruncatedTooltip extends StatelessWidget {
       }
 
       final resultText =
-      (low < text.length) ? "${text.substring(0, low)}..." : text;
+          (low < text.length) ? "${text.substring(0, low)}..." : text;
       return Tooltip(
         message: text,
-        child: Text(resultText, style: effectiveStyle, maxLines: 1, overflow: TextOverflow.clip),
+        child: Text(resultText,
+            style: effectiveStyle, maxLines: 1, overflow: TextOverflow.clip),
       );
     });
   }

@@ -10,7 +10,6 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/health/resp
 import 'package:option_result/option_result.dart';
 
 final class ConnectRepository implements IConnectRepository {
-
   final IApiConfigRepository _apiConfig;
   final UsersApiClient _usersApiClient;
 
@@ -18,9 +17,7 @@ final class ConnectRepository implements IConnectRepository {
 
   @override
   Future<bool> testHost(String host) async {
-
     try {
-
       _apiConfig.setHost(host);
 
       final Uri uri = Uri.parse("$host/api/v1/health");
@@ -33,22 +30,20 @@ final class ConnectRepository implements IConnectRepository {
 
         return health.status == "ok" && dawarichResponse == "Hey, I'm alive!";
       } else {
-
-        if (kDebugMode){
-          debugPrint("Host gave a status code other than 200: ${response.reasonPhrase}");
+        if (kDebugMode) {
+          debugPrint(
+              "Host gave a status code other than 200: ${response.reasonPhrase}");
         }
 
         return false;
       }
     } on SocketException catch (e) {
-
       if (kDebugMode) {
         debugPrint("SocketException: ${e.message}");
       }
 
       return false;
     } catch (e) {
-
       if (kDebugMode) {
         debugPrint("Error in testHost: $e");
       }
@@ -61,6 +56,7 @@ final class ConnectRepository implements IConnectRepository {
   Future<Result<UserDto, String>> loginApiKey(String apiKey) async {
 
     _apiConfig.setApiKey(apiKey);
+
     final Result<UserDto, String> result = await _usersApiClient.getUser();
 
     if (result case Ok(value: UserDto user)) {
@@ -74,7 +70,5 @@ final class ConnectRepository implements IConnectRepository {
     }
 
     return Err(error);
-
   }
-
 }

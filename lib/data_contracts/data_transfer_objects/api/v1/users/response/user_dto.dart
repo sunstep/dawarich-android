@@ -1,7 +1,6 @@
 import 'package:dawarich/data/drift/database/sqlite_client.dart';
 
 class UserDto {
-
   final int id;
   final int? remoteId;
   final String? dawarichEndpoint;
@@ -26,18 +25,17 @@ class UserDto {
     );
   }
 
-  UserDto({
-    required this.id,
-    required this.remoteId,
-    required this.dawarichEndpoint,
-    required this.email,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.apiKey,
-    required this.theme,
-    required this.admin
-  });
-  
+  UserDto(
+      {required this.id,
+      required this.remoteId,
+      required this.dawarichEndpoint,
+      required this.email,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.apiKey,
+      required this.theme,
+      required this.admin});
+
   factory UserDto.fromJson(Map<String, dynamic> json) {
     return UserDto(
         id: 0,
@@ -48,8 +46,7 @@ class UserDto {
         updatedAt: DateTime.parse(json["updated_at"]),
         apiKey: json["api_key"],
         theme: json["theme"],
-        admin: json["admin"]
-    );
+        admin: json["admin"]);
   }
 
   factory UserDto.fromDatabase(UserTableData user) {
@@ -62,9 +59,6 @@ class UserDto {
         updatedAt: user.updatedAt,
         apiKey: "",
         theme: user.theme,
-        admin: user.admin
-    );
+        admin: user.admin);
   }
-
-
 }

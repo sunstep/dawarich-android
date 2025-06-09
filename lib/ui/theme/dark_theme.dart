@@ -27,9 +27,9 @@ class DarkTheme {
 
     // Core colors
     colorScheme: const ColorScheme.dark(
-      primary: Colors.white,           // main “ink” color
-      onPrimary: Colors.black,         // for text/icons on white
-      secondary: Color(0xFF90CAF9),    // a soft sky-blue accent
+      primary: Colors.white, // main “ink” color
+      onPrimary: Colors.black, // for text/icons on white
+      secondary: Color(0xFF90CAF9), // a soft sky-blue accent
       onSecondary: Colors.black,
       surface: Color(0xFF1E1E1E),
       onSurface: Colors.white,
@@ -39,7 +39,8 @@ class DarkTheme {
 
     // Text styles
     textTheme: const TextTheme(
-      headlineSmall: TextStyle(  // page title
+      headlineSmall: TextStyle(
+        // page title
         color: Colors.white,
         fontSize: 26,
         fontWeight: FontWeight.bold,
@@ -69,9 +70,10 @@ class DarkTheme {
     // Inputs
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFF2A2A2A),           // dark input background
+      fillColor: const Color(0xFF2A2A2A), // dark input background
       contentPadding: const EdgeInsets.symmetric(
-        vertical: 20, horizontal: 16,
+        vertical: 20,
+        horizontal: 16,
       ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
@@ -109,6 +111,5 @@ class DarkTheme {
 
     // Divider (e.g. in Stepper connectors)
     dividerColor: Colors.white24,
-
   );
 }

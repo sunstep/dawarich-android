@@ -10,8 +10,8 @@ void main() {
 
   setUp(() {
     repo = ApiPointRepositoryMock()
-      ..stubHeaders      = {'x-total-pages': '3'}
-      ..stubPoints       = [
+      ..stubHeaders = {'x-total-pages': '3'}
+      ..stubPoints = [
         ApiPointDTO({
           'latitude': '10.0',
           'longitude': '20.0',
@@ -23,7 +23,7 @@ void main() {
           'timestamp': 222,
         }),
       ]
-      ..stubSlimPoints   = [
+      ..stubSlimPoints = [
         SlimApiPointDTO({
           'latitude': '1.1',
           'longitude': '2.2',
@@ -35,18 +35,18 @@ void main() {
           'timestamp': 444,
         }),
       ]
-      ..stubLastPoint    = ApiPointDTO({
+      ..stubLastPoint = ApiPointDTO({
         'latitude': '55.5',
         'longitude': '66.6',
         'timestamp': 555,
       });
 
-    repo.shouldUploadFail       = false;
+    repo.shouldUploadFail = false;
     repo.shouldFetchHeadersFail = false;
-    repo.shouldFetchPointsFail  = false;
-    repo.shouldFetchSlimFail    = false;
-    repo.shouldFetchLastFail    = false;
-    repo.shouldDeleteFail       = false;
+    repo.shouldFetchPointsFail = false;
+    repo.shouldFetchSlimFail = false;
+    repo.shouldFetchLastFail = false;
+    repo.shouldDeleteFail = false;
   });
 
   group('uploadBatch', () {
@@ -68,7 +68,7 @@ void main() {
   });
 
   group('fetchHeaders', () {
-    final start = DateTime(2025,5,1), end = DateTime(2025,5,2);
+    final start = DateTime(2025, 5, 1), end = DateTime(2025, 5, 2);
     const perPage = 42;
     test('success → Some(headers), args tracked', () async {
       repo.shouldFetchHeadersFail = false;
@@ -89,7 +89,7 @@ void main() {
   });
 
   group('fetchAllPoints', () {
-    final start = DateTime(2025,6,1), end = DateTime(2025,6,2);
+    final start = DateTime(2025, 6, 1), end = DateTime(2025, 6, 2);
     const perPage = 5;
     test('success → Some(list), args tracked', () async {
       repo.shouldFetchPointsFail = false;
@@ -110,7 +110,7 @@ void main() {
   });
 
   group('fetchAllSlimPoints', () {
-    final start = DateTime(2025,7,1), end = DateTime(2025,7,2);
+    final start = DateTime(2025, 7, 1), end = DateTime(2025, 7, 2);
     const perPage = 10;
     test('success → Some(list), args tracked', () async {
       repo.shouldFetchSlimFail = false;
@@ -131,7 +131,7 @@ void main() {
   });
 
   group('getTotalPages', () {
-    final start = DateTime(2025,8,1), end = DateTime(2025,8,2);
+    final start = DateTime(2025, 8, 1), end = DateTime(2025, 8, 2);
     const perPage = 7;
     test('success → parsed int, args tracked', () async {
       repo.shouldFetchHeadersFail = false;

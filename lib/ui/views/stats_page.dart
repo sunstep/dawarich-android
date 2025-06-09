@@ -60,7 +60,7 @@ class StatsPage extends StatelessWidget {
 
   Widget _buildOverviewSkeleton(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor      = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final baseColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
     final highlightColor = isDark ? Colors.grey.shade600 : Colors.grey.shade100;
 
     return Card(
@@ -96,14 +96,17 @@ class StatsPage extends StatelessWidget {
 
   Widget _buildBreakdownSkeletonGrid(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor      = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final baseColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
     final highlightColor = isDark ? Colors.grey.shade600 : Colors.grey.shade100;
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.0,
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.0,
       ),
       itemCount: 5,
       itemBuilder: (_, __) => Card(
@@ -159,7 +162,10 @@ class StatsPage extends StatelessWidget {
             Center(
               child: Text(
                 'Your Journey',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 16),
@@ -180,18 +186,41 @@ class StatsPage extends StatelessWidget {
   Widget _buildBreakdownGrid(BuildContext context, StatsPageViewModel vm) {
     final StatsViewModel stats = vm.stats!;
     final List<_StatTile> tiles = [
-      _StatTile(label: 'Countries', value: stats.totalCountries(context), icon: Icons.public, color: Colors.purple),
-      _StatTile(label: 'Cities',    value: stats.totalCities(context),   icon: Icons.location_city, color: Colors.green),
-      _StatTile(label: 'Points',    value: stats.totalPoints(context),   icon: Icons.place,        color: Colors.pink),
-      _StatTile(label: 'Geo-coded', value: stats.totalReverseGeocodedPoints(context), icon: Icons.map, color: Colors.orange),
-      _StatTile(label: 'Distance',  value: '${stats.totalDistance(context)} km', icon: Icons.directions_walk, color: Colors.blue),
+      _StatTile(
+          label: 'Countries',
+          value: stats.totalCountries(context),
+          icon: Icons.public,
+          color: Colors.purple),
+      _StatTile(
+          label: 'Cities',
+          value: stats.totalCities(context),
+          icon: Icons.location_city,
+          color: Colors.green),
+      _StatTile(
+          label: 'Points',
+          value: stats.totalPoints(context),
+          icon: Icons.place,
+          color: Colors.pink),
+      _StatTile(
+          label: 'Geo-coded',
+          value: stats.totalReverseGeocodedPoints(context),
+          icon: Icons.map,
+          color: Colors.orange),
+      _StatTile(
+          label: 'Distance',
+          value: '${stats.totalDistance(context)} km',
+          icon: Icons.directions_walk,
+          color: Colors.blue),
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.0,
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.0,
       ),
       itemCount: tiles.length,
       itemBuilder: (_, i) => tiles[i],
@@ -235,8 +264,7 @@ class _StatTile extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .headlineSmall
-                      ?.copyWith(
-                      color: color, fontWeight: FontWeight.bold),
+                      ?.copyWith(color: color, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

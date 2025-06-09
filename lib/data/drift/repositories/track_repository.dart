@@ -6,30 +6,23 @@ import 'package:drift/drift.dart';
 import 'package:option_result/option.dart';
 
 final class TrackRepository implements ITrackRepository {
-
   final SQLiteClient _database;
   TrackRepository(this._database);
 
   @override
   Future<void> storeTrack(TrackDto track) async {
-
     _database.into(_database.trackTable).insert(TrackTableCompanion(
-      trackId: Value(track.trackId),
-      startTimestamp: Value(track.startTime),
-      endTimestamp: Value(track.endTime),
-      active: Value(track.active),
-      userId: Value(track.userId)
-    ));
+        trackId: Value(track.trackId),
+        startTimestamp: Value(track.startTime),
+        endTimestamp: Value(track.endTime),
+        active: Value(track.active),
+        userId: Value(track.userId)));
   }
-  
+
   @override
   Future<Option<TrackDto>> getActiveTrack(int userId) async {
-
     final query = _database.select(_database.trackTable)
-      ..where((t) =>
-        t.userId.equals(userId) &
-        t.active.equals(true)
-      )
+      ..where((t) => t.userId.equals(userId) & t.active.equals(true))
       ..limit(1);
 
     final TrackTableData? result = await query.getSingleOrNull();
@@ -44,17 +37,11 @@ final class TrackRepository implements ITrackRepository {
 
   @override
   Future<bool> stopTrack(TrackDto track) async {
-
-    final int rowsAffected = await (_database
-      .update(_database.trackTable)
-        ..where((t) => t.trackId.equals(track.trackId)))
-      .write(TrackTableCompanion(
-        active: const Value(false),
-        endTimestamp: Value(track.endTime)
-      )
-    );
+    final int rowsAffected = await (_database.update(_database.trackTable)
+          ..where((t) => t.trackId.equals(track.trackId)))
+        .write(TrackTableCompanion(
+            active: const Value(false), endTimestamp: Value(track.endTime)));
 
     return rowsAffected == 1;
   }
-
 }

@@ -1,9 +1,6 @@
-
-
 import 'package:dawarich/data/drift/database/sqlite_client.dart';
 
 final class DriftHelper {
-
   final SQLiteClient _driftDb;
   DriftHelper(this._driftDb);
 
@@ -12,11 +9,14 @@ final class DriftHelper {
   Future<Map<String, int>> countAllOldTables() async {
     final Map<String, int> counts = {};
 
-    counts['points'] = (await _driftDb.select(_driftDb.pointsTable).get()).length;
-    counts['geometry'] = (await _driftDb.select(_driftDb.pointGeometryTable).get()).length;
+    counts['points'] =
+        (await _driftDb.select(_driftDb.pointsTable).get()).length;
+    counts['geometry'] =
+        (await _driftDb.select(_driftDb.pointGeometryTable).get()).length;
     counts['properties'] =
         (await _driftDb.select(_driftDb.pointPropertiesTable).get()).length;
-    counts['tracks'] = (await _driftDb.select(_driftDb.trackTable).get()).length;
+    counts['tracks'] =
+        (await _driftDb.select(_driftDb.trackTable).get()).length;
     counts['users'] = (await _driftDb.select(_driftDb.userTable).get()).length;
 
     return counts;

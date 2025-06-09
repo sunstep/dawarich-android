@@ -20,7 +20,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 class TrackerPageViewModel extends ChangeNotifier {
-
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
 
@@ -92,19 +91,27 @@ class TrackerPageViewModel extends ChangeNotifier {
 
   String get pageTitle {
     switch (_currentPage) {
-      case 0: return "Track Recording";
-      case 1: return "Basic Settings";
-      case 2: return "Advanced Settings";
-      default: return "";
+      case 0:
+        return "Track Recording";
+      case 1:
+        return "Basic Settings";
+      case 2:
+        return "Advanced Settings";
+      default:
+        return "";
     }
   }
 
   String get toggleButtonText {
     switch (_currentPage) {
-      case 0: return "Show Basic Settings";
-      case 1: return "Show Advanced Settings";
-      case 2: return "Show Recording";
-      default: return "";
+      case 0:
+        return "Show Basic Settings";
+      case 1:
+        return "Show Advanced Settings";
+      case 2:
+        return "Show Recording";
+      default:
+        return "";
     }
   }
 
@@ -128,7 +135,8 @@ class TrackerPageViewModel extends ChangeNotifier {
   int _trackingFrequency = 10; // in seconds
   int get trackingFrequency => _trackingFrequency;
 
-  LocationAccuracy _locationAccuracy = Platform.isAndroid ? LocationAccuracy.high : LocationAccuracy.best;
+  LocationAccuracy _locationAccuracy =
+      Platform.isAndroid ? LocationAccuracy.high : LocationAccuracy.best;
   LocationAccuracy get locationAccuracy => _locationAccuracy;
 
   int _minimumPointDistance = 0;
@@ -139,7 +147,6 @@ class TrackerPageViewModel extends ChangeNotifier {
 
   final TextEditingController deviceIdController = TextEditingController();
 
-
   final LocalPointService _pointService;
   // final BackgroundTrackingService _backgroundTrackingService = BackgroundTrackingService();
   final PointAutomationService _pointAutomationService;
@@ -147,16 +154,20 @@ class TrackerPageViewModel extends ChangeNotifier {
   final TrackService _trackService;
   final SystemSettingsService _systemSettingsService;
 
-  TrackerPageViewModel(this._pointService, this._pointAutomationService, this._trackService, this._trackerPreferencesService, this._systemSettingsService) {
+  TrackerPageViewModel(
+      this._pointService,
+      this._pointAutomationService,
+      this._trackService,
+      this._trackerPreferencesService,
+      this._systemSettingsService) {
     initialize();
   }
 
   Future<void> initialize() async {
-
     _pointAutomationService.newPointStream.listen((LocalPoint point) async {
-
       final LocalPointViewModel pointViewModel = point.toViewModel();
-      final LastPointViewModel lastPoint = LastPointViewModel.fromPoint(pointViewModel);
+      final LastPointViewModel lastPoint =
+          LastPointViewModel.fromPoint(pointViewModel);
       setLastPoint(lastPoint);
       await getPointInBatchCount();
       notifyListeners();
@@ -183,7 +194,6 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> persistPreferences() async {
-
     await storeAutomaticTracking();
     await storeMaxPointsPerBatch();
     await storeTrackingFrequency();
@@ -193,7 +203,6 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> _getTrackRecordingStatus() async {
-
     Option<Track> trackResult = await _trackService.getActiveTrack();
 
     if (trackResult case Some(value: Track track)) {
@@ -204,10 +213,8 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   void toggleRecording() async {
-
     if (isRecording) {
       _trackService.stopTracking();
-
     } else {
       Track track = await _trackService.startTracking();
       TrackViewModel trackVm = track.toViewModel();
@@ -215,40 +222,34 @@ class TrackerPageViewModel extends ChangeNotifier {
     }
 
     setIsRecording(!isRecording);
-
   }
 
   void setLastPoint(LastPointViewModel? point) {
-
     _lastPoint = point;
     notifyListeners();
   }
 
   Future<void> getLastPoint() async {
-
-    Option<LastPoint> lastPointResult =  await _pointService.getLastPoint();
+    Option<LastPoint> lastPointResult = await _pointService.getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-
       LastPointViewModel lastPointViewModel = lastPoint.toViewModel();
       setLastPoint(lastPointViewModel);
     }
-
   }
 
   void setHideLastPoint(bool trueOrFalse) {
-
     _hideLastPoint = trueOrFalse;
     notifyListeners();
   }
-
 
   void setPointInBatchCount(int value) {
     _pointInBatchCount = value;
     notifyListeners();
   }
 
-  Future<void> getPointInBatchCount() async => setPointInBatchCount(await _pointService.getBatchPointsCount());
+  Future<void> getPointInBatchCount() async =>
+      setPointInBatchCount(await _pointService.getBatchPointsCount());
 
   void setIsRetrievingSettings(bool trueOrFalse) {
     _isRetrievingSettings = trueOrFalse;
@@ -256,21 +257,21 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<Result<(), String>> trackPoint() async {
-
     setIsTracking(true);
     await persistPreferences();
 
-    Result<LocalPoint, String> pointResult = await _pointService.createPointFromGps();
+    Result<LocalPoint, String> pointResult =
+        await _pointService.createPointFromGps();
 
     if (pointResult case Ok(value: LocalPoint pointEntity)) {
-
       LocalPointViewModel point = pointEntity.toViewModel();
 
       String timestamp = point.properties.timestamp;
       double longitude = point.geometry.coordinates[0];
       double latitude = point.geometry.coordinates[1];
 
-      LastPointViewModel lastPoint = LastPointViewModel(rawTimestamp: timestamp, longitude: longitude, latitude: latitude);
+      LastPointViewModel lastPoint = LastPointViewModel(
+          rawTimestamp: timestamp, longitude: longitude, latitude: latitude);
 
       setLastPoint(lastPoint);
       await getPointInBatchCount();
@@ -301,10 +302,12 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> storeMaxPointsPerBatch() async {
-    await _trackerPreferencesService.setPointsPerBatchPreference(_maxPointsPerBatch);
+    await _trackerPreferencesService
+        .setPointsPerBatchPreference(_maxPointsPerBatch);
   }
 
-  Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(await _trackerPreferencesService.getPointsPerBatchPreference());
+  Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(
+      await _trackerPreferencesService.getPointsPerBatchPreference());
 
   void toggleAutomaticTracking(bool enable) {
     if (_isUpdatingTracking) return;
@@ -345,20 +348,19 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> openSystemSettings() async {
-
     await _systemSettingsService.openSystemSettings();
   }
 
   Future<void> storeAutomaticTracking() async {
-    await _trackerPreferencesService.setAutomaticTrackingPreference(_isTrackingAutomatically);
+    await _trackerPreferencesService
+        .setAutomaticTrackingPreference(_isTrackingAutomatically);
   }
 
   Future<void> _getAutomaticTrackingPreference() async {
-
-    final bool shouldTrackAutomatically = await _trackerPreferencesService.getAutomaticTrackingPreference();
+    final bool shouldTrackAutomatically =
+        await _trackerPreferencesService.getAutomaticTrackingPreference();
     await _applyAutomaticTracking(shouldTrackAutomatically);
   }
-
 
   void setTrackingFrequency(int? seconds) {
     seconds ??= 10;
@@ -368,25 +370,26 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> storeTrackingFrequency() async {
-    await _trackerPreferencesService.setTrackingFrequencyPreference(_trackingFrequency);
+    await _trackerPreferencesService
+        .setTrackingFrequencyPreference(_trackingFrequency);
   }
 
-  Future<void> _getTrackingFrequencyPreference() async => setTrackingFrequency(await _trackerPreferencesService.getTrackingFrequencyPreference());
-
+  Future<void> _getTrackingFrequencyPreference() async => setTrackingFrequency(
+      await _trackerPreferencesService.getTrackingFrequencyPreference());
 
   void setLocationAccuracy(LocationAccuracy accuracy) {
-
     _locationAccuracy = accuracy;
     notifyListeners();
   }
 
   Future<void> storeLocationAccuracy() async {
-
-    await _trackerPreferencesService.setLocationAccuracyPreference(_locationAccuracy);
+    await _trackerPreferencesService
+        .setLocationAccuracyPreference(_locationAccuracy);
   }
 
   Future<void> _getLocationAccuracyPreference() async {
-    setLocationAccuracy(await _trackerPreferencesService.getLocationAccuracyPreference());
+    setLocationAccuracy(
+        await _trackerPreferencesService.getLocationAccuracyPreference());
   }
 
   void setMinimumPointDistance(int meters) {
@@ -395,10 +398,13 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> storeMinimumPointDistance() async {
-    await _trackerPreferencesService.setMinimumPointDistancePreference(_minimumPointDistance);
+    await _trackerPreferencesService
+        .setMinimumPointDistancePreference(_minimumPointDistance);
   }
 
-  Future<void> _getMinimumPointDistancePreference() async => setMinimumPointDistance(await _trackerPreferencesService.getMinimumPointDistancePreference());
+  Future<void> _getMinimumPointDistancePreference() async =>
+      setMinimumPointDistance(
+          await _trackerPreferencesService.getMinimumPointDistancePreference());
 
   void setTrackerId(String id) {
     _trackerId = id;
@@ -410,7 +416,6 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> resetTrackerId() async {
-
     bool reset = await _trackerPreferencesService.resetTrackerId();
 
     if (reset) {
@@ -418,11 +423,9 @@ class TrackerPageViewModel extends ChangeNotifier {
       setTrackerId(trackerId);
       deviceIdController.text = trackerId;
     }
-
   }
 
   Future<void> _getDeviceId() async {
-
     String trackerId = await _trackerPreferencesService.getTrackerId();
     setTrackerId(trackerId);
     deviceIdController.text = trackerId;
@@ -437,7 +440,10 @@ class TrackerPageViewModel extends ChangeNotifier {
         {"label": "Medium", "value": LocationAccuracy.medium},
         {"label": "High", "value": LocationAccuracy.high},
         {"label": "Best", "value": LocationAccuracy.best},
-        {"label": "Best for Navigation", "value": LocationAccuracy.bestForNavigation},
+        {
+          "label": "Best for Navigation",
+          "value": LocationAccuracy.bestForNavigation
+        },
       ];
     } else if (Platform.isAndroid) {
       return [
@@ -455,5 +461,4 @@ class TrackerPageViewModel extends ChangeNotifier {
     _settingsPromptController.close();
     super.dispose();
   }
-
 }

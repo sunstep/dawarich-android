@@ -1,7 +1,6 @@
 import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 
 class ApiConfigService {
-
   final IApiConfigRepository _repository;
   ApiConfigService(this._repository);
 
@@ -16,5 +15,4 @@ class ApiConfigService {
   Future<void> clearApiConfig() async {
     await _repository.clearConfiguration();
   }
-
 }

@@ -4,7 +4,6 @@ import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.d
 import 'package:option_result/option_result.dart';
 
 class StatsService {
-
   final IStatsRepository _statsRepository;
   StatsService(this._statsRepository);
 
@@ -12,13 +11,15 @@ class StatsService {
     Option<StatsDTO> result = await _statsRepository.getStats();
 
     switch (result) {
-      case Some(value: StatsDTO statsDTO): {
-        return Some(Stats.fromDTO(statsDTO));
-      }
+      case Some(value: StatsDTO statsDTO):
+        {
+          return Some(Stats.fromDTO(statsDTO));
+        }
 
-      case None(): {
-        return const None();
-      }
+      case None():
+        {
+          return const None();
+        }
     }
   }
 }

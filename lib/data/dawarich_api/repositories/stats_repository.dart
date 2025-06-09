@@ -5,28 +5,24 @@ import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
 final class StatsRepository implements IStatsRepository {
-
   final StatsClient _source;
   StatsRepository(this._source);
 
   @override
   Future<Option<StatsDTO>> getStats() async {
-
     final Result<StatsDTO, String> result = await _source.queryStats();
 
     switch (result) {
+      case Ok(value: StatsDTO statsDTO):
+        {
+          return Some(statsDTO);
+        }
 
-      case Ok(value: StatsDTO statsDTO): {
-        return Some(statsDTO);
-      }
-
-      case Err(value: String error): {
-
-        debugPrint("Failed to retrieve stats: $error");
-        return const None();
-      }
+      case Err(value: String error):
+        {
+          debugPrint("Failed to retrieve stats: $error");
+          return const None();
+        }
     }
   }
-
-
 }

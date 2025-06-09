@@ -10,11 +10,14 @@ import 'package:path_provider/path_provider.dart';
 
 part 'sqlite_client.g.dart';
 
-@DriftDatabase(
-  tables: [
-    UserTable, UserSettingsTable,
-    PointsTable, PointGeometryTable, PointPropertiesTable, TrackTable]
-)
+@DriftDatabase(tables: [
+  UserTable,
+  UserSettingsTable,
+  PointsTable,
+  PointGeometryTable,
+  PointPropertiesTable,
+  TrackTable
+])
 final class SQLiteClient extends _$SQLiteClient {
   SQLiteClient() : super(_openConnection());
 
@@ -23,15 +26,15 @@ final class SQLiteClient extends _$SQLiteClient {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) async {
-      await m.createAll();
-    },
-    onUpgrade: (m, from, to) async {
-      if (from == 2 && to == 1) {
-        // no schema changes, so just continue
-      }
-    },
-  );
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from == 2 && to == 1) {
+            // no schema changes, so just continue
+          }
+        },
+      );
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
@@ -43,6 +46,4 @@ final class SQLiteClient extends _$SQLiteClient {
       ),
     );
   }
-
-
 }

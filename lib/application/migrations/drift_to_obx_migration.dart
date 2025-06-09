@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:dawarich/application/interfaces/migration_step.dart';
@@ -17,17 +16,17 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 final class DriftToObxMigration implements MigrationStep {
-
   final SQLiteClient _driftDatabase;
   final Store _obxDb;
   DriftToObxMigration(this._driftDatabase, this._obxDb);
 
-  @override int get fromVersion => 1;
-  @override int get toVersion   => 2;
+  @override
+  int get fromVersion => 1;
+  @override
+  int get toVersion => 2;
 
   @override
   Future<bool> get isPending async {
-
     final docsDir = await getApplicationDocumentsDirectory();
     final driftFile = File(p.join(docsDir.path, 'dawarich_db.sqlite'));
 
@@ -36,11 +35,12 @@ final class DriftToObxMigration implements MigrationStep {
     }
 
     final migrationsBox = Box<MigrationsEntity>(_obxDb);
-    final query = migrationsBox.query(
-      MigrationsEntity_.fromVersion.equals(fromVersion)
-      .and(MigrationsEntity_.toVersion.equals(toVersion))
-      .and(MigrationsEntity_.success.equals(true))
-    ).build();
+    final query = migrationsBox
+        .query(MigrationsEntity_.fromVersion
+            .equals(fromVersion)
+            .and(MigrationsEntity_.toVersion.equals(toVersion))
+            .and(MigrationsEntity_.success.equals(true)))
+        .build();
 
     final count = query.count();
     query.close();
@@ -56,18 +56,13 @@ final class DriftToObxMigration implements MigrationStep {
 
   @override
   Future<Result<(), String>> migrate() async {
-
     if (kDebugMode) {
       debugPrint('[Migration v1→v2] Starting Drift→ObjectBox');
     }
 
     Box<MigrationsEntity> migrationsBox = Box<MigrationsEntity>(_obxDb);
     final MigrationsEntity newMigration = MigrationsEntity(
-      id: 0,
-      fromVersion: fromVersion,
-      toVersion: toVersion,
-      success: false
-    );
+        id: 0, fromVersion: fromVersion, toVersion: toVersion, success: false);
 
     final int migrationId = await migrationsBox.putAsync(newMigration);
 
@@ -77,7 +72,6 @@ final class DriftToObxMigration implements MigrationStep {
       () => MigratePointGeometry(_driftDatabase, _obxDb).startMigration(),
       () => MigratePointProperties(_driftDatabase, _obxDb).startMigration(),
       () => MigratePoints(_driftDatabase, _obxDb).startMigration(),
-
     ];
 
     int i = 0;
@@ -111,6 +105,6 @@ final class DriftToObxMigration implements MigrationStep {
     return const Ok(());
   }
 
-  bool Function(String msg) get _isFatal => (String msg) => msg.contains('migration mismatch');
-
+  bool Function(String msg) get _isFatal =>
+      (String msg) => msg.contains('migration mismatch');
 }

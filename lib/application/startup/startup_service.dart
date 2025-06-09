@@ -7,11 +7,9 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
 final class StartupService {
-
   static late final String initialRoute;
 
   static Future<void> initializeApp() async {
-
     // BackgroundTrackingService;
 
     final migrationService = GetIt.I<MigrationService>();
@@ -39,10 +37,5 @@ final class StartupService {
     } else {
       initialRoute = AppRouter.connect;
     }
-
-
   }
-
-
-
 }

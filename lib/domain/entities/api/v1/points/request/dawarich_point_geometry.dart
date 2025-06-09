@@ -1,6 +1,4 @@
-
 class DawarichPointGeometry {
-
   final String type;
   final List<double> coordinates;
 

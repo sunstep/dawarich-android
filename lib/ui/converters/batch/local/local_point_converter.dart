@@ -8,34 +8,29 @@ import 'package:dawarich/ui/models/local/database/batch/local_point_properties_v
 import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.dart';
 
 extension BatchPointToViewModel on LocalPoint {
-
   LocalPointViewModel toViewModel() {
     LocalPointGeometryViewModel geometry = this.geometry.toViewModel();
     LocalPointPropertiesViewModel properties = this.properties.toViewModel();
     return LocalPointViewModel(
-      id: id,
-      type: type,
-      geometry: geometry,
-      properties: properties,
-      userId: userId,
-      isUploaded: isUploaded
-    );
+        id: id,
+        type: type,
+        geometry: geometry,
+        properties: properties,
+        userId: userId,
+        isUploaded: isUploaded);
   }
 }
 
 extension PointDtoToEntity on LocalPointViewModel {
-
   LocalPoint toEntity() {
     LocalPointGeometry geometry = this.geometry.toEntity();
     LocalPointProperties properties = this.properties.toEntity();
     return LocalPoint(
-      id: id,
-      type: type,
-      geometry: geometry,
-      properties: properties,
-      userId: userId,
-      isUploaded: isUploaded
-    );
+        id: id,
+        type: type,
+        geometry: geometry,
+        properties: properties,
+        userId: userId,
+        isUploaded: isUploaded);
   }
 }
-

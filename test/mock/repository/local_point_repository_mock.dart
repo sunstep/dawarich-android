@@ -7,48 +7,47 @@ import 'package:dawarich/data_contracts/interfaces/local_point_repository_interf
 import 'package:option_result/option_result.dart';
 
 final class MockLocalPointRepository implements ILocalPointRepository {
+  final Map<int, LocalPointDto> _points = {};
+  final Map<int, LocalPointGeometryDto> _geoms = {};
+  final Map<int, LocalPointPropertiesDto> _props = {};
 
-  final Map<int, LocalPointDto> _points      = {};
-  final Map<int, LocalPointGeometryDto> _geoms       = {};
-  final Map<int, LocalPointPropertiesDto> _props      = {};
-
-  int _nextPointId      = 1;
-  int _nextGeometryId   = 1;
+  int _nextPointId = 1;
+  int _nextGeometryId = 1;
   int _nextPropertiesId = 1;
 
-  bool failStorePoint       = false;
-  bool failGetLastPoint     = false;
-  bool failGetFullBatch     = false;
-  bool failGetCurrentBatch  = false;
-  bool failGetBatchCount    = false;
-  bool failMarkUploaded     = false;
-  bool failDeletePoint      = false;
-  bool failClearBatch       = false;
+  bool failStorePoint = false;
+  bool failGetLastPoint = false;
+  bool failGetFullBatch = false;
+  bool failGetCurrentBatch = false;
+  bool failGetBatchCount = false;
+  bool failMarkUploaded = false;
+  bool failDeletePoint = false;
+  bool failClearBatch = false;
 
-  int storePointCount         = 0;
+  int storePointCount = 0;
   LocalPointDto? lastStoredPoint;
 
-  int getLastPointCount       = 0;
+  int getLastPointCount = 0;
   int? lastGetLastPointUserId;
 
-  int getFullBatchCount       = 0;
+  int getFullBatchCount = 0;
   int? lastGetFullBatchUserId;
 
-  int getCurrentBatchCount    = 0;
+  int getCurrentBatchCount = 0;
   int? lastGetCurrentBatchUserId;
 
-  int getBatchCountCount      = 0;
+  int getBatchCountCount = 0;
   int? lastGetBatchCountUserId;
 
-  int markUploadedCount       = 0;
+  int markUploadedCount = 0;
   List<int>? lastMarkUploadedIds;
-  int?    lastMarkUploadedUserId;
+  int? lastMarkUploadedUserId;
 
-  int deletePointCount        = 0;
+  int deletePointCount = 0;
   int? lastDeletePointId;
   int? lastDeletePointUserId;
 
-  int clearBatchCount         = 0;
+  int clearBatchCount = 0;
   int? lastClearBatchUserId;
 
   @override
@@ -61,18 +60,18 @@ final class MockLocalPointRepository implements ILocalPointRepository {
     }
 
     // simulate id & separate storage
-    final geomId  = _nextGeometryId++;
-    final propId  = _nextPropertiesId++;
+    final geomId = _nextGeometryId++;
+    final propId = _nextPropertiesId++;
     final pointId = _nextPointId++;
 
-    _geoms[geomId]  = point.geometry;
-    _props[propId]  = point.properties;
+    _geoms[geomId] = point.geometry;
+    _props[propId] = point.properties;
     _points[pointId] = LocalPointDto(
-      id:         pointId,
-      type:       point.type,
-      geometry:   point.geometry,
+      id: pointId,
+      type: point.type,
+      geometry: point.geometry,
       properties: point.properties,
-      userId:     point.userId,
+      userId: point.userId,
       isUploaded: false,
     );
 
@@ -94,9 +93,9 @@ final class MockLocalPointRepository implements ILocalPointRepository {
     userPoints.sort((a, b) => b.id.compareTo(a.id));
     final last = userPoints.first;
     return Some(LastPointDto(
-      longitude:  last.geometry.coordinates[0],
-      latitude:   last.geometry.coordinates[1],
-      timestamp:  last.properties.timestamp,
+      longitude: last.geometry.coordinates[0],
+      latitude: last.geometry.coordinates[1],
+      timestamp: last.properties.timestamp,
     ));
   }
 
@@ -144,10 +143,11 @@ final class MockLocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<int, String>> markBatchAsUploaded(List<int> batchIds, int userId) async {
+  Future<Result<int, String>> markBatchAsUploaded(
+      List<int> batchIds, int userId) async {
     markUploadedCount++;
-    lastMarkUploadedIds      = batchIds;
-    lastMarkUploadedUserId   = userId;
+    lastMarkUploadedIds = batchIds;
+    lastMarkUploadedUserId = userId;
 
     if (failMarkUploaded) {
       return const Err('Forced markBatchAsUploaded failure');
@@ -158,11 +158,11 @@ final class MockLocalPointRepository implements ILocalPointRepository {
       final p = _points[id];
       if (p != null && p.userId == userId) {
         _points[id] = LocalPointDto(
-          id:         p.id,
-          type:       p.type,
-          geometry:   p.geometry,
+          id: p.id,
+          type: p.type,
+          geometry: p.geometry,
           properties: p.properties,
-          userId:     p.userId,
+          userId: p.userId,
           isUploaded: true,
         );
         affected++;
@@ -174,7 +174,7 @@ final class MockLocalPointRepository implements ILocalPointRepository {
   @override
   Future<Result<(), String>> deletePoint(int pointId, int userId) async {
     deletePointCount++;
-    lastDeletePointId     = pointId;
+    lastDeletePointId = pointId;
     lastDeletePointUserId = userId;
 
     if (failDeletePoint) {

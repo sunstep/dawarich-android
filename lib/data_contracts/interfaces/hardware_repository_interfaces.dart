@@ -2,8 +2,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 abstract interface class IHardwareRepository {
-
-  Future<Result<Position, String>> getPosition(LocationAccuracy locationAccuracy);
+  Future<Result<Position, String>> getPosition(
+      LocationAccuracy locationAccuracy);
   Future<Option<Position>> getCachedPosition();
   Stream<Result<Position, String>> getPositionStream({
     required LocationAccuracy accuracy,
@@ -16,5 +16,4 @@ abstract interface class IHardwareRepository {
   Future<double> getBatteryLevel();
 
   Future<String> getWiFiStatus();
-
 }

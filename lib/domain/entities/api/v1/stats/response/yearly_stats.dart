@@ -8,14 +8,11 @@ class YearlyStats {
   int totalCities;
   MonthlyStats monthlyStats;
 
-  YearlyStats(this.year, this.totalDistance, this.totalCountries, this.totalCities, this.monthlyStats);
+  YearlyStats(this.year, this.totalDistance, this.totalCountries,
+      this.totalCities, this.monthlyStats);
 
   factory YearlyStats.fromDTO(YearlyStatsDTO dto) {
-    return YearlyStats(
-        dto.year,
-        dto.totalDistance,
-        dto.totalCountries,
-        dto.totalCities,
-        MonthlyStats.fromDTO(dto.monthlyStats));
+    return YearlyStats(dto.year, dto.totalDistance, dto.totalCountries,
+        dto.totalCities, MonthlyStats.fromDTO(dto.monthlyStats));
   }
 }

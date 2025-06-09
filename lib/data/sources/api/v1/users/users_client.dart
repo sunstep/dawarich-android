@@ -7,48 +7,35 @@ import 'package:http/http.dart';
 import 'package:option_result/option_result.dart';
 
 final class UsersApiClient {
-
   final IApiConfigRepository _apiConfig;
-  late ApiConfigDTO _apiInfo;
 
-  UsersApiClient(this._apiConfig){
+  UsersApiClient(this._apiConfig);
+
+  Future<Result<UserDto, String>> getUser() async {
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
     if (apiInfo == null || !apiInfo.isComplete) {
-      throw Exception("[UsersClient] Cannot approach API without a complete configuration");
+      throw Exception(
+          "[UsersClient] Cannot approach API without a complete configuration");
     }
-    _apiInfo = apiInfo;
-  }
 
-  Future<Result<UserDto, String>> getUser() async {
-
-    final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/users/me");
-    Map<String, String> headers = {
-      "Authorization": "Bearer ${_apiInfo.apiKey}"
-    };
+    final Uri uri = Uri.parse("${apiInfo.host}/api/v1/users/me");
+    Map<String, String> headers = {"Authorization": "Bearer ${apiInfo.apiKey}"};
 
     try {
+      final Response response = await get(uri, headers: headers);
 
-      if (_apiInfo.host != null && _apiInfo.apiKey != null) {
-        final Response response = await get(uri, headers: headers);
-
-        if (response.statusCode == 200) {
-          final Map<String, dynamic> json = jsonDecode(response.body);
-          UserDto userDto = UserDto.fromJson(json["user"]);
-          UserDto userDtoCopy = userDto.withDawarichEndpoint(_apiInfo.host);
-          return Ok(userDtoCopy);
-        } else {
-          return Err("Failed to fetch user: ${response.statusCode} ${response.reasonPhrase}");
-        }
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        UserDto userDto = UserDto.fromJson(json["user"]);
+        UserDto userDtoCopy = userDto.withDawarichEndpoint(apiInfo.host);
+        return Ok(userDtoCopy);
+      } else {
+        return Err(
+            "Failed to fetch user: ${response.statusCode} ${response.reasonPhrase}");
       }
-
-      return const Err("Could not connect to Dawarich: api information missing");
-
     } catch (e) {
       return Err("Error while fetching user data: $e");
     }
-
   }
-
-
 }

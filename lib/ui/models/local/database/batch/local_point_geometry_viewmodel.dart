@@ -1,5 +1,4 @@
 class LocalPointGeometryViewModel {
-
   final String type;
   final List<double> coordinates;
 

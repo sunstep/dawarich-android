@@ -2,9 +2,7 @@ import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_pr
 import 'package:dawarich/ui/models/api/v1/points/request/dawarich_point_properties_viewmodel.dart';
 
 extension PointPropertiesToViewModel on DawarichPointProperties {
-
   DawarichPointPropertiesViewModel toViewModel() {
-
     return DawarichPointPropertiesViewModel(
       batteryState: batteryState,
       batteryLevel: batteryLevel,
@@ -23,9 +21,7 @@ extension PointPropertiesToViewModel on DawarichPointProperties {
   }
 }
 
-
 extension PointPropertiesDtoToEntity on DawarichPointPropertiesViewModel {
-
   DawarichPointProperties toEntity() {
     return DawarichPointProperties(
       batteryState: batteryState,
@@ -44,5 +40,3 @@ extension PointPropertiesDtoToEntity on DawarichPointPropertiesViewModel {
     );
   }
 }
-
-

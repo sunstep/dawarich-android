@@ -3,7 +3,6 @@ class LastPointDto {
   final double longitude;
   final double latitude;
 
-
   LastPointDto({
     required this.timestamp,
     required this.longitude,

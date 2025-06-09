@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/ui/routing/app_router.dart';
 import 'package:provider/provider.dart';
 
-
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
 
@@ -28,11 +27,13 @@ class CustomDrawer extends StatelessWidget {
         backgroundColor: Colors.transparent,
         width: MediaQuery.of(context).size.width * 0.75,
         child: ClipRRect(
-          borderRadius: const BorderRadius.horizontal(right: Radius.circular(24)),
+          borderRadius:
+              const BorderRadius.horizontal(right: Radius.circular(24)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Container(
-              decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+              decoration:
+                  BoxDecoration(gradient: Theme.of(context).pageBackground),
               child: _buildContent(context),
             ),
           ),
@@ -47,7 +48,8 @@ class CustomDrawer extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final textColor = theme.colorScheme.onSurface.withValues(alpha: 0.95);
-    final iconColor = theme.colorScheme.onSurface.withValues(alpha: isDark ? 0.7 : 0.65);
+    final iconColor =
+        theme.colorScheme.onSurface.withValues(alpha: isDark ? 0.7 : 0.65);
     final selectedBg = Colors.red.withValues(alpha: isDark ? 0.3 : 0.1);
 
     final selectedIcon = Theme.of(context).colorScheme.secondary;
@@ -158,7 +160,7 @@ class CustomDrawer extends StatelessWidget {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.of(context).pushNamedAndRemoveUntil(
                 AppRouter.connect,
-                    (route) => false,
+                (route) => false,
               );
             });
           },
@@ -173,15 +175,15 @@ class CustomDrawer extends StatelessWidget {
   }
 
   Widget _tile(
-      BuildContext context, {
-        required IconData icon,
-        required String label,
-        required VoidCallback onTap,
-        required Color textColor,
-        required Color iconColor,
-        required Color selectedBg,
-        required Color selectedIconColor,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Color textColor,
+    required Color iconColor,
+    required Color selectedBg,
+    required Color selectedIconColor,
+  }) {
     // bump the content down a touch
     const verticalPadding = 16.0;
     const horizontalPadding = 24.0;

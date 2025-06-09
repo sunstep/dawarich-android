@@ -1,9 +1,7 @@
-
 import 'package:objectbox/objectbox.dart';
 
 @Entity()
 final class PointGeometryEntity {
-
   @Id(assignable: true)
   int id;
 
@@ -16,6 +14,4 @@ final class PointGeometryEntity {
     required this.type,
     required this.coordinates,
   });
-
-
 }

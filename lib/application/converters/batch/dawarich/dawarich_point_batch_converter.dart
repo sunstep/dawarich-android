@@ -5,21 +5,17 @@ import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point.da
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
 
 extension BatchConverter on DawarichPointBatch {
-
   DawarichPointBatchDto toDto() {
-    List<DawarichPointDto> points = this.points
-        .map((point) => point.toDto())
-        .toList();
+    List<DawarichPointDto> points =
+        this.points.map((point) => point.toDto()).toList();
     return DawarichPointBatchDto(points: points);
   }
 }
 
 extension BatchDtoConverter on DawarichPointBatchDto {
-
   DawarichPointBatch toEntity() {
-    List<DawarichPoint> points = this.points
-        .map((pointDto) => pointDto.toEntity())
-        .toList();
+    List<DawarichPoint> points =
+        this.points.map((pointDto) => pointDto.toEntity()).toList();
     return DawarichPointBatch(points: points);
   }
 }

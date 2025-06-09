@@ -11,7 +11,6 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:option_result/option_result.dart';
 
 final class HardwareRepository implements IHardwareRepository {
-
   final GpsDataClient _gpsDataClient;
   final DeviceDataClient _deviceDataClient;
   final BatteryDataClient _batteryDataClient;
@@ -25,11 +24,9 @@ final class HardwareRepository implements IHardwareRepository {
   );
 
   @override
-  Future<Result<Position, String>> getPosition(LocationAccuracy locationAccuracy) async {
-
+  Future<Result<Position, String>> getPosition(
+      LocationAccuracy locationAccuracy) async {
     return await _gpsDataClient.getPosition(locationAccuracy);
-
-
   }
 
   @override
@@ -50,7 +47,6 @@ final class HardwareRepository implements IHardwareRepository {
 
   @override
   Future<String> getDeviceModel() async {
-
     if (Platform.isAndroid) {
       return _deviceDataClient.getAndroidDeviceModel();
     } else if (Platform.isIOS) {
@@ -62,7 +58,6 @@ final class HardwareRepository implements IHardwareRepository {
 
   @override
   Future<String> getBatteryState() async {
-
     String batteryState = await _batteryDataClient.getBatteryState();
 
     if (batteryState == "connectedNotCharging") {
@@ -81,8 +76,8 @@ final class HardwareRepository implements IHardwareRepository {
 
   @override
   Future<String> getWiFiStatus() async {
-
-    List<ConnectivityResult> connectionList = await _wiFiDataClient.getWiFiStatus();
+    List<ConnectivityResult> connectionList =
+        await _wiFiDataClient.getWiFiStatus();
 
     if (connectionList.contains(ConnectivityResult.wifi)) {
       try {
@@ -91,8 +86,8 @@ final class HardwareRepository implements IHardwareRepository {
 
         // Clean the output by removing outer quotes.
         final String ssid = (rawSSID != null &&
-            rawSSID.startsWith('"') &&
-            rawSSID.endsWith('"'))
+                rawSSID.startsWith('"') &&
+                rawSSID.endsWith('"'))
             ? rawSSID.substring(1, rawSSID.length - 1)
             : rawSSID ?? "Unknown";
         return ssid;

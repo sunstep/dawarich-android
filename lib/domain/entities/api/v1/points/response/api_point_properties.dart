@@ -15,7 +15,6 @@ class ApiPointProperties {
   String? countrycode;
   String? housenumber;
 
-
   ApiPointProperties(ApiPointPropertiesDTO dto) {
     city = dto.city;
     type = dto.type;
@@ -33,7 +32,7 @@ class ApiPointProperties {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data =  <String, dynamic>{};
+    final Map<String, dynamic> data = <String, dynamic>{};
     data['city'] = city;
     data['type'] = type;
     data['state'] = state;

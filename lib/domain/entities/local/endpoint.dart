@@ -1,5 +1,4 @@
 class EndPoint {
-
   String? host;
   String? apiKey;
 

@@ -3,7 +3,6 @@ import 'package:dawarich/ui/widgets/custom_appbar.dart';
 import 'package:dawarich/ui/widgets/drawer.dart';
 
 final class ImportsPage extends StatefulWidget {
-
   const ImportsPage({super.key});
 
   @override
@@ -11,7 +10,6 @@ final class ImportsPage extends StatefulWidget {
 }
 
 final class ImportsPageState extends State<ImportsPage> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,9 +22,7 @@ final class ImportsPageState extends State<ImportsPage> {
     );
   }
 
-  Widget _pageContent(){
-    return const Scaffold(
-
-    );
+  Widget _pageContent() {
+    return const Scaffold();
   }
 }

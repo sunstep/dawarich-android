@@ -11,7 +11,6 @@ import 'package:dawarich/ui/models/local/database/batch/local_point_viewmodel.da
 import 'package:flutter/foundation.dart';
 
 class BatchExplorerViewModel with ChangeNotifier {
-
   LocalPointBatchViewModel _batch = LocalPointBatchViewModel(points: []);
   LocalPointBatchViewModel get batch => _batch;
 
@@ -41,12 +40,9 @@ class BatchExplorerViewModel with ChangeNotifier {
     await _loadBatchPoints();
   }
 
-
   Future<void> _loadBatchPoints() async {
-
     LocalPointBatch batch = await _localPointService.getCurrentBatch();
     LocalPointBatchViewModel batchVm = batch.toViewModel();
-
 
     _setBatch(batchVm);
     _setIsLoadingPoints(false);
@@ -54,15 +50,12 @@ class BatchExplorerViewModel with ChangeNotifier {
   }
 
   Future<void> uploadBatch() async {
-
-
     List<DawarichPoint> pointsToUpload = _batch.points.map((localPoint) {
       return DawarichPoint(
         type: localPoint.type,
         geometry: DawarichPointGeometry(
-          type: localPoint.geometry.type,
-          coordinates: localPoint.geometry.coordinates
-        ),
+            type: localPoint.geometry.type,
+            coordinates: localPoint.geometry.coordinates),
         properties: DawarichPointProperties(
           batteryState: localPoint.properties.batteryState,
           batteryLevel: localPoint.properties.batteryLevel,
@@ -86,14 +79,13 @@ class BatchExplorerViewModel with ChangeNotifier {
     bool uploaded = await _apiPointService.uploadBatch(apiBatch);
 
     if (uploaded) {
-      bool marked = await _localPointService.markBatchAsUploaded(_batch.toEntity());
+      bool marked =
+          await _localPointService.markBatchAsUploaded(_batch.toEntity());
 
       if (marked) {
         await _loadBatchPoints();
       }
-
     }
-
   }
 
   Future<void> deletePoint(LocalPointViewModel point) async {
@@ -107,7 +99,4 @@ class BatchExplorerViewModel with ChangeNotifier {
     batch.points.clear();
     notifyListeners();
   }
-
-
-
 }

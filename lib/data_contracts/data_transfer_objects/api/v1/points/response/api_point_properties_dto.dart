@@ -13,7 +13,6 @@ class ApiPointPropertiesDTO {
   String? countrycode;
   String? houseNumber;
 
-
   ApiPointPropertiesDTO(Map<String, dynamic> json) {
     city = json['city'];
     type = json['type'];
@@ -29,5 +28,4 @@ class ApiPointPropertiesDTO {
     countrycode = json['countrycode'];
     houseNumber = json['housenumber'];
   }
-
 }

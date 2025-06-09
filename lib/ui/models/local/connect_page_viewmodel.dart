@@ -72,9 +72,8 @@ final class ConnectViewModel with ChangeNotifier {
       return true;
     }
 
-      _setErrorMessage('Invalid API key. Please check and try again.');
-      return false;
-
+    _setErrorMessage('Invalid API key. Please check and try again.');
+    return false;
   }
 
   /// Attempts email/password based authentication.

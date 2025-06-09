@@ -6,9 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
-
 class MapViewModel with ChangeNotifier {
-
   final MapService _mapService;
   final LocationService _locationService;
   AnimatedMapController? animatedMapController;
@@ -57,7 +55,6 @@ class MapViewModel with ChangeNotifier {
   }
 
   Future<void> initialize() async {
-
     if (!await Geolocator.isLocationServiceEnabled()) {
       setCurrentLocation(await _mapService.getDefaultMapCenter());
       return;
@@ -96,18 +93,17 @@ class MapViewModel with ChangeNotifier {
   }
 
   Future<void> getAndSetPoints() async {
-
     final List<LatLng> data = await _mapService.loadMap(selectedDate);
     setPoints(data);
   }
 
   Future<void> loadPreviousDay() async {
-
     setIsLoading(true);
     clearPoints();
 
     DateTime previousDay = selectedDate.subtract(const Duration(days: 1));
-    setSelectedDate(DateTime(previousDay.year, previousDay.month, previousDay.day));
+    setSelectedDate(
+        DateTime(previousDay.year, previousDay.month, previousDay.day));
 
     await getAndSetPoints();
 
@@ -115,19 +111,15 @@ class MapViewModel with ChangeNotifier {
   }
 
   Future<void> loadToday() async {
-
-
     setIsLoading(true);
     clearPoints();
 
     await getAndSetPoints();
 
     setIsLoading(false);
-
   }
 
   Future<void> loadNextDay() async {
-
     setIsLoading(true);
     clearPoints();
 
@@ -140,8 +132,7 @@ class MapViewModel with ChangeNotifier {
   }
 
   Future<void> processNewDate(DateTime pickedDate) async {
-
-    if (pickedDate == selectedDate){
+    if (pickedDate == selectedDate) {
       return;
     }
 
@@ -155,9 +146,7 @@ class MapViewModel with ChangeNotifier {
     setIsLoading(false);
   }
 
-
   bool isTodaySelected() {
-
     final today = DateTime.now();
     return selectedDate.year == today.year &&
         selectedDate.month == today.month &&

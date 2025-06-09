@@ -3,8 +3,7 @@ import 'package:dawarich/ui/models/api/v1/stats/response/yearly_stats_viewmodel.
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 
-final class StatsViewModel{
-
+final class StatsViewModel {
   final int _totalDistance;
   final int _totalPoints;
   final int _totalReverseGeocodedPoints;
@@ -12,11 +11,15 @@ final class StatsViewModel{
   final int _totalCities;
   List<YearlyStatsViewModel> yearlyStats;
 
-
-  StatsViewModel(this._totalDistance, this._totalPoints, this._totalReverseGeocodedPoints, this._totalCountries, this._totalCities, this.yearlyStats);
+  StatsViewModel(
+      this._totalDistance,
+      this._totalPoints,
+      this._totalReverseGeocodedPoints,
+      this._totalCountries,
+      this._totalCities,
+      this.yearlyStats);
 
   factory StatsViewModel.fromDomain(Stats entity) {
-
     return StatsViewModel(
       entity.totalDistance,
       entity.totalPoints,
@@ -34,10 +37,12 @@ final class StatsViewModel{
     return NumberFormat.decimalPattern(locale).format(number);
   }
 
-  String totalDistance(BuildContext context) => _format(_totalDistance, context);
+  String totalDistance(BuildContext context) =>
+      _format(_totalDistance, context);
   String totalPoints(BuildContext context) => _format(_totalPoints, context);
-  String totalReverseGeocodedPoints(BuildContext context) => _format(_totalReverseGeocodedPoints, context);
-  String totalCountries(BuildContext context) => _format(_totalCountries, context);
+  String totalReverseGeocodedPoints(BuildContext context) =>
+      _format(_totalReverseGeocodedPoints, context);
+  String totalCountries(BuildContext context) =>
+      _format(_totalCountries, context);
   String totalCities(BuildContext context) => _format(_totalCities, context);
-
 }

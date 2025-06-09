@@ -1,6 +1,4 @@
-
 abstract class PointProperties {
-
   String get timestamp;
   double get horizontalAccuracy;
   double get verticalAccuracy;

@@ -5,86 +5,85 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 class TrackerPreferencesService {
-
   final ITrackerPreferencesRepository _trackerPreferencesRepository;
   final IHardwareRepository _hardwareRepository;
   final IUserSessionRepository _user;
-  TrackerPreferencesService(this._trackerPreferencesRepository, this._hardwareRepository, this._user);
+  TrackerPreferencesService(
+      this._trackerPreferencesRepository, this._hardwareRepository, this._user);
 
   Future<void> setAutomaticTrackingPreference(bool trueOrFalse) async {
-
     final int userId = await _user.getCurrentUserId();
-    await _trackerPreferencesRepository.setAutomaticTrackingPreference(userId, trueOrFalse);
+    await _trackerPreferencesRepository.setAutomaticTrackingPreference(
+        userId, trueOrFalse);
   }
 
   Future<void> setPointsPerBatchPreference(int amount) async {
-
     final int userId = await _user.getCurrentUserId();
-    await _trackerPreferencesRepository.setPointsPerBatchPreference(userId, amount);
+    await _trackerPreferencesRepository.setPointsPerBatchPreference(
+        userId, amount);
   }
 
   Future<void> setTrackingFrequencyPreference(int seconds) async {
-
     final int userId = await _user.getCurrentUserId();
-    await _trackerPreferencesRepository.setTrackingFrequencyPreference(userId, seconds);
+    await _trackerPreferencesRepository.setTrackingFrequencyPreference(
+        userId, seconds);
   }
 
   Future<void> setLocationAccuracyPreference(LocationAccuracy accuracy) async {
-
     final int userId = await _user.getCurrentUserId();
-    await _trackerPreferencesRepository.setLocationAccuracyPreference(userId, accuracy.index);
+    await _trackerPreferencesRepository.setLocationAccuracyPreference(
+        userId, accuracy.index);
   }
 
   Future<void> setMinimumPointDistancePreference(int meters) async {
-
     final int userId = await _user.getCurrentUserId();
-    await _trackerPreferencesRepository.setMinimumPointDistancePreference(userId, meters);
+    await _trackerPreferencesRepository.setMinimumPointDistancePreference(
+        userId, meters);
   }
 
   Future<void> setTrackerId(String newId) async {
-
     final int userId = await _user.getCurrentUserId();
     await _trackerPreferencesRepository.setTrackerId(userId, newId);
   }
 
   Future<bool> resetTrackerId() async {
-
     final int userId = await _user.getCurrentUserId();
     return await _trackerPreferencesRepository.deleteTrackerId(userId);
   }
 
   Future<bool> getAutomaticTrackingPreference() async {
-
     final int userId = await _user.getCurrentUserId();
-    final Option<bool> result = await _trackerPreferencesRepository.getAutomaticTrackingPreference(userId);
+    final Option<bool> result = await _trackerPreferencesRepository
+        .getAutomaticTrackingPreference(userId);
 
     return result.isSome() ? result.unwrap() : false;
   }
 
   Future<int> getPointsPerBatchPreference() async {
-
     final int userId = await _user.getCurrentUserId();
-    final Option<int> result = await _trackerPreferencesRepository.getPointsPerBatchPreference(userId);
+    final Option<int> result =
+        await _trackerPreferencesRepository.getPointsPerBatchPreference(userId);
 
     return result.isSome() ? result.unwrap() : 50;
   }
 
   Future<int> getTrackingFrequencyPreference() async {
-
     final int userId = await _user.getCurrentUserId();
-    final Option<int> result = await _trackerPreferencesRepository.getTrackingFrequencyPreference(userId);
+    final Option<int> result = await _trackerPreferencesRepository
+        .getTrackingFrequencyPreference(userId);
 
     return result.isSome() ? result.unwrap() : 10;
   }
 
   Future<LocationAccuracy> getLocationAccuracyPreference() async {
-
     final int userId = await _user.getCurrentUserId();
 
-    final Option<int> accuracyIndex = await _trackerPreferencesRepository.getLocationAccuracyPreference(userId);
+    final Option<int> accuracyIndex = await _trackerPreferencesRepository
+        .getLocationAccuracyPreference(userId);
 
     switch (accuracyIndex) {
-      case Some(:final value) when value >= 0 && value < LocationAccuracy.values.length:
+      case Some(:final value)
+          when value >= 0 && value < LocationAccuracy.values.length:
         return LocationAccuracy.values[value];
       default:
         return LocationAccuracy.high;
@@ -92,21 +91,20 @@ class TrackerPreferencesService {
   }
 
   Future<int> getMinimumPointDistancePreference() async {
-
     final int userId = await _user.getCurrentUserId();
-    final Option<int> result = await _trackerPreferencesRepository.getMinimumPointDistancePreference(userId);
+    final Option<int> result = await _trackerPreferencesRepository
+        .getMinimumPointDistancePreference(userId);
 
     return result.isSome() ? result.unwrap() : 0;
   }
 
   Future<String> getTrackerId() async {
-
     final int userId = await _user.getCurrentUserId();
 
-    final Option<String> possibleTrackerId =  await _trackerPreferencesRepository.getTrackerId(userId);
+    final Option<String> possibleTrackerId =
+        await _trackerPreferencesRepository.getTrackerId(userId);
 
     if (possibleTrackerId case Some(value: String trackerId)) {
-
       return trackerId;
     }
 
@@ -114,5 +112,4 @@ class TrackerPreferencesService {
 
     return deviceModel;
   }
-
 }

@@ -1,6 +1,4 @@
-
 class MonthlyStatsDTO {
-
   int january;
   int february;
   int march;

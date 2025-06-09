@@ -1,13 +1,11 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/stats/response/monthly_stats_dto.dart';
 
 class YearlyStatsDTO {
-
   int year;
   int totalDistance;
   int totalCountries;
   int totalCities;
   MonthlyStatsDTO monthlyStats;
-
 
   YearlyStatsDTO({
     required this.year,

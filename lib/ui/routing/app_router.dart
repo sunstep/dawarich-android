@@ -15,7 +15,6 @@ import 'package:dawarich/ui/views/settings_page.dart';
 import 'package:provider/provider.dart';
 
 final class AppRouter {
-
   static const String migration = '/migration';
   static const String connect = '/connect';
   static const String map = '/map';
@@ -28,51 +27,59 @@ final class AppRouter {
   static const String settings = '/settings';
 
   static Route<dynamic> generateRoute(RouteSettings route) {
-
     if (kDebugMode) {
       debugPrint('[AppRouter] Generating route: ${route.name}');
     }
 
     switch (route.name) {
-      case migration: {
-        return MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider(
-            create: (_) => getIt<MigrationViewModel>(),
-            child: const MigrationPage()
-            ,
-          )
-        );
-      }
-      case connect: {
-        return MaterialPageRoute(builder: (_) => const ConnectPage());
-      }
-      case map: {
-        return MaterialPageRoute(builder: (_) => const MapPage());
-      }
-      case stats: {
-        return MaterialPageRoute(builder: (_) => const StatsPage());
-      }
-      case points: {
-        return MaterialPageRoute(builder: (_) => const PointsPage());
-      }
-      case tracker: {
-        return MaterialPageRoute(builder: (_) => const TrackerPage());
-      }
-      case batchExplorer: {
-        return MaterialPageRoute(builder: (_) => const BatchExplorerPage());
-      }
-      case imports: {
-        return MaterialPageRoute(builder: (_) => const ImportsPage());
-      }
-      case exports: {
-        return MaterialPageRoute(builder: (_) => const ExportsPage());
-      }
-      case settings: {
-        return MaterialPageRoute(builder: (_) => const SettingsPage());
-      }
-      default: {
-        return MaterialPageRoute(builder: (_) => const ConnectPage());
-      }
+      case migration:
+        {
+          return MaterialPageRoute(
+              builder: (_) => ChangeNotifierProvider(
+                    create: (_) => getIt<MigrationViewModel>(),
+                    child: const MigrationPage(),
+                  ));
+        }
+      case connect:
+        {
+          return MaterialPageRoute(builder: (_) => const ConnectPage());
+        }
+      case map:
+        {
+          return MaterialPageRoute(builder: (_) => const MapPage());
+        }
+      case stats:
+        {
+          return MaterialPageRoute(builder: (_) => const StatsPage());
+        }
+      case points:
+        {
+          return MaterialPageRoute(builder: (_) => const PointsPage());
+        }
+      case tracker:
+        {
+          return MaterialPageRoute(builder: (_) => const TrackerPage());
+        }
+      case batchExplorer:
+        {
+          return MaterialPageRoute(builder: (_) => const BatchExplorerPage());
+        }
+      case imports:
+        {
+          return MaterialPageRoute(builder: (_) => const ImportsPage());
+        }
+      case exports:
+        {
+          return MaterialPageRoute(builder: (_) => const ExportsPage());
+        }
+      case settings:
+        {
+          return MaterialPageRoute(builder: (_) => const SettingsPage());
+        }
+      default:
+        {
+          return MaterialPageRoute(builder: (_) => const ConnectPage());
+        }
     }
   }
 }

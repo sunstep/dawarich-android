@@ -1,4 +1,3 @@
-
 class DawarichPointPropertiesDto {
   final String batteryState;
   final double batteryLevel;
@@ -13,8 +12,6 @@ class DawarichPointPropertiesDto {
   final double courseAccuracy;
   final String? trackId;
   final String deviceId;
-
-
 
   DawarichPointPropertiesDto({
     required this.batteryState,
@@ -49,6 +46,4 @@ class DawarichPointPropertiesDto {
       'device_id': deviceId,
     };
   }
-
-
 }

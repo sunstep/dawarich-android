@@ -1,8 +1,6 @@
-
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point_properties.dart';
 
 class ApiPointPropertiesViewModel {
-
   String? city;
   String? type;
   String? state;
@@ -16,7 +14,6 @@ class ApiPointPropertiesViewModel {
   String? osmValue;
   String? countrycode;
   String? housenumber;
-
 
   ApiPointPropertiesViewModel(ApiPointProperties properties) {
     city = properties.city;
@@ -35,7 +32,7 @@ class ApiPointPropertiesViewModel {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data =  <String, dynamic>{};
+    final Map<String, dynamic> data = <String, dynamic>{};
     data['city'] = city;
     data['type'] = type;
     data['state'] = state;

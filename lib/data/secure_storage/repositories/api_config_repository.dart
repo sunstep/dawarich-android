@@ -3,16 +3,13 @@ import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfa
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final class ApiConfigRepository implements IApiConfigRepository {
-
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   ApiConfigDTO? _apiConfig;
-
 
   ApiConfigRepository();
 
   @override
   Future<void> initialize() async {
-
     final host = await _secureStorage.read(key: 'host');
     final apiKey = await _secureStorage.read(key: 'apiKey');
     if (host != null && apiKey != null) {
@@ -33,7 +30,6 @@ final class ApiConfigRepository implements IApiConfigRepository {
 
   @override
   void setApiKey(String apiKey) {
-
     if (_apiConfig == null) {
       throw Exception('Cannot set API key before setting host');
     }
@@ -42,7 +38,6 @@ final class ApiConfigRepository implements IApiConfigRepository {
 
   @override
   Future<void> storeApiConfig() async {
-
     final ApiConfigDTO? cfg = _apiConfig;
     if (cfg == null || !cfg.isComplete) {
       throw Exception('Cannot store incomplete ApiConfigDTO');
@@ -61,5 +56,4 @@ final class ApiConfigRepository implements IApiConfigRepository {
 
   @override
   bool isConfigured() => _apiConfig != null && _apiConfig!.isComplete;
-
 }

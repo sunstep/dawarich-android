@@ -3,10 +3,8 @@ import 'package:dawarich/application/services/user_session_service.dart';
 import 'package:flutter/foundation.dart';
 
 class DrawerViewModel with ChangeNotifier {
-
   final UserSessionService _sessionService;
   final ApiConfigService _apiConfigService;
-
 
   DrawerViewModel(this._sessionService, this._apiConfigService);
 

@@ -1,7 +1,6 @@
 import 'package:battery_plus/battery_plus.dart';
 
 final class BatteryDataClient {
-
   late Battery _battery;
 
   BatteryDataClient() {
@@ -9,7 +8,6 @@ final class BatteryDataClient {
   }
 
   Future<String> getBatteryState() async {
-
     BatteryState state = await _battery.batteryState;
     String value = state.toString().split(".")[1];
 
@@ -17,6 +15,4 @@ final class BatteryDataClient {
   }
 
   Future<int> getBatteryLevel() async => await _battery.batteryLevel;
-
-
 }

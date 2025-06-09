@@ -2,7 +2,6 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/requ
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_properties_dto.dart';
 
 class DawarichPointDto {
-
   final String type;
   final DawarichPointGeometryDto geometry;
   final DawarichPointPropertiesDto properties;

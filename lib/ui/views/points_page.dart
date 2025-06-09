@@ -59,21 +59,14 @@ class _PointsBody extends StatelessWidget {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      final endOfDay = DateTime(
-        picked.year,
-        picked.month,
-        picked.day,
-        23,
-        59,
-        59,
-        999,
-        999
-      );
+      final endOfDay =
+          DateTime(picked.year, picked.month, picked.day, 23, 59, 59, 999, 999);
       vm.setEndDate(endOfDay);
       // vm.searchPressed(); // Auto refresh: takes too long to load now.
     }
   }
-  Future<void> _confirmDeletion(BuildContext c) async { /* … */ }
+
+  Future<void> _confirmDeletion(BuildContext c) async {/* … */}
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +87,7 @@ class _PointsBody extends StatelessWidget {
             children: [
               IconButton(
                 icon: Icon(
-                  vm.displayFilters
-                      ? Icons.expand_less
-                      : Icons.expand_more,
+                  vm.displayFilters ? Icons.expand_less : Icons.expand_more,
                 ),
                 onPressed: vm.toggleDisplayFilters,
               ),
@@ -110,7 +101,8 @@ class _PointsBody extends StatelessWidget {
                 label: const Text('Refresh'),
                 onPressed: vm.searchPressed,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               ),
             ],
@@ -121,32 +113,30 @@ class _PointsBody extends StatelessWidget {
             const SizedBox(height: 8),
             _FilterCard(
               onPickStart: () => _pickStart(context),
-              onPickEnd:   () => _pickEnd(context),
+              onPickEnd: () => _pickEnd(context),
             ),
             const SizedBox(height: 16),
           ],
 
           // ————— results list or skeleton —————
           Expanded(
-            child: vm.isLoading
-                ? const SizedBox()
-                : _PointsList(),
+            child: vm.isLoading ? const SizedBox() : _PointsList(),
           ),
 
           // ————— footer —————
           const SizedBox(height: 16),
           _FooterBar(
             hasSelection: vm.hasSelectedItems(),
-            onDelete:     () => _confirmDeletion(context),
-            onRefresh:    vm.searchPressed,
-            onFirst:      vm.navigateFirst,
-            onBack:       vm.navigateBack,
-            onNext:       vm.navigateNext,
-            onLast:       vm.navigateLast,
-            currentPage:  vm.currentPage,
-            totalPages:   vm.totalPages,
-            sortByNew:    vm.sortByNew,
-            toggleSort:   vm.toggleSort,
+            onDelete: () => _confirmDeletion(context),
+            onRefresh: vm.searchPressed,
+            onFirst: vm.navigateFirst,
+            onBack: vm.navigateBack,
+            onNext: vm.navigateNext,
+            onLast: vm.navigateLast,
+            currentPage: vm.currentPage,
+            totalPages: vm.totalPages,
+            sortByNew: vm.sortByNew,
+            toggleSort: vm.toggleSort,
           ),
         ],
       ),
@@ -161,8 +151,8 @@ class PointsPageSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor     = isDark ? Colors.grey.shade800 : Colors.grey.shade400;
-    final highlightColor= isDark ? Colors.grey.shade600 : Colors.white;
+    final baseColor = isDark ? Colors.grey.shade800 : Colors.grey.shade400;
+    final highlightColor = isDark ? Colors.grey.shade600 : Colors.white;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -174,7 +164,8 @@ class PointsPageSkeleton extends StatelessWidget {
             // ➤ filter skeleton
             Card(
               elevation: 12,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -198,7 +189,9 @@ class PointsPageSkeleton extends StatelessWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (_, __) => Row(
                   children: [
-                    const SizedBox(width: 40, child: Checkbox(value: false, onChanged: null)),
+                    const SizedBox(
+                        width: 40,
+                        child: Checkbox(value: false, onChanged: null)),
                     const SizedBox(width: 12),
                     Expanded(child: Container(height: 16, color: baseColor)),
                     const SizedBox(width: 12),
@@ -215,7 +208,7 @@ class PointsPageSkeleton extends StatelessWidget {
               children: [
                 Container(width: 120, height: 32, color: baseColor),
                 const SizedBox(width: 8),
-                Container(width: 80,  height: 32, color: baseColor),
+                Container(width: 80, height: 32, color: baseColor),
                 const Spacer(),
                 Container(width: 100, height: 32, color: baseColor),
               ],
@@ -240,7 +233,6 @@ class _FilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) {
-
     final PointsPageViewModel vm = c.watch<PointsPageViewModel>();
 
     return Card(
@@ -312,8 +304,8 @@ class _FilterCard extends StatelessWidget {
                 ElevatedButton(
                   onPressed: vm.searchPressed,
                   style: ElevatedButton.styleFrom(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
@@ -399,13 +391,15 @@ class _PointsList extends StatelessWidget {
         final selected = vm.selectedItems.contains(p.id.toString());
         return Card(
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: CheckboxListTile(
             value: selected,
             onChanged: (v) => vm.toggleSelection(idx, v),
             title: Text(fmt.format(
                 DateTime.fromMillisecondsSinceEpoch(p.timestamp! * 1000))),
-            subtitle: Text('${p.geodata?.geometry?.coordinates?[0].toString()}, ${p.geodata?.geometry?.coordinates?[1].toString()}'),
+            subtitle: Text(
+                '${p.geodata?.geometry?.coordinates?[0].toString()}, ${p.geodata?.geometry?.coordinates?[1].toString()}'),
             controlAffinity: ListTileControlAffinity.leading,
           ),
         );
@@ -417,7 +411,13 @@ class _PointsList extends StatelessWidget {
 /// Footer: either deletion buttons (when items selected) or pagination + sort toggle
 class _FooterBar extends StatelessWidget {
   final bool hasSelection;
-  final VoidCallback onDelete, onRefresh, onFirst, onBack, onNext, onLast, toggleSort;
+  final VoidCallback onDelete,
+      onRefresh,
+      onFirst,
+      onBack,
+      onNext,
+      onLast,
+      toggleSort;
   final int currentPage, totalPages;
   final bool sortByNew;
 
@@ -447,41 +447,47 @@ class _FooterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         child: hasSelection
             ? Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            ElevatedButton(
-              onPressed: onDelete,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Delete', style: textStyle),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: onRefresh,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Refresh', style: textStyle),
-            ),
-          ],
-        )
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  ElevatedButton(
+                    onPressed: onDelete,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text('Delete', style: textStyle),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: onRefresh,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text('Refresh', style: textStyle),
+                  ),
+                ],
+              )
             : Row(
-          children: [
-            IconButton(onPressed: onFirst, icon: const Icon(Icons.first_page)),
-            IconButton(onPressed: onBack, icon: const Icon(Icons.navigate_before)),
-            Text('$currentPage/$totalPages', style: textStyle),
-            IconButton(onPressed: onNext, icon: const Icon(Icons.navigate_next)),
-            IconButton(onPressed: onLast, icon: const Icon(Icons.last_page)),
-            const Spacer(),
-            TextButton(
-              onPressed: toggleSort,
-              child: Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
-            ),
-          ],
-        ),
+                children: [
+                  IconButton(
+                      onPressed: onFirst, icon: const Icon(Icons.first_page)),
+                  IconButton(
+                      onPressed: onBack,
+                      icon: const Icon(Icons.navigate_before)),
+                  Text('$currentPage/$totalPages', style: textStyle),
+                  IconButton(
+                      onPressed: onNext, icon: const Icon(Icons.navigate_next)),
+                  IconButton(
+                      onPressed: onLast, icon: const Icon(Icons.last_page)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: toggleSort,
+                    child:
+                        Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
+                  ),
+                ],
+              ),
       ),
     );
   }

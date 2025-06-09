@@ -6,15 +6,12 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/resp
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';
 
-
 final class ApiPointRepository implements IApiPointRepository {
-
   final PointsClient _pointsClient;
   ApiPointRepository(this._pointsClient);
 
   @override
   Future<Result<(), String>> uploadBatch(DawarichPointBatchDto batch) async {
-
     Result<dynamic, String> result = await _pointsClient.post(batch);
 
     if (result case Ok(value: final _)) {
@@ -26,180 +23,188 @@ final class ApiPointRepository implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime startDate, DateTime endDate, int perPage) async {
-
+  Future<Option<List<ApiPointDTO>>> fetchAllPoints(
+      DateTime startDate, DateTime endDate, int perPage) async {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
-    final Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
+    final Result<Map<String, String?>, String> headerResult =
+        await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (headerResult) {
+      case Ok(value: Map<String, String?> headers):
+        {
+          final int pages = int.parse(headers['x-total-pages']!);
+          final List<ApiPointDTO> allPoints = [];
 
-      case Ok(value: Map<String, String?> headers): {
-        final int pages = int.parse(headers['x-total-pages']!);
-        final List<ApiPointDTO> allPoints = [];
+          final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
+          for (int page = 1; page <= pages; page++) {
+            responses.add(_pointsClient.getPoints(
+                startDateString, endDateString, perPage, page));
+          }
 
-        final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
-        for (int page = 1; page <= pages; page++) {
-          responses.add(_pointsClient.getPoints(startDateString, endDateString, perPage, page));
-        }
-
-        final List<Result<List<ApiPointDTO>, String>> fetchResults = await Future.wait(responses);
-        for (final Result<List<ApiPointDTO>, String> fetchResult in fetchResults) {
-
-          switch (fetchResult){
-            case Ok(value: List<ApiPointDTO> page): {
-              allPoints.addAll(page);
-            }
-            case Err(value: String error): {
-              debugPrint('Error fetching points for a page: $error');
+          final List<Result<List<ApiPointDTO>, String>> fetchResults =
+              await Future.wait(responses);
+          for (final Result<List<ApiPointDTO>, String> fetchResult
+              in fetchResults) {
+            switch (fetchResult) {
+              case Ok(value: List<ApiPointDTO> page):
+                {
+                  allPoints.addAll(page);
+                }
+              case Err(value: String error):
+                {
+                  debugPrint('Error fetching points for a page: $error');
+                }
             }
           }
 
+          return Some(allPoints);
         }
 
-        return Some(allPoints);
-      }
-
-      case Err(value: String error): {
-        debugPrint("Failed to retrieve headers: $error");
-        return const None();
-      }
-    }
-
-  }
-
-  @override
-  Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(DateTime startDate, DateTime endDate, int perPage) async {
-
-    final String startDateString = _formatStartDate(startDate);
-    final String endDateString = _formatEndDate(endDate);
-
-    final Result<Map<String, String?>, String> headerResult = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
-
-    switch (headerResult) {
-
-      case Ok(value: Map<String, String?> headers): {
-        final int pages = int.parse(headers['x-total-pages']!);
-        final List<SlimApiPointDTO> allPoints = [];
-
-        final List<Future<Result<List<SlimApiPointDTO>, String>>> responses = [];
-        for (int page = 1; page <= pages; page++) {
-          responses.add(_pointsClient.getSlimPoints(startDateString, endDateString, perPage, page));
+      case Err(value: String error):
+        {
+          debugPrint("Failed to retrieve headers: $error");
+          return const None();
         }
-
-        final List<Result<List<SlimApiPointDTO>, String>> fetchResults = await Future.wait(responses);
-        for (final Result<List<SlimApiPointDTO>, String> fetchResult in fetchResults) {
-
-          switch (fetchResult){
-            case Ok(value: List<SlimApiPointDTO> page): {
-              allPoints.addAll(page);
-            }
-            case Err(value: String error): {
-              debugPrint('Error fetching slim points for a page: $error');
-            }
-          }
-
-        }
-
-        return Some(allPoints);
-      }
-
-      case Err(value: String error): {
-        debugPrint("Failed to retrieve slim point headers: $error");
-        return const None();
-      }
     }
   }
 
   @override
-  Future<int> getTotalPages(DateTime startDate, DateTime endDate, int perPage) async {
-
+  Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(
+      DateTime startDate, DateTime endDate, int perPage) async {
     final String startDateString = _formatStartDate(startDate);
     final String endDateString = _formatEndDate(endDate);
 
+    final Result<Map<String, String?>, String> headerResult =
+        await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
-    final Result<Map<String, String?>, String> result = await _pointsClient.getHeaders(startDateString, endDateString, perPage);
+    switch (headerResult) {
+      case Ok(value: Map<String, String?> headers):
+        {
+          final int pages = int.parse(headers['x-total-pages']!);
+          final List<SlimApiPointDTO> allPoints = [];
+
+          final List<Future<Result<List<SlimApiPointDTO>, String>>> responses =
+              [];
+          for (int page = 1; page <= pages; page++) {
+            responses.add(_pointsClient.getSlimPoints(
+                startDateString, endDateString, perPage, page));
+          }
+
+          final List<Result<List<SlimApiPointDTO>, String>> fetchResults =
+              await Future.wait(responses);
+          for (final Result<List<SlimApiPointDTO>, String> fetchResult
+              in fetchResults) {
+            switch (fetchResult) {
+              case Ok(value: List<SlimApiPointDTO> page):
+                {
+                  allPoints.addAll(page);
+                }
+              case Err(value: String error):
+                {
+                  debugPrint('Error fetching slim points for a page: $error');
+                }
+            }
+          }
+
+          return Some(allPoints);
+        }
+
+      case Err(value: String error):
+        {
+          debugPrint("Failed to retrieve slim point headers: $error");
+          return const None();
+        }
+    }
+  }
+
+  @override
+  Future<int> getTotalPages(
+      DateTime startDate, DateTime endDate, int perPage) async {
+    final String startDateString = _formatStartDate(startDate);
+    final String endDateString = _formatEndDate(endDate);
+
+    final Result<Map<String, String?>, String> result =
+        await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (result) {
+      case Ok(value: Map<String, String?> headers):
+        {
+          return int.parse(headers['x-total-pages']!);
+        }
 
-      case Ok(value: Map<String, String?> headers): {
-        return int.parse(headers['x-total-pages']!);
-      }
-
-      case Err(value: String error): {
-
-        debugPrint("Failed to get total pages: $error");
-        return 0;
-      }
+      case Err(value: String error):
+        {
+          debugPrint("Failed to get total pages: $error");
+          return 0;
+        }
     }
-
   }
 
   @override
   Future<Option<ApiPointDTO>> fetchLastPoint() async {
-
-    final Result<ApiPointDTO, String> result  = await _pointsClient.getLastPoint();
+    final Result<ApiPointDTO, String> result =
+        await _pointsClient.getLastPoint();
 
     switch (result) {
-
-      case Ok(value: ApiPointDTO dto): return Some(dto);
-      case Err(value: String error): {
-        debugPrint("Failed to fetch last point: $error");
-        return const None();
-      }
+      case Ok(value: ApiPointDTO dto):
+        return Some(dto);
+      case Err(value: String error):
+        {
+          debugPrint("Failed to fetch last point: $error");
+          return const None();
+        }
     }
   }
 
   @override
-  Future<Option<Map<String, String?>>> fetchHeaders(DateTime startDate, DateTime endDate, int perPage) async {
-
+  Future<Option<Map<String, String?>>> fetchHeaders(
+      DateTime startDate, DateTime endDate, int perPage) async {
     final String startDateString =
-    DateTime(startDate.year, startDate.month, startDate.day)
-        .toUtc()
-        .toIso8601String();
-    final String endDateString = DateTime(startDate.year, startDate.month,
-        startDate.day, 23, 59, 59)
-        .toUtc()
-        .toIso8601String();
+        DateTime(startDate.year, startDate.month, startDate.day)
+            .toUtc()
+            .toIso8601String();
+    final String endDateString =
+        DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 59)
+            .toUtc()
+            .toIso8601String();
 
-    Result<Map<String, String?>, String> result =  await _pointsClient.getHeaders(startDateString, endDateString, perPage);
+    Result<Map<String, String?>, String> result =
+        await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
     switch (result) {
-
-      case Ok(value: Map<String, String?> headers): return Some(headers);
-      case Err(value: String error): {
-
-        debugPrint("Failed to fetch headers: $error");
-        return const None();
-      }
+      case Ok(value: Map<String, String?> headers):
+        return Some(headers);
+      case Err(value: String error):
+        {
+          debugPrint("Failed to fetch headers: $error");
+          return const None();
+        }
     }
   }
 
   @override
   Future<Result<(), String>> deletePoint(String point) async {
-
     final Result<(), String> result = await _pointsClient.deletePoint(point);
 
-    switch (result)  {
-
-      case Ok(value: ()): return const Ok(());
-      case Err(value: String error): {
-        debugPrint("Failed to delete point: $error");
-        return const Err("Failed to delete point.");
-      }
+    switch (result) {
+      case Ok(value: ()):
+        return const Ok(());
+      case Err(value: String error):
+        {
+          debugPrint("Failed to delete point: $error");
+          return const Err("Failed to delete point.");
+        }
     }
   }
 
-  String _formatStartDate(DateTime date){
-    return DateTime(date.year, date.month, date.day)
-        .toUtc()
-        .toIso8601String();
+  String _formatStartDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day).toUtc().toIso8601String();
   }
 
   String _formatEndDate(DateTime date) {
-    return DateTime(date.year, date.month,
-        date.day, 23, 59, 59)
+    return DateTime(date.year, date.month, date.day, 23, 59, 59)
         .toUtc()
         .toIso8601String();
   }

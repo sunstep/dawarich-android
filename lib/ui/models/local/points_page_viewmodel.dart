@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointsPageViewModel with ChangeNotifier {
-
   final ApiPointService _pointService = GetIt.I<ApiPointService>();
 
   late DateTime _startDate;
@@ -39,7 +38,7 @@ final class PointsPageViewModel with ChangeNotifier {
   DateTime get endDate => _endDate;
 
   String get formattedStart => DateFormat.yMMMd().add_Hm().format(_startDate);
-  String get formattedEnd   => DateFormat.yMMMd().add_Hm().format(_endDate);
+  String get formattedEnd => DateFormat.yMMMd().add_Hm().format(_endDate);
 
   bool get isLoading => _isLoading;
   bool get displayFilters => _displayFilters;
@@ -52,12 +51,13 @@ final class PointsPageViewModel with ChangeNotifier {
 
   List<ApiPointViewModel> get points => _points;
   List<ApiPointViewModel> get pagePoints {
-
     if (_showUnprocessed) {
       return _pagePoints;
     }
 
-    return _pagePoints.where((p) => p.geodata?.geometry?.coordinates != null).toList();
+    return _pagePoints
+        .where((p) => p.geodata?.geometry?.coordinates != null)
+        .toList();
   }
 
   Set<String> get selectedItems => _selectedItems;
@@ -117,7 +117,7 @@ final class PointsPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  void setSelectedItems(Set<String> points){
+  void setSelectedItems(Set<String> points) {
     _selectedItems = points;
     notifyListeners();
   }
@@ -143,7 +143,6 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   void setCurrentPagePoints() {
-
     final int start = (currentPage - 1) * pointsPerPage;
     final int end = start + pointsPerPage;
 
@@ -151,25 +150,25 @@ final class PointsPageViewModel with ChangeNotifier {
       pagePoints.clear();
     }
 
-    setPagePoints(points.sublist(start, end > points.length ? points.length : end));
+    setPagePoints(
+        points.sublist(start, end > points.length ? points.length : end));
   }
 
   Future<void> _initialize() async {
+    setLoading(true);
 
-      setLoading(true);
+    int amountOfPages =
+        await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
+    setTotalPages(amountOfPages);
 
-      int amountOfPages = await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
-      setTotalPages(amountOfPages);
+    Option<List<ApiPoint>> result =
+        await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
 
-      Option<List<ApiPoint>> result =  await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
-
-      switch (result) {
-
-        case Some(value: List<ApiPoint> fetchedPoints): {
-
-          List<ApiPointViewModel> points = fetchedPoints
-              .map((point) => ApiPointViewModel(point))
-              .toList();
+    switch (result) {
+      case Some(value: List<ApiPoint> fetchedPoints):
+        {
+          List<ApiPointViewModel> points =
+              fetchedPoints.map((point) => ApiPointViewModel(point)).toList();
 
           setPoints(points);
           setCurrentPagePoints();
@@ -177,49 +176,48 @@ final class PointsPageViewModel with ChangeNotifier {
           setLoading(false);
         }
 
-        case None(): {
+      case None():
+        {
           // Handle error
         }
-      }
-
+    }
   }
 
   Future<void> searchPressed() async {
-
     setLoading(true);
     clearPoints();
 
-    int amountOfPages = await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
+    int amountOfPages =
+        await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
     setTotalPages(amountOfPages);
 
     setCurrentPage(1);
 
-    Option<List<ApiPoint>> result = await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
+    Option<List<ApiPoint>> result =
+        await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
 
     switch (result) {
-      case Some(value: List<ApiPoint> fetchedPoints): {
+      case Some(value: List<ApiPoint> fetchedPoints):
+        {
+          List<ApiPointViewModel> points =
+              fetchedPoints.map((point) => ApiPointViewModel(point)).toList();
 
-        List<ApiPointViewModel> points = fetchedPoints
-            .map((point) => ApiPointViewModel(point))
-            .toList();
+          setPoints(points);
+          getCurrentPagePoints();
+          sortPoints();
 
-        setPoints(points);
-        getCurrentPagePoints();
-        sortPoints();
+          setLoading(false);
+        }
 
-        setLoading(false);
-      }
-
-      case None(): {
-        // Edit view to error page
-      }
+      case None():
+        {
+          // Edit view to error page
+        }
     }
-
   }
 
   List<ApiPointViewModel> getCurrentPagePoints() {
-
-    final int start = (currentPage  - 1) * pointsPerPage;
+    final int start = (currentPage - 1) * pointsPerPage;
     final int end = start + pointsPerPage;
 
     if (start >= points.length || start < 0) {
@@ -231,15 +229,12 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   Future<void> deleteSelection() async {
-
     final selectedItemsCopy = selectedItems.toList();
 
-    for (String pointId in selectedItemsCopy){
-
+    for (String pointId in selectedItemsCopy) {
       bool deleted = await _pointService.deletePoint(pointId);
 
       if (deleted) {
-
         points.removeWhere((point) => point.id.toString() == pointId);
         selectedItems.remove(pointId);
         setSelectAll(_isAllSelected());
@@ -248,9 +243,7 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   void navigateFirst() {
-
     if (currentPage > 0) {
-
       _isLoading = true;
       _currentPage = 1;
 
@@ -261,9 +254,7 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   void navigateBack() {
-
     if (currentPage > 1) {
-
       _isLoading = true;
       _currentPage--;
 
@@ -274,48 +265,39 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   void navigateNext() {
-
     if (currentPage < totalPages) {
-
       _isLoading = true;
       _currentPage++;
 
       setCurrentPagePoints();
 
       _isLoading = false;
-
     }
   }
 
   void navigateLast() {
-
     if (currentPage < totalPages) {
-
       _isLoading = true;
       _currentPage = totalPages;
 
       setCurrentPagePoints();
 
       _isLoading = false;
-
     }
   }
 
-
   void toggleSelectAll() {
-
     setSelectAll(!selectAll);
 
     if (selectAll) {
-      setSelectedItems(getCurrentPagePoints().map((point) => point.id.toString()).toSet());
+      setSelectedItems(
+          getCurrentPagePoints().map((point) => point.id.toString()).toSet());
     } else {
       clearSelectedItems();
     }
   }
 
-
   void toggleSelection(int index, bool? value) {
-
     final String pointId = points[index].id.toString();
 
     if (value == true) {
@@ -334,8 +316,6 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   void sortPoints() {
-
-
     points.sort((a, b) {
       DateTime dateA = DateTime.fromMillisecondsSinceEpoch(a.timestamp! * 1000);
       DateTime dateB = DateTime.fromMillisecondsSinceEpoch(b.timestamp! * 1000);
@@ -347,6 +327,4 @@ final class PointsPageViewModel with ChangeNotifier {
 
   bool hasSelectedItems() => _selectedItems.isNotEmpty;
   bool _isAllSelected() => _selectedItems.length == pointsPerPage;
-
-
 }

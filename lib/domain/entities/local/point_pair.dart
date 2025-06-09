@@ -7,21 +7,20 @@ class PointPair {
 
   const PointPair(this.A, this.B);
 
-  bool _isAntiPodal(){
-
+  bool _isAntiPodal() {
     double latA = degToRadian(A.latitude);
     double lngA = degToRadian(A.longitude);
     double latB = degToRadian(B.latitude);
     double lngB = degToRadian(B.longitude);
     const double threshold = 1e-10;
 
-    double dSigma = acos(sin(latA) * sin(latB) + cos(latA) * cos(latB) * cos(lngB - lngA));
+    double dSigma =
+        acos(sin(latA) * sin(latB) + cos(latA) * cos(latB) * cos(lngB - lngA));
 
     return ((pi - dSigma).abs() < threshold);
   }
 
   double calculateDistance() {
-
     const Distance distanceVincenty = DistanceVincenty();
     const Distance distanceHaversine = DistanceHaversine();
 
@@ -30,9 +29,5 @@ class PointPair {
     }
 
     return distanceVincenty.as(LengthUnit.Meter, A, B);
-
   }
-
-
-
 }

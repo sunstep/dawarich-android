@@ -5,21 +5,17 @@ import 'package:dawarich/ui/models/api/v1/points/request/dawarich_point_batch_vi
 import 'package:dawarich/ui/models/api/v1/points/request/dawarich_point_viewmodel.dart';
 
 extension DawarichBatchConverter on DawarichPointBatch {
-
   DawarichPointBatchViewModel toViewModel() {
-    List<DawarichPointViewModel> points = this.points
-        .map((point) => point.toViewModel())
-        .toList();
+    List<DawarichPointViewModel> points =
+        this.points.map((point) => point.toViewModel()).toList();
     return DawarichPointBatchViewModel(points: points);
   }
 }
 
 extension DawarichBatchDtoConverter on DawarichPointBatchViewModel {
-
   DawarichPointBatch toEntity() {
-    List<DawarichPoint> points = this.points
-        .map((pointDto) => pointDto.toEntity())
-        .toList();
+    List<DawarichPoint> points =
+        this.points.map((pointDto) => pointDto.toEntity()).toList();
     return DawarichPointBatch(points: points);
   }
 }

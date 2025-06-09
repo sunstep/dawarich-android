@@ -10,9 +10,7 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/ui/models/local/map_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-
 final class MapPage extends StatefulWidget {
-
   const MapPage({super.key});
 
   @override
@@ -20,7 +18,6 @@ final class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
-
   late final AnimatedMapController _animatedMapController;
 
   @override
@@ -29,7 +26,8 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
     _animatedMapController = AnimatedMapController(vsync: this);
   }
 
-  Widget _bottomsheetContent(BuildContext context, MapViewModel mapModel, ScrollController scrollController) {
+  Widget _bottomsheetContent(BuildContext context, MapViewModel mapModel,
+      ScrollController scrollController) {
     return Container(
       decoration: BoxDecoration(
         gradient: Theme.of(context).pageBackground,
@@ -78,7 +76,8 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                             _datePicker(context, mapModel);
                           },
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 16),
                             backgroundColor: Colors.transparent,
                             foregroundColor: Theme.of(context).primaryColor,
                             shape: RoundedRectangleBorder(
@@ -131,7 +130,10 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 16),
                 // Loading indicator or other bottom sheet content
-                mapModel.isLoading ? const CustomLoadingIndicator(message: "Loading your timeline...") : const SizedBox(),
+                mapModel.isLoading
+                    ? const CustomLoadingIndicator(
+                        message: "Loading your timeline...")
+                    : const SizedBox(),
               ],
             ),
           ),
@@ -141,7 +143,6 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   }
 
   Widget _buildBottomSheet(MapViewModel mapModel) {
-
     return DraggableScrollableSheet(
       initialChildSize: 0.3,
       minChildSize: 0.15,
@@ -169,7 +170,6 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   }
 
   Future<void> _datePicker(BuildContext context, MapViewModel mapModel) async {
-
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: mapModel.selectedDate,
@@ -180,11 +180,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
     if (pickedDate != null) {
       await mapModel.processNewDate(pickedDate);
     }
-
   }
 
   Widget _pageContent(MapViewModel mapModel) {
-
     if (mapModel.currentLocation == null) {
       return const CustomLoadingIndicator(message: "Preparing the map...");
     }
@@ -199,7 +197,8 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
           ),
           children: [
             TileLayer(
-              urlTemplate: 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=NWn5VTZI9avXmOoeAT00',
+              urlTemplate:
+                  'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=NWn5VTZI9avXmOoeAT00',
               userAgentPackageName: 'app.dawarich.android',
               maxNativeZoom: 19,
             ),
@@ -245,7 +244,8 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               const SizedBox(height: 8),
               _mapButton(icon: Icons.remove, onTap: () => mapModel.zoomOut()),
               const SizedBox(height: 8),
-              _mapButton(icon: Icons.my_location, onTap: () => mapModel.centerMap()),
+              _mapButton(
+                  icon: Icons.my_location, onTap: () => mapModel.centerMap()),
             ],
           ),
         ),
@@ -269,7 +269,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
       value: mapViewModel,
       child: Builder(
         builder: (context) {
-          context.read<MapViewModel>().setAnimatedMapController(_animatedMapController);
+          context
+              .read<MapViewModel>()
+              .setAnimatedMapController(_animatedMapController);
           return _pageBase(context);
         },
       ),

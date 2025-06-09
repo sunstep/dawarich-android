@@ -1,9 +1,7 @@
-
 import 'package:dawarich/data/objectbox/entities/user/user_entity.dart';
 import 'package:objectbox/objectbox.dart';
 
 final class TrackEntity {
-
   @Id(assignable: true)
   int id;
 
@@ -18,12 +16,10 @@ final class TrackEntity {
   bool active;
   final ToOne<UserEntity> user = ToOne<UserEntity>();
 
-  TrackEntity({
-    this.id = 0,
-    required this.trackId,
-    required this.startTimestamp,
-    this.endTimestamp,
-    this.active = true
-  });
-
+  TrackEntity(
+      {this.id = 0,
+      required this.trackId,
+      required this.startTimestamp,
+      this.endTimestamp,
+      this.active = true});
 }

@@ -1,6 +1,6 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_batch_dto.dart';
+import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/received_api_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 import 'package:http/http.dart' as http;
@@ -99,7 +99,7 @@ final class PointsClient {
     return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while retrieving last point.");
   }
 
-  Future<Result<(), String>> getDeletePoint(String id) async {
+  Future<Result<(), String>> deletePoint(String id) async {
     final Uri uri = Uri.parse(
       "${_apiInfo.host}/api/v1/points/$id?api_key=${_apiInfo.apiKey}",
     );

@@ -30,7 +30,6 @@ final class ConnectPage extends StatelessWidget {
 }
 
 final class _ConnectFormCard extends StatefulWidget {
-
   const _ConnectFormCard();
 
   @override
@@ -38,17 +37,15 @@ final class _ConnectFormCard extends StatefulWidget {
 }
 
 class _ConnectFormCardState extends State<_ConnectFormCard> {
-
   final _hostFormKey = GlobalKey<FormState>();
-  final _apiFormKey  = GlobalKey<FormState>();
+  final _apiFormKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
     final ConnectViewModel vm = context.watch<ConnectViewModel>();
     return Card(
       elevation: 12,
-      shape:
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Column(
@@ -60,7 +57,8 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
               physics: const ClampingScrollPhysics(),
               currentStep: vm.currentStep,
               onStepContinue: () => _handleContinue(context, vm),
-              onStepCancel: vm.currentStep > 0 ? () => vm.goToPreviousStep() : null,
+              onStepCancel:
+                  vm.currentStep > 0 ? () => vm.goToPreviousStep() : null,
               controlsBuilder: (ctx, details) =>
                   _buildControls(ctx, details, vm),
               steps: [
@@ -70,7 +68,9 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
                   state: vm.currentStep > 0
                       ? StepState.complete
                       : StepState.indexed,
-                  content: ServerStepWidget(formKey: _hostFormKey,),
+                  content: ServerStepWidget(
+                    formKey: _hostFormKey,
+                  ),
                 ),
                 Step(
                   title: const Text('Login'),
@@ -89,13 +89,12 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
   }
 
   /// and re-connects your real logic.
-  Future<void> _handleContinue(BuildContext context, ConnectViewModel vm) async {
-
+  Future<void> _handleContinue(
+      BuildContext context, ConnectViewModel vm) async {
     final navigator = Navigator.of(context);
 
     if (vm.currentStep == 0) {
-
-      if (!(_hostFormKey.currentState?.validate() ?? false)){
+      if (!(_hostFormKey.currentState?.validate() ?? false)) {
         return;
       }
 
@@ -105,7 +104,6 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
         vm.goToNextStep();
       }
     } else {
-
       if (!(_apiFormKey.currentState?.validate() ?? false)) {
         return;
       }
@@ -119,7 +117,8 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
     }
   }
 
-  Widget _buildControls(BuildContext context, ControlsDetails d, ConnectViewModel vm) {
+  Widget _buildControls(
+      BuildContext context, ControlsDetails d, ConnectViewModel vm) {
     final busy = vm.isVerifyingHost || vm.isLoggingIn;
     final isLast = vm.currentStep == 1;
     return Padding(
@@ -133,13 +132,13 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
             onPressed: busy ? null : d.onStepContinue,
             child: busy
                 ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: Colors.white,
-              ),
-            )
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
                 : Text(isLast ? 'Sign in' : 'Next'),
           ),
         ],

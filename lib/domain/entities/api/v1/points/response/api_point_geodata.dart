@@ -2,7 +2,6 @@ import 'package:dawarich/domain/entities/api/v1/points/response/api_point_geomet
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point_properties.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_geodata_dto.dart';
 
-
 class Geodata {
   String? type;
   ApiPointGeometry? geometry;
@@ -10,16 +9,13 @@ class Geodata {
 
   Geodata(GeodataDTO dto) {
     type = dto.type;
-    geometry = dto.geometry != null
-        ?  ApiPointGeometry(dto.geometry!)
-        : null;
-    properties = dto.properties != null
-        ?  ApiPointProperties(dto.properties!)
-        : null;
+    geometry = dto.geometry != null ? ApiPointGeometry(dto.geometry!) : null;
+    properties =
+        dto.properties != null ? ApiPointProperties(dto.properties!) : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data =  <String, dynamic>{};
+    final Map<String, dynamic> data = <String, dynamic>{};
     data['type'] = type;
     if (geometry != null) {
       data['geometry'] = geometry!.toJson();

@@ -13,7 +13,7 @@ final class LightTheme {
       onPrimary: Colors.white,
       secondary: Color(0xFF1E88E5),
       onSecondary: Colors.white,
-      surface: Color(0xFFF8F8F8),       // slightly lifted from scaffold
+      surface: Color(0xFFF8F8F8), // slightly lifted from scaffold
       onSurface: Colors.black,
       error: Colors.redAccent,
       onError: Colors.white,
@@ -89,7 +89,6 @@ final class LightTheme {
       ),
       elevation: 12,
     ),
-
 
     // Dividers inside the stepper, etc.
     dividerColor: Colors.grey.shade900,

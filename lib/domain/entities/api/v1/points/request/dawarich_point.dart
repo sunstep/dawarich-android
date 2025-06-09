@@ -2,7 +2,6 @@ import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_ge
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_properties.dart';
 
 class DawarichPoint {
-
   final String type;
   final DawarichPointGeometry geometry;
   final DawarichPointProperties properties;

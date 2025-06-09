@@ -1,5 +1,4 @@
 class HealthDto {
-
   String? status;
 
   HealthDto(Map<String, dynamic> response) {

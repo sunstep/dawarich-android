@@ -10,20 +10,17 @@ import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_geometry.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_properties.dart';
 
-
 extension LocalBatchPointToDto on LocalPoint {
-
   LocalPointDto toDto() {
     LocalPointGeometryDto geometry = this.geometry.toDto();
     LocalPointPropertiesDto properties = this.properties.toDto();
     return LocalPointDto(
-      id: id,
-      type: type,
-      geometry: geometry,
-      properties: properties,
-      userId: userId,
-      isUploaded: isUploaded
-    );
+        id: id,
+        type: type,
+        geometry: geometry,
+        properties: properties,
+        userId: userId,
+        isUploaded: isUploaded);
   }
 }
 
@@ -31,23 +28,21 @@ extension LocalPointToApi on LocalPoint {
   DawarichPoint toApi() {
     DawarichPointGeometry geometry = this.geometry.toApi();
     DawarichPointProperties properties = this.properties.toApi();
-    return DawarichPoint(type: type, geometry: geometry, properties: properties);
+    return DawarichPoint(
+        type: type, geometry: geometry, properties: properties);
   }
 }
 
 extension LocalPointDtoToEntity on LocalPointDto {
-
   LocalPoint toDomain() {
     LocalPointGeometry geometry = this.geometry.toEntity();
     LocalPointProperties properties = this.properties.toEntity();
     return LocalPoint(
-      id: id,
-      type: type,
-      geometry: geometry,
-      properties: properties,
-      userId: userId,
-      isUploaded: isUploaded
-    );
+        id: id,
+        type: type,
+        geometry: geometry,
+        properties: properties,
+        userId: userId,
+        isUploaded: isUploaded);
   }
 }
-

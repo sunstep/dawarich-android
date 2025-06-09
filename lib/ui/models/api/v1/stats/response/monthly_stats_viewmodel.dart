@@ -1,7 +1,6 @@
 import 'package:dawarich/domain/entities/api/v1/stats/response/monthly_stats.dart';
 
 class MonthlyStatsViewModel {
-
   int january;
   int february;
   int march;
@@ -15,7 +14,7 @@ class MonthlyStatsViewModel {
   int november;
   int december;
 
-  MonthlyStatsViewModel (
+  MonthlyStatsViewModel(
       this.january,
       this.february,
       this.march,
@@ -27,8 +26,7 @@ class MonthlyStatsViewModel {
       this.september,
       this.october,
       this.december,
-      this.november
-    );
+      this.november);
 
   factory MonthlyStatsViewModel.fromEntity(MonthlyStats entity) {
     return MonthlyStatsViewModel(
@@ -43,7 +41,6 @@ class MonthlyStatsViewModel {
         entity.september,
         entity.october,
         entity.november,
-        entity.december
-    );
+        entity.december);
   }
 }

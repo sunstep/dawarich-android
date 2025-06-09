@@ -9,14 +9,16 @@ class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     this.titleFontSize,
-    this.backgroundColor,          // ← added this as optional
+    this.backgroundColor, // ← added this as optional
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: backgroundColor,  // ← uses your passed-in color (nullable)
-      elevation: backgroundColor == null ? 0 : null, // if transparent, no shadow
+      backgroundColor:
+          backgroundColor, // ← uses your passed-in color (nullable)
+      elevation:
+          backgroundColor == null ? 0 : null, // if transparent, no shadow
       title: Text(
         title,
         style: TextStyle(

@@ -1,5 +1,4 @@
 class LocalPointGeometry {
-
   final String type;
   final List<double> coordinates;
 

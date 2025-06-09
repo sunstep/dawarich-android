@@ -3,18 +3,17 @@ import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repositor
 import 'package:option_result/option.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final class TrackerPreferencesRepository implements ITrackerPreferencesRepository {
-
+final class TrackerPreferencesRepository
+    implements ITrackerPreferencesRepository {
   @override
-  Future<void> setAutomaticTrackingPreference(int userId, bool trueOrFalse) async {
-
+  Future<void> setAutomaticTrackingPreference(
+      int userId, bool trueOrFalse) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool(TrackerKeys.automaticTrackingKey(userId), trueOrFalse);
   }
 
   @override
   Future<void> setPointsPerBatchPreference(int userId, int amount) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setInt(TrackerKeys.pointsPerBatchKey(userId), amount);
   }
@@ -51,7 +50,6 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
 
   @override
   Future<Option<bool>> getAutomaticTrackingPreference(int userId) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     bool? preference = prefs.getBool(TrackerKeys.automaticTrackingKey(userId));
@@ -65,7 +63,6 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
 
   @override
   Future<Option<int>> getPointsPerBatchPreference(int userId) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     int? preference = prefs.getInt(TrackerKeys.pointsPerBatchKey(userId));
@@ -79,7 +76,6 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
 
   @override
   Future<Option<int>> getTrackingFrequencyPreference(int userId) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     int? preference = prefs.getInt(TrackerKeys.trackingFrequencyKey(userId));
@@ -93,7 +89,6 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
 
   @override
   Future<Option<int>> getLocationAccuracyPreference(int userId) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     int? preference = prefs.getInt(TrackerKeys.locationAccuracyKey(userId));
@@ -107,7 +102,6 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
 
   @override
   Future<Option<int>> getMinimumPointDistancePreference(int userId) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     int? preference = prefs.getInt(TrackerKeys.minimumPointDistanceKey(userId));
@@ -121,7 +115,6 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
 
   @override
   Future<Option<String>> getTrackerId(int userId) async {
-
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     String? trackerId = prefs.getString(TrackerKeys.trackerIdKey(userId));
@@ -132,6 +125,4 @@ final class TrackerPreferencesRepository implements ITrackerPreferencesRepositor
 
     return const None();
   }
-
-
 }

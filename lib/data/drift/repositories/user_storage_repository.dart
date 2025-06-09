@@ -6,23 +6,19 @@ import 'package:drift/drift.dart';
 import 'package:option_result/option_result.dart';
 
 final class UserStorageRepository implements IUserStorageRepository {
-
   final SQLiteClient _database;
   UserStorageRepository(this._database);
 
-  Future<Option<UserDto>> _findDawarichUser(int dawarichId, String endpoint) async {
-
-    final userQuery = _database
-        .select(_database.userTable)
+  Future<Option<UserDto>> _findDawarichUser(
+      int dawarichId, String endpoint) async {
+    final userQuery = _database.select(_database.userTable)
       ..where((u) =>
-      u.dawarichId.equals(dawarichId) &
-      u.dawarichEndpoint.equals(endpoint)
-      );
+          u.dawarichId.equals(dawarichId) &
+          u.dawarichEndpoint.equals(endpoint));
 
     final UserTableData? userResult = await userQuery.getSingleOrNull();
 
     if (userResult != null) {
-
       return Some(UserDto.fromDatabase(userResult));
     }
     return const None();
@@ -30,26 +26,25 @@ final class UserStorageRepository implements IUserStorageRepository {
 
   @override
   Future<int> storeUser(UserDto userDto) async {
-
     if (userDto.remoteId != null && userDto.dawarichEndpoint != null) {
-      Option<UserDto> userResult = await _findDawarichUser(userDto.remoteId!, userDto.dawarichEndpoint!);
+      Option<UserDto> userResult =
+          await _findDawarichUser(userDto.remoteId!, userDto.dawarichEndpoint!);
 
-      if (userResult case Some(value: UserDto user)){
+      if (userResult case Some(value: UserDto user)) {
         return user.id;
       }
     }
 
     return await _database.into(_database.userTable).insertOnConflictUpdate(
-      UserTableCompanion(
-          dawarichId: Value(userDto.remoteId),
-          dawarichEndpoint: Value(userDto.dawarichEndpoint),
-          email: Value(userDto.email),
-          createdAt: Value(userDto.createdAt),
-          updatedAt: Value(userDto.updatedAt),
-          theme: Value(userDto.theme),
-          admin: Value(userDto.admin)
-      ),
-    );
+          UserTableCompanion(
+              dawarichId: Value(userDto.remoteId),
+              dawarichEndpoint: Value(userDto.dawarichEndpoint),
+              email: Value(userDto.email),
+              createdAt: Value(userDto.createdAt),
+              updatedAt: Value(userDto.updatedAt),
+              theme: Value(userDto.theme),
+              admin: Value(userDto.admin)),
+        );
   }
 
   // Future<Option<UserSettingsDto>> _getUserSettings(int userId) async {
@@ -67,17 +62,15 @@ final class UserStorageRepository implements IUserStorageRepository {
   //
   // }
 
-  Future<void> storeUserSettings(int localUserId, UserSettingsDto userSettings) async {
-
+  Future<void> storeUserSettings(
+      int localUserId, UserSettingsDto userSettings) async {
     _database.into(_database.userSettingsTable).insert(
         UserSettingsTableCompanion(
             immichUrl: Value(userSettings.immichUrl),
             immichApiKey: Value(userSettings.immichApiKey),
             photoprismUrl: Value(userSettings.photoprismUrl),
             photoprismApiKey: Value(userSettings.photoprismApiKey),
-            userId: Value(localUserId)
-        )
-    );
+            userId: Value(localUserId)));
   }
 
   // Future<Option<UserDto>> getStoredUser() async {
@@ -107,5 +100,4 @@ final class UserStorageRepository implements IUserStorageRepository {
   //     }
   //   }
   // }
-
 }

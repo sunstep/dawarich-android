@@ -1,12 +1,9 @@
-
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_properties.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_properties.dart';
 
 extension LocalPointPropertiesToDto on LocalPointProperties {
-
   LocalPointPropertiesDto toDto() {
-
     return LocalPointPropertiesDto(
       batteryState: batteryState,
       batteryLevel: batteryLevel,
@@ -39,13 +36,11 @@ extension LocalPointPropertiesToApi on LocalPointProperties {
         speedAccuracy: speedAccuracy,
         course: course,
         courseAccuracy: courseAccuracy,
-        deviceId: deviceId
-    );
+        deviceId: deviceId);
   }
 }
 
 extension LocalPointPropertiesDtoToEntity on LocalPointPropertiesDto {
-
   LocalPointProperties toEntity() {
     return LocalPointProperties(
       batteryState: batteryState,
@@ -64,4 +59,3 @@ extension LocalPointPropertiesDtoToEntity on LocalPointPropertiesDto {
     );
   }
 }
-

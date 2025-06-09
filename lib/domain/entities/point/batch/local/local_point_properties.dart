@@ -13,8 +13,6 @@ class LocalPointProperties {
   final String? trackId;
   final String deviceId;
 
-
-
   LocalPointProperties({
     required this.batteryState,
     required this.batteryLevel,
@@ -48,6 +46,4 @@ class LocalPointProperties {
       'device_id': deviceId,
     };
   }
-
-
 }

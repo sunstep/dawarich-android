@@ -5,7 +5,6 @@ import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_
 import 'package:drift/drift.dart';
 
 extension PointMapper on TypedResult {
-
   LocalPointDto toPointDto(SQLiteClient database) {
     final pointRow = readTable(database.pointsTable);
     final propertiesRow = readTable(database.pointPropertiesTable);
@@ -19,29 +18,28 @@ extension PointMapper on TypedResult {
     final latitude = double.parse(coordinates[1]);
 
     return LocalPointDto(
-      id: pointRow.id,
-      type: pointRow.type,
-      geometry: LocalPointGeometryDto(
-        type: geometryRow.type,
-        coordinates: [longitude, latitude],
-      ),
-      properties: LocalPointPropertiesDto(
-        batteryState: propertiesRow.batteryState,
-        batteryLevel: propertiesRow.batteryLevel,
-        wifi: propertiesRow.wifi,
-        timestamp: propertiesRow.timestamp,
-        horizontalAccuracy: propertiesRow.horizontalAccuracy,
-        verticalAccuracy: propertiesRow.verticalAccuracy,
-        altitude: propertiesRow.altitude,
-        speed: propertiesRow.speed,
-        speedAccuracy: propertiesRow.speedAccuracy,
-        course: propertiesRow.course,
-        courseAccuracy: propertiesRow.courseAccuracy,
-        trackId: propertiesRow.trackId,
-        deviceId: propertiesRow.deviceId,
-      ),
-      userId: pointRow.userId,
-      isUploaded: pointRow.isUploaded
-    );
+        id: pointRow.id,
+        type: pointRow.type,
+        geometry: LocalPointGeometryDto(
+          type: geometryRow.type,
+          coordinates: [longitude, latitude],
+        ),
+        properties: LocalPointPropertiesDto(
+          batteryState: propertiesRow.batteryState,
+          batteryLevel: propertiesRow.batteryLevel,
+          wifi: propertiesRow.wifi,
+          timestamp: propertiesRow.timestamp,
+          horizontalAccuracy: propertiesRow.horizontalAccuracy,
+          verticalAccuracy: propertiesRow.verticalAccuracy,
+          altitude: propertiesRow.altitude,
+          speed: propertiesRow.speed,
+          speedAccuracy: propertiesRow.speedAccuracy,
+          course: propertiesRow.course,
+          courseAccuracy: propertiesRow.courseAccuracy,
+          trackId: propertiesRow.trackId,
+          deviceId: propertiesRow.deviceId,
+        ),
+        userId: pointRow.userId,
+        isUploaded: pointRow.isUploaded);
   }
 }

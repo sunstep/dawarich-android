@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class BatchExplorerAppbar extends StatelessWidget implements PreferredSizeWidget{
-
+class BatchExplorerAppbar extends StatelessWidget
+    implements PreferredSizeWidget {
   const BatchExplorerAppbar({super.key});
 
   @override
@@ -17,5 +17,4 @@ class BatchExplorerAppbar extends StatelessWidget implements PreferredSizeWidget
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
 }

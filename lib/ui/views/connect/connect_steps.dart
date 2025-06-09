@@ -22,13 +22,15 @@ class ServerStepWidget extends StatelessWidget {
                 labelText: 'Host URL',
                 prefixIcon: const Icon(Icons.link),
                 filled: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 contentPadding:
-                const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                    const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               ),
               keyboardType: TextInputType.url,
-              validator: (v) =>
-              (v != null && v.isNotEmpty) ? null : 'Please enter a host URL.',
+              validator: (v) => (v != null && v.isNotEmpty)
+                  ? null
+                  : 'Please enter a host URL.',
             ),
             const SizedBox(height: 16),
             if (vm.errorMessage != null)
@@ -44,7 +46,6 @@ class ServerStepWidget extends StatelessWidget {
 }
 
 class LoginStepWidget extends StatelessWidget {
-
   final GlobalKey<FormState> formKey;
   const LoginStepWidget({required this.formKey, super.key});
 
@@ -66,8 +67,9 @@ class LoginStepWidget extends StatelessWidget {
                 prefixIcon: const Icon(Icons.vpn_key),
                 filled: true,
                 contentPadding:
-                const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 suffixIcon: IconButton(
                   icon: Icon(vm.apiKeyVisible
                       ? Icons.visibility
@@ -76,7 +78,7 @@ class LoginStepWidget extends StatelessWidget {
                 ),
               ),
               validator: (v) =>
-              (v != null && v.isNotEmpty) ? null : 'Enter API key',
+                  (v != null && v.isNotEmpty) ? null : 'Enter API key',
             ),
             if (vm.errorMessage != null)
               Padding(
@@ -92,8 +94,8 @@ class LoginStepWidget extends StatelessWidget {
                 context: context,
                 builder: (_) => AlertDialog(
                   title: const Text('Coming Soon'),
-                  content: const Text(
-                      'Email/password login is not supported yet.'),
+                  content:
+                      const Text('Email/password login is not supported yet.'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),

@@ -18,7 +18,8 @@ final class TrackerPage extends StatefulWidget {
   State<TrackerPage> createState() => _TrackerPageState();
 }
 
-final class _TrackerPageState extends State<TrackerPage> with WidgetsBindingObserver, RouteAware {
+final class _TrackerPageState extends State<TrackerPage>
+    with WidgetsBindingObserver, RouteAware {
   late final TrackerPageViewModel _viewModel;
   late final StreamSubscription<void> _settingsSub;
 
@@ -66,7 +67,8 @@ final class _TrackerPageState extends State<TrackerPage> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _viewModel.persistPreferences();
     }
     if (state == AppLifecycleState.resumed) {
@@ -87,8 +89,12 @@ final class _TrackerPageState extends State<TrackerPage> with WidgetsBindingObse
               : 'To keep tracking running in the background, grant “Always” location permission in Settings.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Later')),
-          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Open Settings')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Later')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Open Settings')),
         ],
       ),
     ).then((v) => v ?? false);
@@ -128,7 +134,6 @@ class _TrackerBody extends StatelessWidget {
         children: [
           LastPointCard(),
           SizedBox(height: 32),
-
           _SettingsCard(),
         ],
       ),
@@ -141,7 +146,7 @@ class LastPointCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm     = context.watch<TrackerPageViewModel>();
+    final vm = context.watch<TrackerPageViewModel>();
     final accent = Theme.of(context).colorScheme.secondary;
     final theme = Theme.of(context);
     final white = theme.colorScheme.onSurface;
@@ -165,8 +170,7 @@ class LastPointCard extends StatelessWidget {
       child: Card(
         color: Theme.of(context).cardColor,
         elevation: 16,
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,14 +179,19 @@ class LastPointCard extends StatelessWidget {
             InkWell(
               onTap: () => vm.setHideLastPoint(!vm.hideLastPoint),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Center(child: Text(
+                      child: Center(
+                          child: Text(
                         'Last Point',
-                        style: Theme.of(context).textTheme.headlineSmall!
-                            .copyWith(color: white, fontWeight: FontWeight.bold),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall!
+                            .copyWith(
+                                color: white, fontWeight: FontWeight.bold),
                       )),
                     ),
                     Icon(
@@ -218,20 +227,12 @@ class LastPointCard extends StatelessWidget {
                     tile(
                       Icons.my_location,
                       'Latitude',
-                      vm
-                          .lastPoint
-                          ?.latitude
-                          .toStringAsFixed(5) ??
-                          '—',
+                      vm.lastPoint?.latitude.toStringAsFixed(5) ?? '—',
                     ),
                     tile(
                       Icons.my_location,
                       'Longitude',
-                      vm
-                          .lastPoint
-                          ?.longitude
-                          .toStringAsFixed(5) ??
-                          '—',
+                      vm.lastPoint?.longitude.toStringAsFixed(5) ?? '—',
                     ),
 
                     const SizedBox(height: 24),
@@ -250,19 +251,17 @@ class LastPointCard extends StatelessWidget {
                             ),
                             icon: vm.isTracking
                                 ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: accent,
-                              ),
-                            )
-                                : Icon(Icons.add_location_alt,
-                                color: accent),
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: accent,
+                                    ),
+                                  )
+                                : Icon(Icons.add_location_alt, color: accent),
                             label: Text('Track Point',
                                 style: TextStyle(color: white)),
-                            onPressed:
-                            vm.isTracking ? null : vm.trackPoint,
+                            onPressed: vm.isTracking ? null : vm.trackPoint,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -328,12 +327,12 @@ class _InfoTile extends StatelessWidget {
               const SizedBox(height: 4),
               // each line (Date / time broken out) is right-aligned so the numbers line up
               ...valueLines.map((line) => Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  line,
-                  style: style.copyWith(fontWeight: FontWeight.bold),
-                ),
-              )),
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      line,
+                      style: style.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  )),
             ],
           ),
         ),
@@ -379,7 +378,7 @@ class _SettingsCard extends StatelessWidget {
                 height: 400, // You can make this dynamic or wrap content
                 child: TabBarView(
                   physics: const NeverScrollableScrollPhysics(),
-                  children:  [
+                  children: [
                     _RecordingSection(),
                     _BasicSettingsSection(),
                     _AdvancedSettingsSection(),
@@ -407,7 +406,8 @@ class _RecordingSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         if (vm.isRecording)
-          Text('Track ID: ${vm.currentTrack?.trackId}', style: Theme.of(context).textTheme.bodySmall),
+          Text('Track ID: ${vm.currentTrack?.trackId}',
+              style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 24),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -415,7 +415,8 @@ class _RecordingSection extends StatelessWidget {
                 ? theme.colorScheme.error.withValues(alpha: 0.85)
                 : theme.colorScheme.secondary.withValues(alpha: 0.85),
             foregroundColor: theme.colorScheme.onPrimary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: vm.toggleRecording,
           child: Text(vm.isRecording ? 'Stop Recording' : 'Start Recording'),
@@ -440,7 +441,8 @@ class _BasicSettingsSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'General',
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -450,7 +452,6 @@ class _BasicSettingsSection extends StatelessWidget {
           value: vm.isTrackingAutomatically,
           onChanged: vm.toggleAutomaticTracking,
         ),
-
         const SizedBox(height: 24),
         Row(
           children: [
@@ -458,7 +459,8 @@ class _BasicSettingsSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'Batching',
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -472,7 +474,6 @@ class _BasicSettingsSection extends StatelessWidget {
           label: '${vm.maxPointsPerBatch}',
           onChanged: (v) => vm.setMaxPointsPerBatch(v.toInt()),
         ),
-
         const SizedBox(height: 24),
         Row(
           children: [
@@ -480,7 +481,8 @@ class _BasicSettingsSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'Frequency',
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -514,7 +516,8 @@ class _AdvancedSettingsSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'Accuracy',
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -529,7 +532,6 @@ class _AdvancedSettingsSection extends StatelessWidget {
             );
           }).toList(),
         ),
-
         const SizedBox(height: 24),
         Row(
           children: [
@@ -537,7 +539,8 @@ class _AdvancedSettingsSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'Distance Threshold',
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -551,7 +554,6 @@ class _AdvancedSettingsSection extends StatelessWidget {
           label: '${vm.minimumPointDistance}m',
           onChanged: (v) => vm.setMinimumPointDistance(v.toInt()),
         ),
-
         const SizedBox(height: 24),
         Row(
           children: [
@@ -559,7 +561,8 @@ class _AdvancedSettingsSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'Device ID',
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),

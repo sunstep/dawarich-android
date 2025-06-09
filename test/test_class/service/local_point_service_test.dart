@@ -5,7 +5,6 @@ import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_
 import 'package:option_result/option_result.dart';
 import '../../mock/repository/local_point_repository_mock.dart';
 
-
 void main() {
   late MockLocalPointRepository repo;
   const testUser = 1;
@@ -61,7 +60,7 @@ void main() {
       // Pattern‐match on Result
       switch (res) {
         case Ok():
-        // good
+          // good
           break;
         case Err(value: final err):
           fail('Expected Ok, got Err($err)');
@@ -110,7 +109,7 @@ void main() {
         case Some():
           fail('Expected None, got Some');
         case None():
-        // good
+          // good
           break;
       }
 
@@ -120,8 +119,10 @@ void main() {
 
     test('getLastPoint: success returns most recent, tracks args', () async {
       // seed
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
-      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
       repo.failGetLastPoint = false;
 
       final opt = await repo.getLastPoint(testUser);
@@ -141,7 +142,8 @@ void main() {
 
     test('getLastPoint: failure flag yields None', () async {
       // seed so non-empty
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       repo.failGetLastPoint = true;
 
       final opt = await repo.getLastPoint(testUser);
@@ -150,7 +152,7 @@ void main() {
         case Some():
           fail('Expected None, got Some');
         case None():
-        // good
+          // good
           break;
       }
 
@@ -161,8 +163,10 @@ void main() {
     // getFullBatch
     //----------------------------------------------------------------
     test('getFullBatch: success returns all for user, tracks args', () async {
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
-      await repo.storePoint(makePoint(userId: otherUser, lon: 5, lat: 6, ts: 'tX'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: otherUser, lon: 5, lat: 6, ts: 'tX'));
       repo.failGetFullBatch = false;
 
       final res = await repo.getFullBatch(testUser);
@@ -197,8 +201,10 @@ void main() {
     // getCurrentBatch
     //----------------------------------------------------------------
     test('getCurrentBatch: only non-uploaded points, tracks args', () async {
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
-      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
       await repo.markBatchAsUploaded([1], testUser);
       repo.failGetCurrentBatch = false;
 
@@ -234,8 +240,10 @@ void main() {
     // getBatchPointCount
     //----------------------------------------------------------------
     test('getBatchPointCount: correct count, tracks args', () async {
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
-      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
       await repo.markBatchAsUploaded([1], testUser);
       repo.failGetBatchCount = false;
 
@@ -270,8 +278,10 @@ void main() {
     // markBatchAsUploaded
     //----------------------------------------------------------------
     test('markBatchAsUploaded: success', () async {
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
-      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
       repo.failMarkUploaded = false;
 
       final res = await repo.markBatchAsUploaded([1, 2], testUser);
@@ -314,14 +324,15 @@ void main() {
     // deletePoint
     //----------------------------------------------------------------
     test('deletePoint: success', () async {
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       repo.failDeletePoint = false;
 
       final res = await repo.deletePoint(1, testUser);
 
       switch (res) {
         case Ok():
-        // ok
+          // ok
           break;
         case Err(value: final e):
           fail('Expected Ok, got Err($e)');
@@ -352,7 +363,8 @@ void main() {
     });
 
     test('deletePoint: failure flag returns Err', () async {
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       repo.failDeletePoint = true;
 
       final res = await repo.deletePoint(1, testUser);
@@ -371,8 +383,10 @@ void main() {
     // clearBatch
     //----------------------------------------------------------------
     test('clearBatch: success', () async {
-      await repo.storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
-      await repo.storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
+      await repo
+          .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
       await repo.markBatchAsUploaded([1], testUser);
       repo.failClearBatch = false;
 
@@ -380,7 +394,7 @@ void main() {
 
       switch (res) {
         case Ok():
-        // ok
+          // ok
           break;
         case Err(value: final e):
           fail('Expected Ok, got Err($e)');

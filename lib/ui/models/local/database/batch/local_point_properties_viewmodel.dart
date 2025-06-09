@@ -7,10 +7,9 @@ class LocalPointPropertiesViewModel {
   final String timestamp;
   String get formattedTimestamp {
     return DateFormat('dd MMM yyyy HH:mm:ss')
-        .format(DateTime.parse(timestamp)
-        .toLocal()
-    );
+        .format(DateTime.parse(timestamp).toLocal());
   }
+
   final double horizontalAccuracy;
   final double verticalAccuracy;
   final double altitude;
@@ -20,8 +19,6 @@ class LocalPointPropertiesViewModel {
   final double courseAccuracy;
   final String? trackId;
   final String deviceId;
-
-
 
   LocalPointPropertiesViewModel({
     required this.batteryState,
@@ -56,6 +53,4 @@ class LocalPointPropertiesViewModel {
       'device_id': deviceId,
     };
   }
-
-
 }

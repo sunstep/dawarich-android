@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 
 class UserTable extends Table {
-
   IntColumn get id => integer().autoIncrement()();
   IntColumn get dawarichId => integer().nullable()();
   TextColumn get dawarichEndpoint => text().nullable()();
@@ -13,6 +12,6 @@ class UserTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {dawarichId, dawarichEndpoint}
-  ];
+        {dawarichId, dawarichEndpoint}
+      ];
 }

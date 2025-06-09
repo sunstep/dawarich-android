@@ -1,7 +1,6 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/stats/response/yearly_stats_dto.dart';
 
 class StatsDTO {
-
   int totalDistance;
   int totalPoints;
   int totalReverseGeocodedPoints;

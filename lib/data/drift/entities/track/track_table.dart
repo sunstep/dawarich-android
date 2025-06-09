@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 
 class TrackTable extends Table {
-
   IntColumn get id => integer().autoIncrement()();
   TextColumn get trackId => text()();
   DateTimeColumn get startTimestamp => dateTime()();

@@ -5,46 +5,45 @@ import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfac
 import 'package:option_result/option_result.dart';
 
 final class ApiPointRepositoryMock implements IApiPointRepository {
-
-  bool shouldUploadFail       = false;
+  bool shouldUploadFail = false;
   bool shouldFetchHeadersFail = false;
-  bool shouldFetchPointsFail  = false;
-  bool shouldFetchSlimFail    = false;
-  bool shouldFetchLastFail    = false;
-  bool shouldDeleteFail       = false;
+  bool shouldFetchPointsFail = false;
+  bool shouldFetchSlimFail = false;
+  bool shouldFetchLastFail = false;
+  bool shouldDeleteFail = false;
 
-  Map<String, String?> stubHeaders         = {'x-total-pages': '1'};
-  List<ApiPointDTO> stubPoints     = [];
-  List<SlimApiPointDTO>    stubSlimPoints  = [];
-  ApiPointDTO?     stubLastPoint;
+  Map<String, String?> stubHeaders = {'x-total-pages': '1'};
+  List<ApiPointDTO> stubPoints = [];
+  List<SlimApiPointDTO> stubSlimPoints = [];
+  ApiPointDTO? stubLastPoint;
 
-  int uploadBatchCallCount     = 0;
-  DawarichPointBatchDto?       lastUploadedBatch;
+  int uploadBatchCallCount = 0;
+  DawarichPointBatchDto? lastUploadedBatch;
 
-  int fetchHeadersCallCount    = 0;
-  DateTime?                    lastFetchHeadersStart;
-  DateTime?                    lastFetchHeadersEnd;
-  int?                         lastFetchHeadersPerPage;
+  int fetchHeadersCallCount = 0;
+  DateTime? lastFetchHeadersStart;
+  DateTime? lastFetchHeadersEnd;
+  int? lastFetchHeadersPerPage;
 
-  int fetchAllPointsCallCount  = 0;
-  DateTime?                    lastFetchPointsStart;
-  DateTime?                    lastFetchPointsEnd;
-  int?                         lastFetchPointsPerPage;
+  int fetchAllPointsCallCount = 0;
+  DateTime? lastFetchPointsStart;
+  DateTime? lastFetchPointsEnd;
+  int? lastFetchPointsPerPage;
 
-  int fetchAllSlimCallCount    = 0;
-  DateTime?                    lastFetchSlimStart;
-  DateTime?                    lastFetchSlimEnd;
-  int?                         lastFetchSlimPerPage;
+  int fetchAllSlimCallCount = 0;
+  DateTime? lastFetchSlimStart;
+  DateTime? lastFetchSlimEnd;
+  int? lastFetchSlimPerPage;
 
-  int getTotalPagesCallCount   = 0;
-  DateTime?                    lastGetTotalPagesStart;
-  DateTime?                    lastGetTotalPagesEnd;
-  int?                         lastGetTotalPagesPerPage;
+  int getTotalPagesCallCount = 0;
+  DateTime? lastGetTotalPagesStart;
+  DateTime? lastGetTotalPagesEnd;
+  int? lastGetTotalPagesPerPage;
 
-  int fetchLastPointCallCount  = 0;
+  int fetchLastPointCallCount = 0;
 
-  int deletePointCallCount     = 0;
-  String?                      lastDeletedPointId;
+  int deletePointCallCount = 0;
+  String? lastDeletedPointId;
 
   @override
   Future<Result<(), String>> uploadBatch(DawarichPointBatchDto batch) async {
@@ -55,10 +54,11 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<Map<String, String?>>> fetchHeaders(DateTime start, DateTime end, int perPage) async {
+  Future<Option<Map<String, String?>>> fetchHeaders(
+      DateTime start, DateTime end, int perPage) async {
     fetchHeadersCallCount++;
-    lastFetchHeadersStart   = start;
-    lastFetchHeadersEnd     = end;
+    lastFetchHeadersStart = start;
+    lastFetchHeadersEnd = end;
     lastFetchHeadersPerPage = perPage;
 
     if (shouldFetchHeadersFail) return const None();
@@ -66,10 +66,11 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<ApiPointDTO>>> fetchAllPoints(DateTime start, DateTime end, int perPage) async {
+  Future<Option<List<ApiPointDTO>>> fetchAllPoints(
+      DateTime start, DateTime end, int perPage) async {
     fetchAllPointsCallCount++;
-    lastFetchPointsStart   = start;
-    lastFetchPointsEnd     = end;
+    lastFetchPointsStart = start;
+    lastFetchPointsEnd = end;
     lastFetchPointsPerPage = perPage;
 
     if (shouldFetchPointsFail) return const None();
@@ -77,10 +78,11 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(DateTime start, DateTime end, int perPage) async {
+  Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(
+      DateTime start, DateTime end, int perPage) async {
     fetchAllSlimCallCount++;
-    lastFetchSlimStart   = start;
-    lastFetchSlimEnd     = end;
+    lastFetchSlimStart = start;
+    lastFetchSlimEnd = end;
     lastFetchSlimPerPage = perPage;
 
     if (shouldFetchSlimFail) return const None();
@@ -88,11 +90,10 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<int> getTotalPages(
-      DateTime start, DateTime end, int perPage) async {
+  Future<int> getTotalPages(DateTime start, DateTime end, int perPage) async {
     getTotalPagesCallCount++;
-    lastGetTotalPagesStart   = start;
-    lastGetTotalPagesEnd     = end;
+    lastGetTotalPagesStart = start;
+    lastGetTotalPagesEnd = end;
     lastGetTotalPagesPerPage = perPage;
 
     if (shouldFetchHeadersFail) return 0;

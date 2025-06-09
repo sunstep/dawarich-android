@@ -20,11 +20,16 @@ final class BatchExplorerPage extends StatelessWidget {
           decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
           child: Scaffold(
             backgroundColor: Colors.transparent,
-            appBar: const CustomAppbar(title: "Batch Explorer", titleFontSize: 30, backgroundColor: Colors.transparent),
+            appBar: const CustomAppbar(
+                title: "Batch Explorer",
+                titleFontSize: 30,
+                backgroundColor: Colors.transparent),
             body: SafeArea(child: _BatchContent()),
             bottomNavigationBar: Consumer<BatchExplorerViewModel>(
               builder: (context, vm, _) {
-                return vm.hasPoints ? const _BatchFooter() : const SizedBox.shrink();
+                return vm.hasPoints
+                    ? const _BatchFooter()
+                    : const SizedBox.shrink();
               },
             ),
           ),
@@ -56,18 +61,19 @@ class _BatchContent extends StatelessWidget {
             child: vm.isLoadingPoints
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.separated(
-              itemCount: vm.batch.points.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) {
-                final pt = vm.batch.points[i];
-                return _PointCard(
-                  timestamp: pt.properties.formattedTimestamp,
-                  latitude: pt.geometry.coordinates[1],
-                  longitude: pt.geometry.coordinates[0],
-                  onDelete: () => _Dialogs.confirmDeletePoint(context, vm, pt),
-                );
-              },
-            ),
+                    itemCount: vm.batch.points.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, i) {
+                      final pt = vm.batch.points[i];
+                      return _PointCard(
+                        timestamp: pt.properties.formattedTimestamp,
+                        latitude: pt.geometry.coordinates[1],
+                        longitude: pt.geometry.coordinates[0],
+                        onDelete: () =>
+                            _Dialogs.confirmDeletePoint(context, vm, pt),
+                      );
+                    },
+                  ),
           ),
           const SizedBox(height: 80), // leave room for footer
         ],
@@ -180,17 +186,18 @@ class _BatchFooter extends StatelessWidget {
 
 abstract class _Dialogs {
   static void confirmDeletePoint(
-      BuildContext c,
-      BatchExplorerViewModel vm,
-      LocalPointViewModel pt,
-      ) {
+    BuildContext c,
+    BatchExplorerViewModel vm,
+    LocalPointViewModel pt,
+  ) {
     showDialog(
       context: c,
       builder: (_) => AlertDialog(
         title: const Text("Delete Point"),
         content: const Text("This action cannot be undone."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text("Cancel")),
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: const Text("Cancel")),
           TextButton(
             onPressed: () {
               Navigator.pop(c);
@@ -210,13 +217,15 @@ abstract class _Dialogs {
         title: const Text("Clear Batch"),
         content: const Text("Delete all points? This cannot be undone."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text("Cancel")),
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: const Text("Cancel")),
           TextButton(
             onPressed: () {
               Navigator.pop(c);
               vm.clearBatch();
             },
-            child: const Text("Delete All", style: TextStyle(color: Colors.red)),
+            child:
+                const Text("Delete All", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -230,7 +239,8 @@ abstract class _Dialogs {
         title: const Text("Upload Batch"),
         content: const Text("Ready to upload this batch?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text("Cancel")),
+          TextButton(
+              onPressed: () => Navigator.pop(c), child: const Text("Cancel")),
           TextButton(
             onPressed: () {
               Navigator.pop(c);

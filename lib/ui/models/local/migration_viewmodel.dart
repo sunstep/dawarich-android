@@ -15,13 +15,11 @@ final class MigrationViewModel extends ChangeNotifier {
   final MigrationService _migrationService;
   MigrationViewModel(this._migrationService);
 
-
   Future<void> runMigration() async {
     _setMigrating(true);
     try {
       _setError(null);
       await _migrationService.runIfNeeded();
-
     } catch (e) {
       _setError(e.toString());
     } finally {
@@ -46,14 +44,12 @@ final class MigrationViewModel extends ChangeNotifier {
       } else {
         Navigator.pushReplacementNamed(context, AppRouter.connect);
       }
-
     } catch (e) {
       _setError(e.toString());
     } finally {
       _setMigrating(false);
     }
   }
-
 
   void _setMigrating(bool v) {
     _isMigrating = v;

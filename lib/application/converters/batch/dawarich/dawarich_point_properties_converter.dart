@@ -2,7 +2,6 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/requ
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_properties.dart';
 
 extension PointPropertiesDtoToEntity on DawarichPointPropertiesDto {
-
   DawarichPointProperties toEntity() {
     return DawarichPointProperties(
       batteryState: batteryState,
@@ -23,9 +22,7 @@ extension PointPropertiesDtoToEntity on DawarichPointPropertiesDto {
 }
 
 extension PointPropertiesToDto on DawarichPointProperties {
-
   DawarichPointPropertiesDto toDto() {
-
     return DawarichPointPropertiesDto(
       batteryState: batteryState,
       batteryLevel: batteryLevel,
@@ -43,4 +40,3 @@ extension PointPropertiesToDto on DawarichPointProperties {
     );
   }
 }
-

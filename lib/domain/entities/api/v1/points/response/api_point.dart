@@ -59,5 +59,4 @@ final class ApiPoint {
     geodata = dto.geodata != null ? Geodata(dto.geodata!) : null;
     visitId = dto.visitId;
   }
-
 }

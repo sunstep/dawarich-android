@@ -1,7 +1,4 @@
-
 class TrackViewModel {
-
-
   int id;
   String trackId;
   DateTime startTime;
@@ -9,12 +6,11 @@ class TrackViewModel {
   bool active;
   int userId;
 
-  TrackViewModel({
-    required this.id,
-    required this.trackId,
-    required this.startTime,
-    this.endTime,
-    required this.active,
-    required this.userId
-  });
+  TrackViewModel(
+      {required this.id,
+      required this.trackId,
+      required this.startTime,
+      this.endTime,
+      required this.active,
+      required this.userId});
 }

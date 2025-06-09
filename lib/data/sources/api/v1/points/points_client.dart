@@ -8,18 +8,26 @@ import 'package:option_result/option_result.dart';
 import 'dart:convert';
 
 final class PointsClient {
-  final IApiConfigRepository _apiConfig;
-  PointsClient(this._apiConfig);
 
-  Future<Result<(), String>> post(DawarichPointBatchDto batch) async {
+  final IApiConfigRepository _apiConfig;
+  late ApiConfigDTO _apiInfo;
+
+  PointsClient(this._apiConfig) {
+
     ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
 
     if (apiInfo == null || !apiInfo.isComplete) {
       throw Exception("Cannot approach API without a complete api config");
     }
 
-    final Uri uri =
-        Uri.parse("${apiInfo.host}/api/v1/points&api_key=${apiInfo.apiKey}");
+    _apiInfo = apiInfo;
+  }
+
+  Future<Result<(), String>> post(DawarichPointBatchDto batch) async {
+
+    final Uri uri = Uri.parse(
+      "${_apiInfo.host}/api/v1/points&api_key=${_apiInfo.apiKey}"
+    );
 
     final String body = jsonEncode(batch);
 
@@ -31,43 +39,28 @@ final class PointsClient {
       return const Ok(());
     }
 
-    return Err(response.reasonPhrase != null
-        ? response.reasonPhrase!
-        : "An unexpected error has occurred while uploading point batch.");
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while uploading point batch.");
   }
 
-  Future<Result<List<ApiPointDTO>, String>> getPoints(
-      String startDate, String endDate, int perPage, int page) async {
-    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
-
-    if (apiInfo == null || !apiInfo.isComplete) {
-      throw Exception("Cannot approach API without a complete api config");
-    }
+  Future<Result<List<ApiPointDTO>, String>> getPoints(String startDate, String endDate, int perPage, int page) async {
 
     final Uri uri = Uri.parse(
-        '${apiInfo.host}/api/v1/points?api_key=${apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
+        '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page');
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
       final List<dynamic> responseData = jsonDecode(response.body);
-      return Ok(responseData.map((point) => ApiPointDTO(point)).toList());
+      return Ok(responseData
+          .map((point) => ApiPointDTO(point))
+          .toList());
     }
 
-    return Err(response.reasonPhrase != null
-        ? response.reasonPhrase!
-        : "An unexpected error has occurred while querying points.");
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying points.");
   }
 
-  Future<Result<List<SlimApiPointDTO>, String>> getSlimPoints(
-      String startDate, String endDate, int perPage, int page) async {
-    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
-
-    if (apiInfo == null || !apiInfo.isComplete) {
-      throw Exception("Cannot approach API without a complete api config");
-    }
-
+  Future<Result<List<SlimApiPointDTO>, String>> getSlimPoints(String startDate, String endDate, int perPage, int page) async {
     final Uri uri = Uri.parse(
-        '${apiInfo.host}/api/v1/points?api_key=${apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page&slim=true');
+        '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage&page=$page&slim=true');
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
@@ -77,20 +70,11 @@ final class PointsClient {
           .toList());
     }
 
-    return Err(response.reasonPhrase != null
-        ? response.reasonPhrase!
-        : "An unexpected error has occurred while querying slim points.");
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while querying slim points.");
   }
 
   Future<Result<ApiPointDTO, String>> getLastPoint() async {
-    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
-
-    if (apiInfo == null || !apiInfo.isComplete) {
-      throw Exception("Cannot approach API without a complete api config");
-    }
-
-    final Uri uri = Uri.parse(
-        "${apiInfo.host}/api/v1/points?api_key=${apiInfo.apiKey}&per_page=1&page=1&order=desc");
+    final Uri uri = Uri.parse("${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&per_page=1&page=1&order=desc");
     final http.Response response = await http.get(uri);
 
     if (response.statusCode == 200) {
@@ -98,41 +82,26 @@ final class PointsClient {
       return Ok(ApiPointDTO(responseData));
     }
 
-    return Err(response.reasonPhrase != null
-        ? response.reasonPhrase!
-        : "An unexpected error has occurred while retrieving last point.");
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while retrieving last point.");
+
   }
 
-  Future<Result<Map<String, String?>, String>> getHeaders(
-      String startDate, String endDate, int perPage) async {
-    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
-
-    if (apiInfo == null || !apiInfo.isComplete) {
-      throw Exception("Cannot approach API without a complete api config");
-    }
+  Future<Result<Map<String, String?>, String>> getHeaders(String startDate, String endDate, int perPage) async {
 
     final Uri uri = Uri.parse(
-        '${apiInfo.host}/api/v1/points?api_key=${apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage');
+        '${_apiInfo.host}/api/v1/points?api_key=${_apiInfo.apiKey}&start_at=$startDate&end_at=$endDate&per_page=$perPage');
     final http.Response response = await http.head(uri);
 
     if (response.statusCode == 200) {
       return Ok(response.headers);
     }
 
-    return Err(response.reasonPhrase != null
-        ? response.reasonPhrase!
-        : "An unexpected error has occurred while retrieving last point.");
+    return Err(response.reasonPhrase != null ? response.reasonPhrase! : "An unexpected error has occurred while retrieving last point.");
   }
 
   Future<Result<(), String>> deletePoint(String id) async {
-    ApiConfigDTO? apiInfo = _apiConfig.getApiConfig();
-
-    if (apiInfo == null || !apiInfo.isComplete) {
-      throw Exception("Cannot approach API without a complete api config");
-    }
-
     final Uri uri = Uri.parse(
-      "${apiInfo.host}/api/v1/points/$id?api_key=${apiInfo.apiKey}",
+      "${_apiInfo.host}/api/v1/points/$id?api_key=${_apiInfo.apiKey}",
     );
 
     try {
@@ -141,8 +110,7 @@ final class PointsClient {
       if (response.statusCode == 200) {
         return const Ok(());
       } else {
-        return Err(
-            "Failed to delete point: Http error ${response.statusCode}, ${response.reasonPhrase}");
+        return Err("Failed to delete point: Http error ${response.statusCode}, ${response.reasonPhrase}");
       }
     } catch (error) {
       return Err("Error during API call: $error");

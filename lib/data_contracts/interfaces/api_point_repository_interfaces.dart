@@ -11,7 +11,5 @@ abstract interface class IApiPointRepository {
       DateTime startDate, DateTime endDate, int perPage);
   Future<int> getTotalPages(DateTime startDate, DateTime endDate, int perPage);
   Future<Option<ApiPointDTO>> fetchLastPoint();
-  Future<Option<Map<String, String?>>> fetchHeaders(
-      DateTime startDate, DateTime endDate, int perPage);
   Future<Result<(), String>> deletePoint(String point);
 }

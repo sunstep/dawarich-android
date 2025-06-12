@@ -12,8 +12,8 @@ final class ConnectService {
   final IUserStorageRepository _userStorageRepository;
   final IUserSessionRepository _userSession;
 
-  ConnectService(
-      this._connectRepository, this._apiConfigRepository, this._userStorageRepository, this._userSession);
+  ConnectService(this._connectRepository, this._apiConfigRepository,
+      this._userStorageRepository, this._userSession);
 
   Future<bool> testHost(String host) async {
     host = host.trim();

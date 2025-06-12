@@ -49,6 +49,7 @@ final class ApiPointService {
   }
 
   Future<bool> deletePoint(String point) async {
+
     Result<(), String> result = await _pointInterfaces.deletePoint(point);
 
     switch (result) {

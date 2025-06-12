@@ -1,53 +1,39 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:dawarich/data/sources/api/v1/users/users_client.dart';
+import 'package:dawarich/data/dawarich_api/sources/api_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/health/response/health_dto.dart';
 import 'package:option_result/option_result.dart';
 
 final class ConnectRepository implements IConnectRepository {
   final IApiConfigRepository _apiConfig;
-  final UsersApiClient _usersApiClient;
+  final ApiClient _apiClient;
 
-  ConnectRepository(this._apiConfig, this._usersApiClient);
+  ConnectRepository(this._apiConfig, this._apiClient);
 
   @override
   Future<bool> testHost(String host) async {
+    _apiConfig.createConfig(host);
+
     try {
-      _apiConfig.createConfig(host);
+      final resp = await _apiClient.get<Map<String, dynamic>>(
+        '/api/v1/health',
+      );
 
-      final Uri uri = Uri.parse("$host/api/v1/health");
-      final Response response = await get(uri);
+      final health = HealthDto(resp.data!);
 
-      if (response.statusCode == 200) {
-        final dynamic resultBody = jsonDecode(response.body);
-        final HealthDto health = HealthDto(resultBody);
-        String? dawarichResponse = response.headers["x-dawarich-response"];
+      final dawarichResponse =
+      resp.headers.value('x-dawarich-response');
 
-        return health.status == "ok" && dawarichResponse == "Hey, I'm alive!";
-      } else {
-        if (kDebugMode) {
-          debugPrint(
-              "Host gave a status code other than 200: ${response.reasonPhrase}");
-        }
-
-        return false;
-      }
-    } on SocketException catch (e) {
-      if (kDebugMode) {
-        debugPrint("SocketException: ${e.message}");
-      }
-
+      return health.status == 'ok'
+          && dawarichResponse == "Hey, I'm alive!";
+    } on DioException catch (e) {
+      if (kDebugMode) debugPrint("Health check failed: ${e.message}");
       return false;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("Error in testHost: $e");
-      }
-
+      if (kDebugMode) debugPrint("Error in testHost: $e");
       return false;
     }
   }
@@ -57,18 +43,24 @@ final class ConnectRepository implements IConnectRepository {
 
     _apiConfig.setApiKey(apiKey);
 
-    final Result<UserDto, String> result = await _usersApiClient.getUser();
+    try {
+      final resp = await _apiClient.get<Map<String, dynamic>>(
+        '/api/v1/users/me',
+      );
 
-    if (result case Ok(value: UserDto user)) {
+      final userJson = resp.data!['user'] as Map<String, dynamic>;
+
+      var user = UserDto.fromJson(userJson);
+
+      user = user.withDawarichEndpoint(_apiConfig.apiConfig?.host);
+
       return Ok(user);
+    } on DioException catch (e) {
+      if (kDebugMode) debugPrint("Api key verification failed: ${e.message}");
+      return Err(e.message ?? 'Failed to verify API key');
+    } catch (e) {
+      if (kDebugMode) debugPrint("Error while fetching user data: $e");
+      return Err("Error while fetching user data: $e");
     }
-
-    final String error = result.unwrapErr();
-
-    if (kDebugMode) {
-      debugPrint("Api key verification failed: $error");
-    }
-
-    return Err(error);
   }
 }

@@ -3,7 +3,6 @@ import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfa
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final class ApiConfigManager implements IApiConfigRepository {
-
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   ApiConfig? _apiConfig;
 
@@ -31,7 +30,6 @@ final class ApiConfigManager implements IApiConfigRepository {
 
   @override
   void setApiKey(String apiKey) {
-
     ApiConfig? configCopy = _apiConfig;
 
     if (configCopy == null) {
@@ -45,7 +43,6 @@ final class ApiConfigManager implements IApiConfigRepository {
 
   @override
   Future<void> storeApiConfig() async {
-
     final ApiConfig? cfg = _apiConfig;
 
     if (cfg == null || !cfg.isConfigured) {
@@ -66,7 +63,6 @@ final class ApiConfigManager implements IApiConfigRepository {
 
   @override
   bool get isConfigured {
-
     final ApiConfig? configCopy = _apiConfig;
     return configCopy != null && configCopy.isConfigured;
   }

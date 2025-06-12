@@ -5,11 +5,11 @@ class ApiConfigService {
   ApiConfigService(this._repository);
 
   Future<void> initialize() async {
-    await _repository.initialize();
+    await _repository.load();
   }
 
   bool isConfigured() {
-    return _repository.isConfigured();
+    return _repository.isConfigured;
   }
 
   Future<void> clearApiConfig() async {

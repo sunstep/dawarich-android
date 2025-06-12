@@ -31,43 +31,37 @@ final class ApiPointRepository implements IApiPointRepository {
     final Result<Map<String, String?>, String> headerResult =
         await _pointsClient.getHeaders(startDateString, endDateString, perPage);
 
-    switch (headerResult) {
-      case Ok(value: Map<String, String?> headers):
-        {
-          final int pages = int.parse(headers['x-total-pages']!);
-          final List<ApiPointDTO> allPoints = [];
-
-          final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
-          for (int page = 1; page <= pages; page++) {
-            responses.add(_pointsClient.getPoints(
-                startDateString, endDateString, perPage, page));
-          }
-
-          final List<Result<List<ApiPointDTO>, String>> fetchResults =
-              await Future.wait(responses);
-          for (final Result<List<ApiPointDTO>, String> fetchResult
-              in fetchResults) {
-            switch (fetchResult) {
-              case Ok(value: List<ApiPointDTO> page):
-                {
-                  allPoints.addAll(page);
-                }
-              case Err(value: String error):
-                {
-                  debugPrint('Error fetching points for a page: $error');
-                }
-            }
-          }
-
-          return Some(allPoints);
-        }
-
-      case Err(value: String error):
-        {
-          debugPrint("Failed to retrieve headers: $error");
-          return const None();
-        }
+    if (headerResult case Err(value: final String error)) {
+      debugPrint("Failed to retrieve headers: $error");
+      return const None();
     }
+
+    final Map<String, String?> headers = headerResult.unwrap();
+
+    final int pages = int.parse(headers['x-total-pages']!);
+    final List<ApiPointDTO> allPoints = [];
+
+    final List<Future<Result<List<ApiPointDTO>, String>>> responses = [];
+    for (int page = 1; page <= pages; page++) {
+      responses.add(_pointsClient.getPoints(
+          startDateString, endDateString, perPage, page));
+    }
+
+    final List<Result<List<ApiPointDTO>, String>> fetchResults =
+    await Future.wait(responses);
+    for (final Result<List<ApiPointDTO>, String> fetchResult
+    in fetchResults) {
+
+      if (fetchResult case Ok(value: final List<ApiPointDTO> page)) {
+        allPoints.addAll(page);
+      } else {
+        final String error = fetchResult.unwrapErr();
+        debugPrint('Error fetching points for a page: $error');
+      }
+
+    }
+
+    return Some(allPoints);
   }
 
   @override

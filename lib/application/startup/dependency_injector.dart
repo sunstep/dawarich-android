@@ -11,7 +11,8 @@ import 'package:dawarich/application/services/system_settings_service.dart';
 import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/application/services/user_session_service.dart';
-import 'package:dawarich/data/secure_storage/repositories/api_config_repository.dart';
+import 'package:dawarich/data/dawarich_api/config/api_config_manager.dart';
+import 'package:dawarich/data/dawarich_api/sources/api_client.dart';
 import 'package:dawarich/data/dawarich_api/repositories/connect_repository.dart';
 import 'package:dawarich/data/hardware/repositories/hardware_repository.dart';
 import 'package:dawarich/data/drift/repositories/local_point_repository.dart';
@@ -55,7 +56,17 @@ final GetIt getIt = GetIt.instance;
 
 final class DependencyInjector {
   static Future<void> injectDependencies() async {
+
     // Sources
+    getIt.registerSingletonAsync<ApiConfigManager>(() async {
+      final cfg = ApiConfigManager();
+      await cfg.load();
+      return cfg;
+    });
+    getIt.registerSingletonWithDependencies<ApiClient>(
+          () => ApiClient(getIt<ApiConfigManager>()),
+      dependsOn: [ApiConfigManager],
+    );
     getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
     getIt.registerSingletonAsync<Store>(() async {
       final dir = await getApplicationDocumentsDirectory();
@@ -74,13 +85,6 @@ final class DependencyInjector {
         () => UsersApiClient(getIt<IApiConfigRepository>()));
 
     // Repositories
-    getIt.registerLazySingletonAsync<IApiConfigRepository>(() async {
-      ApiConfigRepository repo = ApiConfigRepository();
-      await repo.initialize();
-      return repo;
-    });
-
-    await getIt.isReady<IApiConfigRepository>();
 
     getIt.registerLazySingleton<IUserSessionRepository>(
         () => UserSessionRepository());

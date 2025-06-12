@@ -1,22 +1,38 @@
+import 'package:dawarich/data/dawarich_api/config/api_config_manager.dart';
 import 'package:dio/dio.dart';
 
 final class ApiClient {
   final Dio _dio;
+  final ApiConfigManager _configManager;
 
-  ApiClient(
-      {required String baseUrl, required Future<String?> Function() getToken})
+  ApiClient(this._configManager)
       : _dio = Dio(BaseOptions(
-            baseUrl: baseUrl,
-            connectTimeout: const Duration(seconds: 5),
-            receiveTimeout: const Duration(seconds: 3))) {
-    _dio.interceptors
-        .add(InterceptorsWrapper(onRequest: (options, handler) async {
-      final token = await getToken();
-      if (token != null) {
-        options.headers['Authorization'] = 'Bearer $token';
-      }
-      return handler.next(options);
-    }));
+    connectTimeout: const Duration(seconds: 5),
+    receiveTimeout: const Duration(seconds: 3),
+  )) {
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final cfg = _configManager.apiConfig;
+
+        if (cfg == null || cfg.host.isEmpty) {
+          return handler.reject(DioException(
+            requestOptions: options,
+            type: DioExceptionType.cancel,
+            error: 'API host not configured',
+          ));
+        }
+
+        options.baseUrl = cfg.host;
+
+        final key = cfg.apiKey;
+        if (key != null && key.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $key';
+        }
+
+        return handler.next(options);
+      },
+    ));
+
 
     assert(() {
       _dio.interceptors.add(LogInterceptor(

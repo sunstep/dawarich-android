@@ -1,11 +1,12 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/local/api_config_dto.dart';
+import 'package:dawarich/data/dawarich_api/config/api_config.dart';
 
 abstract interface class IApiConfigRepository {
-  Future<void> initialize();
-  void setHost(String host);
+
+  Future<void> load();
+  void createConfig(String host);
   void setApiKey(String apiKey);
-  ApiConfigDTO? getApiConfig();
+  ApiConfig? get apiConfig;
   Future<void> storeApiConfig();
   Future<void> clearConfiguration();
-  bool isConfigured();
+  bool get isConfigured;
 }

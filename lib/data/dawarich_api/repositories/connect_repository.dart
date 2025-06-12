@@ -18,7 +18,7 @@ final class ConnectRepository implements IConnectRepository {
   @override
   Future<bool> testHost(String host) async {
     try {
-      _apiConfig.setHost(host);
+      _apiConfig.createConfig(host);
 
       final Uri uri = Uri.parse("$host/api/v1/health");
       final Response response = await get(uri);

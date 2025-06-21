@@ -16,13 +16,12 @@ final class StatsRepository implements IStatsRepository {
         '/api/v1/stats',
       );
 
-      final json = resp.data;
+      final Map<String, dynamic>? json = resp.data;
       if (json == null || json.isEmpty) {
         return const None();
       }
 
-      // 2) Map to your DTO and return
-      final stats = StatsDTO.fromJson(json);
+      final StatsDTO stats = StatsDTO.fromJson(json);
       return Some(stats);
     } on DioException catch (e) {
       debugPrint('Failed to retrieve stats: ${e.message}');

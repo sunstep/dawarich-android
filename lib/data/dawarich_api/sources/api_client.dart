@@ -1,14 +1,15 @@
-import 'package:dawarich/data/dawarich_api/config/api_config_manager.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_manager_interfaces.dart';
 import 'package:dio/dio.dart';
 
 final class ApiClient {
+
   final Dio _dio;
-  final ApiConfigManager _configManager;
+  final IApiConfigManager _configManager;
 
   ApiClient(this._configManager)
       : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 3),
+          receiveTimeout: const Duration(seconds: 10),
         )) {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -22,7 +23,9 @@ final class ApiClient {
           ));
         }
 
-        options.baseUrl = cfg.host;
+        options
+          ..baseUrl   = cfg.host
+          ..headers['Content-Type'] = Headers.jsonContentType;
 
         final key = cfg.apiKey;
         if (key != null && key.isNotEmpty) {

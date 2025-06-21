@@ -1,6 +1,6 @@
 import 'package:dawarich/data/dawarich_api/sources/api_client.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_manager_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -8,14 +8,13 @@ import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/health/resp
 import 'package:option_result/option_result.dart';
 
 final class ConnectRepository implements IConnectRepository {
-  final IApiConfigRepository _apiConfig;
+  final IApiConfigManager _apiConfig;
   final ApiClient _apiClient;
 
   ConnectRepository(this._apiConfig, this._apiClient);
 
   @override
   Future<bool> testHost(String host) async {
-    _apiConfig.createConfig(host);
 
     try {
       final resp = await _apiClient.get<Map<String, dynamic>>(
@@ -40,8 +39,6 @@ final class ConnectRepository implements IConnectRepository {
 
   @override
   Future<Result<UserDto, String>> loginApiKey(String apiKey) async {
-
-    _apiConfig.setApiKey(apiKey);
 
     try {
       final resp = await _apiClient.get<Map<String, dynamic>>(

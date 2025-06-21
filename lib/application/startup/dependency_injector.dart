@@ -27,7 +27,7 @@ import 'package:dawarich/data/sources/hardware/device_data_client.dart';
 import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
 import 'package:dawarich/data/sources/hardware/connectivity_data_client.dart';
 import 'package:dawarich/data/drift/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_manager_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
@@ -54,14 +54,19 @@ final GetIt getIt = GetIt.instance;
 final class DependencyInjector {
   static Future<void> injectDependencies() async {
     // Sources
-    getIt.registerSingletonAsync<ApiConfigManager>(() async {
+    getIt.registerSingletonAsync<IApiConfigManager>(() async {
       final cfg = ApiConfigManager();
       await cfg.load();
       return cfg;
     });
+    getIt.registerSingletonWithDependencies<IApiConfigLogout>(
+          () => getIt<IApiConfigManager>() as IApiConfigLogout,
+      dependsOn: [IApiConfigManager],
+    );
+
     getIt.registerSingletonWithDependencies<ApiClient>(
-      () => ApiClient(getIt<ApiConfigManager>()),
-      dependsOn: [ApiConfigManager],
+      () => ApiClient(getIt<IApiConfigManager>()),
+      dependsOn: [IApiConfigManager],
     );
     getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
     getIt.registerSingletonAsync<Store>(() async {
@@ -75,7 +80,6 @@ final class DependencyInjector {
         () => ConnectivityDataClient());
 
     // Repositories
-
     getIt.registerLazySingleton<IUserSessionRepository>(
         () => UserSessionRepository());
     getIt.registerLazySingleton<IUserStorageRepository>(
@@ -86,7 +90,7 @@ final class DependencyInjector {
         getIt<BatteryDataClient>(),
         getIt<ConnectivityDataClient>()));
     getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(
-        getIt<IApiConfigRepository>(), getIt<ApiClient>()));
+        getIt<IApiConfigManager>(), getIt<ApiClient>()));
     getIt.registerLazySingleton<IApiPointRepository>(
         () => ApiPointRepository(getIt<ApiClient>()));
     getIt.registerLazySingleton<ILocalPointRepository>(
@@ -107,10 +111,10 @@ final class DependencyInjector {
     getIt.registerLazySingleton<SystemSettingsService>(
         () => SystemSettingsService());
     getIt.registerLazySingleton<ApiConfigService>(
-        () => ApiConfigService(getIt<IApiConfigRepository>()));
+        () => ApiConfigService(getIt<IApiConfigLogout>()));
     getIt.registerLazySingleton<ConnectService>(() => ConnectService(
         getIt<IConnectRepository>(),
-        getIt<IApiConfigRepository>(),
+        getIt<IApiConfigManager>(),
         getIt<IUserStorageRepository>(),
         getIt<IUserSessionRepository>()));
     getIt.registerLazySingleton<LocationService>(() => LocationService());

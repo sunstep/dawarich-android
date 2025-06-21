@@ -1,11 +1,10 @@
 import 'package:dawarich/data/dawarich_api/config/api_config.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_manager_interfaces.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-final class ApiConfigManager implements IApiConfigRepository {
+final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   ApiConfig? _apiConfig;
-
   ApiConfigManager();
 
   @override

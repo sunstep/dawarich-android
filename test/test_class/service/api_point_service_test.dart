@@ -93,7 +93,7 @@ void main() {
     const perPage = 5;
     test('success → Some(list), args tracked', () async {
       repo.shouldFetchPointsFail = false;
-      final opt = await repo.fetchAllPoints(start, end, perPage);
+      final opt = await repo.fetchPoints(start, end, perPage);
       expect(opt.isSome(), isTrue);
       expect(opt.unwrap(), repo.stubPoints);
       expect(repo.fetchAllPointsCallCount, 1);
@@ -103,7 +103,7 @@ void main() {
     });
     test('failure → None, callCount tracked', () async {
       repo.shouldFetchPointsFail = true;
-      final opt = await repo.fetchAllPoints(start, end, perPage);
+      final opt = await repo.fetchPoints(start, end, perPage);
       expect(opt.isNone(), isTrue);
       expect(repo.fetchAllPointsCallCount, 1);
     });
@@ -114,7 +114,7 @@ void main() {
     const perPage = 10;
     test('success → Some(list), args tracked', () async {
       repo.shouldFetchSlimFail = false;
-      final opt = await repo.fetchAllSlimPoints(start, end, perPage);
+      final opt = await repo.fetchSlimPoints(start, end, perPage);
       expect(opt.isSome(), isTrue);
       expect(opt.unwrap(), repo.stubSlimPoints);
       expect(repo.fetchAllSlimCallCount, 1);
@@ -124,7 +124,7 @@ void main() {
     });
     test('failure → None, callCount tracked', () async {
       repo.shouldFetchSlimFail = true;
-      final opt = await repo.fetchAllSlimPoints(start, end, perPage);
+      final opt = await repo.fetchSlimPoints(start, end, perPage);
       expect(opt.isNone(), isTrue);
       expect(repo.fetchAllSlimCallCount, 1);
     });

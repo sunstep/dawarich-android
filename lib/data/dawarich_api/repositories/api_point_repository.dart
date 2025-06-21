@@ -29,21 +29,16 @@ final class ApiPointRepository implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<ApiPointDTO>>> fetchAllPoints(
+  Future<Option<List<ApiPointDTO>>> fetchPoints(
       DateTime startDate,
       DateTime endDate,
       int perPage,
       ) async {
-    final startIso = DateTime(
-      startDate.year, startDate.month, startDate.day,
-    ).toUtc().toIso8601String();
-
-    final endIso = DateTime(
-      endDate.year, endDate.month, endDate.day, 23, 59, 59,
-    ).toUtc().toIso8601String();
+    final startIso = _formatStartDate(startDate);
+    final endIso   = _formatEndDate(endDate);
 
     try {
-      final Response<Map<String, String?>> headResp = await _apiClient.head<Map<String, String?>>(
+      final headResp = await _apiClient.head<Map<String, String?>>(
         '/api/v1/points',
         queryParameters: {
           'start_at': startIso,
@@ -52,92 +47,111 @@ final class ApiPointRepository implements IApiPointRepository {
         },
       );
 
-      final totalPages = int.parse(headResp.headers.value('x-total-pages')!);
+      final totalPages = int.tryParse(
+        headResp.headers.value('x-total-pages') ?? '',
+      ) ?? 0;
 
-      final List<Future<Response<List<Map<String, dynamic>>>>> futures = List<Future<Response<List<Map<String, dynamic>>>>>.generate(
-        totalPages,
-            (i) => _apiClient.get<List<Map<String, dynamic>>>(
-          '/api/v1/points',
-          queryParameters: {
-            'start_at': startIso,
-            'end_at':   endIso,
-            'per_page': perPage,
-            'page':     i + 1,
-          },
-        ),
-      );
-
-      final List<Response<List<Map<String, dynamic>>>> responses = await Future.wait(futures);
-
-      final List<ApiPointDTO> all = [];
-      for (final resp in responses) {
-        all.addAll(resp.data!
-            .map((json) => ApiPointDTO(json)));
+      if (totalPages == 0) {
+        return const Some(<ApiPointDTO>[]);
       }
 
-      return Some(all);
-    } on DioException catch (e) {
-      debugPrint('Error fetching all points: ${e.message}');
-      return const None();
-    } catch (e) {
-      debugPrint('Unknown error fetching all points: $e');
+      final pageFutures = List<Future<List<ApiPointDTO>>>.generate(
+        totalPages,
+            (i) async {
+          final pageNumber = i + 1;
+          try {
+            final resp = await _apiClient.get<List<dynamic>>(
+              '/api/v1/points',
+              queryParameters: {
+                'start_at': startIso,
+                'end_at':   endIso,
+                'per_page': perPage,
+                'page':     pageNumber,
+              },
+            );
+
+            return resp.data!
+                .map((json) => ApiPointDTO(
+                json as Map<String, dynamic>))
+                .toList();
+          } catch (e, st) {
+            debugPrint('Error fetching points page $pageNumber: $e\n$st');
+            return <ApiPointDTO>[];
+          }
+        },
+      );
+
+      final pages = await Future.wait(pageFutures);
+      final allPoints = pages.expand((list) => list).toList();
+
+      return Some(allPoints);
+    } catch (e, st) {
+      debugPrint('Failed to fetch all points: $e\n$st');
       return const None();
     }
   }
 
   @override
-  Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(
+  Future<Option<List<SlimApiPointDTO>>> fetchSlimPoints(
       DateTime startDate,
       DateTime endDate,
-      int perPage) async {
-
-    final startIso = DateTime(
-      startDate.year, startDate.month, startDate.day,
-    ).toUtc().toIso8601String();
-
-    final endIso = DateTime(
-      endDate.year, endDate.month, endDate.day, 23, 59, 59,
-    ).toUtc().toIso8601String();
+      int perPage,
+      ) async {
+    final startIso = _formatStartDate(startDate);
+    final endIso   = _formatEndDate(endDate);
 
     try {
-      final Response<Map<String, String?>> headResp = await _apiClient.head<Map<String, String?>>(
+      final headResp = await _apiClient.head<Map<String, String?>>(
         '/api/v1/points',
         queryParameters: {
           'start_at': startIso,
           'end_at':   endIso,
           'per_page': perPage,
+          'slim':     true
         },
       );
 
-      final totalPages = int.parse(headResp.headers.value('x-total-pages')!);
+      final totalPages = int.tryParse(
+        headResp.headers.value('x-total-pages') ?? '',
+      ) ?? 0;
 
-      final List<Future<Response<List<Map<String, dynamic>>>>> futures = List<Future<Response<List<Map<String, dynamic>>>>>.generate(
-        totalPages,
-            (i) => _apiClient.get<List<Map<String, dynamic>>>(
-          '/api/v1/points',
-          queryParameters: {
-            'start_at': startIso,
-            'end_at':   endIso,
-            'per_page': perPage,
-            'page':     i + 1,
-          },
-        ),
-      );
-
-      final List<Response<List<Map<String, dynamic>>>> responses = await Future.wait(futures);
-
-      final List<SlimApiPointDTO> all = [];
-      for (final resp in responses) {
-        all.addAll(resp.data!
-            .map((json) => SlimApiPointDTO(json)));
+      if (totalPages == 0) {
+        return const Some(<SlimApiPointDTO>[]);
       }
 
-      return Some(all);
-    } on DioException catch (e) {
-      debugPrint('Error fetching all points: ${e.message}');
-      return const None();
-    } catch (e) {
-      debugPrint('Unknown error fetching all points: $e');
+      final pageFutures = List<Future<List<SlimApiPointDTO>>>.generate(
+        totalPages,
+            (i) async {
+          final pageNumber = i + 1;
+          try {
+            final resp = await _apiClient.get<List<dynamic>>(
+              '/api/v1/points',
+              queryParameters: {
+                'start_at': startIso,
+                'end_at':   endIso,
+                'per_page': perPage,
+                'page':     pageNumber,
+                'slim':     true
+              },
+            );
+
+            return resp.data!
+                .map((json) => SlimApiPointDTO(
+                json as Map<String, dynamic>))
+                .toList();
+          } catch (e, st) {
+            debugPrint('Error fetching points page $pageNumber: $e\n$st');
+            return <SlimApiPointDTO>[];
+          }
+        },
+      );
+
+      final pages = await Future.wait(pageFutures);
+      final allPoints = pages.expand((list) => list).toList();
+
+      return Some(allPoints);
+    } catch (e, st) {
+      debugPrint('Failed to fetch all points: $e\n$st');
       return const None();
     }
   }
@@ -154,7 +168,6 @@ final class ApiPointRepository implements IApiPointRepository {
     try {
       final headResp = await _apiClient.head<Map<String, String?>>(
         '/api/v1/points',
-        data: const {},  // if you update head() to allow data: null, you can drop this
         queryParameters: {
           'start_at': startIso,
           'end_at':   endIso,

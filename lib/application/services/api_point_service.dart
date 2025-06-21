@@ -21,7 +21,7 @@ final class ApiPointService {
   Future<Option<List<ApiPoint>>> fetchAllPoints(
       DateTime startDate, DateTime endDate, int perPage) async {
     Option<List<ApiPointDTO>> result =
-        await _pointInterfaces.fetchAllPoints(startDate, endDate, perPage);
+        await _pointInterfaces.fetchPoints(startDate, endDate, perPage);
 
     switch (result) {
       case Some(value: List<ApiPointDTO> points):
@@ -36,7 +36,7 @@ final class ApiPointService {
   Future<Option<List<SlimApiPoint>>> fetchAllSlimPoints(
       DateTime startDate, DateTime endDate, int perPage) async {
     Option<List<SlimApiPointDTO>> result =
-        await _pointInterfaces.fetchAllSlimPoints(startDate, endDate, perPage);
+        await _pointInterfaces.fetchSlimPoints(startDate, endDate, perPage);
 
     switch (result) {
       case Some(value: List<SlimApiPointDTO> points):

@@ -66,7 +66,7 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<ApiPointDTO>>> fetchAllPoints(
+  Future<Option<List<ApiPointDTO>>> fetchPoints(
       DateTime start, DateTime end, int perPage) async {
     fetchAllPointsCallCount++;
     lastFetchPointsStart = start;
@@ -78,7 +78,7 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<SlimApiPointDTO>>> fetchAllSlimPoints(
+  Future<Option<List<SlimApiPointDTO>>> fetchSlimPoints(
       DateTime start, DateTime end, int perPage) async {
     fetchAllSlimCallCount++;
     lastFetchSlimStart = start;

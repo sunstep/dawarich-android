@@ -11,7 +11,8 @@ import 'package:dawarich/application/services/system_settings_service.dart';
 import 'package:dawarich/application/services/track_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/application/services/user_session_service.dart';
-import 'package:dawarich/data/secure_storage/repositories/api_config_repository.dart';
+import 'package:dawarich/data/dawarich_api/config/api_config_manager.dart';
+import 'package:dawarich/data/dawarich_api/sources/api_client.dart';
 import 'package:dawarich/data/dawarich_api/repositories/connect_repository.dart';
 import 'package:dawarich/data/hardware/repositories/hardware_repository.dart';
 import 'package:dawarich/data/drift/repositories/local_point_repository.dart';
@@ -21,15 +22,12 @@ import 'package:dawarich/data/drift/repositories/track_repository.dart';
 import 'package:dawarich/data/shared_preferences/tracker_preferences_repository.dart';
 import 'package:dawarich/data/shared_preferences/repositories/user_session_repository.dart';
 import 'package:dawarich/data/drift/repositories/user_storage_repository.dart';
-import 'package:dawarich/data/sources/api/v1/points/points_client.dart';
-import 'package:dawarich/data/sources/api/v1/stats/stats_client.dart';
-import 'package:dawarich/data/sources/api/v1/users/users_client.dart';
 import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
 import 'package:dawarich/data/sources/hardware/device_data_client.dart';
 import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
 import 'package:dawarich/data/sources/hardware/connectivity_data_client.dart';
 import 'package:dawarich/data/drift/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config_repository_interfaces.dart';
+import 'package:dawarich/data_contracts/interfaces/api_config_manager_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
@@ -56,6 +54,20 @@ final GetIt getIt = GetIt.instance;
 final class DependencyInjector {
   static Future<void> injectDependencies() async {
     // Sources
+    getIt.registerSingletonAsync<IApiConfigManager>(() async {
+      final cfg = ApiConfigManager();
+      await cfg.load();
+      return cfg;
+    });
+    getIt.registerSingletonWithDependencies<IApiConfigLogout>(
+          () => getIt<IApiConfigManager>() as IApiConfigLogout,
+      dependsOn: [IApiConfigManager],
+    );
+
+    getIt.registerSingletonWithDependencies<ApiClient>(
+      () => ApiClient(getIt<IApiConfigManager>()),
+      dependsOn: [IApiConfigManager],
+    );
     getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
     getIt.registerSingletonAsync<Store>(() async {
       final dir = await getApplicationDocumentsDirectory();
@@ -66,22 +78,8 @@ final class DependencyInjector {
     getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
     getIt.registerLazySingleton<ConnectivityDataClient>(
         () => ConnectivityDataClient());
-    getIt.registerLazySingleton<PointsClient>(
-        () => PointsClient(getIt<IApiConfigRepository>()));
-    getIt.registerLazySingleton<StatsClient>(
-        () => StatsClient(getIt<IApiConfigRepository>()));
-    getIt.registerLazySingleton<UsersApiClient>(
-        () => UsersApiClient(getIt<IApiConfigRepository>()));
 
     // Repositories
-    getIt.registerLazySingletonAsync<IApiConfigRepository>(() async {
-      ApiConfigRepository repo = ApiConfigRepository();
-      await repo.initialize();
-      return repo;
-    });
-
-    await getIt.isReady<IApiConfigRepository>();
-
     getIt.registerLazySingleton<IUserSessionRepository>(
         () => UserSessionRepository());
     getIt.registerLazySingleton<IUserStorageRepository>(
@@ -92,13 +90,13 @@ final class DependencyInjector {
         getIt<BatteryDataClient>(),
         getIt<ConnectivityDataClient>()));
     getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(
-        getIt<IApiConfigRepository>(), getIt<UsersApiClient>()));
+        getIt<IApiConfigManager>(), getIt<ApiClient>()));
     getIt.registerLazySingleton<IApiPointRepository>(
-        () => ApiPointRepository(getIt<PointsClient>()));
+        () => ApiPointRepository(getIt<ApiClient>()));
     getIt.registerLazySingleton<ILocalPointRepository>(
         () => LocalPointRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<IStatsRepository>(
-        () => StatsRepository(getIt<StatsClient>()));
+        () => StatsRepository(getIt<ApiClient>()));
     getIt.registerLazySingleton<ITrackRepository>(
         () => TrackRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<ITrackerPreferencesRepository>(
@@ -113,10 +111,10 @@ final class DependencyInjector {
     getIt.registerLazySingleton<SystemSettingsService>(
         () => SystemSettingsService());
     getIt.registerLazySingleton<ApiConfigService>(
-        () => ApiConfigService(getIt<IApiConfigRepository>()));
+        () => ApiConfigService(getIt<IApiConfigLogout>()));
     getIt.registerLazySingleton<ConnectService>(() => ConnectService(
         getIt<IConnectRepository>(),
-        getIt<IApiConfigRepository>(),
+        getIt<IApiConfigManager>(),
         getIt<IUserStorageRepository>(),
         getIt<IUserSessionRepository>()));
     getIt.registerLazySingleton<LocationService>(() => LocationService());

@@ -10,7 +10,6 @@ final class StartupService {
   static late final String initialRoute;
 
   static Future<void> initializeApp() async {
-    // BackgroundTrackingService;
 
     final migrationService = GetIt.I<MigrationService>();
     bool needsMigration = false;
@@ -31,8 +30,8 @@ final class StartupService {
     final userId = await sessionService.getCurrentUserId();
 
     if (userId > 0) {
-      final ApiConfigService apiConfig = getIt<ApiConfigService>();
-      await apiConfig.initialize();
+      // final ApiConfigService apiConfig = getIt<ApiConfigService>();
+      // await apiConfig.initialize();
       initialRoute = AppRouter.map;
     } else {
       initialRoute = AppRouter.connect;

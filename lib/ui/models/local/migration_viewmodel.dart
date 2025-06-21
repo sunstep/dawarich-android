@@ -38,8 +38,8 @@ final class MigrationViewModel extends ChangeNotifier {
       final userId = await sessionService.getCurrentUserId();
 
       if (userId > 0) {
-        final apiConfig = getIt<ApiConfigService>();
-        await apiConfig.initialize();
+        // final apiConfig = getIt<ApiConfigService>();
+        // await apiConfig.initialize();
         Navigator.pushReplacementNamed(context, AppRouter.map);
       } else {
         Navigator.pushReplacementNamed(context, AppRouter.connect);

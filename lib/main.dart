@@ -9,11 +9,11 @@ final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
 
 Future<void> main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
 
   await DependencyInjector.injectDependencies();
   await getIt.allReady();
-
   await StartupService.initializeApp();
 
   runApp(const AppBase());

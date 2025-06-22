@@ -67,27 +67,6 @@ void main() {
     });
   });
 
-  group('fetchHeaders', () {
-    final start = DateTime(2025, 5, 1), end = DateTime(2025, 5, 2);
-    const perPage = 42;
-    test('success → Some(headers), args tracked', () async {
-      repo.shouldFetchHeadersFail = false;
-      final opt = await repo.fetchHeaders(start, end, perPage);
-      expect(opt.isSome(), isTrue);
-      expect(opt.unwrap(), repo.stubHeaders);
-      expect(repo.fetchHeadersCallCount, 1);
-      expect(repo.lastFetchHeadersStart, start);
-      expect(repo.lastFetchHeadersEnd, end);
-      expect(repo.lastFetchHeadersPerPage, perPage);
-    });
-    test('failure → None, callCount tracked', () async {
-      repo.shouldFetchHeadersFail = true;
-      final opt = await repo.fetchHeaders(start, end, perPage);
-      expect(opt.isNone(), isTrue);
-      expect(repo.fetchHeadersCallCount, 1);
-    });
-  });
-
   group('fetchAllPoints', () {
     final start = DateTime(2025, 6, 1), end = DateTime(2025, 6, 2);
     const perPage = 5;

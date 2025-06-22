@@ -4,9 +4,10 @@ import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
+import 'package:dawarich/objectbox.g.dart';
 import 'package:option_result/option_result.dart';
 
-final class MockLocalPointRepository implements ILocalPointRepository {
+final class MockLocalPointRepository implements IPointLocalRepository {
   final Map<int, LocalPointDto> _points = {};
   final Map<int, LocalPointGeometryDto> _geoms = {};
   final Map<int, LocalPointPropertiesDto> _props = {};
@@ -51,12 +52,12 @@ final class MockLocalPointRepository implements ILocalPointRepository {
   int? lastClearBatchUserId;
 
   @override
-  Future<Result<(), String>> storePoint(LocalPointDto point) async {
+  Future<int> storePoint(LocalPointDto point) async {
     storePointCount++;
     lastStoredPoint = point;
 
     if (failStorePoint) {
-      return const Err('Forced storePoint failure');
+      throw ObjectBoxException('Simulated store point error');
     }
 
     // simulate id & separate storage
@@ -75,7 +76,7 @@ final class MockLocalPointRepository implements ILocalPointRepository {
       isUploaded: false,
     );
 
-    return const Ok(());
+    return pointId;
   }
 
   @override
@@ -100,111 +101,104 @@ final class MockLocalPointRepository implements ILocalPointRepository {
   }
 
   @override
-  Future<Result<LocalPointBatchDto, String>> getFullBatch(int userId) async {
+  Future<LocalPointBatchDto> getFullBatch(int userId) async {
     getFullBatchCount++;
     lastGetFullBatchUserId = userId;
 
     if (failGetFullBatch) {
-      return const Err('Forced getFullBatch failure');
+      throw ObjectBoxException('Forced getFullBatch failure');
     }
 
     final pts = _points.values.where((p) => p.userId == userId).toList();
-    return Ok(LocalPointBatchDto(points: pts));
+    return LocalPointBatchDto(points: pts);
   }
 
   @override
-  Future<Result<LocalPointBatchDto, String>> getCurrentBatch(int userId) async {
+  Future<LocalPointBatchDto> getCurrentBatch(int userId) async {
     getCurrentBatchCount++;
     lastGetCurrentBatchUserId = userId;
 
     if (failGetCurrentBatch) {
-      return const Err('Forced getCurrentBatch failure');
+      throw ObjectBoxException('Forced getCurrentBatch failure');
     }
 
     final pts = _points.values
         .where((p) => p.userId == userId && p.isUploaded == false)
         .toList();
-    return Ok(LocalPointBatchDto(points: pts));
+    return LocalPointBatchDto(points: pts);
   }
 
   @override
-  Future<Result<int, String>> getBatchPointCount(int userId) async {
+  Future<int> getBatchPointCount(int userId) async {
     getBatchCountCount++;
     lastGetBatchCountUserId = userId;
 
     if (failGetBatchCount) {
-      return const Err('Forced getBatchPointCount failure');
+      throw ObjectBoxException('Forced getBatchPointCount failure');
     }
 
     final count = _points.values
         .where((p) => p.userId == userId && p.isUploaded == false)
         .length;
-    return Ok(count);
+    return count;
   }
 
   @override
-  Future<Result<int, String>> markBatchAsUploaded(
-      List<int> batchIds, int userId) async {
+  Future<int> markBatchAsUploaded(int userId) async {
     markUploadedCount++;
-    lastMarkUploadedIds = batchIds;
     lastMarkUploadedUserId = userId;
 
     if (failMarkUploaded) {
-      return const Err('Forced markBatchAsUploaded failure');
+      throw ObjectBoxException('Forced failure');
     }
 
     var affected = 0;
-    for (final id in batchIds) {
-      final p = _points[id];
-      if (p != null && p.userId == userId) {
-        _points[id] = LocalPointDto(
-          id: p.id,
-          type: p.type,
-          geometry: p.geometry,
-          properties: p.properties,
-          userId: p.userId,
-          isUploaded: true,
-        );
+    _points.forEach((id, p) {
+      if (p.userId == userId && !p.isUploaded) {
+        _points[id]?.copyWith(isUploaded: true);
         affected++;
       }
-    }
-    return Ok(affected);
+    });
+    return affected;
   }
 
   @override
-  Future<Result<(), String>> deletePoint(int pointId, int userId) async {
+  Future<int> deletePoint(int userId, int pointId) async {
+
     deletePointCount++;
     lastDeletePointId = pointId;
     lastDeletePointUserId = userId;
 
     if (failDeletePoint) {
-      return const Err('Forced deletePoint failure');
+      throw ObjectBoxException('Forced deletePoint failure');
     }
 
-    final p = _points[pointId];
-    if (p == null || p.userId != userId) {
-      return const Err('Point not found.');
-    }
-    _points.remove(pointId);
-    return const Ok(());
+    final int originalLength = _points.length;
+
+    _points.removeWhere((index, point) =>
+      point.userId == userId && point.id == pointId
+    );
+
+    final int currentLength = _points.length;
+    return originalLength - currentLength;
   }
 
   @override
-  Future<Result<(), String>> clearBatch(int userId) async {
+  Future<int> clearBatch(int userId) async {
     clearBatchCount++;
     lastClearBatchUserId = userId;
 
     if (failClearBatch) {
-      return const Err('Forced clearBatch failure');
+      throw ObjectBoxException('Forced clearBatch failure');
     }
 
     final toRemove = _points.entries
         .where((e) => e.value.userId == userId && e.value.isUploaded == false)
         .map((e) => e.key)
         .toList();
-    for (final id in toRemove) {
-      _points.remove(id);
-    }
-    return const Ok(());
+
+    _points.removeWhere((index, point) => toRemove.contains(point.id));
+
+    return toRemove.length;
   }
 }

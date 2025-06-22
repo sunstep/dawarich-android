@@ -7,9 +7,8 @@ import 'package:flutter/foundation.dart';
 final class MigrationService {
   final List<MigrationStep> _steps;
 
-  final SQLiteClient _driftDatabase;
-  MigrationService(this._driftDatabase, final Store _obxDb)
-      : _steps = [DriftToObxMigration(_driftDatabase, _obxDb)];
+  MigrationService(final SQLiteClient driftDatabase, final Store obxDb)
+      : _steps = [DriftToObxMigration(driftDatabase, obxDb)];
 
   Future<bool> needsMigration() async {
     for (final step in _steps) {

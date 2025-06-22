@@ -10,25 +10,28 @@ import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 import 'package:drift/drift.dart';
 
-final class LocalPointRepository implements ILocalPointRepository {
+@Deprecated('Use objectboxLocalPointRepository instead')
+final class DriftPointLocalRepository implements IPointLocalRepository {
   final SQLiteClient _database;
-  LocalPointRepository(this._database);
+  DriftPointLocalRepository(this._database);
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
-  Future<Result<(), String>> storePoint(LocalPointDto point) async {
+  Future<int> storePoint(LocalPointDto point) async {
     try {
-      await _database.into(_database.pointsTable).insert(PointsTableCompanion(
+      final int pointId = await _database.into(_database.pointsTable).insert(PointsTableCompanion(
             type: Value(point.type),
             geometryId: Value(await _storeGeometry(point.geometry)),
             propertiesId: Value(await _storeProperties(point.properties)),
             userId: Value(point.userId),
           ));
-      return const Ok(());
+      return pointId;
     } catch (e) {
-      return Err("Failed to store point: $e");
+      rethrow;
     }
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   Future<int> _storeGeometry(LocalPointGeometryDto geometry) async {
     return await _database.into(_database.pointGeometryTable).insert(
           PointGeometryTableCompanion(
@@ -39,6 +42,7 @@ final class LocalPointRepository implements ILocalPointRepository {
         );
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   Future<int> _storeProperties(LocalPointPropertiesDto properties) async {
     return await _database.into(_database.pointPropertiesTable).insert(
           PointPropertiesTableCompanion(
@@ -59,49 +63,9 @@ final class LocalPointRepository implements ILocalPointRepository {
         );
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
-  Future<Option<LastPointDto>> getLastPoint(int userId) async {
-    try {
-      // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
-
-      final JoinedSelectStatement queryResult =
-          _database.select(_database.pointsTable).join([
-        innerJoin(
-          _database.pointGeometryTable,
-          _database.pointGeometryTable.id
-              .equalsExp(_database.pointsTable.geometryId),
-        ),
-        innerJoin(
-          _database.pointPropertiesTable,
-          _database.pointPropertiesTable.id
-              .equalsExp(_database.pointsTable.propertiesId),
-        ),
-      ])
-            ..orderBy([
-              OrderingTerm(
-                  expression: _database.pointsTable.id, mode: OrderingMode.desc)
-            ]) // Apply ordering last
-            ..limit(1)
-            ..where(_database.pointsTable.userId.equals(userId));
-
-      LocalPointDto point =
-          await queryResult.map((row) => row.toPointDto(_database)).getSingle();
-
-      return Some(LastPointDto(
-          longitude: point.geometry.coordinates[0],
-          latitude: point.geometry.coordinates[1],
-          timestamp: point.properties.timestamp));
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint("Error retrieving last point: $e");
-      }
-
-      return const None();
-    }
-  }
-
-  @override
-  Future<Result<LocalPointBatchDto, String>> getFullBatch(int userId) async {
+  Future<LocalPointBatchDto> getFullBatch(int userId) async {
     try {
       final query = _database.select(_database.pointsTable).join([
         innerJoin(
@@ -120,14 +84,18 @@ final class LocalPointRepository implements ILocalPointRepository {
       final List<LocalPointDto> batchPoints =
           await query.map((row) => row.toPointDto(_database)).get();
 
-      return Ok(LocalPointBatchDto(points: batchPoints));
+      return LocalPointBatchDto(points: batchPoints);
     } catch (e) {
-      return Err("Failed to retrieve batch points: $e");
+      if (kDebugMode) {
+        debugPrint("Failed to retrieve batch points: $e");
+      }
+      rethrow;
     }
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
-  Future<Result<LocalPointBatchDto, String>> getCurrentBatch(int userId) async {
+  Future<LocalPointBatchDto> getCurrentBatch(int userId) async {
     try {
       final query = _database.select(_database.pointsTable).join([
         innerJoin(
@@ -147,14 +115,64 @@ final class LocalPointRepository implements ILocalPointRepository {
       final List<LocalPointDto> batchPoints =
           await query.map((row) => row.toPointDto(_database)).get();
 
-      return Ok(LocalPointBatchDto(points: batchPoints));
+      return LocalPointBatchDto(points: batchPoints);
     } catch (e) {
-      return Err("Failed to retrieve batch points: $e");
+      if (kDebugMode) {
+        debugPrint("Failed to retrieve batch points: $e");
+      }
+      rethrow;
     }
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
-  Future<Result<int, String>> getBatchPointCount(int userId) async {
+  Future<Option<LastPointDto>> getLastPoint(int userId) async {
+    try {
+      // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
+
+      final JoinedSelectStatement queryResult =
+      _database.select(_database.pointsTable).join([
+        innerJoin(
+          _database.pointGeometryTable,
+          _database.pointGeometryTable.id
+              .equalsExp(_database.pointsTable.geometryId),
+        ),
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id
+              .equalsExp(_database.pointsTable.propertiesId),
+        ),
+      ])
+        ..orderBy([
+          OrderingTerm(
+              expression: _database.pointsTable.id, mode: OrderingMode.desc)
+        ]) // Apply ordering last
+        ..limit(1)
+        ..where(_database.pointsTable.userId.equals(userId));
+
+      LocalPointDto? point =
+      await queryResult.map((row) => row.toPointDto(_database)).getSingleOrNull();
+
+      if (point != null) {
+        return Some(LastPointDto(
+            longitude: point.geometry.coordinates[0],
+            latitude: point.geometry.coordinates[1],
+            timestamp: point.properties.timestamp));
+      }
+
+      return const None();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error retrieving last point: $e");
+      }
+
+      rethrow;
+    }
+  }
+
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
+  @override
+  Future<int> getBatchPointCount(int userId) async {
     try {
       final countQuery = await (_database.selectOnly(_database.pointsTable)
             ..addColumns([_database.pointsTable.id.count()])
@@ -162,55 +180,59 @@ final class LocalPointRepository implements ILocalPointRepository {
                 _database.pointsTable.userId.equals(userId)))
           .getSingle();
 
-      return Ok(countQuery.read(_database.pointsTable.id.count()) ?? 0);
+      return countQuery.read(_database.pointsTable.id.count()) ?? 0;
     } catch (e) {
       debugPrint("Error fetching not uploaded points count: $e");
-      return Err("Failed to get point count of batch: $e");
+      rethrow;
     }
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
-  Future<Result<int, String>> markBatchAsUploaded(
-      List<int> batchIds, int userId) async {
+  Future<int> markBatchAsUploaded(int userId) async {
     try {
       final int rowsAffected = await (_database.update(_database.pointsTable)
-            ..where((t) => t.id.isIn(batchIds) & t.userId.equals(userId)))
+            ..where((t) => t.userId.equals(userId)))
           .write(const PointsTableCompanion(isUploaded: Value(true)));
 
-      return Ok(rowsAffected);
+      return rowsAffected;
     } catch (e) {
-      return Err("Failed to mark batch as uploaded: $e");
+
+      if (kDebugMode) {
+        debugPrint("Failed to mark batch as uploaded: $e");
+      }
+
+      rethrow;
     }
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
-  Future<Result<(), String>> deletePoint(int pointId, int userId) async {
+  Future<int> deletePoint(int userId, int pointId) async {
     try {
       final int deletedCount = await (_database.delete(_database.pointsTable)
             ..where((t) => t.id.equals(pointId) & t.userId.equals(userId)))
           .go();
 
-      if (deletedCount == 0) {
-        return const Err("Point not found.");
-      }
 
-      return const Ok(());
+      return deletedCount;
     } catch (e) {
-      return Err("Failed to delete point: $e");
+      rethrow;
     }
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
-  Future<Result<(), String>> clearBatch(int userId) async {
+  Future<int> clearBatch(int userId) async {
     try {
-      await (_database.delete(_database.pointsTable)
+      final int deletedCount = await (_database.delete(_database.pointsTable)
             ..where(
                 (t) => t.isUploaded.equals(false) & t.userId.equals(userId)))
           .go();
 
-      return const Ok(());
+      return deletedCount;
     } catch (e) {
-      return Err("Failed to clear batch: $e");
+      rethrow;
     }
   }
 }

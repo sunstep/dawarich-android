@@ -1,6 +1,7 @@
 import 'package:dawarich/data/objectbox/entities/user/user_entity.dart';
 import 'package:objectbox/objectbox.dart';
 
+@Entity()
 final class TrackEntity {
   @Id(assignable: true)
   int id;

@@ -53,17 +53,7 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
     return const Ok(());
   }
 
-  @override
-  Future<Option<Map<String, String?>>> fetchHeaders(
-      DateTime start, DateTime end, int perPage) async {
-    fetchHeadersCallCount++;
-    lastFetchHeadersStart = start;
-    lastFetchHeadersEnd = end;
-    lastFetchHeadersPerPage = perPage;
 
-    if (shouldFetchHeadersFail) return const None();
-    return Some(stubHeaders);
-  }
 
   @override
   Future<Option<List<ApiPointDTO>>> fetchPoints(

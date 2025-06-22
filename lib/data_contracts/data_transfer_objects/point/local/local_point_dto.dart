@@ -16,4 +16,22 @@ class LocalPointDto {
       required this.properties,
       required this.userId,
       required this.isUploaded});
+
+  LocalPointDto copyWith({
+    int? id,
+    String? type,
+    LocalPointGeometryDto? geometry,
+    LocalPointPropertiesDto? properties,
+    int? userId,
+    bool? isUploaded,
+  }) {
+    return LocalPointDto(
+      id:           id           ?? this.id,
+      type:         type         ?? this.type,
+      geometry:     geometry     ?? this.geometry,
+      properties:   properties   ?? this.properties,
+      userId:       userId       ?? this.userId,
+      isUploaded:   isUploaded   ?? this.isUploaded,
+    );
+  }
 }

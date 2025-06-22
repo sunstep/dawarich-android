@@ -1,7 +1,8 @@
 import 'package:dawarich/application/services/connect_service.dart';
 import 'package:flutter/material.dart';
 
-final class ConnectViewModel with ChangeNotifier {
+final class ConnectViewModel extends ChangeNotifier {
+
   final ConnectService _connectService;
   ConnectViewModel(this._connectService);
 

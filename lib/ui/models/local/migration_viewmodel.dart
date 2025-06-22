@@ -1,4 +1,3 @@
-import 'package:dawarich/application/services/api_config_service.dart';
 import 'package:dawarich/application/services/migration_service.dart';
 import 'package:dawarich/application/services/user_session_service.dart';
 import 'package:dawarich/application/startup/dependency_injector.dart';

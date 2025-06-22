@@ -3,14 +3,13 @@ import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
 import 'package:option_result/option_result.dart';
 
-abstract interface class ILocalPointRepository {
-  Future<Result<(), String>> storePoint(LocalPointDto point);
+abstract interface class IPointLocalRepository {
+  Future<int> storePoint(LocalPointDto point);
+  Future<LocalPointBatchDto> getFullBatch(int userId);
+  Future<LocalPointBatchDto> getCurrentBatch(int userId);
   Future<Option<LastPointDto>> getLastPoint(int userId);
-  Future<Result<LocalPointBatchDto, String>> getFullBatch(int userId);
-  Future<Result<LocalPointBatchDto, String>> getCurrentBatch(int userId);
-  Future<Result<int, String>> getBatchPointCount(int userId);
-  Future<Result<int, String>> markBatchAsUploaded(
-      List<int> batchIds, int userId);
-  Future<Result<(), String>> deletePoint(int pointId, int userId);
-  Future<Result<(), String>> clearBatch(int userId);
+  Future<int> getBatchPointCount(int userId);
+  Future<int> markBatchAsUploaded(int userId);
+  Future<int> deletePoint(int userId, int pointId);
+  Future<int> clearBatch(int userId);
 }

@@ -15,13 +15,13 @@ import 'package:dawarich/data/dawarich_api/config/api_config_manager.dart';
 import 'package:dawarich/data/dawarich_api/sources/api_client.dart';
 import 'package:dawarich/data/dawarich_api/repositories/connect_repository.dart';
 import 'package:dawarich/data/hardware/repositories/hardware_repository.dart';
-import 'package:dawarich/data/drift/repositories/local_point_repository.dart';
 import 'package:dawarich/data/dawarich_api/repositories/api_point_repository.dart';
 import 'package:dawarich/data/dawarich_api/repositories/stats_repository.dart';
-import 'package:dawarich/data/drift/repositories/track_repository.dart';
+import 'package:dawarich/data/objectbox/repositories/objectbox_point_local_repository.dart';
+import 'package:dawarich/data/objectbox/repositories/objectbox_track_repository.dart';
+import 'package:dawarich/data/objectbox/repositories/objectbox_user_storage_repository.dart';
 import 'package:dawarich/data/shared_preferences/tracker_preferences_repository.dart';
 import 'package:dawarich/data/shared_preferences/repositories/user_session_repository.dart';
-import 'package:dawarich/data/drift/repositories/user_storage_repository.dart';
 import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
 import 'package:dawarich/data/sources/hardware/device_data_client.dart';
 import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
@@ -83,7 +83,7 @@ final class DependencyInjector {
     getIt.registerLazySingleton<IUserSessionRepository>(
         () => UserSessionRepository());
     getIt.registerLazySingleton<IUserStorageRepository>(
-        () => UserStorageRepository(getIt<SQLiteClient>()));
+        () => ObjectBoxUserStorageRepository(getIt<Store>()));
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
         getIt<GpsDataClient>(),
         getIt<DeviceDataClient>(),
@@ -93,12 +93,12 @@ final class DependencyInjector {
         getIt<IApiConfigManager>(), getIt<ApiClient>()));
     getIt.registerLazySingleton<IApiPointRepository>(
         () => ApiPointRepository(getIt<ApiClient>()));
-    getIt.registerLazySingleton<ILocalPointRepository>(
-        () => LocalPointRepository(getIt<SQLiteClient>()));
+    getIt.registerLazySingleton<IPointLocalRepository>(
+        () => ObjectBoxPointLocalRepository(getIt<Store>()));
     getIt.registerLazySingleton<IStatsRepository>(
         () => StatsRepository(getIt<ApiClient>()));
     getIt.registerLazySingleton<ITrackRepository>(
-        () => TrackRepository(getIt<SQLiteClient>()));
+        () => ObjectBoxTrackRepository(getIt<Store>()));
     getIt.registerLazySingleton<ITrackerPreferencesRepository>(
         () => TrackerPreferencesRepository());
 
@@ -130,7 +130,7 @@ final class DependencyInjector {
     getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(
         getIt<ApiPointService>(),
         getIt<IUserSessionRepository>(),
-        getIt<ILocalPointRepository>(),
+        getIt<IPointLocalRepository>(),
         getIt<TrackerPreferencesService>(),
         getIt<ITrackRepository>(),
         getIt<IHardwareRepository>()));

@@ -5,10 +5,12 @@ import 'package:dawarich/data_contracts/interfaces/user_storage_repository_inter
 import 'package:drift/drift.dart';
 import 'package:option_result/option_result.dart';
 
-final class UserStorageRepository implements IUserStorageRepository {
+@Deprecated('Use objectbox instead')
+final class DriftUserStorageRepository implements IUserStorageRepository {
   final SQLiteClient _database;
-  UserStorageRepository(this._database);
+  DriftUserStorageRepository(this._database);
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   Future<Option<UserDto>> _findDawarichUser(
       int dawarichId, String endpoint) async {
     final userQuery = _database.select(_database.userTable)
@@ -24,6 +26,7 @@ final class UserStorageRepository implements IUserStorageRepository {
     return const None();
   }
 
+  @Deprecated('Drift DAL is no longer in use, look at ObjectBox DAL for actual functionality.')
   @override
   Future<int> storeUser(UserDto userDto) async {
     if (userDto.remoteId != null && userDto.dawarichEndpoint != null) {

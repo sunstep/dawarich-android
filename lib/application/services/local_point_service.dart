@@ -31,7 +31,7 @@ import 'package:option_result/option_result.dart';
 class LocalPointService {
   final ApiPointService _api;
   final IUserSessionRepository _userSession;
-  final ILocalPointRepository _localPointInterfaces;
+  final IPointLocalRepository _localPointInterfaces;
   final IHardwareRepository _hardwareInterfaces;
   final TrackerPreferencesService _trackerPreferencesService;
   final ITrackRepository _trackRepository;
@@ -49,44 +49,23 @@ class LocalPointService {
     final int userId = await _userSession.getCurrentUserId();
     final int maxPoints =
         await _trackerPreferencesService.getPointsPerBatchPreference();
-    final Result<int, String> currentPointsResult =
+    final int currentPoints =
         await _localPointInterfaces.getBatchPointCount(userId);
-
-    if (currentPointsResult case Err(value: String currentPointsError)) {
-      if (kDebugMode) {
-        debugPrint(
-            "[DEBUG] Failed to get the current amount of points in batch: $currentPointsError");
-        return false;
-      }
-    }
-
-    final int currentPoints = currentPointsResult.unwrap();
 
     if (currentPoints < maxPoints) {
       return false;
     }
 
-    Result<LocalPointBatchDto, String> currentBatchResult =
+    LocalPointBatchDto batchDto =
         await _localPointInterfaces.getCurrentBatch(userId);
 
-    if (currentBatchResult case Err(value: String batchError)) {
-      if (kDebugMode) {
-        debugPrint(
-            "[DEBUG] Failed to get the current points in batch: $batchError");
-        return false;
-      }
-    }
-
-    // Upload batch
-    LocalPointBatchDto batchDto = currentBatchResult.unwrap();
     LocalPointBatch batch = batchDto.toEntity();
     DawarichPointBatch apiBatch = batch.toApi();
 
     bool uploaded = await _api.uploadBatch(apiBatch);
 
     if (uploaded) {
-      List<int> pointIds = batch.points.map((point) => point.id).toList();
-      _localPointInterfaces.markBatchAsUploaded(pointIds, userId);
+      _localPointInterfaces.markBatchAsUploaded(userId);
     } else {
       if (kDebugMode) {
         debugPrint("[DEBUG] Failed to upload batch!");
@@ -112,13 +91,13 @@ class LocalPointService {
     }
 
     LocalPointDto pointDto = point.toDto();
-    final Result<(), String> storeResult =
+    final int storeResult =
         await _localPointInterfaces.storePoint(pointDto);
     await _checkBatchThreshold();
 
-    return storeResult is Ok
+    return storeResult > 0
         ? Ok(point)
-        : Err("Failed to store point: ${storeResult.unwrapErr()}");
+        : Err("Failed to store point");
   }
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
@@ -219,6 +198,7 @@ class LocalPointService {
   }
 
   Future<bool> markBatchAsUploaded(LocalPointBatch batch) async {
+
     final int userId = await _userSession.getCurrentUserId();
 
     final List<int> batchIds =
@@ -232,24 +212,9 @@ class LocalPointService {
       return false;
     }
 
-    Result<int, String> result =
-        await _localPointInterfaces.markBatchAsUploaded(batchIds, userId);
+    int result = await _localPointInterfaces.markBatchAsUploaded(userId);
 
-    switch (result) {
-      case Ok(value: int rowsAffected):
-        {
-          return rowsAffected == batchIds.length;
-        }
-
-      case Err(value: String error):
-        {
-          if (kDebugMode) {
-            debugPrint("[DEBUG]: Failed to mark batch as uploaded: $error");
-          }
-
-          return false;
-        }
-    }
+    return result > 0;
   }
 
   Future<Result<(), String>> _validatePoint(LocalPoint point) async {
@@ -361,57 +326,47 @@ class LocalPointService {
   }
 
   Future<LocalPointBatch> _getFullBatch() async {
+
     final int userId = await _userSession.getCurrentUserId();
-    Result<LocalPointBatchDto, String> result =
+    LocalPointBatchDto result =
         await _localPointInterfaces.getFullBatch(userId);
 
-    if (result case Ok(value: LocalPointBatchDto pointBatchDto)) {
-      LocalPointBatch batch = pointBatchDto.toEntity();
+      LocalPointBatch batch = result.toEntity();
 
       return batch;
-    }
-
-    String error = result.unwrapErr();
-    throw Exception("Failed to retrieve full batch: $error");
   }
 
   Future<int> getBatchPointsCount() async {
     final int userId = await _userSession.getCurrentUserId();
-    Result<int, String> result =
+    int result =
         await _localPointInterfaces.getBatchPointCount(userId);
 
-    if (result case Ok(value: int pointCount)) {
-      return pointCount;
-    }
 
-    String error = result.unwrapErr();
-    throw Exception("Failed to retrieve point count in batch: $error");
+    return result;
   }
 
   Future<LocalPointBatch> getCurrentBatch() async {
+
     final int userId = await _userSession.getCurrentUserId();
-    Result<LocalPointBatchDto, String> batchResult =
+
+    LocalPointBatchDto pointBatchDto =
         await _localPointInterfaces.getCurrentBatch(userId);
 
-    if (batchResult case Ok(value: LocalPointBatchDto pointBatchDto)) {
       LocalPointBatch pointBatch = pointBatchDto.toEntity();
       return pointBatch;
-    }
-
-    String error = batchResult.unwrapErr();
-    throw Exception("Failed to retrieve current batch: $error");
   }
 
   Future<bool> deletePoint(int pointId) async {
     final int userId = await _userSession.getCurrentUserId();
-    final result = await _localPointInterfaces.deletePoint(pointId, userId);
-    return result.isOk();
+    final result = await _localPointInterfaces.deletePoint(userId, pointId);
+
+    return result == 1;
   }
 
   Future<bool> clearBatch() async {
     final int userId = await _userSession.getCurrentUserId();
     final result = await _localPointInterfaces.clearBatch(userId);
-    return result.isOk();
+    return result > 0;
   }
 
   double _getAccuracyThreshold(LocationAccuracy accuracy) {

@@ -2,7 +2,6 @@ import 'package:dawarich/data/objectbox/entities/point/point_entity.dart';
 import 'package:dawarich/data/objectbox/entities/point/point_geometry_entity.dart';
 import 'package:dawarich/data/objectbox/entities/point/point_properties_entity.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
@@ -73,13 +72,13 @@ final class ObjectBoxPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<LocalPointBatchDto> getFullBatch(int userId) async {
+  Future<List<LocalPointDto>> getFullBatch(int userId) async {
 
     try {
       Box<PointEntity> pointBox = Box<PointEntity>(_database);
 
       if (pointBox.isEmpty()) {
-        return LocalPointBatchDto(points: []);
+        return [];
       }
 
       final query = pointBox.query(PointEntity_.user.equals(userId)).build();
@@ -126,8 +125,7 @@ final class ObjectBoxPointLocalRepository implements IPointLocalRepository {
         return point;
       }).toList();
 
-      LocalPointBatchDto batch = LocalPointBatchDto(points: pointList);
-      return batch;
+      return pointList;
 
     } on ObjectBoxException catch (e) {
       if (kDebugMode) {
@@ -138,14 +136,14 @@ final class ObjectBoxPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<LocalPointBatchDto> getCurrentBatch(int userId) async {
+  Future<List<LocalPointDto>> getCurrentBatch(int userId) async {
 
     try {
 
       Box<PointEntity> pointBox = Box<PointEntity>(_database);
 
       if (pointBox.isEmpty()) {
-        return LocalPointBatchDto(points: []);
+        return [];
       }
 
       final query = pointBox.query(
@@ -196,8 +194,7 @@ final class ObjectBoxPointLocalRepository implements IPointLocalRepository {
         return point;
       }).toList();
 
-      LocalPointBatchDto batch = LocalPointBatchDto(points: pointList);
-      return batch;
+      return pointList;
 
     } on ObjectBoxException catch (e) {
       if (kDebugMode) {

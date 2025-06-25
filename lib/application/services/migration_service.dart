@@ -1,6 +1,6 @@
-import 'package:dawarich/application/interfaces/migration_step.dart';
-import 'package:dawarich/application/migrations/drift_to_obx_migration.dart';
-import 'package:dawarich/data/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/startup/migrations/interfaces/migration_step.dart';
+import 'package:dawarich/core/startup/migrations/steps/drift_to_obx_migration.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:flutter/foundation.dart';
 

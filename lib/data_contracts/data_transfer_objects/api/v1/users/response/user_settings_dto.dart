@@ -1,4 +1,4 @@
-import 'package:dawarich/data/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 
 class UserSettingsDto {
   String immichUrl;

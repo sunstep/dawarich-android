@@ -1,25 +1,23 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:dawarich/application/converters/batch/local/local_point_batch_converter.dart';
 import 'package:dawarich/application/converters/batch/local/local_point_converter.dart';
 import 'package:dawarich/application/converters/last_point_converter.dart';
 import 'package:dawarich/application/converters/track_converter.dart';
 import 'package:dawarich/application/services/api_point_service.dart';
 import 'package:dawarich/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/track/track_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/local_point_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
+import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
 import 'package:dawarich/domain/entities/local/additional_point_data.dart';
 import 'package:dawarich/domain/entities/local/last_point.dart';
 import 'package:dawarich/domain/entities/local/point_pair.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
-import 'package:dawarich/domain/entities/point/batch/local/local_point_batch.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_geometry.dart';
 import 'package:dawarich/domain/entities/point/batch/local/local_point_properties.dart';
 import 'package:dawarich/domain/entities/track/track.dart';
@@ -56,13 +54,16 @@ class LocalPointService {
       return false;
     }
 
-    LocalPointBatchDto batchDto =
+    List<LocalPointDto> localPointDtoList =
         await _localPointInterfaces.getCurrentBatch(userId);
 
-    LocalPointBatch batch = batchDto.toEntity();
-    DawarichPointBatch apiBatch = batch.toApi();
+    List<LocalPoint> localPointList = localPointDtoList.map((point) =>
+        point.toDomain()).toList();
+    List<DawarichPoint> apiPointList = localPointList.map((point) =>
+        point.toApi()).toList();
+    DawarichPointBatch fullBatch = DawarichPointBatch(points: apiPointList);
 
-    bool uploaded = await _api.uploadBatch(apiBatch);
+    bool uploaded = await _api.uploadBatch(fullBatch);
 
     if (uploaded) {
       _localPointInterfaces.markBatchAsUploaded(userId);
@@ -197,12 +198,12 @@ class LocalPointService {
         isUploaded: false);
   }
 
-  Future<bool> markBatchAsUploaded(LocalPointBatch batch) async {
+  Future<bool> markBatchAsUploaded(List<LocalPoint> batch) async {
 
     final int userId = await _userSession.getCurrentUserId();
 
     final List<int> batchIds =
-        batch.points.map((point) => point.id).whereType<int>().toList();
+        batch.map((point) => point.id).whereType<int>().toList();
 
     if (batchIds.isEmpty) {
       if (kDebugMode) {
@@ -288,14 +289,14 @@ class LocalPointService {
   }
 
   Future<bool> _isUniquePoint(LocalPoint candidate) async {
-    final LocalPointBatch batch = await _getFullBatch();
+    final List<LocalPoint> batch = await _getFullBatch();
     bool answer = true;
     int batchIndex = 0;
 
     DateTime candidateTime = DateTime.parse(candidate.properties.timestamp);
 
-    while (answer == true && batchIndex < batch.points.length) {
-      LocalPoint batchPoint = batch.points[batchIndex];
+    while (answer == true && batchIndex < batch.length) {
+      LocalPoint batchPoint = batch[batchIndex];
       String batchPointTimeString = batchPoint.properties.timestamp;
       DateTime batchPointTime = DateTime.parse(batchPointTimeString);
 
@@ -325,15 +326,15 @@ class LocalPointService {
     }
   }
 
-  Future<LocalPointBatch> _getFullBatch() async {
+  Future<List<LocalPoint>> _getFullBatch() async {
 
     final int userId = await _userSession.getCurrentUserId();
-    LocalPointBatchDto result =
+    List<LocalPointDto> result =
         await _localPointInterfaces.getFullBatch(userId);
 
-      LocalPointBatch batch = result.toEntity();
+    List<LocalPoint> batch = result.map((point) => point.toDomain()).toList();
 
-      return batch;
+    return batch;
   }
 
   Future<int> getBatchPointsCount() async {
@@ -345,15 +346,15 @@ class LocalPointService {
     return result;
   }
 
-  Future<LocalPointBatch> getCurrentBatch() async {
+  Future<List<LocalPoint>> getCurrentBatch() async {
 
     final int userId = await _userSession.getCurrentUserId();
 
-    LocalPointBatchDto pointBatchDto =
+    List<LocalPointDto> pointBatchDto =
         await _localPointInterfaces.getCurrentBatch(userId);
 
-      LocalPointBatch pointBatch = pointBatchDto.toEntity();
-      return pointBatch;
+    List<LocalPoint> batch = pointBatchDto.map((point) => point.toDomain()).toList();
+      return batch;
   }
 
   Future<bool> deletePoint(int pointId) async {

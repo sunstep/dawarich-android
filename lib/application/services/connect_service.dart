@@ -1,6 +1,6 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/api_config_manager_interfaces.dart';
-import 'package:dawarich/data_contracts/interfaces/connect_repository_interfaces.dart';
+import 'package:dawarich/features/auth/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
 import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';

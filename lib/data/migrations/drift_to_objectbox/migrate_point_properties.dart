@@ -1,4 +1,4 @@
-import 'package:dawarich/data/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/data/objectbox/entities/point/point_properties_entity.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:option_result/option_result.dart';

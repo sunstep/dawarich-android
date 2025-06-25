@@ -1,4 +1,4 @@
-import 'package:dawarich/data/dawarich_api/config/api_config.dart';
+import 'package:dawarich/core/data/dawarich_api/config/api_config.dart';
 
 abstract interface class IApiConfigManager {
   Future<void> load();

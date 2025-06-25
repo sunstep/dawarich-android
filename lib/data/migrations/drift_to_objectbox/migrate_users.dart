@@ -1,4 +1,4 @@
-import 'package:dawarich/data/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/data/objectbox/entities/user/user_entity.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:flutter/foundation.dart';

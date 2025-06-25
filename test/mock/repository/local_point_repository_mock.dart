@@ -1,5 +1,4 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
@@ -101,7 +100,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<LocalPointBatchDto> getFullBatch(int userId) async {
+  Future<List<LocalPointDto>> getFullBatch(int userId) async {
     getFullBatchCount++;
     lastGetFullBatchUserId = userId;
 
@@ -110,11 +109,11 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     }
 
     final pts = _points.values.where((p) => p.userId == userId).toList();
-    return LocalPointBatchDto(points: pts);
+    return pts;
   }
 
   @override
-  Future<LocalPointBatchDto> getCurrentBatch(int userId) async {
+  Future<List<LocalPointDto>> getCurrentBatch(int userId) async {
     getCurrentBatchCount++;
     lastGetCurrentBatchUserId = userId;
 
@@ -125,7 +124,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     final pts = _points.values
         .where((p) => p.userId == userId && p.isUploaded == false)
         .toList();
-    return LocalPointBatchDto(points: pts);
+    return pts;
   }
 
   @override

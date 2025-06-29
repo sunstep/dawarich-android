@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
@@ -15,10 +17,17 @@ final class ApiPointRepository implements IApiPointRepository {
   @override
   Future<Result<(), String>> uploadBatch(DawarichPointBatchDto batch) async {
     try {
-      final response = await _apiClient
-          .post<void>('/api/v1/points', data: batch, queryParameters: {});
+      final response = await _apiClient.post<void>(
+          '/api/v1/points',
+          data: batch.toJson(),
+          queryParameters: {},
+          options: Options(
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          ));
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         return const Ok(());
       } else {
         return Err('HTTP ${response.statusCode}: ${response.statusMessage}');

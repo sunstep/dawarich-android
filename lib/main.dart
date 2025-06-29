@@ -1,8 +1,8 @@
-import 'package:dawarich/application/startup/dependency_injector.dart';
-import 'package:dawarich/application/startup/startup_service.dart';
-import 'package:dawarich/ui/routing/app_router.dart';
-import 'package:dawarich/ui/theme/dark_theme.dart';
-import 'package:dawarich/ui/theme/light_theme.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/startup/startup_service.dart';
+import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/core/theme/dark_theme.dart';
+import 'package:dawarich/core/theme/light_theme.dart';
 import 'package:flutter/material.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
@@ -12,7 +12,7 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  await DependencyInjector.injectDependencies();
+  await DependencyInjection.injectDependencies();
   await getIt.allReady();
   await StartupService.initializeApp();
 

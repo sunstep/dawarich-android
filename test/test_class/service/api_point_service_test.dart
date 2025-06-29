@@ -1,6 +1,6 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_batch_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
+import 'package:dawarich/features/timeline/data_contracts/data_transfer_objects/slim_api_point_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/repository/api_point_repository_mock.dart';

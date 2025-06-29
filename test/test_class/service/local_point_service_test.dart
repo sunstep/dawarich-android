@@ -1,8 +1,8 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_geometry_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/point/local/local_point_properties_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:option_result/option_result.dart';
 import '../../mock/repository/local_point_repository_mock.dart';
@@ -69,8 +69,8 @@ void main() {
 
       // verify it really stored
       final batch = await repo.getFullBatch(testUser);
-      expect(batch.points.length, 1);
-      expect(batch.points.first.id, 1);
+      expect(batch.length, 1);
+      expect(batch.first.id, 1);
     });
 
     test('storePoint: failure flag throws exception and still increments', () async {
@@ -149,8 +149,8 @@ void main() {
 
       final batch = await repo.getFullBatch(testUser);
 
-      expect(batch.points.every((p) => p.userId == testUser), isTrue);
-      expect(batch.points.length, 1);
+      expect(batch.every((p) => p.userId == testUser), isTrue);
+      expect(batch.length, 1);
 
       expect(repo.getFullBatchCount, 1);
       expect(repo.lastGetFullBatchUserId, testUser);
@@ -184,7 +184,7 @@ void main() {
 
       final batch = await repo.getCurrentBatch(testUser);
 
-      expect(batch.points.length, 0); // Since all points are marked as uploaded
+      expect(batch.length, 0); // Since all points are marked as uploaded
 
       expect(repo.getCurrentBatchCount, 1);
       expect(repo.lastGetCurrentBatchUserId, testUser);
@@ -258,7 +258,7 @@ void main() {
       expect(repo.lastMarkUploadedUserId, testUser);
 
       final batch = await repo.getCurrentBatch(testUser);
-      expect(batch.points, isEmpty);
+      expect(batch, isEmpty);
     });
 
     test('markBatchAsUploaded: failure flag throws exception', () async {
@@ -293,7 +293,7 @@ void main() {
       expect(repo.lastDeletePointUserId, testUser);
 
       final batch = await repo.getFullBatch(testUser);
-      expect(batch.points, isEmpty);
+      expect(batch, isEmpty);
     });
 
     test('deletePoint: not found', () async {
@@ -342,7 +342,7 @@ void main() {
       expect(repo.lastClearBatchUserId, testUser);
 
       final full = await repo.getFullBatch(testUser);
-      expect(full.points, isEmpty);
+      expect(full, isEmpty);
     });
 
     test('clearBatch: failure flag throws exception', () async {

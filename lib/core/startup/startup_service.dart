@@ -1,9 +1,10 @@
-import 'package:dawarich/application/services/migration_service.dart';
-import 'package:dawarich/application/services/user_session_service.dart';
-import 'package:dawarich/core/di/dependency_injector.dart';
+import 'package:dawarich/features/migration/application/services/migration_service.dart';
+import 'package:dawarich/core/session/user_session_service.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:user_session_manager/user_session_manager.dart';
 
 final class StartupService {
   static late final String initialRoute;
@@ -25,12 +26,25 @@ final class StartupService {
       return;
     }
 
-    final UserSessionService sessionService = getIt<UserSessionService>();
-    final userId = await sessionService.getCurrentUserId();
+    final LegacyUserSessionService legacySession = getIt<LegacyUserSessionService>();
+    final UserSessionManager<int> sessionService = getIt<UserSessionManager<int>>();
 
-    if (userId > 0) {
-      // final ApiConfigService apiConfig = getIt<ApiConfigService>();
-      // await apiConfig.initialize();
+    final int legacyId = await legacySession.getCurrentUserId();
+
+
+    if (legacyId > 0) {
+      sessionService.login(legacyId);
+      await legacySession.clearCurrentUserId();
+
+      if (kDebugMode) {
+        debugPrint('[Startup] Migrated legacy session with userId $legacyId');
+      }
+    }
+
+    final int? userId = await sessionService.getUser();
+
+
+    if (userId != null && userId > 0) {
       initialRoute = AppRouter.map;
     } else {
       initialRoute = AppRouter.connect;

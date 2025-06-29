@@ -1,4 +1,4 @@
-import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 
 class UserDto {
   final int id;

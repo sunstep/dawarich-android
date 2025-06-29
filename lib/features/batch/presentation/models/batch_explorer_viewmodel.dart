@@ -1,5 +1,5 @@
-import 'package:dawarich/application/services/api_point_service.dart';
-import 'package:dawarich/application/services/local_point_service.dart';
+import 'package:dawarich/core/application/services/api_point_service.dart';
+import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point.dart';
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
 import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_geometry.dart';

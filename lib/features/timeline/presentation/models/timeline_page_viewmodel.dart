@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:dawarich/application/services/location_service.dart';
-import 'package:dawarich/application/services/map_service.dart';
+import 'package:dawarich/features/timeline/application/services/location_service.dart';
+import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';

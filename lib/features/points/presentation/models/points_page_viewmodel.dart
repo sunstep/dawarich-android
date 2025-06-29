@@ -1,5 +1,5 @@
 import 'package:dawarich/domain/entities/api/v1/points/response/api_point.dart';
-import 'package:dawarich/application/services/api_point_service.dart';
+import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/features/points/presentation/models/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';

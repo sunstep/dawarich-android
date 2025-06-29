@@ -1,4 +1,4 @@
-import 'package:dawarich/core/di/dependency_injector.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';

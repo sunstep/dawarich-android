@@ -1,4 +1,4 @@
-import 'package:dawarich/core/di/dependency_injector.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';

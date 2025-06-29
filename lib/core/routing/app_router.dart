@@ -1,4 +1,4 @@
-import 'package:dawarich/core/di/dependency_injector.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/migration/presentation/models/migration_viewmodel.dart';
 import 'package:dawarich/features/migration/presentation/pages/migration_page.dart';
 import 'package:dawarich/features/batch/presentation/pages/batch_explorer_page.dart';
@@ -8,21 +8,23 @@ import 'package:dawarich/features/auth/presentation/pages/connect_page.dart';
 import 'package:dawarich/features/timeline/presentation/pages/timeline_page.dart';
 import 'package:dawarich/features/stats/presentation/pages/stats_page.dart';
 import 'package:dawarich/features/points/presentation/pages/points_page.dart';
-import 'package:dawarich/features/tracker/presentation/pages/tracker_page.dart';
+import 'package:dawarich/features/tracking/presentation/pages/tracker_page.dart';
 import 'package:dawarich/features/settings/presentation/pages/settings_page.dart';
 import 'package:provider/provider.dart';
 
 final class AppRouter {
-  static const String migration = '/migration';
-  static const String connect = '/connect';
-  static const String map = '/map';
-  static const String stats = '/stats';
-  static const String points = '/points';
-  static const String tracker = '/tracker';
+
+  static const String migration =     '/migration';
+  static const String connect =       '/connect';
+  static const String map =           '/map';
+  static const String stats =         '/stats';
+  static const String points =        '/points';
+  static const String tracker =       '/tracker';
   static const String batchExplorer = '/batchExplorer';
-  static const String settings = '/settings';
+  static const String settings =      '/settings';
 
   static Route<dynamic> generateRoute(RouteSettings route) {
+
     if (kDebugMode) {
       debugPrint('[AppRouter] Generating route: ${route.name}');
     }

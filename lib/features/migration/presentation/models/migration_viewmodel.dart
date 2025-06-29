@@ -1,8 +1,9 @@
-import 'package:dawarich/application/services/migration_service.dart';
-import 'package:dawarich/application/services/user_session_service.dart';
-import 'package:dawarich/core/di/dependency_injector.dart';
+import 'package:dawarich/features/migration/application/services/migration_service.dart';
+import 'package:dawarich/core/session/user_session_service.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:user_session_manager/user_session_manager.dart';
 
 final class MigrationViewModel extends ChangeNotifier {
   bool _isMigrating = false;
@@ -33,10 +34,10 @@ final class MigrationViewModel extends ChangeNotifier {
       _setError(null);
 
       // After migration, check login state
-      final sessionService = getIt<UserSessionService>();
-      final userId = await sessionService.getCurrentUserId();
+      final sessionService = getIt<UserSessionManager<int>>();
+      final int? userId = await sessionService.getUser();
 
-      if (userId > 0) {
+      if (userId != null && userId > 0) {
         // final apiConfig = getIt<ApiConfigService>();
         // await apiConfig.initialize();
         Navigator.pushReplacementNamed(context, AppRouter.map);

@@ -1,4 +1,4 @@
-import 'package:dawarich/application/services/connect_service.dart';
+import 'package:dawarich/features/auth/application/services/connect_service.dart';
 import 'package:flutter/material.dart';
 
 final class ConnectViewModel extends ChangeNotifier {

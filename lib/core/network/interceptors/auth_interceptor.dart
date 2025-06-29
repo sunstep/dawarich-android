@@ -1,7 +1,5 @@
-
-
-import 'package:dawarich/core/network/api_config/api_config.dart';
-import 'package:dawarich/core/network/api_config/api_config_manager_interfaces.dart';
+import 'package:dawarich/core/network/configs/api_config.dart';
+import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dio/dio.dart';
 
 final class AuthInterceptor extends Interceptor {

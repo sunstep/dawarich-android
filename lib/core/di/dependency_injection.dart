@@ -13,8 +13,8 @@ import 'package:dawarich/features/stats/application/services/stats_service.dart'
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
-import 'package:dawarich/core/session/user_session_service.dart';
-import 'package:dawarich/core/network/api_config/api_config_manager.dart';
+import 'package:dawarich/core/session/application/user_session_service.dart';
+import 'package:dawarich/core/network/configs/api_config_manager.dart';
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/auth/data/repositories/connect_repository.dart';
 import 'package:dawarich/features/tracking/data/repositories/hardware_repository.dart';
@@ -24,13 +24,13 @@ import 'package:dawarich/core/database/%20repositories/objectbox/objectbox_point
 import 'package:dawarich/core/database/%20repositories/objectbox/objectbox_track_repository.dart';
 import 'package:dawarich/core/database/%20repositories/objectbox/objectbox_user_storage_repository.dart';
 import 'package:dawarich/features/tracking/data/repositories/tracker_preferences_repository.dart';
-import 'package:dawarich/core/session/user_session_repository.dart';
+import 'package:dawarich/core/session/data/user_session_repository.dart';
 import 'package:dawarich/features/tracking/data/sources/battery_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/gps_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/network/api_config/api_config_manager_interfaces.dart';
+import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/core/database/%20repositories/local_point_repository_interfaces.dart';
@@ -38,7 +38,7 @@ import 'package:dawarich/core/network/repositories/api_point_repository_interfac
 import 'package:dawarich/features/stats/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
-import 'package:dawarich/core/session/legacy_user_session_repository_interfaces.dart';
+import 'package:dawarich/core/session/domain/legacy_user_session_repository_interfaces.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';

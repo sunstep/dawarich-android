@@ -1,6 +1,6 @@
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/auth/data_contracts/data_transfer_objects/users/user_dto.dart';
-import 'package:dawarich/core/network/api_config/api_config_manager_interfaces.dart';
+import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/connect_repository_interfaces.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';

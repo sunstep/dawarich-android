@@ -1,4 +1,4 @@
-import 'package:dawarich/core/point_data/data_transfer_objects/api/api_point_geodata_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_geodata_dto.dart';
 
 final class ApiPointDTO {
   final int?    id;

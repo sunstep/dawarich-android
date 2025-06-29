@@ -6,12 +6,12 @@ import 'package:dawarich/features/tracking/application/converters/track_converte
 import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
-import 'package:dawarich/core/point_data/data_transfer_objects/local/local_point_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/core/database/%20repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
-import 'package:dawarich/core/session/legacy_user_session_repository_interfaces.dart';
+import 'package:dawarich/core/session/domain/legacy_user_session_repository_interfaces.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
 import 'package:dawarich/core/domain/models/point/local/additional_point_data.dart';

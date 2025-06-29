@@ -1,5 +1,5 @@
-import 'package:dawarich/core/point_data/data_transfer_objects/local/local_point_geometry_dto.dart';
-import 'package:dawarich/core/point_data/data_transfer_objects/local/local_point_properties_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
+import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
 
 class LocalPointDto {
   final int id;

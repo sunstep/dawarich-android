@@ -1,10 +1,10 @@
 import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/core/application/services/local_point_service.dart';
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point.dart';
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_geometry.dart';
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_properties.dart';
-import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_geometry.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/converters/local_point_converter.dart';
 import 'package:flutter/foundation.dart';

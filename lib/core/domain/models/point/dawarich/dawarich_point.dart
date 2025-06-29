@@ -1,5 +1,5 @@
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_geometry.dart';
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_properties.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_geometry.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';
 
 class DawarichPoint {
   final String type;

@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/api/v1/stats/response/stats.dart';
+import 'package:dawarich/features/stats/domain/stats.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/stats/response/stats_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:option_result/option_result.dart';

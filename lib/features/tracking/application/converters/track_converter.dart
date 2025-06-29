@@ -1,5 +1,5 @@
 import 'package:dawarich/data_contracts/data_transfer_objects/track/track_dto.dart';
-import 'package:dawarich/domain/entities/track/track.dart';
+import 'package:dawarich/features/tracking/domain/models/track.dart';
 
 extension TrackToDto on Track {
   TrackDto toDto() {

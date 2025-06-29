@@ -1,8 +1,8 @@
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_converter.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_batch_dto.dart';
 import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_dto.dart';
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point.dart';
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point_batch.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
 
 extension BatchConverter on DawarichPointBatch {
   DawarichPointBatchDto toDto() {

@@ -5,9 +5,9 @@ import 'package:dawarich/features/tracking/application/services/point_automation
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
-import 'package:dawarich/domain/entities/local/last_point.dart';
-import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
-import 'package:dawarich/domain/entities/track/track.dart';
+import 'package:dawarich/features/tracking/domain/models/last_point.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/features/tracking/domain/models/track.dart';
 import 'package:dawarich/features/batch/presentation/converters/local_point_converter.dart';
 import 'package:dawarich/features/tracking/presentation/converters/last_point_converter.dart';
 import 'package:dawarich/features/tracking/presentation/converters/track_converter.dart';

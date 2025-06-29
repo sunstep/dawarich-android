@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/track/track.dart';
+import 'package:dawarich/features/tracking/domain/models/track.dart';
 import 'package:dawarich/features/tracking/presentation/models/track_viewmodel.dart';
 
 extension TrackToViewModel on Track {

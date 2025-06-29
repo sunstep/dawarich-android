@@ -1,5 +1,5 @@
-import 'package:dawarich/domain/entities/point/batch/local/local_point_geometry.dart';
-import 'package:dawarich/domain/entities/point/batch/local/local_point_properties.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point_geometry.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point_properties.dart';
 
 class LocalPoint {
   final int id;

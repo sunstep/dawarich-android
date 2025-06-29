@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/local/last_point.dart';
+import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/features/tracking/presentation/models/last_point_viewmodel.dart';
 
 extension LastPointToViewModel on LastPoint {

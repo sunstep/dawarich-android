@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
-import 'package:dawarich/domain/entities/point/batch/local/local_point.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';

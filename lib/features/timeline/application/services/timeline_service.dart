@@ -1,7 +1,7 @@
 import 'package:country/country.dart';
 import 'package:dawarich/core/application/services/api_point_service.dart';
-import 'package:dawarich/domain/entities/api/v1/points/response/slim_api_point.dart';
-import 'package:dawarich/domain/entities/local/point_pair.dart';
+import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
+import 'package:dawarich/core/domain/models/point/point_pair.dart';
 import 'package:device_region/device_region.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:latlong2/latlong.dart';

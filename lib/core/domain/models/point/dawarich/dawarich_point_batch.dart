@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/api/v1/points/request/dawarich_point.dart';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
 
 class DawarichPointBatch {
   final List<DawarichPoint> points;

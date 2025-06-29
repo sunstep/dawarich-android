@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/api/v1/points/response/api_point_geometry.dart';
+import 'package:dawarich/core/domain/models/point/api/api_point_geometry.dart';
 
 class ApiPointGeometryViewModel {
   String? type;

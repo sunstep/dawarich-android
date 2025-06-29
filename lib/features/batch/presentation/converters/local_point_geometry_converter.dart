@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/point/batch/local/local_point_geometry.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point_geometry.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_geometry_viewmodel.dart';
 
 extension LocalPointGeometryEntityToViewModel on LocalPointGeometry {

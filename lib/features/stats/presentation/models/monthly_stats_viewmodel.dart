@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/api/v1/stats/response/monthly_stats.dart';
+import 'package:dawarich/features/stats/domain/monthly_stats.dart';
 
 class MonthlyStatsViewModel {
   int january;

@@ -1,4 +1,4 @@
-import 'package:dawarich/domain/entities/api/v1/stats/response/stats.dart';
+import 'package:dawarich/features/stats/domain/stats.dart';
 import 'package:dawarich/features/stats/application/services/stats_service.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
 import 'package:flutter/foundation.dart';

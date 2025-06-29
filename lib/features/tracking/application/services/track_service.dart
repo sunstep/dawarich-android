@@ -2,7 +2,7 @@ import 'package:dawarich/features/tracking/application/converters/track_converte
 import 'package:dawarich/data_contracts/data_transfer_objects/track/track_dto.dart';
 import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
 import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
-import 'package:dawarich/domain/entities/track/track.dart';
+import 'package:dawarich/features/tracking/domain/models/track.dart';
 import 'package:option_result/option.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 import 'package:uuid/uuid.dart';

@@ -1,7 +1,7 @@
 
 import 'package:dawarich/core/database/objectbox/entities/track/track_entity.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/track/track_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/track_repository.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';

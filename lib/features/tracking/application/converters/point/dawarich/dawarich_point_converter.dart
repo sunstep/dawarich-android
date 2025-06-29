@@ -1,8 +1,8 @@
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_geometry_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_properties_converter.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_geometry_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_properties_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_geometry_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_properties_dto.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_geometry.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';

@@ -1,4 +1,4 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/local/last_point_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 
 extension LastPointDtoToDomain on LastPointDto {

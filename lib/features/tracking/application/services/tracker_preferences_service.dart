@@ -1,6 +1,6 @@
-import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
-import 'package:dawarich/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
-import 'package:dawarich/data_contracts/interfaces/user_session_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
+import 'package:dawarich/core/session/legacy_user_session_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:user_session_manager/user_session_manager.dart';

@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:dawarich/data/sources/hardware/battery_data_client.dart';
-import 'package:dawarich/data/sources/hardware/device_data_client.dart';
-import 'package:dawarich/data/sources/hardware/gps_data_client.dart';
-import 'package:dawarich/data/sources/hardware/connectivity_data_client.dart';
-import 'package:dawarich/data_contracts/interfaces/hardware_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/data/sources/battery_data_client.dart';
+import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
+import 'package:dawarich/features/tracking/data/sources/gps_data_client.dart';
+import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
+import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:option_result/option_result.dart';

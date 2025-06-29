@@ -41,10 +41,10 @@ final class StartupService {
       }
     }
 
-    final int? userId = await sessionService.getUser();
+    final bool isLoggedIn = await sessionService.isLoggedIn();
 
 
-    if (userId != null && userId > 0) {
+    if (isLoggedIn) {
       initialRoute = AppRouter.map;
     } else {
       initialRoute = AppRouter.connect;

@@ -1,5 +1,6 @@
 import 'package:dawarich/core/network/api_config/api_config.dart';
-import 'package:dawarich/data_contracts/interfaces/api_config_manager_interfaces.dart';
+import 'package:dawarich/core/network/api_config/api_config_manager_interfaces.dart';
+import 'package:dawarich/core/shell/drawer/i_api_config_logout.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {

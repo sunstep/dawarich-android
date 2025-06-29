@@ -1,5 +1,5 @@
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/track/track_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
 
 extension TrackMapper on TrackTableData {
   TrackDto fromDatabase() {

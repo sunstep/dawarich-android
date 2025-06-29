@@ -1,7 +1,7 @@
 
 import 'package:dawarich/core/database/objectbox/entities/user/user_entity.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
+import 'package:dawarich/features/auth/data_contracts/data_transfer_objects/users/user_dto.dart';
+import 'package:dawarich/features/auth/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:flutter/foundation.dart';
 

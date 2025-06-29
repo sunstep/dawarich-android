@@ -1,7 +1,7 @@
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/request/dawarich_point_batch_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/api_point_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/points/response/slim_api_point_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/api_point_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
+import 'package:dawarich/core/point_data/data_transfer_objects/api/api_point_dto.dart';
+import 'package:dawarich/features/timeline/data_contracts/data_transfer_objects/slim_api_point_dto.dart';
+import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:option_result/option_result.dart';
 
 final class ApiPointRepositoryMock implements IApiPointRepository {

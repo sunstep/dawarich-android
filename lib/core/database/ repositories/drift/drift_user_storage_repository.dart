@@ -1,7 +1,7 @@
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_dto.dart';
-import 'package:dawarich/data_contracts/data_transfer_objects/api/v1/users/response/user_settings_dto.dart';
-import 'package:dawarich/data_contracts/interfaces/user_storage_repository_interfaces.dart';
+import 'package:dawarich/features/auth/data_contracts/data_transfer_objects/users/user_dto.dart';
+import 'package:dawarich/features/auth/data_contracts/data_transfer_objects/users/user_settings_dto.dart';
+import 'package:dawarich/features/auth/data_contracts/interfaces/user_storage_repository_interfaces.dart';
 import 'package:drift/drift.dart';
 import 'package:option_result/option_result.dart';
 

@@ -66,6 +66,12 @@ final class _TrackerPageState extends State<TrackerPage>
   }
 
   @override
+  void didPopNext() {
+    _viewModel.getLastPoint();
+    _viewModel.getPointInBatchCount();
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {

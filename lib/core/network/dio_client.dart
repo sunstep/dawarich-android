@@ -22,11 +22,11 @@ final class DioClient {
     }());
   }
 
-  Future<Response<T>> get<T>(String path,
-      {Map<String, dynamic>? queryParameters,
-      Options? options,
-      CancelToken? cancelToken,
-      Function(int, int)? onReceiveProgress}) {
+  Future<Response<T>> get<T>(String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    Function(int, int)? onReceiveProgress}) {
     return _dio.get(path,
         queryParameters: queryParameters,
         options: options,
@@ -34,9 +34,21 @@ final class DioClient {
         onReceiveProgress: onReceiveProgress);
   }
 
-  Future<Response<T>> post<T>(String path,
-      {required Object data, required Map<String, dynamic> queryParameters}) {
-    return _dio.post(path, data: data, queryParameters: queryParameters);
+  Future<Response<T>> post<T>(String path, {
+    required Object data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    Function(int, int)? onSendProgress,
+    Function(int, int)? onReceiveProgress}) {
+    return _dio.post(path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+        cancelToken: cancelToken,
+        onSendProgress: onSendProgress,
+        onReceiveProgress: onReceiveProgress
+    );
   }
 
   Future<Response<T>> delete<T>(String path, {

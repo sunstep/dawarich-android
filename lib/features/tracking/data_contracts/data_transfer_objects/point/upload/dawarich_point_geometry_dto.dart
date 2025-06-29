@@ -1,6 +1,6 @@
 class DawarichPointGeometryDto {
   final String type;
-  final List<double> coordinates;
+  final List<double> coordinates; // lon, lat
 
   DawarichPointGeometryDto({required this.type, required this.coordinates});
 

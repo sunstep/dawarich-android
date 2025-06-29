@@ -1,33 +1,36 @@
-import 'package:dawarich/application/startup/startup_service.dart';
-import 'package:dawarich/ui/theme/dark_theme.dart';
-import 'package:dawarich/ui/theme/light_theme.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/startup/startup_service.dart';
+import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/core/theme/dark_theme.dart';
+import 'package:dawarich/core/theme/light_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/ui/routing/app_router.dart';
 
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
 
-void main() {
+Future<void> main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
-  StartupService.initializeApp();
+
+  await DependencyInjection.injectDependencies();
+  await getIt.allReady();
+  await StartupService.initializeApp();
+
   runApp(const AppBase());
 }
 
 class AppBase extends StatelessWidget {
-
   const AppBase({super.key});
 
   @override
   Widget build(BuildContext context) {
-
-
     return MaterialApp(
-      title: 'Dawarich',
-      theme: LightTheme.primaryTheme,
-      darkTheme: DarkTheme.primaryTheme,
-      themeMode: ThemeMode.system,
-      onGenerateRoute: AppRouter.generateRoute,
-      initialRoute: AppRouter.splash,
-      navigatorObservers: [routeObserver]
-    );
+        title: 'Dawarich',
+        theme: LightTheme.primaryTheme,
+        darkTheme: DarkTheme.primaryTheme,
+        themeMode: ThemeMode.system,
+        onGenerateRoute: AppRouter.generateRoute,
+        initialRoute: StartupService.initialRoute,
+        navigatorObservers: [routeObserver]);
   }
 }

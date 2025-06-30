@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
-class PointAutomationService with ChangeNotifier {
+final class PointAutomationService with ChangeNotifier {
   final StreamController<LocalPoint> _newPointController =
       StreamController.broadcast();
   Stream<LocalPoint> get newPointStream => _newPointController.stream;

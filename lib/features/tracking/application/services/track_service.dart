@@ -6,7 +6,7 @@ import 'package:option_result/option.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 import 'package:uuid/uuid.dart';
 
-class TrackService {
+final class TrackService {
   final ITrackRepository _trackRepository;
   final UserSessionManager<int> _userSession;
 

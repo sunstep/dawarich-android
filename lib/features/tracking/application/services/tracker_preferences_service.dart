@@ -4,7 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 
-class TrackerPreferencesService {
+final class TrackerPreferencesService {
+
   final ITrackerPreferencesRepository _trackerPreferencesRepository;
   final IHardwareRepository _hardwareRepository;
   final UserSessionManager<int> _user;
@@ -63,7 +64,7 @@ class TrackerPreferencesService {
     if (userId == null) {
       return;
     }
-    await _trackerPreferencesRepository.setTrackerId(userId, newId);
+    await _trackerPreferencesRepository.setDeviceId(userId, newId);
   }
 
   Future<bool> resetTrackerId() async {
@@ -71,7 +72,7 @@ class TrackerPreferencesService {
     if (userId == null) {
       return false;
     }
-    return await _trackerPreferencesRepository.deleteTrackerId(userId);
+    return await _trackerPreferencesRepository.deleteDeviceId(userId);
   }
 
   Future<bool> getAutomaticTrackingPreference() async {
@@ -146,7 +147,7 @@ class TrackerPreferencesService {
     }
 
     final Option<String> possibleTrackerId =
-        await _trackerPreferencesRepository.getTrackerId(userId);
+        await _trackerPreferencesRepository.getDeviceId(userId);
 
     if (possibleTrackerId case Some(value: String trackerId)) {
       return trackerId;

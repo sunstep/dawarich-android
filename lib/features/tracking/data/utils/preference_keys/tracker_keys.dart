@@ -7,5 +7,5 @@ class TrackerKeys {
   static String locationAccuracyKey(int userId) => "${userId}_locationAccuracy";
   static String minimumPointDistanceKey(int userId) =>
       "${userId}_minimumPointDistance";
-  static String trackerIdKey(int userId) => "${userId}_trackerId";
+  static String deviceIdKey(int userId) => "${userId}_trackerId";
 }

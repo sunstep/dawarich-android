@@ -157,7 +157,7 @@ class LocalPointService {
     final String wifi = await _hardwareInterfaces.getWiFiStatus();
     final String batteryState = await _hardwareInterfaces.getBatteryState();
     final double batteryLevel = await _hardwareInterfaces.getBatteryLevel();
-    final String deviceId = await _trackerPreferencesService.getTrackerId();
+    final String deviceId = await _trackerPreferencesService.getDeviceId();
     final Option<TrackDto> trackerIdResult =
         await _trackRepository.getActiveTrack(userId);
 

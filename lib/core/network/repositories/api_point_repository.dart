@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';

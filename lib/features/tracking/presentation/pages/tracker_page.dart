@@ -578,11 +578,11 @@ class _AdvancedSettingsSection extends StatelessWidget {
           decoration: InputDecoration(
             suffixIcon: IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: vm.resetTrackerId,
+              onPressed: vm.resetDeviceId,
               tooltip: 'Reset ID',
             ),
           ),
-          onChanged: vm.setTrackerId,
+          onChanged: vm.setDeviceId,
         ),
       ],
     );

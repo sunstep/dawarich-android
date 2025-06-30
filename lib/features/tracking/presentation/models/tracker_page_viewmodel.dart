@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
-class TrackerPageViewModel extends ChangeNotifier {
+final class TrackerPageViewModel extends ChangeNotifier {
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
 
@@ -142,8 +142,8 @@ class TrackerPageViewModel extends ChangeNotifier {
   int _minimumPointDistance = 0;
   int get minimumPointDistance => _minimumPointDistance;
 
-  String _trackerId = "";
-  String get trackerId => _trackerId;
+  String _deviceId = "";
+  String get deviceId => _deviceId;
 
   final TextEditingController deviceIdController = TextEditingController();
 
@@ -194,12 +194,7 @@ class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> persistPreferences() async {
-    await storeAutomaticTracking();
-    await storeMaxPointsPerBatch();
-    await storeTrackingFrequency();
-    await storeLocationAccuracy();
-    await storeMinimumPointDistance();
-    await storeDeviceId();
+    await _trackerPreferencesService.persistPreferences();
   }
 
   Future<void> _getTrackRecordingStatus() async {
@@ -295,13 +290,10 @@ class TrackerPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setMaxPointsPerBatch(int? amount) {
+  Future<void> setMaxPointsPerBatch(int? amount) async {
     amount ??= 50; // If null somehow, just fall back to default
     _maxPointsPerBatch = amount;
     notifyListeners();
-  }
-
-  Future<void> storeMaxPointsPerBatch() async {
     await _trackerPreferencesService
         .setPointsPerBatchPreference(_maxPointsPerBatch);
   }
@@ -309,37 +301,35 @@ class TrackerPageViewModel extends ChangeNotifier {
   Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(
       await _trackerPreferencesService.getPointsPerBatchPreference());
 
-  void toggleAutomaticTracking(bool enable) {
-    if (_isUpdatingTracking) return;
+  Future<void> toggleAutomaticTracking(bool enable) async {
+
+    if (_isUpdatingTracking) {
+      return;
+    }
 
     _isUpdatingTracking = true;
 
-    setAutomaticTracking(enable);
-
-    _applyAutomaticTracking(enable);
-  }
-
-  void setAutomaticTracking(bool enable) {
     _isTrackingAutomatically = enable;
     notifyListeners();
-  }
 
-  Future<void> _applyAutomaticTracking(bool enable) async {
+    await _trackerPreferencesService.setAutomaticTrackingPreference(enable);
+
     try {
       if (enable) {
         await _pointAutomationService.startTracking();
 
-        final needsFix = await _systemSettingsService.needsSystemSettingsFix();
+        final needsFix =
+        await _systemSettingsService.needsSystemSettingsFix();
         if (needsFix) {
           _settingsPromptController.add(null);
         }
       } else {
         await _pointAutomationService.stopTracking();
       }
-
-      setAutomaticTracking(enable);
     } catch (e) {
       _isTrackingAutomatically = !enable;
+      await _trackerPreferencesService
+          .setAutomaticTrackingPreference(_isTrackingAutomatically);
       debugPrint('Error toggling automatic tracking: $e');
     } finally {
       _isUpdatingTracking = false;
@@ -347,87 +337,75 @@ class TrackerPageViewModel extends ChangeNotifier {
     }
   }
 
+
   Future<void> openSystemSettings() async {
     await _systemSettingsService.openSystemSettings();
-  }
-
-  Future<void> storeAutomaticTracking() async {
-    await _trackerPreferencesService
-        .setAutomaticTrackingPreference(_isTrackingAutomatically);
   }
 
   Future<void> _getAutomaticTrackingPreference() async {
     final bool shouldTrackAutomatically =
         await _trackerPreferencesService.getAutomaticTrackingPreference();
-    await _applyAutomaticTracking(shouldTrackAutomatically);
+    await toggleAutomaticTracking(shouldTrackAutomatically);
   }
 
-  void setTrackingFrequency(int? seconds) {
+  Future<void> setTrackingFrequency(int? seconds) async {
     seconds ??= 10;
     _trackingFrequency = seconds;
-
-    notifyListeners();
-  }
-
-  Future<void> storeTrackingFrequency() async {
     await _trackerPreferencesService
         .setTrackingFrequencyPreference(_trackingFrequency);
+    await _pointAutomationService.updateTimers();
+    notifyListeners();
+
   }
+
 
   Future<void> _getTrackingFrequencyPreference() async => setTrackingFrequency(
       await _trackerPreferencesService.getTrackingFrequencyPreference());
 
-  void setLocationAccuracy(LocationAccuracy accuracy) {
+  Future<void> setLocationAccuracy(LocationAccuracy accuracy) async {
     _locationAccuracy = accuracy;
+    await _trackerPreferencesService
+        .setLocationAccuracyPreference(_locationAccuracy);
     notifyListeners();
   }
 
-  Future<void> storeLocationAccuracy() async {
-    await _trackerPreferencesService
-        .setLocationAccuracyPreference(_locationAccuracy);
-  }
 
   Future<void> _getLocationAccuracyPreference() async {
     setLocationAccuracy(
         await _trackerPreferencesService.getLocationAccuracyPreference());
   }
 
-  void setMinimumPointDistance(int meters) {
+  Future<void> setMinimumPointDistance(int meters) async {
     _minimumPointDistance = meters;
-    notifyListeners();
-  }
-
-  Future<void> storeMinimumPointDistance() async {
     await _trackerPreferencesService
         .setMinimumPointDistancePreference(_minimumPointDistance);
+    await _pointAutomationService.updateTimers();
+    notifyListeners();
   }
 
   Future<void> _getMinimumPointDistancePreference() async =>
       setMinimumPointDistance(
           await _trackerPreferencesService.getMinimumPointDistancePreference());
 
-  void setTrackerId(String id) {
-    _trackerId = id;
+  Future<void> setDeviceId(String id) async {
+    _deviceId = id;
+    await _trackerPreferencesService.setDeviceId(_deviceId);
     notifyListeners();
   }
 
-  Future<void> storeDeviceId() async {
-    await _trackerPreferencesService.setTrackerId(_trackerId);
-  }
+  Future<void> resetDeviceId() async {
+    bool isReset = await _trackerPreferencesService.resetDeviceId();
 
-  Future<void> resetTrackerId() async {
-    bool reset = await _trackerPreferencesService.resetTrackerId();
-
-    if (reset) {
-      String trackerId = await _trackerPreferencesService.getTrackerId();
-      setTrackerId(trackerId);
-      deviceIdController.text = trackerId;
+    if (isReset) {
+      String deviceId = await _trackerPreferencesService.getDeviceId();
+      setDeviceId(deviceId);
+      deviceIdController.text = deviceId;
     }
   }
 
   Future<void> _getDeviceId() async {
-    String trackerId = await _trackerPreferencesService.getTrackerId();
-    setTrackerId(trackerId);
+    String trackerId = await _trackerPreferencesService.getDeviceId();
+    setDeviceId(trackerId);
     deviceIdController.text = trackerId;
   }
 

@@ -151,6 +151,11 @@ final class PointAutomationService with ChangeNotifier {
 
       final int trackingFrequency =
           await _trackerPreferencesService.getTrackingFrequencyPreference();
+
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Starting GPS timer with $trackingFrequency seconds frequency.");
+      }
+
       _gpsTimer = Timer.periodic(
         Duration(seconds: trackingFrequency),
         _gpsTimerHandler,

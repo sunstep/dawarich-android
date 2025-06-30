@@ -162,12 +162,16 @@ final class PointAutomationService with ChangeNotifier {
   }
 
   Future<void> updateTimers() async {
-    if (_isTracking) {
-      await stopGpsTimer();
-      await startGpsTimer();
 
-      await stopStreamSubscription();
-      await startStreamSubscription();
+    if (_isTracking) {
+      final int newFrequency = await _trackerPreferencesService.getTrackingFrequencyPreference();
+      if (_gpsTimer?.tick != newFrequency) {
+        await stopGpsTimer();
+        await startGpsTimer();
+
+        await stopStreamSubscription();
+        await startStreamSubscription();
+      }
     }
   }
 

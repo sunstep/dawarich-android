@@ -1,5 +1,4 @@
 import 'package:dawarich/features/migration/application/services/migration_service.dart';
-import 'package:dawarich/core/session/application/user_session_service.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter/foundation.dart';
@@ -26,20 +25,7 @@ final class StartupService {
       return;
     }
 
-    final LegacyUserSessionService legacySession = getIt<LegacyUserSessionService>();
     final UserSessionManager<int> sessionService = getIt<UserSessionManager<int>>();
-
-    final int legacyId = await legacySession.getCurrentUserId();
-
-
-    if (legacyId > 0) {
-      sessionService.login(legacyId);
-      await legacySession.clearCurrentUserId();
-
-      if (kDebugMode) {
-        debugPrint('[Startup] Migrated legacy session with userId $legacyId');
-      }
-    }
 
     final bool isLoggedIn = await sessionService.isLoggedIn();
 

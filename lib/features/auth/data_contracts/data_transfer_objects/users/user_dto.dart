@@ -1,4 +1,3 @@
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 
 class UserDto {
   final int id;
@@ -49,16 +48,4 @@ class UserDto {
         admin: json["admin"]);
   }
 
-  factory UserDto.fromDatabase(UserTableData user) {
-    return UserDto(
-        id: user.id,
-        remoteId: user.dawarichId,
-        dawarichEndpoint: user.dawarichEndpoint,
-        email: user.email,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        apiKey: "",
-        theme: user.theme,
-        admin: user.admin);
-  }
 }

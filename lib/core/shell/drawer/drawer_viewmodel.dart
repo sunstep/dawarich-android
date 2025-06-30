@@ -1,5 +1,4 @@
 import 'package:dawarich/core/shell/drawer/api_config_service.dart';
-import 'package:dawarich/core/session/application/user_session_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 

@@ -37,8 +37,6 @@ dependencies:
   device_info_plus: ^11.5.0
   device_region: ^1.4.0
   dio: ^5.8.0+1
-  drift: ^2.27.0
-  drift_flutter: ^0.2.4
   fl_chart: ^1.0.0
   flutter_background_service: ^5.1.0
   flutter_local_notifications: ^19.3.0
@@ -73,7 +71,6 @@ dependencies:
 
 dev_dependencies:
   build_runner: ^2.5.4
-  drift_dev: ^2.27.0
   flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter

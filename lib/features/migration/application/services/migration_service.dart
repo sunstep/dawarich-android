@@ -1,14 +1,12 @@
 import 'package:dawarich/core/database/migrations/migration_step.dart';
-import 'package:dawarich/core/database/migrations/steps/drift_to_obx_migration.dart';
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:flutter/foundation.dart';
 
 final class MigrationService {
   final List<MigrationStep> _steps;
 
-  MigrationService(final SQLiteClient driftDatabase, final Store obxDb)
-      : _steps = [DriftToObxMigration(driftDatabase, obxDb)];
+  MigrationService(final Store obxDb)
+      : _steps = [];
 
   Future<bool> needsMigration() async {
     for (final step in _steps) {

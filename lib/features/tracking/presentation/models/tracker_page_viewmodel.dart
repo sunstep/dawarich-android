@@ -159,9 +159,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
       this._pointAutomationService,
       this._trackService,
       this._trackerPreferencesService,
-      this._systemSettingsService) {
-    initialize();
-  }
+      this._systemSettingsService);
 
   Future<void> initialize() async {
     _pointAutomationService.newPointStream.listen((LocalPoint point) async {

@@ -128,33 +128,33 @@ final class TrackerPreferencesRepository
 
 
   @override
-  Future<void> setAutomaticTrackingPreference(
-      int userId, bool trueOrFalse) async {
+  void setAutomaticTrackingPreference(
+      int userId, bool trueOrFalse) {
     _automaticTrackingCache[userId] = trueOrFalse;
   }
 
   @override
-  Future<void> setPointsPerBatchPreference(int userId, int amount) async {
+  void setPointsPerBatchPreference(int userId, int amount) {
     _pointsPerBatchCache[userId] = amount;
   }
 
   @override
-  Future<void> setTrackingFrequencyPreference(int userId, int seconds) async {
+  void setTrackingFrequencyPreference(int userId, int seconds) {
     _trackingFrequencyCache[userId] = seconds;
   }
 
   @override
-  Future<void> setLocationAccuracyPreference(int userId, int accuracy) async {
+  void setLocationAccuracyPreference(int userId, int accuracy) {
     _locationAccuracyCache[userId] = accuracy;
   }
 
   @override
-  Future<void> setMinimumPointDistancePreference(int userId, int meters) async {
+  void setMinimumPointDistancePreference(int userId, int meters) {
     _minimumPointDistanceCache[userId] = meters;
   }
 
   @override
-  Future<void> setDeviceId(int userId, String newId) async {
+  void setDeviceId(int userId, String newId) {
     _deviceIdCache[userId] = newId;
   }
 
@@ -165,13 +165,13 @@ final class TrackerPreferencesRepository
   }
 
   @override
-  Future<void> clearCaches() async {
-    _automaticTrackingCache.clear();
-    _pointsPerBatchCache.clear();
-    _trackingFrequencyCache.clear();
-    _locationAccuracyCache.clear();
-    _minimumPointDistanceCache.clear();
-    _deviceIdCache.clear();
+  void clearCaches(int userId) {
+    _automaticTrackingCache.removeWhere((key, _) => key == userId);
+    _pointsPerBatchCache.removeWhere((key, _) => key == userId);
+    _trackingFrequencyCache.removeWhere((key, _) => key == userId);
+    _locationAccuracyCache.removeWhere((key, _) => key == userId);
+    _minimumPointDistanceCache.removeWhere((key, _) => key == userId);
+    _deviceIdCache.removeWhere((key, _) => key == userId);
   }
 
 

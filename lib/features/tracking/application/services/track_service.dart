@@ -14,11 +14,7 @@ final class TrackService {
 
   Future<Track> startTracking() async {
 
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return null!;
-    }
+    final int userId = await _requireUserId();
 
     final DateTime startTime = DateTime.now().toUtc();
 
@@ -38,11 +34,7 @@ final class TrackService {
 
   Future<void> stopTracking() async {
 
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return;
-    }
+    final int userId = await _requireUserId();
 
     final DateTime endTime = DateTime.now().toUtc();
 
@@ -56,11 +48,7 @@ final class TrackService {
   }
 
   Future<Option<Track>> getActiveTrack() async {
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return const None();
-    }
+    final int userId = await _requireUserId();
 
     Option<TrackDto> trackResult =
         await _trackRepository.getActiveTrack(userId);
@@ -72,5 +60,14 @@ final class TrackService {
     }
 
     return const None();
+  }
+
+  Future<int> _requireUserId() async {
+    final int? userId = await _userSession.getUser();
+    if (userId == null) {
+      await _userSession.logout();
+      throw Exception('[TrackService] No user session found.');
+    }
+    return userId;
   }
 }

@@ -55,6 +55,7 @@ final class PointAutomationService with ChangeNotifier {
   /// Subscribes to live location events from the OS.
   Future<void> startStreamSubscription() async {
     if (_stream == null || _stream!.isPaused) {
+
       // Retrieve user’s desired accuracy and min distance from preferences
       final LocationAccuracy accuracy =
           await _trackerPreferencesService.getLocationAccuracyPreference();
@@ -147,6 +148,7 @@ final class PointAutomationService with ChangeNotifier {
   /// (based on user’s preference).
   Future<void> startGpsTimer() async {
     if (_gpsTimer == null || !_gpsTimer!.isActive) {
+
       final int trackingFrequency =
           await _trackerPreferencesService.getTrackingFrequencyPreference();
       _gpsTimer = Timer.periodic(
@@ -156,6 +158,16 @@ final class PointAutomationService with ChangeNotifier {
     } else if (kDebugMode) {
       debugPrint(
           "[DEBUG: GPS Timer] A GPS timer is already active, not starting another one.");
+    }
+  }
+
+  Future<void> updateTimers() async {
+    if (_isTracking) {
+      await stopGpsTimer();
+      await startGpsTimer();
+
+      await stopStreamSubscription();
+      await startStreamSubscription();
     }
   }
 

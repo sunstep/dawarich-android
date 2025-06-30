@@ -9,15 +9,15 @@ abstract interface class ITrackerPreferencesRepository {
   Future<Option<int>> getMinimumPointDistancePreference(int userId);
   Future<Option<String>> getDeviceId(int userId);
 
-  Future<void> setAutomaticTrackingPreference(int userId, bool trueOrFalse);
-  Future<void> setPointsPerBatchPreference(int userId, int amount);
-  Future<void> setTrackingFrequencyPreference(int userId, int seconds);
-  Future<void> setLocationAccuracyPreference(int userId, int accuracy);
-  Future<void> setMinimumPointDistancePreference(int userId, int meters);
-  Future<void> setDeviceId(int userId, String newId);
+  void setAutomaticTrackingPreference(int userId, bool trueOrFalse);
+  void setPointsPerBatchPreference(int userId, int amount);
+  void setTrackingFrequencyPreference(int userId, int seconds);
+  void setLocationAccuracyPreference(int userId, int accuracy);
+  void setMinimumPointDistancePreference(int userId, int meters);
+  void setDeviceId(int userId, String newId);
   Future<bool> deleteDeviceId(int userId);
 
-  Future<void> clearCaches();
+  void clearCaches(int userId);
 
   Future<void> persistPreferences(int userId);
 }

@@ -162,17 +162,14 @@ final class TrackerPageViewModel extends ChangeNotifier {
       this._systemSettingsService);
 
   Future<void> initialize() async {
+
     _pointAutomationService.newPointStream.listen((LocalPoint point) async {
       final LocalPointViewModel pointViewModel = point.toViewModel();
       final LastPointViewModel lastPoint =
-          LastPointViewModel.fromPoint(pointViewModel);
+      LastPointViewModel.fromPoint(pointViewModel);
       setLastPoint(lastPoint);
       await getPointInBatchCount();
       notifyListeners();
-
-      if (kDebugMode) {
-        debugPrint("[DEBUG] Point created automatically");
-      }
     });
 
     // Get last point;

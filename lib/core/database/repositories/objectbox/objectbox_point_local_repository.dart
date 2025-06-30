@@ -5,7 +5,7 @@ import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
-import 'package:dawarich/core/database/%20repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/objectbox.g.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option.dart';

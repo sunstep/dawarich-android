@@ -1,7 +1,6 @@
 import 'package:dawarich/features/tracking/application/converters/track_converter.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
-import 'package:dawarich/core/session/domain/legacy_user_session_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
 import 'package:option_result/option.dart';
 import 'package:user_session_manager/user_session_manager.dart';

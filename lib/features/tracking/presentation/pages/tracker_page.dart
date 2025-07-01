@@ -22,7 +22,7 @@ final class TrackerPage extends StatefulWidget {
 final class _TrackerPageState extends State<TrackerPage>
     with WidgetsBindingObserver, RouteAware {
   late final TrackerPageViewModel _viewModel;
-  late final StreamSubscription<void> _settingsSub;
+  late final StreamSubscription<String> _consentPromptSub;
 
   @override
   void initState() {
@@ -33,16 +33,29 @@ final class _TrackerPageState extends State<TrackerPage>
     _viewModel.initialize();
 
     // delay the actual showDialog until after build()
-    _settingsSub = _viewModel.onSystemSettingsPrompt.listen((_) {
+    _consentPromptSub = _viewModel.onConsentPrompt.listen((message) async {
       if (!mounted) return;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
-        final open = await _showSystemSettingsConfirmation(context);
-        if (open) {
-          await _viewModel.openSystemSettings();
-        }
-      });
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Dawarich Needs Permission'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('No thanks'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+
+      _viewModel.handleConsentResponse(result ?? false);
     });
   }
 
@@ -50,7 +63,7 @@ final class _TrackerPageState extends State<TrackerPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
-    _settingsSub.cancel();
+    _consentPromptSub.cancel();
     _viewModel.dispose();
     super.dispose();
   }
@@ -84,24 +97,22 @@ final class _TrackerPageState extends State<TrackerPage>
     }
   }
 
-  Future<bool> _showSystemSettingsConfirmation(BuildContext context) {
+  Future<bool> _showSystemSettingsConfirmation(BuildContext context, message) {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Background Tracking Needs Your Help'),
-        content: Text(
-          Platform.isAndroid
-              ? 'To keep tracking running in the background, disable battery optimization for this app.'
-              : 'To keep tracking running in the background, grant “Always” location permission in Settings.',
-        ),
+        content: Text(message),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Later')),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('dismiss'),
+          ),
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Open Settings')),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Open Settings'),
+          ),
         ],
       ),
     ).then((v) => v ?? false);

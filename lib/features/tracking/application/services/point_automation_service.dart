@@ -3,6 +3,7 @@ import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointAutomationService with ChangeNotifier {
@@ -14,11 +15,12 @@ final class PointAutomationService with ChangeNotifier {
 
   bool _isTracking = false;
 
+  final ServiceInstance? _serviceInstance;
   final TrackerPreferencesService _trackerPreferencesService;
   final LocalPointService _localPointService;
 
   PointAutomationService(this._trackerPreferencesService,
-      this._localPointService);
+      this._localPointService, [this._serviceInstance]);
 
   Future<void> startTracking() async {
     if (kDebugMode) {
@@ -72,6 +74,19 @@ final class PointAutomationService with ChangeNotifier {
         // We actually got a new point from the phone’s cache, so reset the GPS timer.
         // This basically says “we got a point anyway, so hold off on forcing another one too soon.”
         _newPointController.add(point);
+        if (_serviceInstance is AndroidServiceInstance) {
+          final androidService = _serviceInstance;
+          final isForeground = await androidService.isForegroundService();
+          if (isForeground) {
+            androidService.setForegroundNotificationInfo(
+              title: 'Tracking location...',
+              content: 'Last updated at ${DateTime
+                  .now()
+                  .toLocal()
+                  .toIso8601String()}',
+            );
+          }
+        }
         await _restartGpsTimer();
 
         if (kDebugMode) {
@@ -130,10 +145,26 @@ final class PointAutomationService with ChangeNotifier {
   /// Forces a new position fetch by calling localPointService.createNewPoint().
   Future<void> _gpsTimerHandler(Timer timer) async {
     if (_isTracking) {
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Creating new point from GPS");
+      }
       final result = await _localPointService.createPointFromGps();
 
       if (result case Ok(value: LocalPoint point)) {
         _newPointController.add(point);
+        if (_serviceInstance is AndroidServiceInstance) {
+          final androidService = _serviceInstance;
+          final isForeground = await androidService.isForegroundService();
+          if (isForeground) {
+            androidService.setForegroundNotificationInfo(
+              title: 'Tracking location...',
+              content: 'Last updated at ${DateTime
+                  .now()
+                  .toLocal()
+                  .toIso8601String()}',
+            );
+          }
+        }
       } else if (result case Err(value: String err)) {
         debugPrint("[PointAutomation] Forced GPS point not stored: $err");
       }

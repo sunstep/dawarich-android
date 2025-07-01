@@ -45,6 +45,7 @@ import 'package:dawarich/features/migration/presentation/models/migration_viewmo
 import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 
@@ -198,18 +199,33 @@ final class DependencyInjection {
     });
   }
 
-  static Future<void> injectBackgroundDependencies() async {
-    // First, create a user session
+  static Future<void> injectBackgroundDependencies(ServiceInstance instance) async {
     final session = await UserSessionManager.create<int>(encrypt: false);
     getIt.registerSingleton<UserSessionManager<int>>(session);
 
-    // Register simple services that don't depend on the plugin
+    final configManager = ApiConfigManager();
+    await configManager.load();
+    getIt.registerSingleton<IApiConfigManager>(configManager);
+
+    final authIncpterceptor = AuthInterceptor(getIt<IApiConfigManager>());
+    final errorInterceptor = ErrorInterceptor();
+
+    getIt.registerLazySingleton<AuthInterceptor>(
+            () => authIncpterceptor);
+
+    getIt.registerLazySingleton<ErrorInterceptor>(() => errorInterceptor);
+
+
+    getIt.registerLazySingleton<DioClient>(
+          () => DioClient([authIncpterceptor, errorInterceptor,
+      ]),
+    );
+
     getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
     getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
     getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
     getIt.registerLazySingleton<ConnectivityDataClient>(() => ConnectivityDataClient());
 
-    // Register background-safe repositories
     getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository());
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
         getIt<GpsDataClient>(),
@@ -217,8 +233,6 @@ final class DependencyInjection {
         getIt<BatteryDataClient>(),
         getIt<ConnectivityDataClient>()));
 
-    // Create a background-safe API client that doesn't use the plugin
-    getIt.registerLazySingleton<DioClient>(() => DioClient([]));
     getIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(getIt<DioClient>()));
     getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointRepository>()));
 
@@ -228,18 +242,14 @@ final class DependencyInjection {
         getIt<IHardwareRepository>(),
         getIt<UserSessionManager<int>>()));
 
-    // Create a background-specific store instance
-    final dir = await getApplicationDocumentsDirectory();
-    final store = await openStore(directory: '${dir.path}/objectbox_background');
-    getIt.registerSingleton<Store>(store);
 
-    // Register repositories that depend on store
+
+    getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
     getIt.registerLazySingleton<IPointLocalRepository>(() =>
-        ObjectBoxPointLocalRepository(getIt<Store>()));
+        DriftPointLocalRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<ITrackRepository>(() =>
-        ObjectBoxTrackRepository(getIt<Store>()));
+        DriftTrackRepository(getIt<SQLiteClient>()));
 
-    // Create a simplified LocalPointService for background use
     getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(
         getIt<ApiPointService>(),
         getIt<UserSessionManager<int>>(),
@@ -248,9 +258,10 @@ final class DependencyInjection {
         getIt<ITrackRepository>(),
         getIt<IHardwareRepository>()));
 
-    // Finally register PointAutomationService
     getIt.registerSingleton<PointAutomationService>(PointAutomationService(
         getIt<TrackerPreferencesService>(),
-        getIt<LocalPointService>()));
+        getIt<LocalPointService>(),
+        instance)
+    );
   }
 }

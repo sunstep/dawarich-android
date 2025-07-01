@@ -3,6 +3,7 @@ import 'package:dawarich/core/startup/startup_service.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';
+import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:flutter/material.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
@@ -14,6 +15,8 @@ Future<void> main() async {
 
   await DependencyInjection.injectDependencies();
   await getIt.allReady();
+
+  await BackgroundTrackingService.configureService();
   await StartupService.initializeApp();
 
   runApp(const AppBase());

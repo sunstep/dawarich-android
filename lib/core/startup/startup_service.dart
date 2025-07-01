@@ -11,9 +11,6 @@ final class StartupService {
 
   static Future<void> initializeApp() async {
 
-    BackgroundTrackingService.configureService();
-
-
     final migrationService = GetIt.I<MigrationService>();
     bool needsMigration = false;
     try {

@@ -1,4 +1,7 @@
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/database/repositories/drift/drift_local_point_repository.dart';
+import 'package:dawarich/core/database/repositories/drift/drift_track_repository.dart';
+import 'package:dawarich/core/database/repositories/drift/drift_user_storage_repository.dart';
 import 'package:dawarich/core/network/interceptors/auth_interceptor.dart';
 import 'package:dawarich/core/network/interceptors/error_interceptor.dart';
 import 'package:dawarich/core/shell/drawer/api_config_service.dart';
@@ -20,9 +23,6 @@ import 'package:dawarich/features/auth/data/repositories/connect_repository.dart
 import 'package:dawarich/features/tracking/data/repositories/hardware_repository.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
-import 'package:dawarich/core/database/repositories/objectbox/objectbox_point_local_repository.dart';
-import 'package:dawarich/core/database/repositories/objectbox/objectbox_track_repository.dart';
-import 'package:dawarich/core/database/repositories/objectbox/objectbox_user_storage_repository.dart';
 import 'package:dawarich/features/tracking/data/repositories/tracker_preferences_repository.dart';
 import 'package:dawarich/features/tracking/data/sources/battery_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
@@ -37,7 +37,6 @@ import 'package:dawarich/features/stats/data_contracts/interfaces/stats_reposito
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/user_storage_repository_interfaces.dart';
-import 'package:dawarich/objectbox.g.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
 import 'package:dawarich/features/auth/presentation/models/connect_page_viewmodel.dart';
 import 'package:dawarich/core/shell/drawer/drawer_viewmodel.dart';
@@ -47,7 +46,6 @@ import 'package:dawarich/features/points/presentation/models/points_page_viewmod
 import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:get_it/get_it.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -93,7 +91,7 @@ final class DependencyInjection {
 
     // Repositories
     getIt.registerLazySingleton<IUserStorageRepository>(
-        () => ObjectBoxUserStorageRepository(getIt<Store>()));
+        () => DriftUserStorageRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
         getIt<GpsDataClient>(),
         getIt<DeviceDataClient>(),
@@ -104,18 +102,18 @@ final class DependencyInjection {
     getIt.registerLazySingleton<IApiPointRepository>(
         () => ApiPointRepository(getIt<DioClient>()));
     getIt.registerLazySingleton<IPointLocalRepository>(
-        () => ObjectBoxPointLocalRepository(getIt<Store>()));
+        () => DriftPointLocalRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<IStatsRepository>(
         () => StatsRepository(getIt<DioClient>()));
     getIt.registerLazySingleton<ITrackRepository>(
-        () => ObjectBoxTrackRepository(getIt<Store>()));
+        () => DriftTrackRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<ITrackerPreferencesRepository>(
         () => TrackerPreferencesRepository());
 
     // Services
     getIt.registerSingletonWithDependencies<MigrationService>(
-        () => MigrationService(getIt<Store>()),
-        dependsOn: [Store]);
+        () => MigrationService(getIt<SQLiteClient>()),
+        dependsOn: [SQLiteClient]);
     getIt.registerLazySingleton<SystemSettingsService>(
         () => SystemSettingsService());
     getIt.registerLazySingleton<ApiConfigService>(

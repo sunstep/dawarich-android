@@ -147,8 +147,8 @@ final class DependencyInjection {
         getIt<IHardwareRepository>()));
     // getIt.registerLazySingleton<BackgroundTrackingService>(() => BackgroundTrackingService());
     getIt.registerLazySingleton<PointAutomationService>(() =>
-        PointAutomationService(getIt<TrackerPreferencesService>(),
-            getIt<IHardwareRepository>(), getIt<LocalPointService>()));
+        PointAutomationService(
+            getIt<TrackerPreferencesService>(), getIt<LocalPointService>()));
     getIt.registerLazySingleton<StatsService>(
         () => StatsService(getIt<IStatsRepository>()));
 
@@ -202,5 +202,61 @@ final class DependencyInjection {
           getIt<UserSessionManager<int>>(), getIt<ApiConfigService>());
       return viewModel;
     });
+  }
+
+  static Future<void> injectBackgroundDependencies() async {
+    // First, create a user session
+    final session = await UserSessionManager.create<int>(encrypt: false);
+    getIt.registerSingleton<UserSessionManager<int>>(session);
+
+    // Register simple services that don't depend on the plugin
+    getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
+    getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
+    getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
+    getIt.registerLazySingleton<ConnectivityDataClient>(() => ConnectivityDataClient());
+
+    // Register background-safe repositories
+    getIt.registerLazySingleton<ITrackerPreferencesRepository>(() => TrackerPreferencesRepository());
+    getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
+        getIt<GpsDataClient>(),
+        getIt<DeviceDataClient>(),
+        getIt<BatteryDataClient>(),
+        getIt<ConnectivityDataClient>()));
+
+    // Create a background-safe API client that doesn't use the plugin
+    getIt.registerLazySingleton<DioClient>(() => DioClient([]));
+    getIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(getIt<DioClient>()));
+    getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(getIt<IApiPointRepository>()));
+
+    // Register a simple tracker preferences service
+    getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(
+        getIt<ITrackerPreferencesRepository>(),
+        getIt<IHardwareRepository>(),
+        getIt<UserSessionManager<int>>()));
+
+    // Create a background-specific store instance
+    final dir = await getApplicationDocumentsDirectory();
+    final store = await openStore(directory: '${dir.path}/objectbox_background');
+    getIt.registerSingleton<Store>(store);
+
+    // Register repositories that depend on store
+    getIt.registerLazySingleton<IPointLocalRepository>(() =>
+        ObjectBoxPointLocalRepository(getIt<Store>()));
+    getIt.registerLazySingleton<ITrackRepository>(() =>
+        ObjectBoxTrackRepository(getIt<Store>()));
+
+    // Create a simplified LocalPointService for background use
+    getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(
+        getIt<ApiPointService>(),
+        getIt<UserSessionManager<int>>(),
+        getIt<IPointLocalRepository>(),
+        getIt<TrackerPreferencesService>(),
+        getIt<ITrackRepository>(),
+        getIt<IHardwareRepository>()));
+
+    // Finally register PointAutomationService
+    getIt.registerSingleton<PointAutomationService>(PointAutomationService(
+        getIt<TrackerPreferencesService>(),
+        getIt<LocalPointService>()));
   }
 }

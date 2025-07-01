@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';
@@ -18,6 +19,7 @@ import 'package:dawarich/features/tracking/presentation/models/last_point_viewmo
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 final class TrackerPageViewModel extends ChangeNotifier {
   LastPointViewModel? _lastPoint;
@@ -148,7 +150,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
   final TextEditingController deviceIdController = TextEditingController();
 
   final LocalPointService _pointService;
-  // final BackgroundTrackingService _backgroundTrackingService = BackgroundTrackingService();
+  final BackgroundTrackingService _backgroundTrackingService = BackgroundTrackingService();
   final PointAutomationService _pointAutomationService;
   final TrackerPreferencesService _trackerPreferencesService;
   final TrackService _trackService;
@@ -296,41 +298,68 @@ final class TrackerPageViewModel extends ChangeNotifier {
   Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(
       await _trackerPreferencesService.getPointsPerBatchPreference());
 
-  Future<void> toggleAutomaticTracking(bool enable) async {
+  Future<Result<(), String>> toggleAutomaticTracking(bool enable) async {
 
     if (_isUpdatingTracking) {
-      return;
+      return Err("Tracking update already in progress.");
     }
 
     _isUpdatingTracking = true;
-
     _isTrackingAutomatically = enable;
     notifyListeners();
 
     await _trackerPreferencesService.setAutomaticTrackingPreference(enable);
 
-    try {
-      if (enable) {
-        await _pointAutomationService.startTracking();
-
-        final needsFix =
-        await _systemSettingsService.needsSystemSettingsFix();
-        if (needsFix) {
-          _settingsPromptController.add(null);
-        }
-      } else {
-        await _pointAutomationService.stopTracking();
+    if (enable) {
+      final permissionResult = await _requestTrackingPermissions();
+      if (permissionResult case Err(value: final message)) {
+        _isTrackingAutomatically = false;
+        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        _isUpdatingTracking = false;
+        notifyListeners();
+        return Err(message);
       }
-    } catch (e) {
-      _isTrackingAutomatically = !enable;
-      await _trackerPreferencesService
-          .setAutomaticTrackingPreference(_isTrackingAutomatically);
-      debugPrint('Error toggling automatic tracking: $e');
-    } finally {
-      _isUpdatingTracking = false;
-      notifyListeners();
+
+      final serviceResult = await BackgroundTrackingService.start();
+      debugPrint("[TrackerPageViewModel] Background start result: $serviceResult");
+      if (serviceResult case Err(value: final message)) {
+        _isTrackingAutomatically = false;
+        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        _isUpdatingTracking = false;
+        notifyListeners();
+        return Err("Failed to start background service: $message");
+      }
+
+      final needsFix = await _systemSettingsService.needsSystemSettingsFix();
+      if (needsFix) {
+        _settingsPromptController.add(null);
+      }
+    } else {
+      BackgroundTrackingService.stop();
     }
+
+    _isUpdatingTracking = false;
+    notifyListeners();
+    return Ok(());
   }
+
+  Future<Result<(), String>> _requestTrackingPermissions() async {
+
+    final locationStatus = await Permission.locationAlways.request();
+
+    if (locationStatus.isPermanentlyDenied) {
+      return Err("Permission is permanently denied. Please enable it manually in system settings.");
+    }
+
+    if (!locationStatus.isGranted) {
+      return Err("Location permission 'Always' is required for background tracking.");
+    }
+
+    await openSystemSettings();
+
+    return const Ok(());
+  }
+
 
 
   Future<void> openSystemSettings() async {

@@ -9,6 +9,7 @@ import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
 
 final class TrackerPage extends StatefulWidget {
@@ -456,7 +457,27 @@ class _BasicSettingsSection extends StatelessWidget {
         SwitchListTile(
           title: const Text('Automatic Tracking'),
           value: vm.isTrackingAutomatically,
-          onChanged: vm.toggleAutomaticTracking,
+          onChanged: (enabled) async {
+            final result = await vm.toggleAutomaticTracking(enabled);
+            if (!context.mounted) {
+              return;
+            }
+            if (result case Err(value: final message)) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Tracking Setup Failed"),
+                  content: Text(message),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
+              );
+            }
+          },
         ),
         const SizedBox(height: 24),
         Row(

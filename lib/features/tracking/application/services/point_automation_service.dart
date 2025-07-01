@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
-import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
@@ -16,11 +15,10 @@ final class PointAutomationService with ChangeNotifier {
   bool _isTracking = false;
 
   final TrackerPreferencesService _trackerPreferencesService;
-  final IHardwareRepository _hardwareRepository;
   final LocalPointService _localPointService;
 
   PointAutomationService(this._trackerPreferencesService,
-      this._hardwareRepository, this._localPointService);
+      this._localPointService);
 
   Future<void> startTracking() async {
     if (kDebugMode) {

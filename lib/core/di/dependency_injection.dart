@@ -111,9 +111,8 @@ final class DependencyInjection {
         () => TrackerPreferencesRepository());
 
     // Services
-    getIt.registerSingletonWithDependencies<MigrationService>(
-        () => MigrationService(getIt<SQLiteClient>()),
-        dependsOn: [SQLiteClient]);
+    getIt.registerLazySingleton<MigrationService>(
+        () => MigrationService(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<SystemSettingsService>(
         () => SystemSettingsService());
     getIt.registerLazySingleton<ApiConfigService>(
@@ -152,9 +151,8 @@ final class DependencyInjection {
     getIt.registerFactory<ConnectViewModel>(
         () => ConnectViewModel(getIt<ConnectService>()));
 
-    getIt.registerSingletonWithDependencies<MigrationViewModel>(
-        () => MigrationViewModel(getIt<MigrationService>()),
-        dependsOn: [MigrationService]);
+    getIt.registerLazySingleton<MigrationViewModel>(
+        () => MigrationViewModel(getIt<MigrationService>()));
 
     getIt.registerFactory<TimelineViewModel>(
       () {

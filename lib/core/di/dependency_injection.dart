@@ -1,3 +1,4 @@
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/network/interceptors/auth_interceptor.dart';
 import 'package:dawarich/core/network/interceptors/error_interceptor.dart';
 import 'package:dawarich/core/shell/drawer/api_config_service.dart';
@@ -83,10 +84,7 @@ final class DependencyInjection {
       ]),
       dependsOn: [IApiConfigManager],
     );
-    getIt.registerSingletonAsync<Store>(() async {
-      final dir = await getApplicationDocumentsDirectory();
-      return openStore(directory: '${dir.path}/objectbox');
-    });
+    getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
     getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
     getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
     getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());

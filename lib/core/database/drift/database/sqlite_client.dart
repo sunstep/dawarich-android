@@ -19,7 +19,8 @@ part 'sqlite_client.g.dart';
   TrackTable
 ])
 final class SQLiteClient extends _$SQLiteClient {
-  SQLiteClient() : super(_openConnection());
+  SQLiteClient([QueryExecutor? executor]) : super(executor ?? _openConnection());
+
 
   @override
   int get schemaVersion => 1;
@@ -30,7 +31,7 @@ final class SQLiteClient extends _$SQLiteClient {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
-          if (from == 2 && to == 1) {
+          if (from == 1 && to == 2) {
             // no schema changes, so just continue
           }
         },

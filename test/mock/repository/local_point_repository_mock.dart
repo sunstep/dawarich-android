@@ -80,16 +80,6 @@ final class MockLocalPointRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<void> putMany(List<PointEntity> points) async {
-    // Later
-  }
-
-  @override
-  Future<List<PointEntity>> getAll() async {
-    return Future.value([]);
-  }
-
-  @override
   Future<Option<LastPointDto>> getLastPoint(int userId) async {
     getLastPointCount++;
     lastGetLastPointUserId = userId;
@@ -108,6 +98,14 @@ final class MockLocalPointRepository implements IPointLocalRepository {
       latitude: last.geometry.coordinates[1],
       timestamp: last.properties.timestamp,
     ));
+  }
+
+  @override
+  Stream<Option<LastPointDto>> watchLastPoint(int userId) {
+
+    return Stream.value(getLastPoint(userId)).asyncExpand((option) async* {
+      yield const None();
+    });
   }
 
   @override
@@ -136,6 +134,13 @@ final class MockLocalPointRepository implements IPointLocalRepository {
         .where((p) => p.userId == userId && p.isUploaded == false)
         .toList();
     return pts;
+  }
+
+  @override
+  Stream<List<LocalPointDto>> watchCurrentBatch(int userId) {
+    return Stream.value(getCurrentBatch(userId)).asyncExpand((points) async* {
+      yield [];
+    });
   }
 
   @override

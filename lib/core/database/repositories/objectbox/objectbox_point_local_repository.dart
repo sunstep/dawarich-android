@@ -72,6 +72,53 @@ final class ObjectBoxPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
+  Future<void> putMany(List<PointEntity> points) async {
+
+    try {
+      Box<PointGeometryEntity> geometryBox = Box<PointGeometryEntity>(_database);
+      Box<PointPropertiesEntity> propertiesBox = Box<PointPropertiesEntity>(_database);
+      Box<PointEntity> pointBox = Box<PointEntity>(_database);
+
+      _database.runInTransaction(TxMode.write, () async {
+        for (final point in points) {
+
+          final int newGeometryId = await geometryBox.putAsync(point.geometry.target!);
+          final int newPropertiesId = await propertiesBox.putAsync(point.properties.target!);
+
+          point.geometry.targetId = newGeometryId;
+          point.properties.targetId = newPropertiesId;
+
+          await pointBox.putAsync(point);
+        }
+      });
+    } on ObjectBoxException catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to put many point entities: $e');
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<PointEntity>> getAll() async {
+
+    try {
+      Box<PointEntity> pointBox = Box<PointEntity>(_database);
+
+      if (pointBox.isEmpty()) {
+        return [];
+      }
+
+      return await pointBox.getAllAsync();
+    } on ObjectBoxException catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to get all points from database: $e');
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<LocalPointDto>> getFullBatch(int userId) async {
 
     try {

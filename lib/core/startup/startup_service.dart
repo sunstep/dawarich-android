@@ -1,6 +1,7 @@
 import 'package:dawarich/features/migration/application/services/migration_service.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:user_session_manager/user_session_manager.dart';
@@ -36,4 +37,6 @@ final class StartupService {
       initialRoute = AppRouter.connect;
     }
   }
+
+
 }

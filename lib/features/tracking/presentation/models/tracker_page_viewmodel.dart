@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';
@@ -18,6 +19,7 @@ import 'package:dawarich/features/tracking/presentation/models/last_point_viewmo
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 final class TrackerPageViewModel extends ChangeNotifier {
   LastPointViewModel? _lastPoint;
@@ -123,8 +125,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
   bool get isTrackingAutomatically => _isTrackingAutomatically;
   bool get isUpdatingTracking => _isUpdatingTracking;
 
-  final _settingsPromptController = StreamController<void>.broadcast();
-  Stream<void> get onSystemSettingsPrompt => _settingsPromptController.stream;
+  final _consentPromptController = StreamController<String>.broadcast();
+  Stream<String> get onConsentPrompt => _consentPromptController.stream;
+  Completer<bool>? _consentResponseCompleter;
 
   bool _isTracking = false;
   bool get isTracking => _isTracking;
@@ -148,7 +151,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
   final TextEditingController deviceIdController = TextEditingController();
 
   final LocalPointService _pointService;
-  // final BackgroundTrackingService _backgroundTrackingService = BackgroundTrackingService();
   final PointAutomationService _pointAutomationService;
   final TrackerPreferencesService _trackerPreferencesService;
   final TrackService _trackService;
@@ -296,41 +298,133 @@ final class TrackerPageViewModel extends ChangeNotifier {
   Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(
       await _trackerPreferencesService.getPointsPerBatchPreference());
 
-  Future<void> toggleAutomaticTracking(bool enable) async {
+  Future<bool> requestConsentFromUser(String message) {
+    _consentResponseCompleter = Completer<bool>();
+    _consentPromptController.add(message);
+    return _consentResponseCompleter!.future;
+  }
+
+  void handleConsentResponse(bool accepted) {
+    _consentResponseCompleter?.complete(accepted);
+    _consentResponseCompleter = null;
+  }
+
+  Future<bool> _requestNotificationPermission() async {
+    final status = await Permission.notification.status;
+
+    if (status.isGranted) {
+      return true;
+    }
+
+    final result = await Permission.notification.request();
+    return result.isGranted;
+  }
+
+  Future<bool> _shouldShowConsentDialog() async {
+    final location = await Permission.locationAlways.status;
+    final notifications = await Permission.notification.status;
+
+    final hasLocation = location.isGranted;
+    final hasNotifications = notifications.isGranted;
+
+    final batteryExcluded = !await _systemSettingsService.needsSystemSettingsFix();
+
+    return !hasLocation || !hasNotifications || !batteryExcluded;
+  }
+
+  Future<Result<(), String>> toggleAutomaticTracking(bool enable) async {
 
     if (_isUpdatingTracking) {
-      return;
+      return Err("Tracking update already in progress.");
     }
 
     _isUpdatingTracking = true;
-
     _isTrackingAutomatically = enable;
     notifyListeners();
 
     await _trackerPreferencesService.setAutomaticTrackingPreference(enable);
 
-    try {
-      if (enable) {
-        await _pointAutomationService.startTracking();
+    if (enable) {
+      if (await _shouldShowConsentDialog()) {
+        final confirmed = await requestConsentFromUser(
+            'To enable automatic background tracking, Dawarich needs your permission.\n\n'
+                'It will request background location access, notification permission, and system exclusions.'
+        );
 
-        final needsFix =
-        await _systemSettingsService.needsSystemSettingsFix();
-        if (needsFix) {
-          _settingsPromptController.add(null);
+        if (!confirmed) {
+          _isTrackingAutomatically = false;
+          await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+          _isUpdatingTracking = false;
+          notifyListeners();
+          return Err("Permission setup cancelled by user.");
         }
-      } else {
-        await _pointAutomationService.stopTracking();
       }
-    } catch (e) {
-      _isTrackingAutomatically = !enable;
-      await _trackerPreferencesService
-          .setAutomaticTrackingPreference(_isTrackingAutomatically);
-      debugPrint('Error toggling automatic tracking: $e');
-    } finally {
-      _isUpdatingTracking = false;
-      notifyListeners();
+
+      final permissionResult = await _requestTrackingPermissions();
+      if (permissionResult case Err(value: final message)) {
+        _isTrackingAutomatically = false;
+        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        _isUpdatingTracking = false;
+        notifyListeners();
+        return Err(message);
+      }
+
+      final notificationGranted = await _requestNotificationPermission();
+      if (!notificationGranted) {
+        _isTrackingAutomatically = false;
+        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        _isUpdatingTracking = false;
+        notifyListeners();
+        return Err("Notification permission is required.");
+      }
+
+      final serviceResult = await BackgroundTrackingService.start();
+      debugPrint("[TrackerPageViewModel] Background start result: $serviceResult");
+
+      final needsFix = await _systemSettingsService.needsSystemSettingsFix();
+
+      if (serviceResult case Err(value: final message)) {
+        if (needsFix) {
+          _consentPromptController.add(
+              'Some system settings still need your help to enable reliable background tracking.\n\n'
+                  'Please check location permission, battery optimization, and notification settings.'
+          );
+        }
+
+        _isTrackingAutomatically = false;
+        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        _isUpdatingTracking = false;
+        notifyListeners();
+
+        return Err("Failed to start background service: $message");
+      }
+
+    } else {
+      BackgroundTrackingService.stop();
     }
+
+    _isUpdatingTracking = false;
+    notifyListeners();
+    return Ok(());
   }
+
+  Future<Result<(), String>> _requestTrackingPermissions() async {
+
+    final locationStatus = await Permission.locationAlways.request();
+
+    if (locationStatus.isPermanentlyDenied) {
+      return Err("Permission is permanently denied. Please enable it manually in system settings.");
+    }
+
+    if (!locationStatus.isGranted) {
+      return Err("Location permission 'Always' is required for background tracking.");
+    }
+
+    await openSystemSettings();
+
+    return const Ok(());
+  }
+
 
 
   Future<void> openSystemSettings() async {
@@ -431,7 +525,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _settingsPromptController.close();
+    _consentPromptController.close();
     super.dispose();
   }
 }

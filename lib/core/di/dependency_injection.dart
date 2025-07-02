@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/database/repositories/drift/drift_local_point_repository.dart';
 import 'package:dawarich/core/database/repositories/drift/drift_track_repository.dart';
@@ -45,7 +47,11 @@ import 'package:dawarich/features/migration/presentation/models/migration_viewmo
 import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
+import 'package:drift/isolate.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get_it/get_it.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -127,7 +133,9 @@ final class DependencyInjection {
     getIt.registerLazySingleton<MapService>(
         () => MapService(getIt<ApiPointService>()));
     getIt.registerLazySingleton<ApiPointService>(
-        () => ApiPointService(getIt<IApiPointRepository>()));
+        () => ApiPointService(
+            getIt<IApiPointRepository>(),
+            getIt<UserSessionManager<int>>()));
     getIt.registerLazySingleton<TrackService>(() => TrackService(
         getIt<ITrackRepository>(), getIt<UserSessionManager<int>>()));
     getIt.registerLazySingleton<TrackerPreferencesService>(() =>
@@ -142,8 +150,8 @@ final class DependencyInjection {
         getIt<IHardwareRepository>()));
     // getIt.registerLazySingleton<BackgroundTrackingService>(() => BackgroundTrackingService());
     getIt.registerLazySingleton<PointAutomationService>(() =>
-        PointAutomationService(getIt<TrackerPreferencesService>(),
-            getIt<IHardwareRepository>(), getIt<LocalPointService>()));
+        PointAutomationService(
+            getIt<TrackerPreferencesService>(), getIt<LocalPointService>()));
     getIt.registerLazySingleton<StatsService>(
         () => StatsService(getIt<IStatsRepository>()));
 
@@ -196,5 +204,76 @@ final class DependencyInjection {
           getIt<UserSessionManager<int>>(), getIt<ApiConfigService>());
       return viewModel;
     });
+  }
+
+  static Future<void> injectBackgroundDependencies(ServiceInstance instance) async {
+    final session = await UserSessionManager.create<int>(encrypt: false);
+    getIt.registerSingleton<UserSessionManager<int>>(session);
+
+    final configManager = ApiConfigManager();
+    await configManager.load();
+    getIt.registerSingleton<IApiConfigManager>(configManager);
+
+    final authIncpterceptor = AuthInterceptor(getIt<IApiConfigManager>());
+    final errorInterceptor = ErrorInterceptor();
+
+    getIt.registerLazySingleton<AuthInterceptor>(
+            () => authIncpterceptor);
+
+    getIt.registerLazySingleton<ErrorInterceptor>(() => errorInterceptor);
+
+
+    getIt.registerLazySingleton<DioClient>(
+          () => DioClient([authIncpterceptor, errorInterceptor,
+      ]),
+    );
+
+    getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
+    getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
+    getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
+    getIt.registerLazySingleton<ConnectivityDataClient>(() => ConnectivityDataClient());
+
+    getIt.registerLazySingleton<ITrackerPreferencesRepository>(
+            () => TrackerPreferencesRepository());
+    getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
+        getIt<GpsDataClient>(),
+        getIt<DeviceDataClient>(),
+        getIt<BatteryDataClient>(),
+        getIt<ConnectivityDataClient>()));
+
+    getIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(
+        getIt<DioClient>()));
+    getIt.registerLazySingleton<ApiPointService>(() => ApiPointService(
+        getIt<IApiPointRepository>(), getIt<UserSessionManager<int>>()));
+
+    // Register a simple tracker preferences service
+    getIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(
+        getIt<ITrackerPreferencesRepository>(),
+        getIt<IHardwareRepository>(),
+        getIt<UserSessionManager<int>>()));
+
+    final file = File('${(await getApplicationDocumentsDirectory()).path}/dawarich_db.sqlite');
+    final isolate = await DriftIsolate.spawn(() => NativeDatabase(file));
+    final connection = await isolate.connect();
+
+    getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient(connection.executor));
+    getIt.registerLazySingleton<IPointLocalRepository>(() =>
+        DriftPointLocalRepository(getIt<SQLiteClient>()));
+    getIt.registerLazySingleton<ITrackRepository>(() =>
+        DriftTrackRepository(getIt<SQLiteClient>()));
+
+    getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(
+        getIt<ApiPointService>(),
+        getIt<UserSessionManager<int>>(),
+        getIt<IPointLocalRepository>(),
+        getIt<TrackerPreferencesService>(),
+        getIt<ITrackRepository>(),
+        getIt<IHardwareRepository>()));
+
+    getIt.registerSingleton<PointAutomationService>(PointAutomationService(
+        getIt<TrackerPreferencesService>(),
+        getIt<LocalPointService>(),
+        instance)
+    );
   }
 }

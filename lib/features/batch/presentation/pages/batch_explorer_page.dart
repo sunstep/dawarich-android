@@ -6,15 +6,37 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-final class BatchExplorerPage extends StatelessWidget {
+final class BatchExplorerPage extends StatefulWidget {
   const BatchExplorerPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final viewModel = getIt<BatchExplorerViewModel>();
+  State<BatchExplorerPage> createState() => _BatchExplorerPageState();
+}
 
+class _BatchExplorerPageState extends State<BatchExplorerPage> {
+
+  late final BatchExplorerViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = getIt<BatchExplorerViewModel>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.initialize();
+    });
+  }
+
+  @override
+  void dispose() {
+    getIt<BatchExplorerViewModel>().dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
-      value: viewModel,
+      value: _viewModel,
       builder: (context, child) {
         return Container(
           decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
@@ -60,20 +82,31 @@ class _BatchContent extends StatelessWidget {
           Expanded(
             child: vm.isLoadingPoints
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.separated(
-                    itemCount: vm.batch.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) {
-                      final pt = vm.batch[i];
-                      return _PointCard(
-                        timestamp: pt.properties.formattedTimestamp,
-                        latitude: pt.geometry.coordinates[1],
-                        longitude: pt.geometry.coordinates[0],
-                        onDelete: () =>
-                            _Dialogs.confirmDeletePoint(context, vm, pt),
-                      );
-                    },
-                  ),
+                : NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent &&
+                    vm.canLoadMore) {
+                  vm.loadMore();
+                }
+                return false;
+              },
+              child: ListView.builder(
+                itemCount: vm.paginatedBatch.length,
+                itemBuilder: (_, i) {
+                  final pt = vm.paginatedBatch[i];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _PointCard(
+                      timestamp: pt.properties.formattedTimestamp,
+                      latitude: pt.geometry.coordinates[1],
+                      longitude: pt.geometry.coordinates[0],
+                      onDelete: () =>
+                          _Dialogs.confirmDeletePoint(context, vm, pt),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
           const SizedBox(height: 80), // leave room for footer
         ],

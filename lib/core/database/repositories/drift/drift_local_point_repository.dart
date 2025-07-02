@@ -118,6 +118,37 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
+  Stream<List<LocalPointDto>> watchCurrentBatch(int userId) {
+    try {
+      final query = _database.select(_database.pointsTable).join([
+        innerJoin(
+          _database.pointGeometryTable,
+          _database.pointGeometryTable.id
+              .equalsExp(_database.pointsTable.geometryId),
+        ),
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id
+              .equalsExp(_database.pointsTable.propertiesId),
+        ),
+      ])
+        ..where(_database.pointsTable.isUploaded.equals(false) &
+        _database.pointsTable.userId.equals(userId));
+
+      return query.watch().distinct().map(
+              (rows) => rows.map((r) => r.toPointDto(_database)).toList());
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Failed to retrieve batch points: $e");
+      }
+      rethrow;
+    }
+
+
+  }
+
+  @override
   Future<Option<LastPointDto>> getLastPoint(int userId) async {
     try {
       // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
@@ -161,6 +192,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
       rethrow;
     }
   }
+
 
   @override
   Future<int> getBatchPointCount(int userId) async {

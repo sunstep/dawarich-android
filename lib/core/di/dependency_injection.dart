@@ -253,10 +253,13 @@ final class DependencyInjection {
         getIt<UserSessionManager<int>>()));
 
     final file = File('${(await getApplicationDocumentsDirectory()).path}/dawarich_db.sqlite');
-    final isolate = await DriftIsolate.spawn(() => NativeDatabase(file));
+    final isolate = await DriftIsolate.spawn(() => NativeDatabase(
+        file,
+        setup: (db) => db.execute('PRAGMA journal_mode = WAL;')
+    ));
     final connection = await isolate.connect();
-
     getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient(connection.executor));
+
     getIt.registerLazySingleton<IPointLocalRepository>(() =>
         DriftPointLocalRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<ITrackRepository>(() =>

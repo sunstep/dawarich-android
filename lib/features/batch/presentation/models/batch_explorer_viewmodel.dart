@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
@@ -9,10 +11,32 @@ import 'package:dawarich/features/batch/presentation/models/local_point_viewmode
 import 'package:dawarich/features/batch/presentation/converters/local_point_converter.dart';
 import 'package:flutter/foundation.dart';
 
-class BatchExplorerViewModel extends ChangeNotifier {
+final class BatchExplorerViewModel extends ChangeNotifier {
+
+  StreamSubscription<List<LocalPoint>>? _batchSubscription;
 
   List<LocalPointViewModel> _batch = [];
   List<LocalPointViewModel> get batch => _batch;
+  int _itemsPerPage = 100;
+  int _currentPage = 1;
+
+  List<LocalPointViewModel> get paginatedBatch {
+    final end = (_itemsPerPage * _currentPage).clamp(0, _batch.length);
+    return _batch.take(end).toList();
+  }
+
+  bool get canLoadMore => _batch.length > _itemsPerPage * _currentPage;
+
+  void loadMore() {
+    if (canLoadMore) {
+      _currentPage++;
+      notifyListeners();
+    }
+  }
+
+  void resetPagination() {
+    _currentPage = 1;
+  }
 
   bool get hasPoints => batch.isNotEmpty;
 
@@ -22,9 +46,7 @@ class BatchExplorerViewModel extends ChangeNotifier {
   final LocalPointService _localPointService;
   final ApiPointService _apiPointService;
 
-  BatchExplorerViewModel(this._localPointService, this._apiPointService) {
-    _initialize();
-  }
+  BatchExplorerViewModel(this._localPointService, this._apiPointService);
 
   void _setBatch(List<LocalPointViewModel> batch) {
     _batch = batch;
@@ -36,8 +58,20 @@ class BatchExplorerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _initialize() async {
-    await _loadBatchPoints();
+  Future<void> initialize() async {
+    final stream = await _localPointService.watchCurrentBatch();
+
+    _batchSubscription = stream.listen((batch) async {
+      _isLoadingPoints = false;
+      final batchVm = await compute(BatchExplorerViewModel._convertToViewModels, batch);
+      _batch = batchVm;
+      resetPagination();
+      notifyListeners();
+    });
+  }
+
+  static List<LocalPointViewModel> _convertToViewModels(List<LocalPoint> points) {
+    return points.map((point) => point.toViewModel()).toList();
   }
 
   Future<void> _loadBatchPoints() async {
@@ -83,12 +117,8 @@ class BatchExplorerViewModel extends ChangeNotifier {
     if (uploaded) {
       List<LocalPoint> batchD = _batch.map((point) =>
           point.toDomain()).toList();
-      bool marked =
-          await _localPointService.markBatchAsUploaded(batchD);
+      await _localPointService.markBatchAsUploaded(batchD);
 
-      if (marked) {
-        await _loadBatchPoints();
-      }
     }
   }
 
@@ -102,5 +132,11 @@ class BatchExplorerViewModel extends ChangeNotifier {
     await _localPointService.clearBatch();
     batch.clear();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _batchSubscription?.cancel();
+    super.dispose();
   }
 }

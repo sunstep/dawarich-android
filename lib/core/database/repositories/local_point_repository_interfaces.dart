@@ -6,6 +6,7 @@ abstract interface class IPointLocalRepository {
   Future<int> storePoint(LocalPointDto point);
   Future<List<LocalPointDto>> getFullBatch(int userId);
   Future<List<LocalPointDto>> getCurrentBatch(int userId);
+  Stream<List<LocalPointDto>> watchCurrentBatch(int userId);
   Future<Option<LastPointDto>> getLastPoint(int userId);
   Future<int> getBatchPointCount(int userId);
   Future<int> markBatchAsUploaded(int userId);

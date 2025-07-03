@@ -10,19 +10,23 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-final class MapPage extends StatefulWidget {
-  const MapPage({super.key});
+final class TimelinePage extends StatefulWidget {
+  const TimelinePage({super.key});
 
   @override
-  State<MapPage> createState() => _MapPageState();
+  State<TimelinePage> createState() => _TimelinePageState();
 }
 
-class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
+class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMixin {
   late final AnimatedMapController _animatedMapController;
+
+  late final TimelineViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
+    _viewModel = getIt<TimelineViewModel>();
+    _viewModel.initialize();
     _animatedMapController = AnimatedMapController(vsync: this);
   }
 
@@ -45,7 +49,6 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
       ),
       child: Column(
         children: [
-          // Top draggable handle
           Container(
             margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
             height: 5.0,

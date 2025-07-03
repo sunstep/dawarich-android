@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
 import 'package:flutter/cupertino.dart';
@@ -78,6 +80,31 @@ Future<void> _startBackgroundTracking(ServiceInstance service) async {
 final class BackgroundTrackingService {
 
   static bool _isStopping = false;
+  static bool _hasInitializedListeners = false;
+
+  static Future<void> initializeListeners() async {
+    if (_hasInitializedListeners) return;
+    _hasInitializedListeners = true;
+
+    FlutterBackgroundService().on('newPoint').listen((event) async {
+      if (event is Map<String, dynamic>) {
+        try {
+          final point = LocalPoint.fromJson(event);
+
+          final localPointService = getIt<LocalPointService>();
+          final storeResult = await localPointService.storePoint(point);
+
+          if (storeResult case Ok()) {
+            debugPrint('[BackgroundTrackingService] Successfully stored background point');
+          } else if (storeResult case Err(value: final err)) {
+            debugPrint('[BackgroundTrackingService] Failed to store background point: $err');
+          }
+        } catch (e, s) {
+          debugPrint('[BackgroundTrackingService] Error handling newPoint: $e\n$s');
+        }
+      }
+    });
+  }
 
   static Future<void> ensureNotificationChannelExists() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(

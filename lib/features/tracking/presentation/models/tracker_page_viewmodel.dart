@@ -165,6 +165,8 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
 
+    await BackgroundTrackingService.initializeListeners();
+
     _pointAutomationService.newPointStream.listen((LocalPoint point) async {
       final LocalPointViewModel pointViewModel = point.toViewModel();
       final LastPointViewModel lastPoint =

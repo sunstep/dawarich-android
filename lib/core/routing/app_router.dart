@@ -44,7 +44,7 @@ final class AppRouter {
         }
       case map:
         {
-          return MaterialPageRoute(builder: (_) => const MapPage());
+          return MaterialPageRoute(builder: (_) => const TimelinePage());
         }
       case stats:
         {

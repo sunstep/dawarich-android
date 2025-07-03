@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointsPageViewModel with ChangeNotifier {
-  final ApiPointService _pointService = GetIt.I<ApiPointService>();
+  final ApiPointService _pointService;
 
   late DateTime _startDate;
   late DateTime _endDate;
@@ -26,7 +26,7 @@ final class PointsPageViewModel with ChangeNotifier {
 
   Set<String> _selectedItems = {};
 
-  PointsPageViewModel() {
+  PointsPageViewModel(this._pointService) {
     DateTime now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
     _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);

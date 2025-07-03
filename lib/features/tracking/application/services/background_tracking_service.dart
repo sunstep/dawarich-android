@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:get_it/get_it.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -16,17 +16,19 @@ void backgroundTrackingEntry(ServiceInstance service) {
   debugPrint("[Background] Entry point reached");
 
   service.on('stopService').listen((event) async {
+    final requestId = event?['requestId'];
+
     try {
-      await GetIt.I<PointAutomationService>().stopTracking();
+      await backgroundGetIt<PointAutomationService>().stopTracking();
       debugPrint("[Background] stopTracking() completed");
     } catch (e, s) {
       debugPrint("[Background] Error in stopTracking: $e\n$s");
     }
-    service.invoke('stopped');
+
+    service.invoke('stopped', {'requestId': requestId});
     service.stopSelf();
   });
 
-  // Fire async logic in the background
   unawaited(_startBackgroundTracking(service));
 }
 
@@ -56,7 +58,16 @@ Future<void> _startBackgroundTracking(ServiceInstance service) async {
   }
 
   try {
-    await GetIt.I<PointAutomationService>().startTracking();
+    final shouldTrack = await backgroundGetIt<TrackerPreferencesService>()
+        .getAutomaticTrackingPreference();
+
+    if (!shouldTrack) {
+      debugPrint("[Background] Automatic tracking is disabled — skipping startTracking()");
+      service.stopSelf();
+      return;
+    }
+
+    await backgroundGetIt<PointAutomationService>().startTracking();
     debugPrint("[Background] startTracking() called");
   } catch (e, s) {
     debugPrint("[Background] Error during startTracking: $e\n$s");
@@ -145,41 +156,35 @@ final class BackgroundTrackingService {
     if (_isStopping) return;
     _isStopping = true;
 
-    final readyCompleter = Completer<void>();
+    final requestId = DateTime.now().millisecondsSinceEpoch.toString();
     final stopCompleter = Completer<void>();
 
-    service.on('ready').listen((_) {
-      debugPrint('[BackgroundService] Background isolate is ready.');
-      readyCompleter.complete();
+    final sub = service.on('stopped').listen((event) {
+      final eventId = event?['requestId'];
+      if (eventId == requestId) {
+        debugPrint('[BackgroundService] Stop confirmed for requestId $requestId.');
+        stopCompleter.complete();
+      } else {
+        debugPrint('[BackgroundService] Received unrelated stop event with requestId $eventId.');
+      }
     });
 
-    service.on('stopped').listen((_) {
-      debugPrint('[BackgroundService] Stop confirmed.');
-      stopCompleter.complete();
-    });
+    debugPrint('[BackgroundService] Sending stopService request with ID $requestId...');
+    service.invoke('stopService', {'requestId': requestId});
 
-    await readyCompleter.future.timeout(
-      const Duration(seconds: 5),
-      onTimeout: () {
-        debugPrint('[BackgroundService] Timeout: background isolate never signaled ready.');
-      },
-    );
-
-    if (!readyCompleter.isCompleted) {
+    try {
+      await stopCompleter.future.timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          debugPrint('[BackgroundService] Stop confirmation timed out for requestId $requestId.');
+        },
+      );
+    } catch (_) {
+      debugPrint('[BackgroundService] Stop confirmation failed or timed out.');
+    } finally {
+      await sub.cancel();
       _isStopping = false;
-      return;
     }
-
-    service.invoke("stopService");
-
-    await stopCompleter.future.timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        debugPrint('[BackgroundService] Stop confirmation timed out.');
-      },
-    );
-
-    _isStopping = false;
   }
 
 }

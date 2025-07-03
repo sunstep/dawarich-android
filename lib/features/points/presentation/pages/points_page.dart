@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
@@ -8,8 +10,23 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
-final class PointsPage extends StatelessWidget {
+final class PointsPage extends StatefulWidget {
   const PointsPage({super.key});
+
+  @override
+  State<PointsPage> createState() => _PointsPageState();
+}
+
+class _PointsPageState extends State<PointsPage> {
+
+  late final PointsPageViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = getIt<PointsPageViewModel>();
+    _viewModel.searchPressed();
+  }
 
   @override
   Widget build(BuildContext context) {

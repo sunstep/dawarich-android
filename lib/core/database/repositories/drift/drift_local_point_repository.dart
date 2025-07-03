@@ -142,7 +142,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
       if (kDebugMode) {
         debugPrint("Failed to retrieve batch points: $e");
       }
-      rethrow;
+      return Stream.error(e);
     }
 
 

@@ -26,7 +26,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:option_result/option_result.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 
-class LocalPointService {
+final class LocalPointService {
   final ApiPointService _api;
   final UserSessionManager<int> _userSession;
   final IPointLocalRepository _localPointRepository;
@@ -80,7 +80,7 @@ class LocalPointService {
   }
 
   /// Creates a full point using a position object.
-  Future<Result<LocalPoint, String>> createAndStorePoint(
+  Future<Result<LocalPoint, String>> createPointFromPosition(
       Position position) async {
     final int userId = await _requireUserId();
 
@@ -94,10 +94,12 @@ class LocalPointService {
       return Err("Point validation did not pass: $validationError");
     }
 
-    LocalPointDto pointDto = point.toDto();
-    final int storeResult =
-        await _localPointRepository.storePoint(pointDto);
-    // await _checkBatchThreshold();
+    return Ok(point);
+  }
+
+  Future<Result<LocalPoint, String>> storePoint(LocalPoint point) async {
+    final LocalPointDto pointDto = point.toDto();
+    final int storeResult = await _localPointRepository.storePoint(pointDto);
 
     return storeResult > 0
         ? Ok(point)
@@ -105,7 +107,7 @@ class LocalPointService {
   }
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
-  Future<Result<LocalPoint, String>> createPointFromGps() async {
+  Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
     final LocationAccuracy accuracy =
         await _trackerPreferencesService.getLocationAccuracyPreference();
     final Result<Position, String> posResult =
@@ -117,13 +119,21 @@ class LocalPointService {
 
     final Position position = posResult.unwrap();
     final Result<LocalPoint, String> pointResult =
-        await createAndStorePoint(position);
+        await createPointFromPosition(position);
 
-    return pointResult;
+    if (pointResult case Err()) {
+      return pointResult;
+    }
+
+    if (!persist) {
+      return pointResult;
+    }
+
+    return await storePoint(pointResult.unwrap());
   }
 
   /// Creates a full point, position data is retrieved from cache.
-  Future<Result<LocalPoint, String>> createPointFromCache() async {
+  Future<Result<LocalPoint, String>> createPointFromCache({bool persist = true}) async {
     final Option<Position> posResult =
         await _hardwareInterfaces.getCachedPosition();
 
@@ -133,14 +143,17 @@ class LocalPointService {
 
     final Position position = posResult.unwrap();
     final Result<LocalPoint, String> pointResult =
-        await createAndStorePoint(position);
+        await createPointFromPosition(position);
 
     if (pointResult case Err(value: String error)) {
       return Err("[DEBUG] Cached point was rejected: $error");
     }
 
-    final LocalPoint point = pointResult.unwrap();
-    return Ok(point);
+    if (!persist) {
+      return pointResult;
+    }
+
+    return await storePoint(pointResult.unwrap());
   }
 
   Future<AdditionalPointData> _getAdditionalPointData(int userId) async {
@@ -222,9 +235,6 @@ class LocalPointService {
   }
 
   Future<Result<(), String>> _validatePoint(LocalPoint point) async {
-    if (!await _isUniquePoint(point)) {
-      return const Err("This point is not unique compared to previous ones.");
-    }
 
     if (!await _isPointNewerThanLastPoint(point)) {
       return const Err("The point is older than the last tracked point.");
@@ -287,25 +297,6 @@ class LocalPointService {
     double requiredAccuracyMeters = _getAccuracyThreshold(requiredAccuracy);
 
     answer = candidate.properties.horizontalAccuracy < requiredAccuracyMeters;
-
-    return answer;
-  }
-
-  Future<bool> _isUniquePoint(LocalPoint candidate) async {
-    final List<LocalPoint> batch = await _getFullBatch();
-    bool answer = true;
-    int batchIndex = 0;
-
-    DateTime candidateTime = DateTime.parse(candidate.properties.timestamp);
-
-    while (answer == true && batchIndex < batch.length) {
-      LocalPoint batchPoint = batch[batchIndex];
-      String batchPointTimeString = batchPoint.properties.timestamp;
-      DateTime batchPointTime = DateTime.parse(batchPointTimeString);
-
-      answer = !candidateTime.isAtSameMomentAs(batchPointTime);
-      batchIndex++;
-    }
 
     return answer;
   }

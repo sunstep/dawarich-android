@@ -14,6 +14,8 @@ final class PointAutomationService with ChangeNotifier {
   Timer? _gpsTimer;
 
   bool _isTracking = false;
+  bool _isHandlingNewPoint = false;
+  bool _gpsLoopActive = false;
 
   final ServiceInstance? _serviceInstance;
   final TrackerPreferencesService _trackerPreferencesService;
@@ -31,20 +33,17 @@ final class PointAutomationService with ChangeNotifier {
       _isTracking = true;
       // Start all three core pieces: stream + periodic timers.
       // await startCachedTimer();
-      await startGpsTimer();
+      await _startGpsLoop();
     }
   }
 
   /// Stop everything if user logs out, or toggles the preference off.
   Future<void> stopTracking() async {
-    if (kDebugMode) {
-      debugPrint("[PointAutomation] Stopping automatic tracking...");
-    }
 
     if (_isTracking) {
       _isTracking = false;
-      await stopCachedTimer();
-      await stopGpsTimer();
+      _gpsLoopActive = false;
+      debugPrint("[PointAutomation] Tracking stopped");
     }
   }
 
@@ -108,6 +107,46 @@ final class PointAutomationService with ChangeNotifier {
     _cachedTimer = null;
   }
 
+  Future<void> _startGpsLoop() async {
+    if (_gpsLoopActive) return;
+    _gpsLoopActive = true;
+
+    final trackingFrequency =
+    await _trackerPreferencesService.getTrackingFrequencyPreference();
+
+    debugPrint("[PointAutomation] Starting controlled GPS loop...");
+
+    while (_isTracking && _gpsLoopActive) {
+      final start = DateTime.now();
+
+      try {
+        debugPrint("[PointAutomation] Creating new point from GPS (loop)");
+        final result =
+        await _localPointService.createPointFromGps(persist: false);
+
+        if (result case Ok(value: final point)) {
+          onNewPoint(point);
+        } else if (result case Err(value: final err)) {
+          debugPrint("[PointAutomation] Point not created: $err");
+        }
+      } catch (e, s) {
+        debugPrint("[PointAutomation] Exception: $e\n$s");
+      }
+
+      // Ensure delay is respected
+      final elapsed = DateTime.now().difference(start);
+      final waitTime = Duration(seconds: trackingFrequency) - elapsed;
+      if (waitTime > Duration.zero) {
+        await Future.delayed(waitTime);
+      } else {
+        debugPrint("[PointAutomation] Skipping delay — iteration took too long.");
+      }
+    }
+
+    debugPrint("[PointAutomation] GPS loop stopped");
+    _gpsLoopActive = false;
+  }
+
   /// A timer that forces a brand new location fetch from Geolocator every N seconds
   /// (based on user’s preference).
   Future<void> startGpsTimer() async {
@@ -144,29 +183,51 @@ final class PointAutomationService with ChangeNotifier {
 
   /// Forces a new position fetch by calling localPointService.createNewPoint().
   Future<void> _gpsTimerHandler(Timer timer) async {
-    if (_isTracking) {
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Creating new point from GPS");
-      }
-      final result = await _localPointService.createPointFromGps();
 
-      if (result case Ok(value: LocalPoint point)) {
+    if (!_isTracking || _isHandlingNewPoint) {
+      return;
+    }
+
+    _isHandlingNewPoint = true;
+
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Creating new point from GPS");
+    }
+
+    try {
+      final result = await _localPointService.createPointFromGps(persist: false);
+
+      if (result case Ok(value: final point)) {
+        onNewPoint(point);
+      } else if (result case Err(value: final err)) {
+        debugPrint("[PointAutomation] Forced GPS point not created: $err");
+      }
+    } catch (e, s) {
+      debugPrint("[PointAutomation] Error creating new GPS point: $e\n$s");
+    } finally {
+      _isHandlingNewPoint = false;
+    }
+
+  }
+
+  void onNewPoint(LocalPoint point) async {
+    if (_serviceInstance is AndroidServiceInstance) {
+      final isForeground = await _serviceInstance.isForegroundService();
+      if (isForeground) {
+        await _serviceInstance.setForegroundNotificationInfo(
+          title: 'Tracking location...',
+          content: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}',
+        );
+      }
+
+      _serviceInstance.invoke('newPoint', point.toJson());
+    } else {
+      // Main isolate handles storage directly
+      final storeResult = await _localPointService.storePoint(point);
+      if (storeResult case Ok()) {
         _newPointController.add(point);
-        if (_serviceInstance is AndroidServiceInstance) {
-          final androidService = _serviceInstance;
-          final isForeground = await androidService.isForegroundService();
-          if (isForeground) {
-            androidService.setForegroundNotificationInfo(
-              title: 'Tracking location...',
-              content: 'Last updated at ${DateTime
-                  .now()
-                  .toLocal()
-                  .toIso8601String()}',
-            );
-          }
-        }
-      } else if (result case Err(value: String err)) {
-        debugPrint("[PointAutomation] Forced GPS point not stored: $err");
+      } else if (storeResult case Err(value: String err)) {
+        debugPrint("[PointAutomation] Failed to store point in UI: $err");
       }
     }
   }

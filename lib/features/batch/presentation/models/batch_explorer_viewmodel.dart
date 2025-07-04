@@ -18,27 +18,19 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   List<LocalPointViewModel> _batch = [];
   List<LocalPointViewModel> get batch => _batch;
   int _itemsPerPage = 100;
-  int _currentPage = 1;
+  int get _currentPage => (_batch.length / _itemsPerPage)
+      .ceil().clamp(1, double.infinity).toInt();
+  bool _initialized = false;
 
-  List<LocalPointViewModel> get paginatedBatch {
+  List<LocalPointViewModel> get visibleBatch {
     final end = (_itemsPerPage * _currentPage).clamp(0, _batch.length);
     return _batch.take(end).toList();
   }
 
-  bool get canLoadMore => _batch.length > _itemsPerPage * _currentPage;
+  bool _newestFirst = true;
+  bool get newestFirst => _newestFirst;
 
-  void loadMore() {
-    if (canLoadMore) {
-      _currentPage++;
-      notifyListeners();
-    }
-  }
-
-  void resetPagination() {
-    _currentPage = 1;
-  }
-
-  bool get hasPoints => batch.isNotEmpty;
+  bool get hasPoints => visibleBatch.isNotEmpty;
 
   bool _isLoadingPoints = true;
   bool get isLoadingPoints => _isLoadingPoints;
@@ -58,30 +50,44 @@ final class BatchExplorerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleSortOrder() {
+    _newestFirst = !_newestFirst;
+    _sortBatch();
+    notifyListeners();
+  }
+
+  void _sortBatch() {
+    _batch.sort((a, b) {
+      final aTime = DateTime.parse(a.properties.timestamp);
+      final bTime = DateTime.parse(b.properties.timestamp);
+      return _newestFirst ? bTime.compareTo(aTime) : aTime.compareTo(bTime);
+    });
+  }
+
   Future<void> initialize() async {
+
+    if (_initialized) {
+      return;
+    }
+
     final stream = await _localPointService.watchCurrentBatch();
 
     _batchSubscription = stream.listen((batch) async {
-      _isLoadingPoints = false;
       final batchVm = await compute(BatchExplorerViewModel._convertToViewModels, batch);
-      _batch = batchVm;
-      resetPagination();
-      notifyListeners();
+
+      batchVm.sort((a, b) {
+        final aTime = DateTime.parse(a.properties.timestamp);
+        final bTime = DateTime.parse(b.properties.timestamp);
+        return _newestFirst ? bTime.compareTo(aTime) : aTime.compareTo(bTime);
+      });
+
+      _setBatch(batchVm);
+      _setIsLoadingPoints(false);
     });
   }
 
   static List<LocalPointViewModel> _convertToViewModels(List<LocalPoint> points) {
     return points.map((point) => point.toViewModel()).toList();
-  }
-
-  Future<void> _loadBatchPoints() async {
-    List<LocalPoint> batch = await _localPointService.getCurrentBatch();
-    List<LocalPointViewModel> batchVm = batch.map((point) =>
-        point.toViewModel()).toList();
-
-    _setBatch(batchVm);
-    _setIsLoadingPoints(false);
-    notifyListeners();
   }
 
   Future<void> uploadBatch() async {

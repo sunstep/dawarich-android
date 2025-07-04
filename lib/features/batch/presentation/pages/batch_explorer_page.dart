@@ -28,12 +28,6 @@ class _BatchExplorerPageState extends State<BatchExplorerPage> {
   }
 
   @override
-  void dispose() {
-    getIt<BatchExplorerViewModel>().dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _viewModel,
@@ -79,21 +73,26 @@ class _BatchContent extends StatelessWidget {
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(vm.newestFirst ? "Newest first" : "Oldest first",
+                  style: Theme.of(context).textTheme.bodyMedium),
+              IconButton(
+                icon: const Icon(Icons.swap_vert),
+                tooltip: "Toggle sort order",
+                onPressed: vm.toggleSortOrder,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: vm.isLoadingPoints
                 ? const Center(child: CircularProgressIndicator())
-                : NotificationListener<ScrollNotification>(
-              onNotification: (ScrollNotification scrollInfo) {
-                if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent &&
-                    vm.canLoadMore) {
-                  vm.loadMore();
-                }
-                return false;
-              },
-              child: ListView.builder(
-                itemCount: vm.paginatedBatch.length,
+                : ListView.builder(
+                itemCount: vm.visibleBatch.length,
                 itemBuilder: (_, i) {
-                  final pt = vm.paginatedBatch[i];
+                  final pt = vm.visibleBatch[i];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _PointCard(
@@ -107,7 +106,6 @@ class _BatchContent extends StatelessWidget {
                 },
               ),
             ),
-          ),
           const SizedBox(height: 80), // leave room for footer
         ],
       ),

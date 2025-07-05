@@ -35,7 +35,7 @@ final class StartupService {
         try {
           await db.customSelect('SELECT 1').get();
         } catch (_) {
-          // This is just a dummy query so just let it cry about it.
+          // This is just a dummy query, so errors are irrelevant.
         }
       })(),
     );

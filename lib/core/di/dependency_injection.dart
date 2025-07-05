@@ -89,7 +89,7 @@ final class DependencyInjection {
       ]),
       dependsOn: [IApiConfigManager],
     );
-    getIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient());
+    getIt.registerSingleton<SQLiteClient>(SQLiteClient());
     getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
     getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
     getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
@@ -161,7 +161,7 @@ final class DependencyInjection {
         ConnectViewModel(getIt<ConnectService>()));
 
     getIt.registerLazySingleton<MigrationViewModel>(() =>
-        MigrationViewModel(getIt<MigrationService>()));
+        MigrationViewModel());
 
     getIt.registerLazySingleton<TimelineViewModel>(() =>
         TimelineViewModel(getIt<MapService>(), getIt<LocationService>()),

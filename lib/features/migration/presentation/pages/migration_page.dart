@@ -14,7 +14,8 @@ class _MigrationPageState extends State<MigrationPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 300), () {
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<MigrationViewModel>().runMigrationAndNavigate(context);
       }
@@ -64,7 +65,7 @@ class _MigrationPageState extends State<MigrationPage> {
                 if (vm.error != null)
                   _ErrorCard(
                     errorMessage: vm.error!,
-                    onRetry: vm.runMigration,
+                    onRetry: () => vm.runMigrationAndNavigate(context),
                   )
                 else
                   Column(

@@ -31,13 +31,15 @@ final class SQLiteClient extends _$SQLiteClient {
 
   static final _uiReady = Completer<void>();
 
-  static void signalUiReady() {
-    if (!_uiReady.isCompleted) _uiReady.complete();
+  void signalMigrationUiReady() {
+    if (!_uiReady.isCompleted) {
+      _uiReady.complete();
+    }
   }
 
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,7 +59,7 @@ final class SQLiteClient extends _$SQLiteClient {
 
       await transaction((() async {
 
-        if (from == 1 && to == 2) {
+        if (from < 2 && to >= 2) {
 
           await m.addColumn(pointsTable, pointsTable.deduplicationKey);
           await m.addColumn(pointGeometryTable, pointGeometryTable.longitude);
@@ -105,6 +107,19 @@ final class SQLiteClient extends _$SQLiteClient {
                 .write(PointsTableCompanion(deduplicationKey: Value(key)));
           }
 
+        }
+        if (from < 3 && to >= 3) {
+
+          await m.addColumn(pointGeometryTable, pointGeometryTable.longitude);
+          await m.addColumn(pointGeometryTable, pointGeometryTable.latitude);
+
+          await customStatement(r'''
+            UPDATE point_geometry_table
+               SET longitude = CAST(substr(coordinates, 1, instr(coordinates, ',') - 1) AS REAL),
+                   latitude  = CAST(substr(coordinates, instr(coordinates, ',') + 1) AS REAL)
+          ''');
+
+          await m.dropColumn(pointGeometryTable, 'coordinates');
         }
 
 

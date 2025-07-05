@@ -16,8 +16,8 @@ Future<void> main() async {
   await DependencyInjection.injectDependencies();
   await getIt.allReady();
 
-  await BackgroundTrackingService.configureService();
   await StartupService.initializeApp();
+  await BackgroundTrackingService.configureService();
 
   runApp(const AppBase());
 }

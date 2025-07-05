@@ -1,4 +1,4 @@
-import 'package:dawarich/features/migration/application/services/migration_service.dart';
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,36 +11,24 @@ final class MigrationViewModel extends ChangeNotifier {
   bool get isMigrating => _isMigrating;
   String? get error => _error;
 
-  final MigrationService _migrationService;
-  MigrationViewModel(this._migrationService);
+  // final MigrationService _migrationService;
+  // MigrationViewModel(this._migrationService);
 
-  Future<void> runMigration() async {
-    _setMigrating(true);
-    try {
-      _setError(null);
-      await _migrationService.runIfNeeded();
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setMigrating(false);
-    }
-  }
 
   Future<void> runMigrationAndNavigate(BuildContext context) async {
     _setMigrating(true);
     try {
-      await _migrationService.runIfNeeded();
       _setError(null);
+
+      await getIt<SQLiteClient>().customSelect('SELECT 1').get();
 
       // After migration, check login state
       final sessionService = getIt<UserSessionManager<int>>();
       final int? userId = await sessionService.getUser();
 
-      if (userId != null && userId > 0) {
-        // final apiConfig = getIt<ApiConfigService>();
-        // await apiConfig.initialize();
+      if (context.mounted && userId != null && userId > 0) {
         Navigator.pushReplacementNamed(context, AppRouter.map);
-      } else {
+      } else if (context.mounted) {
         Navigator.pushReplacementNamed(context, AppRouter.connect);
       }
     } catch (e) {

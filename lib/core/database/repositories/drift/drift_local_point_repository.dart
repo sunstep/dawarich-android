@@ -151,7 +151,6 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   @override
   Future<Option<LastPointDto>> getLastPoint(int userId) async {
     try {
-      // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
 
       final JoinedSelectStatement queryResult =
       _database.select(_database.pointsTable).join([

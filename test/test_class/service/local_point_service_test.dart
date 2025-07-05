@@ -27,7 +27,8 @@ void main() {
       type: 'Feature',
       geometry: LocalPointGeometryDto(
         type: 'Point',
-        coordinates: [lon, lat],
+        longitude: lon,
+        latitude: lat
       ),
       properties: LocalPointPropertiesDto(
         batteryState: 'ok',

@@ -18,8 +18,8 @@ class LastPointViewModel {
   });
 
   factory LastPointViewModel.fromPoint(LocalPointViewModel point) {
-    final double longitude = point.geometry.coordinates[0];
-    final double latitude = point.geometry.coordinates[1];
+    final double longitude = point.geometry.longitude;
+    final double latitude = point.geometry.latitude;
     return LastPointViewModel(
         rawTimestamp: point.properties.timestamp,
         longitude: longitude,

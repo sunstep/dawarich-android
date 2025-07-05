@@ -6,6 +6,7 @@ class LocalPoint {
   final String type;
   final LocalPointGeometry geometry;
   final LocalPointProperties properties;
+  String? deduplicationKey;
   final int userId;
   final bool isUploaded;
 
@@ -14,6 +15,7 @@ class LocalPoint {
       required this.type,
       required this.geometry,
       required this.properties,
+      this.deduplicationKey,
       required this.userId,
       required this.isUploaded});
 
@@ -23,6 +25,7 @@ class LocalPoint {
       'type': type,
       'geometry': geometry.toJson(),
       'properties': properties.toJson(),
+      'deduplicationKey': deduplicationKey,
       'userId': userId,
       'isUploaded': isUploaded,
     };
@@ -34,6 +37,7 @@ class LocalPoint {
       type: json['type'] as String,
       geometry: LocalPointGeometry.fromJson(json['geometry']),
       properties: LocalPointProperties.fromJson(json['properties']),
+      deduplicationKey: json['deduplicationKey'] as String?,
       userId: json['userId'] as int,
       isUploaded: json['isUploaded'] as bool,
     );

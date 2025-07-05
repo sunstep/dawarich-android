@@ -6,6 +6,7 @@ class LocalPointDto {
   final String type;
   final LocalPointGeometryDto geometry;
   final LocalPointPropertiesDto properties;
+  String? deduplicationKey;
   final int userId;
   final bool isUploaded;
 
@@ -14,6 +15,7 @@ class LocalPointDto {
       required this.type,
       required this.geometry,
       required this.properties,
+      this.deduplicationKey,
       required this.userId,
       required this.isUploaded});
 

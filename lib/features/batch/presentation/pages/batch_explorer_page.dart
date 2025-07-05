@@ -97,8 +97,8 @@ class _BatchContent extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _PointCard(
                       timestamp: pt.properties.formattedTimestamp,
-                      latitude: pt.geometry.coordinates[1],
-                      longitude: pt.geometry.coordinates[0],
+                      latitude: pt.geometry.latitude,
+                      longitude: pt.geometry.longitude,
                       onDelete: () =>
                           _Dialogs.confirmDeletePoint(context, vm, pt),
                     ),

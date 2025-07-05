@@ -133,6 +133,29 @@ final class SQLiteClient extends _$SQLiteClient {
 
     },
     beforeOpen: (details) async {
+
+      if (kDebugMode) {
+        final pragma = await customSelect(
+            "PRAGMA table_info('point_geometry_table')"
+        ).get();
+
+        final hasCoords = pragma.any(
+                (row) => row.read<String>('name') == 'coordinates'
+        );
+
+        if (!hasCoords) {
+          // re-create the TEXT column so your generated JOINs still work
+          await customStatement(
+              'ALTER TABLE point_geometry_table ADD COLUMN coordinates TEXT;'
+          );
+
+          await customStatement(r'''
+            UPDATE point_geometry_table
+               SET coordinates = longitude || ',' || latitude
+          ''');
+        }
+      }
+
       // This gets called after onUpgrade or onCreate
       if (details.wasCreated || !details.hadUpgrade) {
         _migrationCtl.add(false);

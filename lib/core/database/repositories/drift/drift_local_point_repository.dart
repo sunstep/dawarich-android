@@ -32,8 +32,8 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
     return await _database.into(_database.pointGeometryTable).insert(
           PointGeometryTableCompanion(
             type: Value(geometry.type),
-            coordinates:
-                Value(geometry.coordinates.join(',')), // Convert List to String
+            longitude: Value(geometry.longitude),
+            latitude: Value(geometry.latitude)
           ),
         );
   }
@@ -151,7 +151,6 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   @override
   Future<Option<LastPointDto>> getLastPoint(int userId) async {
     try {
-      // Query the last point stored in the PointsTable, based on the auto-incrementing ID.
 
       final JoinedSelectStatement queryResult =
       _database.select(_database.pointsTable).join([
@@ -178,8 +177,8 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
 
       if (point != null) {
         return Some(LastPointDto(
-            longitude: point.geometry.coordinates[0],
-            latitude: point.geometry.coordinates[1],
+            longitude: point.geometry.longitude,
+            latitude: point.geometry.latitude,
             timestamp: point.properties.timestamp));
       }
 

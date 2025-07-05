@@ -186,14 +186,15 @@ final class LocalPointService {
       Position position, AdditionalPointData additionalData, int userId) {
     final geometry = LocalPointGeometry(
       type: "Point",
-      coordinates: [position.longitude, position.latitude],
+      longitude: position.longitude,
+      latitude: position.latitude
     );
 
     final properties = LocalPointProperties(
       batteryState: additionalData.batteryState,
       batteryLevel: additionalData.batteryLevel,
       wifi: additionalData.wifi,
-      timestamp: position.timestamp.toUtc().toIso8601String(),
+      timestamp: position.timestamp.toUtc(),
       horizontalAccuracy: position.accuracy,
       verticalAccuracy: position.altitudeAccuracy,
       altitude: position.altitude,
@@ -256,7 +257,7 @@ final class LocalPointService {
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      DateTime candidateTime = DateTime.parse(point.properties.timestamp);
+      DateTime candidateTime = point.properties.timestamp;
       DateTime lastTime = DateTime.parse(lastPoint.timestamp);
 
       answer = candidateTime.isAfter(lastTime);
@@ -272,8 +273,8 @@ final class LocalPointService {
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      double lastPointLongitude = point.geometry.coordinates[0];
-      double lastPointLatitude = point.geometry.coordinates[1];
+      double lastPointLongitude = point.geometry.longitude;
+      double lastPointLatitude = point.geometry.latitude;
 
       LatLng lastPointCoordinates =
           LatLng(lastPoint.latitude, lastPoint.longitude);

@@ -261,8 +261,8 @@ final class TrackerPageViewModel extends ChangeNotifier {
       LocalPointViewModel point = pointEntity.toViewModel();
 
       String timestamp = point.properties.timestamp;
-      double longitude = point.geometry.coordinates[0];
-      double latitude = point.geometry.coordinates[1];
+      double longitude = point.geometry.longitude;
+      double latitude = point.geometry.latitude;
 
       LastPointViewModel lastPoint = LastPointViewModel(
           rawTimestamp: timestamp, longitude: longitude, latitude: latitude);

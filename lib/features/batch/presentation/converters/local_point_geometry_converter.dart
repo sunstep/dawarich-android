@@ -3,12 +3,20 @@ import 'package:dawarich/features/batch/presentation/models/local_point_geometry
 
 extension LocalPointGeometryEntityToViewModel on LocalPointGeometry {
   LocalPointGeometryViewModel toViewModel() {
-    return LocalPointGeometryViewModel(type: type, coordinates: coordinates);
+    return LocalPointGeometryViewModel(
+        type: type,
+        longitude: longitude,
+        latitude: latitude
+    );
   }
 }
 
 extension LocalPointGeometryViewModelToEntity on LocalPointGeometryViewModel {
   LocalPointGeometry toEntity() {
-    return LocalPointGeometry(type: type, coordinates: coordinates);
+    return LocalPointGeometry(
+        type: type,
+        longitude: longitude,
+        latitude: latitude
+    );
   }
 }

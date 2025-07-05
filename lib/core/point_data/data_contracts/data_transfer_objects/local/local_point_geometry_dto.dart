@@ -1,6 +1,11 @@
 class LocalPointGeometryDto {
   final String type;
-  final List<double> coordinates;
+  final double longitude;
+  final double latitude;
 
-  LocalPointGeometryDto({required this.type, required this.coordinates});
+  LocalPointGeometryDto({
+    required this.type,
+    required this.longitude,
+    required this.latitude
+  });
 }

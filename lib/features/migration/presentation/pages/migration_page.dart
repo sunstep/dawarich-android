@@ -1,3 +1,6 @@
+import 'package:dawarich/core/constants/constants.dart';
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/migration/presentation/models/migration_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
@@ -15,8 +18,10 @@ class _MigrationPageState extends State<MigrationPage> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(kMigrationDelay);
       if (mounted) {
+        getIt<SQLiteClient>().signalMigrationUiReady();
         context.read<MigrationViewModel>().runMigrationAndNavigate(context);
       }
     });

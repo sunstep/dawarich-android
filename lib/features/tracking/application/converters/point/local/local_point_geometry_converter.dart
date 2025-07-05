@@ -4,18 +4,26 @@ import 'package:dawarich/core/domain/models/point/local/local_point_geometry.dar
 
 extension LocalPointGeometryToDto on LocalPointGeometry {
   LocalPointGeometryDto toDto() {
-    return LocalPointGeometryDto(type: type, coordinates: coordinates);
+    return LocalPointGeometryDto(
+        type: type,
+        longitude: longitude,
+        latitude: latitude
+    );
   }
 }
 
 extension LocalPointGeometryToApi on LocalPointGeometry {
   DawarichPointGeometry toApi() {
-    return DawarichPointGeometry(type: type, coordinates: coordinates);
+    return DawarichPointGeometry(type: type, coordinates: [longitude, latitude]);
   }
 }
 
 extension LocalPointGeometryDtoToEntity on LocalPointGeometryDto {
-  LocalPointGeometry toEntity() {
-    return LocalPointGeometry(type: type, coordinates: coordinates);
+  LocalPointGeometry toDomain() {
+    return LocalPointGeometry(
+        type: type,
+        longitude: longitude,
+        latitude: latitude
+    );
   }
 }

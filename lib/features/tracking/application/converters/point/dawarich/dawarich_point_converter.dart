@@ -19,7 +19,7 @@ extension BatchPointToDto on DawarichPoint {
 extension PointDtoToEntity on DawarichPointDto {
   DawarichPoint toEntity() {
     DawarichPointGeometry geometry = this.geometry.toEntity();
-    DawarichPointProperties properties = this.properties.toEntity();
+    DawarichPointProperties properties = this.properties.toDomain();
     return DawarichPoint(
         type: type, geometry: geometry, properties: properties);
   }

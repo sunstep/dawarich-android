@@ -2,12 +2,12 @@ import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';
 
 extension PointPropertiesDtoToEntity on DawarichPointPropertiesDto {
-  DawarichPointProperties toEntity() {
+  DawarichPointProperties toDomain() {
     return DawarichPointProperties(
       batteryState: batteryState,
       batteryLevel: batteryLevel,
       wifi: wifi,
-      timestamp: timestamp,
+      timestamp: DateTime.parse(timestamp),
       horizontalAccuracy: horizontalAccuracy,
       verticalAccuracy: verticalAccuracy,
       altitude: altitude,
@@ -27,7 +27,7 @@ extension PointPropertiesToDto on DawarichPointProperties {
       batteryState: batteryState,
       batteryLevel: batteryLevel,
       wifi: wifi,
-      timestamp: timestamp,
+      timestamp: timestamp.toIso8601String(),
       horizontalAccuracy: horizontalAccuracy,
       verticalAccuracy: verticalAccuracy,
       altitude: altitude,

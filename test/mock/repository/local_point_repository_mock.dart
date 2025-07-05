@@ -94,8 +94,8 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     userPoints.sort((a, b) => b.id.compareTo(a.id));
     final last = userPoints.first;
     return Some(LastPointDto(
-      longitude: last.geometry.coordinates[0],
-      latitude: last.geometry.coordinates[1],
+      longitude: last.geometry.longitude,
+      latitude: last.geometry.latitude,
       timestamp: last.properties.timestamp,
     ));
   }

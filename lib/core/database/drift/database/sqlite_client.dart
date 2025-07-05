@@ -44,6 +44,7 @@ final class SQLiteClient extends _$SQLiteClient {
 
     onCreate: (m) async {
       debugPrint("[Drift] onCreate triggered");
+      await m.createAll();
     },
     onUpgrade: (m, from, to) async {
 
@@ -59,13 +60,24 @@ final class SQLiteClient extends _$SQLiteClient {
         if (from == 1 && to == 2) {
 
           await m.addColumn(pointsTable, pointsTable.deduplicationKey);
+          await m.addColumn(pointGeometryTable, pointGeometryTable.longitude);
+          await m.addColumn(pointGeometryTable, pointGeometryTable.latitude);
+
+          await customStatement(r'''
+            UPDATE point_geometry_table
+               SET longitude = CAST(substr(coordinates, 1, instr(coordinates, ',') - 1) AS REAL),
+                   latitude  = CAST(substr(coordinates, instr(coordinates, ',') + 1) AS REAL)
+          ''');
+
+          await m.dropColumn(pointGeometryTable, 'coordinates');
 
           final allRows = await customSelect(
             '''
               SELECT 
                 points_table.id, 
                 point_properties_table.timestamp, 
-                point_geometry_table.coordinates, 
+                point_geometry_table.longitude,
+                point_geometry_table.latitude, 
                 points_table.user_id 
               FROM 
                 points_table
@@ -84,9 +96,10 @@ final class SQLiteClient extends _$SQLiteClient {
           for (final row in allRows) {
             final id = row.read<int>('id');
             final timestamp = row.read<String>('timestamp');
-            final coordinates = row.read<String>('coordinates');
+            final longitude = row.read<double>('longitude');
+            final latitude = row.read<double>('latitude');
             final userId = row.read<int>('user_id');
-            final key = '$userId|$timestamp|$coordinates';
+            final key = '$userId|$timestamp|$longitude|$latitude';
 
             await (update(pointsTable)..where((tbl) => tbl.id.equals(id)))
                 .write(PointsTableCompanion(deduplicationKey: Value(key)));

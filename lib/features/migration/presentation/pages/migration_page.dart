@@ -18,7 +18,7 @@ class _MigrationPageState extends State<MigrationPage> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(Duration(milliseconds: 50));
+      await Future.delayed(Duration(milliseconds: kMigrationDelay));
       if (mounted) {
         getIt<SQLiteClient>().signalMigrationUiReady();
         context.read<MigrationViewModel>().runMigrationAndNavigate(context);

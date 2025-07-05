@@ -19,11 +19,11 @@ Future<void> main() async {
   await StartupService.initializeApp();
   await BackgroundTrackingService.configureService();
 
-  runApp(const AppBase());
+  runApp(const Dawarich());
 }
 
-class AppBase extends StatelessWidget {
-  const AppBase({super.key});
+class Dawarich extends StatelessWidget {
+  const Dawarich({super.key});
 
   @override
   Widget build(BuildContext context) {

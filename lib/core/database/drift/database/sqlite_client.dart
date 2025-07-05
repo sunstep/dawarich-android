@@ -106,7 +106,9 @@ final class SQLiteClient extends _$SQLiteClient {
             await (update(pointsTable)..where((tbl) => tbl.id.equals(id)))
                 .write(PointsTableCompanion(deduplicationKey: Value(key)));
           }
-
+          if (kDebugMode) {
+            debugPrint('[Migration] Successfully ran version 2 migration');
+          }
         }
         if (from < 3 && to >= 3) {
 
@@ -120,6 +122,10 @@ final class SQLiteClient extends _$SQLiteClient {
           ''');
 
           await m.dropColumn(pointGeometryTable, 'coordinates');
+
+          if (kDebugMode) {
+            debugPrint('[Migration] Successfully ran version 3 migration');
+          }
         }
 
 

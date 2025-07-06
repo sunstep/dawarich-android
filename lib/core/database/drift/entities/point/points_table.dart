@@ -15,8 +15,8 @@ class PointsTable extends Table {
   IntColumn get userId => integer()();
   BoolColumn get isUploaded => boolean().withDefault(const Constant(false))();
 
-  // @override
-  // List<Set<Column>> get uniqueKeys => [
-  //   {deduplicationKey}
-  // ];
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {deduplicationKey}
+  ];
 }

@@ -39,7 +39,7 @@ final class SQLiteClient extends _$SQLiteClient {
 
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -61,14 +61,24 @@ final class SQLiteClient extends _$SQLiteClient {
 
         if (from < 2 && to >= 2) {
 
-          await m.addColumn(pointsTable, pointsTable.deduplicationKey);
           await m.addColumn(pointGeometryTable, pointGeometryTable.longitude);
           await m.addColumn(pointGeometryTable, pointGeometryTable.latitude);
+          await m.addColumn(pointsTable, pointsTable.deduplicationKey);
 
           await customStatement(r'''
-            UPDATE point_geometry_table
-               SET longitude = CAST(substr(coordinates, 1, instr(coordinates, ',') - 1) AS REAL),
-                   latitude  = CAST(substr(coordinates, instr(coordinates, ',') + 1) AS REAL)
+            UPDATE 
+              point_geometry_table
+            SET 
+              longitude = CAST(
+                substr(
+                  coordinates, 1, instr(coordinates, ',') - 1
+                ) AS REAL
+              ),
+              latitude  = CAST(
+                substr(
+                  coordinates, instr(coordinates, ',') + 1
+                ) AS REAL
+              )
           ''');
 
           await m.dropColumn(pointGeometryTable, 'coordinates');
@@ -101,33 +111,36 @@ final class SQLiteClient extends _$SQLiteClient {
             final longitude = row.read<double>('longitude');
             final latitude = row.read<double>('latitude');
             final userId = row.read<int>('user_id');
-            final key = '$userId|$timestamp|$longitude|$latitude';
+            final key = '$userId|$timestamp|$longitude,$latitude';
 
             await (update(pointsTable)..where((tbl) => tbl.id.equals(id)))
                 .write(PointsTableCompanion(deduplicationKey: Value(key)));
           }
+
+          await customStatement(r'''
+            DELETE FROM 
+              points_table
+            WHERE 
+              id NOT IN (
+                SELECT 
+                  MIN(id)
+                FROM 
+                  points_table
+                GROUP BY 
+                  deduplication_key
+              )
+          ''');
+
+          await customStatement('''
+            CREATE UNIQUE INDEX IF NOT EXISTS 
+              unique_deduplication_key
+            ON 
+              points_table(deduplication_key)
+          ''');
           if (kDebugMode) {
             debugPrint('[Migration] Successfully ran version 2 migration');
           }
         }
-        if (from < 3 && to >= 3) {
-
-          await m.addColumn(pointGeometryTable, pointGeometryTable.longitude);
-          await m.addColumn(pointGeometryTable, pointGeometryTable.latitude);
-
-          await customStatement(r'''
-            UPDATE point_geometry_table
-               SET longitude = CAST(substr(coordinates, 1, instr(coordinates, ',') - 1) AS REAL),
-                   latitude  = CAST(substr(coordinates, instr(coordinates, ',') + 1) AS REAL)
-          ''');
-
-          await m.dropColumn(pointGeometryTable, 'coordinates');
-
-          if (kDebugMode) {
-            debugPrint('[Migration] Successfully ran version 3 migration');
-          }
-        }
-
 
       }));
 
@@ -135,29 +148,14 @@ final class SQLiteClient extends _$SQLiteClient {
     beforeOpen: (details) async {
 
       if (kDebugMode) {
-        final pragma = await customSelect(
-            "PRAGMA table_info('point_geometry_table')"
-        ).get();
+        // Add operations here in case you need development specific db operations
+        // Any code here will run before the database is opened
 
-        final hasCoords = pragma.any(
-                (row) => row.read<String>('name') == 'coordinates'
-        );
-
-        if (!hasCoords) {
-          // re-create the TEXT column so your generated JOINs still work
-          await customStatement(
-              'ALTER TABLE point_geometry_table ADD COLUMN coordinates TEXT;'
-          );
-
-          await customStatement(r'''
-            UPDATE point_geometry_table
-               SET coordinates = longitude || ',' || latitude
-          ''');
-        }
 
       }
 
       // This gets called after onUpgrade or onCreate
+      // The migration controller should emit false, or else the UI will be stuck.
       if (details.wasCreated || !details.hadUpgrade) {
         _migrationCtl.add(false);
       }

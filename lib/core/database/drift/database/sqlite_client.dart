@@ -150,7 +150,7 @@ final class SQLiteClient extends _$SQLiteClient {
       if (kDebugMode) {
         // Add operations here in case you need development specific db operations
         // Any code here will run before the database is opened
-
+        debugPrint('[Drift] Currently on schema version: ${details.versionNow}');
 
       }
 

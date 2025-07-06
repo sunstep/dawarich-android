@@ -20,6 +20,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
             type: Value(point.type),
             geometryId: Value(await _storeGeometry(point.geometry)),
             propertiesId: Value(await _storeProperties(point.properties)),
+            deduplicationKey: Value(point.deduplicationKey),
             userId: Value(point.userId),
           ));
       return pointId;

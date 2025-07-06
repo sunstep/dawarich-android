@@ -34,7 +34,6 @@ extension PointMapper on TypedResult {
           trackId: propertiesRow.trackId,
           deviceId: propertiesRow.deviceId,
         ),
-        deduplicationKey: pointRow.deduplicationKey,
         userId: pointRow.userId,
         isUploaded: pointRow.isUploaded);
   }

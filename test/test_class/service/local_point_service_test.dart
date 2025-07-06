@@ -180,7 +180,7 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       await repo
           .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
-      await repo.markBatchAsUploaded(testUser);
+      await repo.markBatchAsUploaded(testUser, [1]); // Mark first as uploaded
       repo.failGetCurrentBatch = false;
 
       final batch = await repo.getCurrentBatch(testUser);
@@ -214,7 +214,7 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       await repo
           .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
-      await repo.markBatchAsUploaded(testUser);
+      await repo.markBatchAsUploaded(testUser, [1]); // Mark first as uploaded
       repo.failGetBatchCount = false;
 
       final cnt = await repo.getBatchPointCount(testUser);
@@ -250,7 +250,7 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
       repo.failMarkUploaded = false;
 
-      final updated = await repo.markBatchAsUploaded(testUser);
+      final updated = await repo.markBatchAsUploaded(testUser, [1, 2]);
 
       expect(updated, 2);
 
@@ -266,7 +266,7 @@ void main() {
       repo.failMarkUploaded = true;
       
       expect(
-        () => repo.markBatchAsUploaded(testUser),
+        () => repo.markBatchAsUploaded(testUser, [1, 2]),
         throwsA(isA<ObjectBoxException>().having(
           (e) => e.toString(), 
           'message', 

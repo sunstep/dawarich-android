@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/core/routing/app_router.dart';

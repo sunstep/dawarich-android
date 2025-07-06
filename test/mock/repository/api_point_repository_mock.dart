@@ -46,7 +46,7 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   String? lastDeletedPointId;
 
   @override
-  Future<Result<(), String>> uploadBatch(DawarichPointBatchDto batch) async {
+  Future<Result<(), String>> uploadBatch(DawarichPointBatchDto batch, [int? chunkSize]) async {
     uploadBatchCallCount++;
     lastUploadedBatch = batch;
     if (shouldUploadFail) return const Err('upload failed');
@@ -54,13 +54,14 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
 
-
   @override
-  Future<Option<List<ApiPointDTO>>> fetchPoints(
-      DateTime start, DateTime end, int perPage) async {
+  Future<Option<List<ApiPointDTO>>> getPoints({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int perPage}) async {
     fetchAllPointsCallCount++;
-    lastFetchPointsStart = start;
-    lastFetchPointsEnd = end;
+    lastFetchPointsStart = startDate;
+    lastFetchPointsEnd = endDate;
     lastFetchPointsPerPage = perPage;
 
     if (shouldFetchPointsFail) return const None();
@@ -68,11 +69,11 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<SlimApiPointDTO>>> fetchSlimPoints(
-      DateTime start, DateTime end, int perPage) async {
+  Future<Option<List<SlimApiPointDTO>>> getSlimPoints({
+    required DateTime startDate, required DateTime endDate, required int perPage}) async {
     fetchAllSlimCallCount++;
-    lastFetchSlimStart = start;
-    lastFetchSlimEnd = end;
+    lastFetchSlimStart = startDate;
+    lastFetchSlimEnd = endDate;
     lastFetchSlimPerPage = perPage;
 
     if (shouldFetchSlimFail) return const None();
@@ -80,10 +81,11 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<int> getTotalPages(DateTime start, DateTime end, int perPage) async {
+  Future<int> getTotalPages({
+    required DateTime startDate, required DateTime endDate, required int perPage}) async {
     getTotalPagesCallCount++;
-    lastGetTotalPagesStart = start;
-    lastGetTotalPagesEnd = end;
+    lastGetTotalPagesStart = startDate;
+    lastGetTotalPagesEnd = endDate;
     lastGetTotalPagesPerPage = perPage;
 
     if (shouldFetchHeadersFail) return 0;

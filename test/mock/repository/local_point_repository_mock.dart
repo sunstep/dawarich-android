@@ -1,4 +1,3 @@
-import 'package:dawarich/core/database/objectbox/entities/point/point_entity.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
@@ -159,7 +158,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<int> markBatchAsUploaded(int userId) async {
+  Future<int> markBatchAsUploaded(int userId, List<int> pointIds) async {
     markUploadedCount++;
     lastMarkUploadedUserId = userId;
 

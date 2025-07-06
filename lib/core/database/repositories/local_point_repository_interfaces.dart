@@ -9,7 +9,7 @@ abstract interface class IPointLocalRepository {
   Stream<List<LocalPointDto>> watchCurrentBatch(int userId);
   Future<Option<LastPointDto>> getLastPoint(int userId);
   Future<int> getBatchPointCount(int userId);
-  Future<int> markBatchAsUploaded(int userId);
+  Future<int> markBatchAsUploaded(int userId, List<int> pointIds);
   Future<int> deletePoint(int userId, int pointId);
   Future<int> clearBatch(int userId);
 }

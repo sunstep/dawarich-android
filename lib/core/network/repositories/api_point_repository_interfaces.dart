@@ -5,11 +5,15 @@ import 'package:option_result/option_result.dart';
 
 abstract interface class IApiPointRepository {
   Future<Result<(), String>> uploadBatch(DawarichPointBatchDto batch);
-  Future<Option<List<ApiPointDTO>>> fetchPoints(
-      DateTime startDate, DateTime endDate, int perPage);
-  Future<Option<List<SlimApiPointDTO>>> fetchSlimPoints(
-      DateTime startDate, DateTime endDate, int perPage);
-  Future<int> getTotalPages(DateTime startDate, DateTime endDate, int perPage);
+  Future<Option<List<ApiPointDTO>>> getPoints({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int perPage});
+  Future<Option<List<SlimApiPointDTO>>> getSlimPoints({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int perPage});
+  Future<int> getTotalPages({required DateTime startDate, required DateTime endDate, required int perPage});
   Future<Option<ApiPointDTO>> fetchLastPoint();
   Future<Result<(), String>> deletePoint(String point);
 }

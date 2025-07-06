@@ -1,4 +1,4 @@
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
+
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
 import 'package:dawarich/features/timeline/data_contracts/data_transfer_objects/slim_api_point_dto.dart';
@@ -6,7 +6,9 @@ import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.
 import 'package:dawarich/core/domain/models/point/api/api_point.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 
@@ -17,45 +19,29 @@ final class ApiPointService {
   ApiPointService(this._pointInterfaces, this._userSession);
 
 
-  Future<bool> uploadBatch(DawarichPointBatch batch) async {
-    final List<DawarichPoint> deduplicated = await _deduplicatePoints(
-        batch.points);
-    DawarichPointBatch deduplicatedBatch =
-        DawarichPointBatch(points: deduplicated);
-    Result<(), String> result =
-    await _pointInterfaces.uploadBatch(deduplicatedBatch.toDto());
-    return result.isOk();
-  }
+  Future<Result<(), String>> uploadBatch(DawarichPointBatch batch) async {
 
-  Future<List<DawarichPoint>> _deduplicatePoints(
-      List<DawarichPoint> points) async {
-    final sorted = List<DawarichPoint>.from(points)
-      ..sort((a, b) => a.properties.timestamp.compareTo(b.properties.timestamp));
-
-    final userId = await _requireUserId();
-
-    final seen = <String>{};
-    final deduped = <DawarichPoint>[];
-
-    for (final p in sorted) {
-      final ts  = p.properties.timestamp;
-      final lon = p.geometry.coordinates[0];
-      final lat = p.geometry.coordinates[1];
-
-      final key = '$userId|$ts|$lon|$lat';
-      if (seen.add(key)) {
-        deduped.add(p);
-      }
+    if (batch.points.isEmpty) {
+      debugPrint('[Upload] No points to upload.');
+      return Err("There are no points to upload.");
     }
 
-    debugPrint('[Upload] Deduplicated from ${points.length} → ${deduped.length}');
-    return deduped;
+    DawarichPointBatchDto uploadBatchDto = batch.toDto();
+
+
+    final result = await _pointInterfaces.uploadBatch(uploadBatchDto);
+
+    if (result case Err(value: final String error)) {
+      return Err(error);
+    }
+
+    return Ok(());
   }
 
-  Future<Option<List<ApiPoint>>> fetchAllPoints(
-      DateTime startDate, DateTime endDate, int perPage) async {
+  Future<Option<List<ApiPoint>>> getPoints({
+      required DateTime startDate, required DateTime endDate, required int perPage}) async {
     Option<List<ApiPointDTO>> result =
-        await _pointInterfaces.fetchPoints(startDate, endDate, perPage);
+        await _pointInterfaces.getPoints(startDate: startDate, endDate:  endDate, perPage:  perPage);
 
     switch (result) {
       case Some(value: List<ApiPointDTO> points):
@@ -67,10 +53,10 @@ final class ApiPointService {
     }
   }
 
-  Future<Option<List<SlimApiPoint>>> fetchAllSlimPoints(
-      DateTime startDate, DateTime endDate, int perPage) async {
+  Future<Option<List<SlimApiPoint>>> getSlimPoints({
+      required DateTime startDate, required DateTime endDate, required int perPage}) async {
     Option<List<SlimApiPointDTO>> result =
-        await _pointInterfaces.fetchSlimPoints(startDate, endDate, perPage);
+        await _pointInterfaces.getSlimPoints(startDate: startDate, endDate:  endDate, perPage:  perPage);
 
     switch (result) {
       case Some(value: List<SlimApiPointDTO> points):
@@ -99,7 +85,7 @@ final class ApiPointService {
 
   Future<int> getTotalPages(
       DateTime startDate, DateTime endDate, int perPage) async {
-    return await _pointInterfaces.getTotalPages(startDate, endDate, perPage);
+    return await _pointInterfaces.getTotalPages(startDate: startDate, endDate:  endDate, perPage:  perPage);
   }
 
   List<SlimApiPoint> sortPoints(List<SlimApiPoint> data) {

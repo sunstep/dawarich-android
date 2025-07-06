@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
@@ -16,15 +18,40 @@ final class BatchExplorerPage extends StatefulWidget {
 class _BatchExplorerPageState extends State<BatchExplorerPage> {
 
   late final BatchExplorerViewModel _viewModel;
+  late final StreamSubscription<String> _errorSub;
 
   @override
   void initState() {
     super.initState();
     _viewModel = getIt<BatchExplorerViewModel>();
 
+    _errorSub = _viewModel.uploadResultStream.listen((msg) {
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text('Upload failed'),
+            content: Text(msg),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context),
+                  child: Text('OK')),
+            ],
+          ),
+        );
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewModel.initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    _errorSub.cancel();
+    _viewModel.dispose();
+    super.dispose();
   }
 
   @override
@@ -86,6 +113,30 @@ class _BatchContent extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
+          StreamBuilder<UploadProgress>(
+            stream: vm.uploadProgress,
+            builder: (context, snapshot) {
+              final progress = snapshot.data;
+              if (progress == null) return const SizedBox.shrink();
+
+              return Padding(
+                padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                child: Column(
+                  children: [
+                    LinearProgressIndicator(
+                      value: progress.uploaded / progress.total,
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Uploading ${progress.uploaded} / ${progress.total} points...',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           Expanded(
             child: vm.isLoadingPoints
                 ? const Center(child: CircularProgressIndicator())

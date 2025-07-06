@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
+import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/last_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/track_converter.dart';
-import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
@@ -12,7 +14,6 @@ import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_re
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
 import 'package:dawarich/core/domain/models/point/local/additional_point_data.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/core/domain/models/point/point_pair.dart';
@@ -27,7 +28,7 @@ import 'package:option_result/option_result.dart';
 import 'package:user_session_manager/user_session_manager.dart';
 
 final class LocalPointService {
-  final ApiPointService _api;
+  final IApiPointRepository _api;
   final UserSessionManager<int> _userSession;
   final IPointLocalRepository _localPointRepository;
   final IHardwareRepository _hardwareInterfaces;
@@ -42,42 +43,112 @@ final class LocalPointService {
       this._trackRepository,
       this._hardwareInterfaces);
 
-  /// A private local point service helper method that checks if the current point batch is due for upload. This method gets called after a point gets stored locally.
-  Future<bool> _checkBatchThreshold() async {
+  Future<Result<(), String>> prepareBatchUpload(List<LocalPoint> points, {
+    void Function(int uploaded, int total)? onChunkUploaded,
+  }) async {
 
-    final int userId = await _requireUserId();
+    final List<LocalPoint> failedChunks = [];
+    const int chunkSize = 1;
 
-    final int maxPoints =
-        await _trackerPreferencesService.getPointsPerBatchPreference();
-    final int currentPoints =
-        await _localPointRepository.getBatchPointCount(userId);
+    final dedupedLocalPoints = await _deduplicateLocalPoints(points);
 
-    if (currentPoints < maxPoints) {
-      return false;
+    if (dedupedLocalPoints.isEmpty) {
+      debugPrint('[Upload] No new points to upload after full deduplication.');
+      return const Err("All points already exist on the server.");
     }
 
-    List<LocalPointDto> localPointDtoList =
-        await _localPointRepository.getCurrentBatch(userId);
+    for (int i = 0; i < dedupedLocalPoints.length; i += chunkSize) {
+      final end = (i + chunkSize) > dedupedLocalPoints.length
+          ? dedupedLocalPoints.length
+          : (i + chunkSize);
+      final chunk = dedupedLocalPoints.sublist(i, end);
 
-    List<LocalPoint> localPointList = localPointDtoList.map((point) =>
-        point.toDomain()).toList();
-    List<DawarichPoint> apiPointList = localPointList.map((point) =>
-        point.toApi()).toList();
-    DawarichPointBatch fullBatch = DawarichPointBatch(points: apiPointList);
+      List<DawarichPoint> apiPoints = chunk
+          .map((point) => point.toApi())
+          .toList();
 
-    bool uploaded = await _api.uploadBatch(fullBatch);
+      final dto = DawarichPointBatch(points: apiPoints).toDto();
 
-    if (uploaded) {
-      _localPointRepository.markBatchAsUploaded(userId);
-    } else {
-      if (kDebugMode) {
-        debugPrint("[DEBUG] Failed to upload batch!");
-        return false;
+      final result = await _api.uploadBatch(dto);
+
+      if (result case Err(value: final String error)) {
+        debugPrint('[Upload] Failed to upload chunk [$i..$end]: $error');
+        failedChunks.addAll(chunk);
+      } else {
+        await markBatchAsUploaded(chunk);
+        onChunkUploaded?.call(end, dedupedLocalPoints.length);
+      }
+
+    }
+
+    if (failedChunks.isNotEmpty) {
+      return Err("${failedChunks.length} points were failed to be uploaded.");
+    }
+
+    return const Ok(());
+  }
+
+  Future<List<LocalPoint>> _deduplicateLocalPoints(
+      List<LocalPoint> points) async {
+    final sorted = List<LocalPoint>.from(points)
+      ..sort((a, b) => a.properties.timestamp.compareTo(b.properties.timestamp));
+
+    final userId = await _requireUserId();
+
+    final seen = <String>{};
+    final deduped = <LocalPoint>[];
+
+    for (final p in sorted) {
+      final ts  = p.properties.timestamp;
+      final lon = p.geometry.longitude;
+      final lat = p.geometry.latitude;
+
+      final key = '$userId|$ts|$lon|$lat';
+      if (seen.add(key)) {
+        deduped.add(p);
       }
     }
 
-    return true;
+    debugPrint('[Upload] Deduplicated from ${points.length} → ${deduped.length}');
+    return deduped;
   }
+
+  /// A private local point service helper method that checks if the current point batch is due for upload. This method gets called after a point gets stored locally.
+  // Future<bool> _checkBatchThreshold() async {
+  //
+  //   final int userId = await _requireUserId();
+  //
+  //   final int maxPoints =
+  //       await _trackerPreferencesService.getPointsPerBatchPreference();
+  //   final int currentPoints =
+  //       await _localPointRepository.getBatchPointCount(userId);
+  //
+  //   if (currentPoints < maxPoints) {
+  //     return false;
+  //   }
+  //
+  //   List<LocalPointDto> localPointDtoList =
+  //       await _localPointRepository.getCurrentBatch(userId);
+  //
+  //   List<LocalPoint> localPointList = localPointDtoList.map((point) =>
+  //       point.toDomain()).toList();
+  //   List<DawarichPoint> apiPointList = localPointList.map((point) =>
+  //       point.toApi()).toList();
+  //   DawarichPointBatch fullBatch = DawarichPointBatch(points: apiPointList);
+  //
+  //   Result<(), String> uploaded = await _api.uploadBatch(fullBatch);
+  //
+  //   if (uploaded case Ok(value: ())) {
+  //     _localPointRepository.markBatchAsUploaded(userId);
+  //   } else {
+  //     if (kDebugMode) {
+  //       debugPrint("[DEBUG] Failed to upload batch!");
+  //       return false;
+  //     }
+  //   }
+  //
+  //   return true;
+  // }
 
   /// Creates a full point using a position object.
   Future<Result<LocalPoint, String>> createPointFromPosition(
@@ -215,14 +286,11 @@ final class LocalPointService {
         isUploaded: false);
   }
 
-  Future<bool> markBatchAsUploaded(List<LocalPoint> batch) async {
+  Future<bool> markBatchAsUploaded(List<LocalPoint> points) async {
 
     final int userId = await _requireUserId();
 
-    final List<int> batchIds =
-        batch.map((point) => point.id).whereType<int>().toList();
-
-    if (batchIds.isEmpty) {
+    if (points.isEmpty) {
       if (kDebugMode) {
         debugPrint("[DEBUG] No points need to be marked as uploaded.");
       }
@@ -230,7 +298,10 @@ final class LocalPointService {
       return false;
     }
 
-    int result = await _localPointRepository.markBatchAsUploaded(userId);
+
+    final pointIds = points.map((p) => p.id).whereType<int>().toList();
+    int result = await _localPointRepository.markBatchAsUploaded(userId, pointIds);
+
 
     return result > 0;
   }

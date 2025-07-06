@@ -2,7 +2,6 @@ import 'package:dawarich/core/domain/models/point/api/api_point.dart';
 import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/features/points/presentation/models/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
@@ -162,7 +161,7 @@ final class PointsPageViewModel with ChangeNotifier {
     setTotalPages(amountOfPages);
 
     Option<List<ApiPoint>> result =
-        await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
+        await _pointService.getPoints(startDate: startDate, endDate:  endDate, perPage:  pointsPerPage);
 
     switch (result) {
       case Some(value: List<ApiPoint> fetchedPoints):
@@ -194,7 +193,7 @@ final class PointsPageViewModel with ChangeNotifier {
     setCurrentPage(1);
 
     Option<List<ApiPoint>> result =
-        await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
+        await _pointService.getPoints(startDate: startDate, endDate:  endDate, perPage:  pointsPerPage);
 
     switch (result) {
       case Some(value: List<ApiPoint> fetchedPoints):

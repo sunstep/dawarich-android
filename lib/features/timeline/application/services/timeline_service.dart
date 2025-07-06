@@ -14,7 +14,7 @@ class MapService {
 
   Future<List<LatLng>> loadMap(DateTime date) async {
     Option<List<SlimApiPoint>> result =
-        await _pointService.fetchAllSlimPoints(date, date, 1750);
+        await _pointService.getSlimPoints(startDate: date, endDate:  date, perPage:  1750);
 
     switch (result) {
       case Some(value: List<SlimApiPoint> points):

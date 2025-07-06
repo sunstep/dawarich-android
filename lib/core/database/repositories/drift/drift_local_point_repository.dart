@@ -210,10 +210,14 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<int> markBatchAsUploaded(int userId) async {
+  Future<int> markBatchAsUploaded(int userId, List<int> pointIds) async {
     try {
       final int rowsAffected = await (_database.update(_database.pointsTable)
-            ..where((t) => t.userId.equals(userId)))
+            ..where((t) => 
+                t.userId.equals(userId) &
+                t.id.isIn(pointIds)
+            )
+      )
           .write(const PointsTableCompanion(isUploaded: Value(true)));
 
       return rowsAffected;

@@ -143,7 +143,7 @@ final class DependencyInjection {
         TrackerPreferencesService(getIt<ITrackerPreferencesRepository>(),
             getIt<IHardwareRepository>(), getIt<UserSessionManager<int>>()));
     getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(
-        getIt<ApiPointService>(),
+        getIt<IApiPointRepository>(),
         getIt<UserSessionManager<int>>(),
         getIt<IPointLocalRepository>(),
         getIt<TrackerPreferencesService>(),
@@ -256,7 +256,7 @@ final class DependencyInjection {
         DriftTrackRepository(backgroundGetIt<SQLiteClient>()));
 
     backgroundGetIt.registerLazySingleton<LocalPointService>(() => LocalPointService(
-        backgroundGetIt<ApiPointService>(),
+        backgroundGetIt<IApiPointRepository>(),
         backgroundGetIt<UserSessionManager<int>>(),
         backgroundGetIt<IPointLocalRepository>(),
         backgroundGetIt<TrackerPreferencesService>(),

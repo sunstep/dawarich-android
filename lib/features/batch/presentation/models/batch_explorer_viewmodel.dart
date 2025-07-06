@@ -2,15 +2,17 @@ import 'dart:async';
 
 import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/core/application/services/local_point_service.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_geometry.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/converters/local_point_converter.dart';
-import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:option_result/option_result.dart';
+
+class UploadProgress {
+  final int uploaded;
+  final int total;
+  const UploadProgress(this.uploaded, this.total);
+}
 
 final class BatchExplorerViewModel extends ChangeNotifier {
 
@@ -22,6 +24,12 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   int get _currentPage => (_batch.length / _itemsPerPage)
       .ceil().clamp(1, double.infinity).toInt();
   bool _initialized = false;
+
+  final _uploadResultController = StreamController<String>.broadcast();
+  Stream<String> get uploadResultStream => _uploadResultController.stream;
+
+  final _progressController = StreamController<UploadProgress>.broadcast();
+  Stream<UploadProgress> get uploadProgress => _progressController.stream;
 
   List<LocalPointViewModel> get visibleBatch {
     final end = (_itemsPerPage * _currentPage).clamp(0, _batch.length);
@@ -93,21 +101,17 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
   Future<void> uploadBatch() async {
 
-    List<DawarichPoint> pointsToUpload = _batch.map((localPoint) {
-      return localPoint
-          .toDomain()
-          .toApi();
-    }).toList();
+    List<LocalPoint> localPoints = _batch
+        .map((point) => point.toDomain())
+        .toList();
 
-    DawarichPointBatch apiBatch = DawarichPointBatch(points: pointsToUpload);
+    Result<(), String> uploadResult = await _localPointService
+        .prepareBatchUpload(localPoints, onChunkUploaded: (uploaded, total) {
+      _progressController.add(UploadProgress(uploaded, total));
+    });
 
-    bool uploaded = await _apiPointService.uploadBatch(apiBatch);
-
-    if (uploaded) {
-      List<LocalPoint> batchD = _batch.map((point) =>
-          point.toDomain()).toList();
-      await _localPointService.markBatchAsUploaded(batchD);
-
+    if (uploadResult case Err(value: final String error)) {
+      _uploadResultController.add(error);
     }
   }
 

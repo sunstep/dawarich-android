@@ -154,6 +154,7 @@ final class SQLiteClient extends _$SQLiteClient {
                SET coordinates = longitude || ',' || latitude
           ''');
         }
+
       }
 
       // This gets called after onUpgrade or onCreate

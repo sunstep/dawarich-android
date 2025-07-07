@@ -139,20 +139,23 @@ class _PointsBody extends StatelessWidget {
           ),
 
           // ————— footer —————
-          const SizedBox(height: 16),
-          _FooterBar(
-            hasSelection: vm.hasSelectedItems(),
-            onDelete: () => _confirmDeletion(context),
-            onRefresh: vm.searchPressed,
-            onFirst: vm.navigateFirst,
-            onBack: vm.navigateBack,
-            onNext: vm.navigateNext,
-            onLast: vm.navigateLast,
-            currentPage: vm.currentPage,
-            totalPages: vm.totalPages,
-            sortByNew: vm.sortByNew,
-            toggleSort: vm.toggleSort,
-          ),
+
+          if (vm.points.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _FooterBar(
+              hasSelection: vm.hasSelectedItems(),
+              onDelete: () => _confirmDeletion(context),
+              onRefresh: vm.searchPressed,
+              onFirst: vm.navigateFirst,
+              onBack: vm.navigateBack,
+              onNext: vm.navigateNext,
+              onLast: vm.navigateLast,
+              currentPage: vm.currentPage,
+              totalPages: vm.totalPages,
+              sortByNew: vm.sortByNew,
+              toggleSort: vm.toggleSort,
+            ),
+          ]
         ],
       ),
     );
@@ -397,6 +400,11 @@ class _PointsList extends StatelessWidget {
   @override
   Widget build(BuildContext c) {
     final vm = c.watch<PointsPageViewModel>();
+
+    if (vm.pagePoints.isEmpty) {
+      return const _EmptyPointsState();
+    }
+
     final fmt = DateFormat('dd MMM yyyy, HH:mm:ss');
     return ListView.separated(
       itemCount: vm.pagePoints.length,
@@ -406,8 +414,7 @@ class _PointsList extends StatelessWidget {
         final selected = vm.selectedItems.contains(p.id.toString());
         return Card(
           elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: CheckboxListTile(
             value: selected,
             onChanged: (v) => vm.toggleSelection(idx, v),
@@ -419,6 +426,38 @@ class _PointsList extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _EmptyPointsState extends StatelessWidget {
+  const _EmptyPointsState();
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.read<PointsPageViewModel>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.map_outlined, size: 64, color: cs.onBackground.withOpacity(0.5)),
+          const SizedBox(height: 16),
+          Text(
+            'No points found',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try picking a different date.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: cs.onBackground.withOpacity(0.6)),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }

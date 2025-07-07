@@ -24,13 +24,18 @@ final class MigrationViewModel extends ChangeNotifier {
       await getIt<SQLiteClient>().customSelect('SELECT 1').get();
 
       // After migration, check login state
-      final sessionService = getIt<SessionBox<User>>();
-      final int? userId = sessionService.getUserId();
+      final SessionBox<User> sessionService = getIt<SessionBox<User>>();
+      final User? refreshedSessionUser = await sessionService.refreshSession();
 
-      if (context.mounted && userId != null && userId > 0) {
+
+      if (context.mounted && refreshedSessionUser != null) {
+        sessionService.setUserId(refreshedSessionUser.id);
         Navigator.pushReplacementNamed(context, AppRouter.map);
-      } else if (context.mounted) {
-        Navigator.pushReplacementNamed(context, AppRouter.connect);
+      } else {
+        await sessionService.logout();
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, AppRouter.connect);
+        }
       }
     } catch (e) {
       _setError(e.toString());

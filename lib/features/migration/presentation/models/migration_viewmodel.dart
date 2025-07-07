@@ -1,8 +1,9 @@
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:session_box/session_box.dart';
 
 final class MigrationViewModel extends ChangeNotifier {
   bool _isMigrating = false;
@@ -20,16 +21,21 @@ final class MigrationViewModel extends ChangeNotifier {
     try {
       _setError(null);
 
+      // This only runs when the migration is finished. So this blocks us until the migration is finished.
       await getIt<SQLiteClient>().customSelect('SELECT 1').get();
 
       // After migration, check login state
-      final sessionService = getIt<UserSessionManager<int>>();
-      final int? userId = await sessionService.getUser();
+      final SessionBox<User> sessionService = getIt<SessionBox<User>>();
+      final User? refreshedSessionUser = await sessionService.refreshSession();
 
-      if (context.mounted && userId != null && userId > 0) {
+      if (context.mounted && refreshedSessionUser != null) {
+        sessionService.setUserId(refreshedSessionUser.id);
         Navigator.pushReplacementNamed(context, AppRouter.map);
-      } else if (context.mounted) {
-        Navigator.pushReplacementNamed(context, AppRouter.connect);
+      } else {
+        await sessionService.logout();
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, AppRouter.connect);
+        }
       }
     } catch (e) {
       _setError(e.toString());

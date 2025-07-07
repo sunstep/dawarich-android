@@ -1,5 +1,5 @@
 
-class UserDto {
+final class UserDto {
   final int id;
   final int? remoteId;
   final String? dawarichEndpoint;

@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:dawarich/features/auth/application/services/auth_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:session_box/session_box.dart';
 
 final class StartupService {
   static late final String initialRoute;
@@ -47,14 +50,17 @@ final class StartupService {
       return;
     }
 
-    final UserSessionManager<int> sessionService = getIt<UserSessionManager<int>>();
+    // Get the session box and verify if the logged in user is still in the database
+    final SessionBox<User> sessionService = getIt<SessionBox<User>>();
+    final User? refreshedSessionUser = await sessionService.refreshSession();
 
-    final bool isLoggedIn = await sessionService.isLoggedIn();
+    if (refreshedSessionUser != null) {
 
+      sessionService.setUserId(refreshedSessionUser.id);
 
-    if (isLoggedIn) {
       initialRoute = AppRouter.map;
     } else {
+      sessionService.logout();
       initialRoute = AppRouter.connect;
     }
   }

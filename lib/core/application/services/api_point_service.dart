@@ -1,4 +1,5 @@
 
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
 import 'package:dawarich/features/timeline/data_contracts/data_transfer_objects/slim_api_point_dto.dart';
@@ -10,12 +11,12 @@ import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:session_box/session_box.dart';
 
 final class ApiPointService {
 
   final IApiPointRepository _pointInterfaces;
-  final UserSessionManager<int> _userSession;
+  final SessionBox<User> _userSession;
   ApiPointService(this._pointInterfaces, this._userSession);
 
 
@@ -104,7 +105,7 @@ final class ApiPointService {
   }
 
   Future<int> _requireUserId() async {
-    final int? userId = await _userSession.getUser();
+    final int? userId = _userSession.getUserId();
     if (userId == null) {
       await _userSession.logout();
       throw Exception('[ApiPointService] No user session found.');

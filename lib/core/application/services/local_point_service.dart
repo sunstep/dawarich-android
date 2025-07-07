@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
@@ -25,11 +26,11 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:option_result/option_result.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:session_box/session_box.dart';
 
 final class LocalPointService {
   final IApiPointRepository _api;
-  final UserSessionManager<int> _userSession;
+  final SessionBox<User> _userSession;
   final IPointLocalRepository _localPointRepository;
   final IHardwareRepository _hardwareInterfaces;
   final TrackerPreferencesService _trackerPreferencesService;
@@ -443,7 +444,7 @@ final class LocalPointService {
   }
 
   Future<bool> clearBatch() async {
-    final int? userId = await _userSession.getUser();
+    final int? userId = _userSession.getUserId();
 
     if (userId == null) {
       return false;
@@ -494,7 +495,7 @@ final class LocalPointService {
   }
 
   Future<int> _requireUserId() async {
-    final int? userId = await _userSession.getUser();
+    final int? userId = _userSession.getUserId();
     if (userId == null) {
       await _userSession.logout();
       throw Exception('[ApiPointService] No user session found.');

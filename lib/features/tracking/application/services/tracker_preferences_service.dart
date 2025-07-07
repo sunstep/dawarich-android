@@ -1,14 +1,15 @@
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:session_box/session_box.dart';
 
 final class TrackerPreferencesService {
 
   final ITrackerPreferencesRepository _trackerPreferencesRepository;
   final IHardwareRepository _hardwareRepository;
-  final UserSessionManager<int> _user;
+  final SessionBox<User> _user;
   TrackerPreferencesService(
       this._trackerPreferencesRepository, this._hardwareRepository, this._user);
 
@@ -128,7 +129,7 @@ final class TrackerPreferencesService {
   }
 
   Future<int> _requireUserId() async {
-    final int? userId = await _user.getUser();
+    final int? userId = await _user.getUserId();
     if (userId == null) {
       await _user.logout();
       throw Exception('[TrackerPreferencesService] No user session found.');

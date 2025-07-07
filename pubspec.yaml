@@ -46,6 +46,7 @@ dependencies:
   flutter_map_animations: ^0.9.0
   flutter_map_location_marker: ^10.1.0
   flutter_secure_storage: ^9.2.4
+  freezed: ^3.1.0
   geolocator: ^14.0.1
   get_it: ^8.0.3
   http: ^1.4.0
@@ -62,8 +63,8 @@ dependencies:
   provider: ^6.1.5
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
-  user_session_manager:
-    path: ../user_session_manager
+  session_box:
+    path: ../session_box
   uuid: ^4.5.1
 
 

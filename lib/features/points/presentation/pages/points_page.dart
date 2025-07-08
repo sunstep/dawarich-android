@@ -81,7 +81,52 @@ class _PointsBody extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmDeletion(BuildContext c) async {/* … */}
+  Future<void> _confirmDeletion(BuildContext c, PointsPageViewModel vm) async {
+
+    final confirmed = await showDialog<bool>(
+      context: c,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Deletion"),
+        content: const Text(
+          "Are you sure you want to delete the selected point(s)? This cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await vm.deleteSelection();
+        await vm.searchPressed();
+
+        if (c.mounted) {
+          ScaffoldMessenger.of(c).showSnackBar(
+            const SnackBar(content: Text("Points deleted.")),
+          );
+        }
+      } catch (e) {
+        if (c.mounted) {
+          ScaffoldMessenger.of(c).showSnackBar(
+            SnackBar(content: Text("Failed to delete points: $e")),
+          );
+        }
+      }
+    }
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,9 +179,28 @@ class _PointsBody extends StatelessWidget {
           ],
 
           // ————— results list or skeleton —————
-          Expanded(
-            child: vm.isLoading ? const SizedBox() : _PointsList(),
-          ),
+          if (vm.isLoading)
+            const SizedBox()
+          else if (vm.pagePoints.isEmpty)
+            const _EmptyPointsState()
+          else
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CheckboxListTile(
+                    title: const Text('Select all'),
+                    value: vm.selectAll,
+                    onChanged: vm.setAllSelected,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(child: _PointsList()),
+                ],
+              ),
+            ),
 
           // ————— footer —————
 
@@ -144,7 +208,8 @@ class _PointsBody extends StatelessWidget {
             const SizedBox(height: 16),
             _FooterBar(
               hasSelection: vm.hasSelectedItems(),
-              onDelete: () => _confirmDeletion(context),
+              onSelectAll: vm.toggleSelectAll,
+              onDelete: () => _confirmDeletion(context, vm),
               onRefresh: vm.searchPressed,
               onFirst: vm.navigateFirst,
               onBack: vm.navigateBack,
@@ -435,7 +500,6 @@ class _EmptyPointsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.read<PointsPageViewModel>();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -465,7 +529,9 @@ class _EmptyPointsState extends StatelessWidget {
 /// Footer: either deletion buttons (when items selected) or pagination + sort toggle
 class _FooterBar extends StatelessWidget {
   final bool hasSelection;
-  final VoidCallback onDelete,
+  final VoidCallback
+      onSelectAll,
+      onDelete,
       onRefresh,
       onFirst,
       onBack,
@@ -477,6 +543,7 @@ class _FooterBar extends StatelessWidget {
 
   const _FooterBar({
     required this.hasSelection,
+    required this.onSelectAll,
     required this.onDelete,
     required this.onRefresh,
     required this.onFirst,
@@ -501,47 +568,31 @@ class _FooterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         child: hasSelection
             ? Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  ElevatedButton(
-                    onPressed: onDelete,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Delete', style: textStyle),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: onRefresh,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Refresh', style: textStyle),
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  IconButton(
-                      onPressed: onFirst, icon: const Icon(Icons.first_page)),
-                  IconButton(
-                      onPressed: onBack,
-                      icon: const Icon(Icons.navigate_before)),
-                  Text('$currentPage/$totalPages', style: textStyle),
-                  IconButton(
-                      onPressed: onNext, icon: const Icon(Icons.navigate_next)),
-                  IconButton(
-                      onPressed: onLast, icon: const Icon(Icons.last_page)),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: toggleSort,
-                    child:
-                        Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
-                  ),
-                ],
+          children: [
+            ElevatedButton(
+              onPressed: onDelete,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
               ),
+              child: Text('Delete', style: textStyle),
+            ),
+          ],
+        )
+            : Row(
+          children: [
+            const Spacer(),
+            IconButton(onPressed: onFirst, icon: const Icon(Icons.first_page)),
+            IconButton(onPressed: onBack, icon: const Icon(Icons.navigate_before)),
+            Text('$currentPage/$totalPages', style: textStyle),
+            IconButton(onPressed: onNext, icon: const Icon(Icons.navigate_next)),
+            IconButton(onPressed: onLast, icon: const Icon(Icons.last_page)),
+            TextButton(
+              onPressed: toggleSort,
+              child: Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
+            ),
+          ],
+        ),
       ),
     );
   }

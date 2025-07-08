@@ -96,27 +96,6 @@ final class _TrackerPageState extends State<TrackerPage>
     }
   }
 
-  Future<bool> _showSystemSettingsConfirmation(BuildContext context, message) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Background Tracking Needs Your Help'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('dismiss'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
-    ).then((v) => v ?? false);
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
@@ -278,7 +257,9 @@ class LastPointCard extends StatelessWidget {
                                 : Icon(Icons.add_location_alt, color: accent),
                             label: Text('Track Point',
                                 style: TextStyle(color: white)),
-                            onPressed: vm.isTracking ? null : vm.trackPoint,
+                            onPressed: vm.isTracking ? null : () async {
+                              await handleManualPointRequest(context, vm);
+                            },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -311,6 +292,31 @@ class LastPointCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> handleManualPointRequest(BuildContext context, TrackerPageViewModel vm) async {
+
+    if (vm.isTrackingAutomatically) {
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Manual Tracking Disabled'),
+          content: const Text(
+            'Manual tracking is disabled while automatic tracking is active. '
+                'Please stop automatic tracking first if you want to manually add a point.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    await vm.trackPoint();
   }
 }
 

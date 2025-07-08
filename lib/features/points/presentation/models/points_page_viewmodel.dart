@@ -296,6 +296,19 @@ final class PointsPageViewModel with ChangeNotifier {
     }
   }
 
+  void setAllSelected(bool? value) {
+    if (value == true) {
+      for (final p in pagePoints) {
+        selectedItems.add(p.id.toString());
+      }
+    } else {
+      for (final p in pagePoints) {
+        selectedItems.remove(p.id.toString());
+      }
+    }
+    notifyListeners();
+  }
+
   void toggleSelection(int index, bool? value) {
     final String pointId = points[index].id.toString();
 

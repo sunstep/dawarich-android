@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:session_box/session_box.dart';
 
 @pragma('vm:entry-point')
 void backgroundTrackingEntry(ServiceInstance service) {
@@ -31,13 +33,48 @@ void backgroundTrackingEntry(ServiceInstance service) {
     service.stopSelf();
   });
 
-  unawaited(_startBackgroundTracking(service));
+  // This is implemented to invert the order of operations:
+  // Usually, the background tracking service starts before the main isolate.
+  // This causes the background tracking service to fail, causing it to clear the user session.
+  // Which then causes the main isolate to also fail with the user session because the background tracking cleared it.
+  // Here, we wait for the main isolate to signal that it is ready before starting the background tracking.
+  // Thre are only two places where this is used:
+  // 1. When the app is starting up (when the main isolate has done its initialization).
+  // 2. When the user toggles on automatic tracking. Or else the the tracking will never start.
+  bool hasProceeded = false;
+  service.on('proceed').listen((_) {
+    debugPrint("[Background] UI signaled readiness via invoke");
+    unawaited(_startBackgroundTracking(service));
+    hasProceeded = true;
+  });
+
+  Future.delayed(const Duration(seconds: 10), () {
+    if (!hasProceeded) {
+      debugPrint("[Background] No 'proceed' signal received after 10s - stopping.");
+      service.stopSelf();
+    }
+
+  });
 }
 
 Future<void> _startBackgroundTracking(ServiceInstance service) async {
   try {
+
     await DependencyInjection.injectBackgroundDependencies(service);
-    debugPrint("[Background] Dependencies injected");
+    await backgroundGetIt.allReady();
+    
+    SessionBox<User> sessionBox = backgroundGetIt<SessionBox<User>>();
+    final User? user = await sessionBox.refreshSession();
+
+    if (user == null) {
+      debugPrint('[Background] No user found in session, stopping background tracking...');
+      service.stopSelf();
+      return;
+    }
+
+    sessionBox.setUserId(user.id);
+
+    debugPrint("[Background] Dependencies injected, and user session refreshed");
 
     service.invoke('ready');
   } catch (e, s) {
@@ -81,6 +118,16 @@ final class BackgroundTrackingService {
 
   static bool _isStopping = false;
   static bool _hasInitializedListeners = false;
+
+  static final Completer<void> _readyCompleter = Completer<void>();
+
+  static Future<void> waitUntilReady() => _readyCompleter.future;
+
+  static void markAsReady() {
+    if (!_readyCompleter.isCompleted) {
+      _readyCompleter.complete();
+    }
+  }
 
   static Future<void> initializeListeners() async {
     if (_hasInitializedListeners) return;

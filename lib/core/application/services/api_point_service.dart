@@ -104,12 +104,4 @@ final class ApiPointService {
     return data;
   }
 
-  Future<int> _requireUserId() async {
-    final int? userId = _userSession.getUserId();
-    if (userId == null) {
-      await _userSession.logout();
-      throw Exception('[ApiPointService] No user session found.');
-    }
-    return userId;
-  }
 }

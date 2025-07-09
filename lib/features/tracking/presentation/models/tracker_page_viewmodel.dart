@@ -17,6 +17,7 @@ import 'package:dawarich/features/tracking/presentation/models/track_viewmodel.d
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/features/tracking/presentation/models/last_point_viewmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -400,6 +401,8 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
         return Err("Failed to start background service: $message");
       }
+
+      FlutterBackgroundService().invoke('proceed');
 
     } else {
       BackgroundTrackingService.stop();

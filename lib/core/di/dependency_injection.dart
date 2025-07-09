@@ -235,40 +235,6 @@ final class DependencyInjection {
     backgroundGetIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
     backgroundGetIt.registerLazySingleton<ConnectivityDataClient>(() => ConnectivityDataClient());
 
-    backgroundGetIt.registerLazySingleton<ITrackerPreferencesRepository>(
-            () => TrackerPreferencesRepository());
-    backgroundGetIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
-        backgroundGetIt<GpsDataClient>(),
-        backgroundGetIt<DeviceDataClient>(),
-        backgroundGetIt<BatteryDataClient>(),
-        backgroundGetIt<ConnectivityDataClient>()));
-
-    backgroundGetIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(
-        backgroundGetIt<DioClient>()));
-    backgroundGetIt.registerLazySingleton<ApiPointService>(() => ApiPointService(
-        backgroundGetIt<IApiPointRepository>(), backgroundGetIt<SessionBox<User>>()));
-
-    // Register a simple tracker preferences service
-    AuthService authService;
-
-    getIt.registerLazySingleton(() {
-      authService = AuthService(getIt<IUserRepository>());
-      return authService;
-    });
-
-    getIt.registerSingletonAsync<SessionBox<User>>(() async {
-      return await SessionBox.create<User>(
-        encrypt: false,
-        toJson: (user) => user.toJson(),
-        fromJson: (json) => User.fromJson(json),
-        isValidUser: (user) => getIt<AuthService>().isValidUser(user),
-      );
-    });
-    backgroundGetIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(
-        backgroundGetIt<ITrackerPreferencesRepository>(),
-        backgroundGetIt<IHardwareRepository>(),
-        backgroundGetIt<SessionBox<User>>()));
-
     final file = File('${(await getApplicationDocumentsDirectory()).path}/dawarich_db.sqlite');
     final isolate = await DriftIsolate.spawn(() => NativeDatabase(
         file,
@@ -276,6 +242,47 @@ final class DependencyInjection {
     ));
     final connection = await isolate.connect();
     backgroundGetIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient(connection.executor));
+
+    backgroundGetIt.registerLazySingleton<ITrackerPreferencesRepository>(
+            () => TrackerPreferencesRepository());
+    backgroundGetIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
+        backgroundGetIt<GpsDataClient>(),
+        backgroundGetIt<DeviceDataClient>(),
+        backgroundGetIt<BatteryDataClient>(),
+        backgroundGetIt<ConnectivityDataClient>()));
+    backgroundGetIt.registerLazySingleton<IUserRepository>(
+            () => DriftUserRepository(backgroundGetIt<SQLiteClient>()));
+
+    // Register a simple tracker preferences service
+    AuthService authService;
+
+    backgroundGetIt.registerLazySingleton(() {
+      authService = AuthService(backgroundGetIt<IUserRepository>());
+      return authService;
+    });
+
+    backgroundGetIt.registerSingletonAsync<SessionBox<User>>(() async {
+      SessionBox<User> sessionBox = await SessionBox.create<User>(
+        encrypt: false,
+        toJson: (user) => user.toJson(),
+        fromJson: (json) => User.fromJson(json),
+        isValidUser: (user) => backgroundGetIt<AuthService>().isValidUser(user),
+      );
+
+      return sessionBox;
+    });
+
+    await backgroundGetIt.isReady<SessionBox<User>>();
+
+    backgroundGetIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(
+        backgroundGetIt<DioClient>()));
+    backgroundGetIt.registerLazySingleton<ApiPointService>(() => ApiPointService(
+        backgroundGetIt<IApiPointRepository>(), backgroundGetIt<SessionBox<User>>()));
+
+    backgroundGetIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(
+        backgroundGetIt<ITrackerPreferencesRepository>(),
+        backgroundGetIt<IHardwareRepository>(),
+        backgroundGetIt<SessionBox<User>>()));
 
     backgroundGetIt.registerLazySingleton<IPointLocalRepository>(() =>
         DriftPointLocalRepository(backgroundGetIt<SQLiteClient>()));

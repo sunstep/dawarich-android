@@ -236,10 +236,7 @@ final class DependencyInjection {
     backgroundGetIt.registerLazySingleton<ConnectivityDataClient>(() => ConnectivityDataClient());
 
     final file = File('${(await getApplicationDocumentsDirectory()).path}/dawarich_db.sqlite');
-    final isolate = await DriftIsolate.spawn(() => NativeDatabase(
-        file,
-        setup: (db) => db.execute('PRAGMA journal_mode = WAL;')
-    ));
+    final isolate = await DriftIsolate.spawn(() => NativeDatabase(file));
     final connection = await isolate.connect();
     backgroundGetIt.registerLazySingleton<SQLiteClient>(() => SQLiteClient(connection.executor));
 

@@ -108,7 +108,10 @@ final class PointAutomationService with ChangeNotifier {
   }
 
   Future<void> _startGpsLoop() async {
-    if (_gpsLoopActive) return;
+
+    if (_gpsLoopActive) {
+      return;
+    }
     _gpsLoopActive = true;
 
     final trackingFrequency =
@@ -122,7 +125,7 @@ final class PointAutomationService with ChangeNotifier {
       try {
         debugPrint("[PointAutomation] Creating new point from GPS (loop)");
         final result =
-        await _localPointService.createPointFromGps(persist: false);
+        await _localPointService.createPointFromGps(persist: true);
 
         if (result case Ok(value: final point)) {
           onNewPoint(point);
@@ -220,16 +223,17 @@ final class PointAutomationService with ChangeNotifier {
         );
       }
 
-      _serviceInstance.invoke('newPoint', point.toJson());
-    } else {
-      // Main isolate handles storage directly
-      final storeResult = await _localPointService.storePoint(point);
-      if (storeResult case Ok()) {
-        _newPointController.add(point);
-      } else if (storeResult case Err(value: String err)) {
-        debugPrint("[PointAutomation] Failed to store point in UI: $err");
-      }
+      // _serviceInstance.invoke('newPoint', point.toJson());
     }
+    // else {
+    //   // Main isolate handles storage directly
+    //   final storeResult = await _localPointService.storePoint(point);
+    //   if (storeResult case Ok()) {
+    //     _newPointController.add(point);
+    //   } else if (storeResult case Err(value: String err)) {
+    //     debugPrint("[PointAutomation] Failed to store point in UI: $err");
+    //   }
+    // }
   }
 
   Future<void> stopGpsTimer() async {

@@ -146,6 +146,8 @@ final class SQLiteClient extends _$SQLiteClient {
 
     },
     beforeOpen: (details) async {
+      // This gets called after onUpgrade or onCreate
+      await customStatement('PRAGMA journal_mode = WAL;');
 
       if (kDebugMode) {
         // Add operations here in case you need development specific db operations
@@ -154,7 +156,6 @@ final class SQLiteClient extends _$SQLiteClient {
 
       }
 
-      // This gets called after onUpgrade or onCreate
       // The migration controller should emit false, or else the UI will be stuck.
       if (details.wasCreated || !details.hadUpgrade) {
         _migrationCtl.add(false);

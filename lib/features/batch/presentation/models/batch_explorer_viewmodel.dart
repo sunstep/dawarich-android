@@ -75,7 +75,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
 
-    if (_initialized) {
+    if (_batchSubscription != null) {
       return;
     }
 

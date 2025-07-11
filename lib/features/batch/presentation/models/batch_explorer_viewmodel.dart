@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
@@ -23,7 +22,6 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   int _itemsPerPage = 100;
   int get _currentPage => (_batch.length / _itemsPerPage)
       .ceil().clamp(1, double.infinity).toInt();
-  bool _initialized = false;
 
   final _uploadResultController = StreamController<String>.broadcast();
   Stream<String> get uploadResultStream => _uploadResultController.stream;
@@ -45,9 +43,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   bool get isLoadingPoints => _isLoadingPoints;
 
   final LocalPointService _localPointService;
-  final ApiPointService _apiPointService;
-
-  BatchExplorerViewModel(this._localPointService, this._apiPointService);
+  BatchExplorerViewModel(this._localPointService);
 
   void _setBatch(List<LocalPointViewModel> batch) {
     _batch = batch;

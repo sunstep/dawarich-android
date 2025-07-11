@@ -149,9 +149,7 @@ final class DependencyInjection {
     getIt.registerLazySingleton<MapService>(
         () => MapService(getIt<ApiPointService>()));
     getIt.registerLazySingleton<ApiPointService>(
-        () => ApiPointService(
-            getIt<IApiPointRepository>(),
-            getIt<SessionBox<User>>()));
+        () => ApiPointService(getIt<IApiPointRepository>()));
     getIt.registerLazySingleton<TrackService>(() => TrackService(
         getIt<ITrackRepository>(), getIt<SessionBox<User>>()));
     getIt.registerLazySingleton<TrackerPreferencesService>(() =>
@@ -201,7 +199,7 @@ final class DependencyInjection {
 
     getIt.registerLazySingleton<BatchExplorerViewModel>(() =>
       BatchExplorerViewModel(
-          getIt<LocalPointService>(), getIt<ApiPointService>())
+          getIt<LocalPointService>())
     );
 
     getIt.registerLazySingleton<DrawerViewModel>(() =>
@@ -274,7 +272,7 @@ final class DependencyInjection {
     backgroundGetIt.registerLazySingleton<IApiPointRepository>(() => ApiPointRepository(
         backgroundGetIt<DioClient>()));
     backgroundGetIt.registerLazySingleton<ApiPointService>(() => ApiPointService(
-        backgroundGetIt<IApiPointRepository>(), backgroundGetIt<SessionBox<User>>()));
+        backgroundGetIt<IApiPointRepository>()));
 
     backgroundGetIt.registerLazySingleton<TrackerPreferencesService>(() => TrackerPreferencesService(
         backgroundGetIt<ITrackerPreferencesRepository>(),

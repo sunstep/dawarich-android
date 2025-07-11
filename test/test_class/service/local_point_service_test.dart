@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
-import 'package:dawarich/objectbox.g.dart';
 import 'package:option_result/option_result.dart';
 import '../../mock/repository/local_point_repository_mock.dart';
 
@@ -80,7 +79,7 @@ void main() {
 
       expect(
         () => repo.storePoint(p),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Simulated store point error')
@@ -162,7 +161,7 @@ void main() {
       
       expect(
         () => repo.getFullBatch(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced getFullBatch failure')
@@ -196,7 +195,7 @@ void main() {
       
       expect(
         () => repo.getCurrentBatch(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced getCurrentBatch failure')
@@ -230,7 +229,7 @@ void main() {
       
       expect(
         () => repo.getBatchPointCount(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced getBatchPointCount failure')
@@ -267,7 +266,7 @@ void main() {
       
       expect(
         () => repo.markBatchAsUploaded(testUser, [1, 2]),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced markBatchAsUploaded failure')
@@ -300,7 +299,7 @@ void main() {
     test('deletePoint: not found', () async {
       expect(
         () => repo.deletePoint(testUser, 999),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Point not found')
@@ -315,7 +314,7 @@ void main() {
 
       expect(
         () => repo.deletePoint(testUser, 1),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced deletePoint failure')
@@ -351,7 +350,7 @@ void main() {
       
       expect(
         () => repo.clearBatch(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced clearBatch failure')

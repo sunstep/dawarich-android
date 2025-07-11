@@ -23,14 +23,18 @@ import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 final class TrackerPageViewModel extends ChangeNotifier {
+
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
+
+  int _batchPointCount = 0;
+  int get batchPointCount => _batchPointCount;
 
   bool _hideLastPoint = false;
   bool get hideLastPoint => _hideLastPoint;
 
-  int _pointInBatchCount = 0;
-  int get batchPointCount => _pointInBatchCount;
+  StreamSubscription<Option<LastPoint>>? _lastPointSub;
+  StreamSubscription<int>? _batchCountSub;
 
   TrackViewModel? _currentTrack;
   TrackViewModel? get currentTrack => _currentTrack;
@@ -168,15 +172,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
     await BackgroundTrackingService.initializeListeners();
 
-    _pointAutomationService.newPointStream.listen((LocalPoint point) async {
-      final LocalPointViewModel pointViewModel = point.toViewModel();
-      final LastPointViewModel lastPoint =
-      LastPointViewModel.fromPoint(pointViewModel);
-      setLastPoint(lastPoint);
-      await getPointInBatchCount();
-      notifyListeners();
-    });
-
     // Get last point;
     await getLastPoint();
     await getPointInBatchCount();
@@ -189,6 +184,25 @@ final class TrackerPageViewModel extends ChangeNotifier {
     await _getMinimumPointDistancePreference();
     await _getDeviceId();
     await _getTrackRecordingStatus();
+
+    Stream<Option<LastPoint>> lastPointStream = await _pointService
+        .watchLastPoint();
+
+    _lastPointSub = lastPointStream.listen((option) {
+
+      if (option case Some(value: LastPoint lastPoint)) {
+        LastPointViewModel lastPointViewModel = lastPoint.toViewModel();
+        setLastPoint(lastPointViewModel);
+      } else {
+        setLastPoint(null);
+      }
+    });
+
+    Stream<int> batchCountStream = await _pointService.watchBatchPointsCount();
+
+    _batchCountSub = batchCountStream.listen((count) {
+      setBatchPointCount(count);
+    });
 
     setIsRetrievingSettings(false);
   }
@@ -238,13 +252,13 @@ final class TrackerPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPointInBatchCount(int value) {
-    _pointInBatchCount = value;
+  void setBatchPointCount(int value) {
+    _batchPointCount = value;
     notifyListeners();
   }
 
   Future<void> getPointInBatchCount() async =>
-      setPointInBatchCount(await _pointService.getBatchPointsCount());
+      setBatchPointCount(await _pointService.getBatchPointsCount());
 
   void setIsRetrievingSettings(bool trueOrFalse) {
     _isRetrievingSettings = trueOrFalse;
@@ -530,7 +544,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _lastPointSub?.cancel();
+    _batchCountSub?.cancel();
     _consentPromptController.close();
+    deviceIdController.dispose();
     super.dispose();
   }
 }

@@ -16,13 +16,15 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   @override
   Future<int> storePoint(LocalPointDto point) async {
     try {
-      final int pointId = await _database.into(_database.pointsTable).insert(PointsTableCompanion(
+      final int pointId = await _database.into(_database.pointsTable).insert(
+          PointsTableCompanion(
             type: Value(point.type),
             geometryId: Value(await _storeGeometry(point.geometry)),
             propertiesId: Value(await _storeProperties(point.properties)),
             deduplicationKey: Value(point.deduplicationKey),
             userId: Value(point.userId),
-          ));
+          ),
+          mode: InsertMode.insertOrIgnore);
       return pointId;
     } catch (e) {
       rethrow;
@@ -193,6 +195,55 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
     }
   }
 
+  @override
+  Stream<Option<LastPointDto>> watchLastPoint(int userId) {
+
+    try {
+      final query = _database.select(_database.pointsTable).join([
+        innerJoin(
+          _database.pointGeometryTable,
+          _database.pointGeometryTable.id
+              .equalsExp(_database.pointsTable.geometryId),
+        ),
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id
+              .equalsExp(_database.pointsTable.propertiesId),
+        ),
+      ])
+        ..orderBy([
+          OrderingTerm(
+              expression: _database.pointsTable.id, mode: OrderingMode.desc)
+        ]) // Apply ordering last
+        ..limit(1)
+        ..where(_database.pointsTable.userId.equals(userId));
+
+      return query.watchSingleOrNull().map((row) {
+
+        if (row == null) {
+          return const None();
+        }
+
+        // final point = row.readTable(_database.pointsTable);
+        final geometry = row.readTable(_database.pointGeometryTable);
+        final properties = row.readTable(_database.pointPropertiesTable);
+
+        final dto = LastPointDto(
+          longitude: geometry.longitude,
+          latitude: geometry.latitude,
+          timestamp: properties.timestamp,
+        );
+
+        return Some(dto);
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error watching last point: $e");
+      }
+      return Stream.error(e);
+    }
+  }
+
 
   @override
   Future<int> getBatchPointCount(int userId) async {
@@ -207,6 +258,23 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
     } catch (e) {
       debugPrint("Error fetching not uploaded points count: $e");
       rethrow;
+    }
+  }
+
+  @override
+  Stream<int> watchBatchPointCount(int userId) {
+    try {
+      final query = _database.selectOnly(_database.pointsTable)
+        ..addColumns([_database.pointsTable.id.count()])
+        ..where(_database.pointsTable.isUploaded.equals(false) &
+        _database.pointsTable.userId.equals(userId));
+
+      return query.watchSingle().map((row) {
+        return row.read(_database.pointsTable.id.count()) ?? 0;
+      });
+    } catch (e) {
+      debugPrint("Error watching not uploaded points count: $e");
+      return Stream.error(e);
     }
   }
 

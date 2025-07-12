@@ -30,11 +30,11 @@ final class MigrationViewModel extends ChangeNotifier {
 
       if (context.mounted && refreshedSessionUser != null) {
         sessionService.setUserId(refreshedSessionUser.id);
-        Navigator.pushReplacementNamed(context, AppRouter.map);
+        Navigator.pushReplacementNamed(context, AppRouter.timeline);
       } else {
         await sessionService.logout();
         if (context.mounted) {
-          Navigator.pushReplacementNamed(context, AppRouter.connect);
+          Navigator.pushReplacementNamed(context, AppRouter.auth);
         }
       }
     } catch (e) {

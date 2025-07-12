@@ -85,7 +85,7 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.map,
                 label: 'Timeline',
                 onTap: () {
-                  Navigator.of(context).popAndPushNamed(AppRouter.map);
+                  Navigator.of(context).popAndPushNamed(AppRouter.timeline);
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -159,7 +159,7 @@ class CustomDrawer extends StatelessWidget {
             await vm.logout();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRouter.connect,
+                AppRouter.auth,
                 (route) => false,
               );
             });

@@ -57,10 +57,10 @@ final class StartupService {
 
       sessionService.setUserId(refreshedSessionUser.id);
       FlutterBackgroundService().invoke('proceed');
-      initialRoute = AppRouter.map;
+      initialRoute = AppRouter.timeline;
     } else {
       sessionService.logout();
-      initialRoute = AppRouter.connect;
+      initialRoute = AppRouter.auth;
     }
   }
 

@@ -23,8 +23,12 @@ void backgroundTrackingEntry(ServiceInstance service) {
     final requestId = event?['requestId'];
 
     try {
-      await backgroundGetIt<PointAutomationService>().stopTracking();
-      debugPrint("[Background] stopTracking() completed");
+      if (backgroundGetIt.isRegistered<PointAutomationService>()) {
+        await backgroundGetIt<PointAutomationService>().stopTracking();
+        debugPrint("[Background] stopTracking() completed");
+      } else {
+        debugPrint("[Background] PointAutomationService not registered — skipping stopTracking");
+      }
     } catch (e, s) {
       debugPrint("[Background] Error in stopTracking: $e\n$s");
     }

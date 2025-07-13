@@ -205,7 +205,15 @@ final class DependencyInjection {
     );
   }
 
+  static bool backgroundDependenciesInjected = false;
+
   static Future<void> injectBackgroundDependencies(ServiceInstance instance) async {
+
+    if (backgroundDependenciesInjected) {
+      return;
+    }
+
+    backgroundDependenciesInjected = true;
 
     final configManager = ApiConfigManager();
     await configManager.load();

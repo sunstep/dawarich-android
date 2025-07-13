@@ -5,7 +5,6 @@ import 'package:dawarich/features/auth/application/user_converter.dart';
 import 'package:dawarich/features/auth/data_contracts/data_transfer_objects/users/user_dto.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/user_repository_interfaces.dart';
 import 'package:option_result/option_result.dart';
-import 'package:session_box/session_box.dart';
 
 final class AuthService {
 

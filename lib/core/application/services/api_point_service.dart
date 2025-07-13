@@ -1,5 +1,4 @@
 
-import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
 import 'package:dawarich/features/timeline/data_contracts/data_transfer_objects/slim_api_point_dto.dart';
@@ -11,13 +10,11 @@ import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
-import 'package:session_box/session_box.dart';
 
 final class ApiPointService {
 
   final IApiPointRepository _pointInterfaces;
-  final SessionBox<User> _userSession;
-  ApiPointService(this._pointInterfaces, this._userSession);
+  ApiPointService(this._pointInterfaces);
 
 
   Future<Result<(), String>> uploadBatch(DawarichPointBatch batch) async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
@@ -23,14 +24,18 @@ import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 final class TrackerPageViewModel extends ChangeNotifier {
+
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
+
+  int _batchPointCount = 0;
+  int get batchPointCount => _batchPointCount;
 
   bool _hideLastPoint = false;
   bool get hideLastPoint => _hideLastPoint;
 
-  int _pointInBatchCount = 0;
-  int get batchPointCount => _pointInBatchCount;
+  StreamSubscription<Option<LastPoint>>? _lastPointSub;
+  StreamSubscription<int>? _batchCountSub;
 
   TrackViewModel? _currentTrack;
   TrackViewModel? get currentTrack => _currentTrack;
@@ -168,18 +173,31 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
     await BackgroundTrackingService.initializeListeners();
 
-    _pointAutomationService.newPointStream.listen((LocalPoint point) async {
-      final LocalPointViewModel pointViewModel = point.toViewModel();
-      final LastPointViewModel lastPoint =
-      LastPointViewModel.fromPoint(pointViewModel);
-      setLastPoint(lastPoint);
-      await getPointInBatchCount();
-      notifyListeners();
+    Stream<Option<LastPoint>> lastPointStream = await _pointService
+        .watchLastPoint();
+
+    _lastPointSub = lastPointStream.listen((option) {
+
+      if (kDebugMode) {
+        debugPrint("[DEBUG] Last point stream received: ${option.unwrap()}");
+      }
+
+      if (option case Some(value: LastPoint lastPoint)) {
+        LastPointViewModel lastPointViewModel = lastPoint.toViewModel();
+        setLastPoint(lastPointViewModel);
+      } else {
+        setLastPoint(null);
+      }
     });
 
-    // Get last point;
-    await getLastPoint();
-    await getPointInBatchCount();
+    Stream<int> batchCountStream = await _pointService.watchBatchPointsCount();
+
+    _batchCountSub = batchCountStream.listen((count) {
+      if (kDebugMode) {
+        debugPrint("[DEBUG] Batch count stream received: $count");
+      }
+      setBatchPointCount(count);
+    });
 
     // Retrieve settings
     await _getAutomaticTrackingPreference();
@@ -189,6 +207,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
     await _getMinimumPointDistancePreference();
     await _getDeviceId();
     await _getTrackRecordingStatus();
+
 
     setIsRetrievingSettings(false);
   }
@@ -238,13 +257,13 @@ final class TrackerPageViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPointInBatchCount(int value) {
-    _pointInBatchCount = value;
+  void setBatchPointCount(int value) {
+    _batchPointCount = value;
     notifyListeners();
   }
 
   Future<void> getPointInBatchCount() async =>
-      setPointInBatchCount(await _pointService.getBatchPointsCount());
+      setBatchPointCount(await _pointService.getBatchPointsCount());
 
   void setIsRetrievingSettings(bool trueOrFalse) {
     _isRetrievingSettings = trueOrFalse;
@@ -335,15 +354,24 @@ final class TrackerPageViewModel extends ChangeNotifier {
     return !hasLocation || !hasNotifications || !batteryExcluded;
   }
 
+  void setAutomaticTracking(bool enable) {
+    _isTrackingAutomatically = enable;
+    notifyListeners();
+  }
+
+  void setIsUpdatingTracking(bool trueOrFalse) {
+    _isUpdatingTracking = trueOrFalse;
+    notifyListeners();
+  }
+
   Future<Result<(), String>> toggleAutomaticTracking(bool enable) async {
 
     if (_isUpdatingTracking) {
       return Err("Tracking update already in progress.");
     }
 
-    _isUpdatingTracking = true;
-    _isTrackingAutomatically = enable;
-    notifyListeners();
+    setIsUpdatingTracking(true);
+    setAutomaticTracking(enable);
 
     await _trackerPreferencesService.setAutomaticTrackingPreference(enable);
 
@@ -355,29 +383,26 @@ final class TrackerPageViewModel extends ChangeNotifier {
         );
 
         if (!confirmed) {
-          _isTrackingAutomatically = false;
+          setAutomaticTracking(false);
           await _trackerPreferencesService.setAutomaticTrackingPreference(false);
-          _isUpdatingTracking = false;
-          notifyListeners();
+          setIsUpdatingTracking(false);
           return Err("Permission setup cancelled by user.");
         }
       }
 
       final permissionResult = await _requestTrackingPermissions();
       if (permissionResult case Err(value: final message)) {
-        _isTrackingAutomatically = false;
+        setAutomaticTracking(false);
         await _trackerPreferencesService.setAutomaticTrackingPreference(false);
-        _isUpdatingTracking = false;
-        notifyListeners();
+        setIsUpdatingTracking(false);
         return Err(message);
       }
 
       final notificationGranted = await _requestNotificationPermission();
       if (!notificationGranted) {
-        _isTrackingAutomatically = false;
+        setAutomaticTracking(false);
         await _trackerPreferencesService.setAutomaticTrackingPreference(false);
-        _isUpdatingTracking = false;
-        notifyListeners();
+        setIsUpdatingTracking(false);
         return Err("Notification permission is required.");
       }
 
@@ -394,10 +419,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
           );
         }
 
-        _isTrackingAutomatically = false;
+        setAutomaticTracking(false);
         await _trackerPreferencesService.setAutomaticTrackingPreference(false);
-        _isUpdatingTracking = false;
-        notifyListeners();
+        setIsUpdatingTracking(false);
 
         return Err("Failed to start background service: $message");
       }
@@ -408,8 +432,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
       BackgroundTrackingService.stop();
     }
 
-    _isUpdatingTracking = false;
-    notifyListeners();
+    setIsUpdatingTracking(false);
     return Ok(());
   }
 
@@ -530,7 +553,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _lastPointSub?.cancel();
+    _batchCountSub?.cancel();
     _consentPromptController.close();
+    deviceIdController.dispose();
     super.dispose();
   }
 }

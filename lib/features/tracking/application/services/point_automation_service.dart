@@ -7,9 +7,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointAutomationService with ChangeNotifier {
-  final StreamController<LocalPoint> _newPointController =
-      StreamController.broadcast();
-  Stream<LocalPoint> get newPointStream => _newPointController.stream;
+
   Timer? _cachedTimer;
   Timer? _gpsTimer;
 
@@ -67,12 +65,11 @@ final class PointAutomationService with ChangeNotifier {
 
     if (_isTracking) {
       final Result<LocalPoint, String> optionPoint =
-          await _localPointService.createPointFromCache();
+          await _localPointService.createPointFromCache(persist: true);
 
-      if (optionPoint case Ok(value: LocalPoint point)) {
+      if (optionPoint case Ok(value: final LocalPoint point)) {
         // We actually got a new point from the phone’s cache, so reset the GPS timer.
         // This basically says “we got a point anyway, so hold off on forcing another one too soon.”
-        _newPointController.add(point);
         if (_serviceInstance is AndroidServiceInstance) {
           final androidService = _serviceInstance;
           final isForeground = await androidService.isForegroundService();
@@ -125,9 +122,9 @@ final class PointAutomationService with ChangeNotifier {
       try {
         debugPrint("[PointAutomation] Creating new point from GPS (loop)");
         final result =
-        await _localPointService.createPointFromGps(persist: true);
+        await _localPointService.createPointFromGps(persist: false);
 
-        if (result case Ok(value: final point)) {
+        if (result case Ok(value: final LocalPoint point)) {
           onNewPoint(point);
         } else if (result case Err(value: final err)) {
           debugPrint("[PointAutomation] Point not created: $err");
@@ -223,17 +220,16 @@ final class PointAutomationService with ChangeNotifier {
         );
       }
 
-      // _serviceInstance.invoke('newPoint', point.toJson());
+      _serviceInstance.invoke('newPoint', point.toJson());
+    } else {
+      // Main isolate handles storage directly
+      final storeResult = await _localPointService.storePoint(point);
+      if (storeResult case Ok()) {
+        debugPrint("[PointAutomation] Successfully stored");
+      } else if (storeResult case Err(value: String err)) {
+        debugPrint("[PointAutomation] Failed to store point: $err");
+      }
     }
-    // else {
-    //   // Main isolate handles storage directly
-    //   final storeResult = await _localPointService.storePoint(point);
-    //   if (storeResult case Ok()) {
-    //     _newPointController.add(point);
-    //   } else if (storeResult case Err(value: String err)) {
-    //     debugPrint("[PointAutomation] Failed to store point in UI: $err");
-    //   }
-    // }
   }
 
   Future<void> stopGpsTimer() async {

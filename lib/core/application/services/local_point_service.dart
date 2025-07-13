@@ -393,6 +393,17 @@ final class LocalPointService {
     }
   }
 
+  Future<Stream<Option<LastPoint>>> watchLastPoint() async {
+    final int userId = await _requireUserId();
+
+    return _localPointRepository
+        .watchLastPoint(userId)
+        .map((option) => option.map(
+            (dto) => dto.toDomain())
+        );
+  }
+
+
   Future<List<LocalPoint>> _getFullBatch() async {
 
     final int userId = await _requireUserId();
@@ -413,6 +424,12 @@ final class LocalPointService {
 
 
     return result;
+  }
+
+  Future<Stream<int>> watchBatchPointsCount() async {
+    final int userId = await _requireUserId();
+
+    return _localPointRepository.watchBatchPointCount(userId);
   }
 
   Future<List<LocalPoint>> getCurrentBatch() async {

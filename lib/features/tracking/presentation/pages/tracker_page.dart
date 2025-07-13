@@ -18,8 +18,8 @@ final class TrackerPage extends StatefulWidget {
   State<TrackerPage> createState() => _TrackerPageState();
 }
 
-final class _TrackerPageState extends State<TrackerPage>
-    with WidgetsBindingObserver, RouteAware {
+final class _TrackerPageState extends State<TrackerPage> with
+    WidgetsBindingObserver, RouteAware {
   late final TrackerPageViewModel _viewModel;
   late final StreamSubscription<String> _consentPromptSub;
 
@@ -29,11 +29,17 @@ final class _TrackerPageState extends State<TrackerPage>
     WidgetsBinding.instance.addObserver(this);
 
     _viewModel = getIt<TrackerPageViewModel>();
-    _viewModel.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+
+      await _viewModel.initialize();
+    });
 
     // delay the actual showDialog until after build()
     _consentPromptSub = _viewModel.onConsentPrompt.listen((message) async {
-      if (!mounted) return;
+
+      if (!mounted) {
+        return;
+      }
 
       final result = await showDialog<bool>(
         context: context,
@@ -100,7 +106,6 @@ final class _TrackerPageState extends State<TrackerPage>
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Container(
-        // full-screen diagonal gradient from our theme extension
         decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
         child: const Scaffold(
           backgroundColor: Colors.transparent,

@@ -129,7 +129,7 @@ final class TrackerPreferencesService {
   }
 
   Future<int> _requireUserId() async {
-    final int? userId = await _user.getUserId();
+    final int? userId = _user.getUserId();
     if (userId == null) {
       await _user.logout();
       throw Exception('[TrackerPreferencesService] No user session found.');

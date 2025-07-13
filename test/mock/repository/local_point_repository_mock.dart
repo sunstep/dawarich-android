@@ -3,7 +3,6 @@ import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/lo
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
-import 'package:dawarich/objectbox.g.dart';
 import 'package:option_result/option_result.dart';
 
 final class MockLocalPointRepository implements IPointLocalRepository {
@@ -56,7 +55,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     lastStoredPoint = point;
 
     if (failStorePoint) {
-      throw ObjectBoxException('Simulated store point error');
+      throw Exception('Simulated store point error');
     }
 
     // simulate id & separate storage
@@ -113,7 +112,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     lastGetFullBatchUserId = userId;
 
     if (failGetFullBatch) {
-      throw ObjectBoxException('Forced getFullBatch failure');
+      throw Exception('Forced getFullBatch failure');
     }
 
     final pts = _points.values.where((p) => p.userId == userId).toList();
@@ -126,7 +125,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     lastGetCurrentBatchUserId = userId;
 
     if (failGetCurrentBatch) {
-      throw ObjectBoxException('Forced getCurrentBatch failure');
+      throw Exception('Forced getCurrentBatch failure');
     }
 
     final pts = _points.values
@@ -148,7 +147,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     lastGetBatchCountUserId = userId;
 
     if (failGetBatchCount) {
-      throw ObjectBoxException('Forced getBatchPointCount failure');
+      throw Exception('Forced getBatchPointCount failure');
     }
 
     final count = _points.values
@@ -158,12 +157,19 @@ final class MockLocalPointRepository implements IPointLocalRepository {
   }
 
   @override
+  Stream<int> watchBatchPointCount(int userId) {
+    return Stream.value(getBatchPointCount(userId)).asyncExpand((count) async* {
+      yield 0;
+    });
+  }
+
+  @override
   Future<int> markBatchAsUploaded(int userId, List<int> pointIds) async {
     markUploadedCount++;
     lastMarkUploadedUserId = userId;
 
     if (failMarkUploaded) {
-      throw ObjectBoxException('Forced failure');
+      throw Exception('Forced failure');
     }
 
     var affected = 0;
@@ -184,7 +190,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     lastDeletePointUserId = userId;
 
     if (failDeletePoint) {
-      throw ObjectBoxException('Forced deletePoint failure');
+      throw Exception('Forced deletePoint failure');
     }
 
     final int originalLength = _points.length;
@@ -203,7 +209,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
     lastClearBatchUserId = userId;
 
     if (failClearBatch) {
-      throw ObjectBoxException('Forced clearBatch failure');
+      throw Exception('Forced clearBatch failure');
     }
 
     final toRemove = _points.entries

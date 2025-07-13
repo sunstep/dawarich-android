@@ -38,7 +38,7 @@ final class ErrorInterceptor extends Interceptor {
       403 => 'Forbidden (403). You don’t have access.',
       404 => 'Resource not found (404).',
       500 => 'Server error (500). Please try again later.',
-      int code when code != null && code >= 500 => 'Server error ($code).',
+      int code when code >= 500 => 'Server error ($code).',
       _ => 'Unexpected server response.',
     };
   }

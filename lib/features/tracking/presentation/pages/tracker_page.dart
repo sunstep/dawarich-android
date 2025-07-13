@@ -29,7 +29,10 @@ final class _TrackerPageState extends State<TrackerPage> with
     WidgetsBinding.instance.addObserver(this);
 
     _viewModel = getIt<TrackerPageViewModel>();
-    _viewModel.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+
+      await _viewModel.initialize();
+    });
 
     // delay the actual showDialog until after build()
     _consentPromptSub = _viewModel.onConsentPrompt.listen((message) async {

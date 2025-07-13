@@ -4,6 +4,8 @@ import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:session_box/session_box.dart';
 
@@ -56,7 +58,16 @@ final class StartupService {
     if (refreshedSessionUser != null) {
 
       sessionService.setUserId(refreshedSessionUser.id);
-      FlutterBackgroundService().invoke('proceed');
+
+      final shouldTrack = await getIt<TrackerPreferencesService>().getAutomaticTrackingPreference();
+
+      if (shouldTrack) {
+        debugPrint('[StartupService] Auto-tracking is ON — sending proceed');
+        FlutterBackgroundService().invoke('proceed');
+      } else {
+        debugPrint('[StartupService] Auto-tracking is OFF — skipping background start');
+      }
+
       initialRoute = AppRouter.timeline;
     } else {
       sessionService.logout();

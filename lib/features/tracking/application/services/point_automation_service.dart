@@ -13,7 +13,8 @@ final class PointAutomationService with ChangeNotifier {
 
   bool _isTracking = false;
   bool _isHandlingNewPoint = false;
-  bool _gpsLoopActive = false;
+
+  int _gpsTimerFrequency = 0;
 
   final ServiceInstance? _serviceInstance;
   final TrackerPreferencesService _trackerPreferencesService;
@@ -30,8 +31,9 @@ final class PointAutomationService with ChangeNotifier {
     if (!_isTracking) {
       _isTracking = true;
       // Start all three core pieces: stream + periodic timers.
+      await startGpsTimer();
       // await startCachedTimer();
-      await _startGpsLoop();
+
     }
   }
 
@@ -40,7 +42,6 @@ final class PointAutomationService with ChangeNotifier {
 
     if (_isTracking) {
       _isTracking = false;
-      _gpsLoopActive = false;
       debugPrint("[PointAutomation] Tracking stopped");
     }
   }
@@ -104,68 +105,19 @@ final class PointAutomationService with ChangeNotifier {
     _cachedTimer = null;
   }
 
-  Future<void> _startGpsLoop() async {
-
-    if (_gpsLoopActive) {
-      return;
-    }
-    _gpsLoopActive = true;
-
-    final trackingFrequency =
-    await _trackerPreferencesService.getTrackingFrequencyPreference();
-
-    debugPrint("[PointAutomation] Starting controlled GPS loop...");
-
-    while (_isTracking && _gpsLoopActive) {
-      final start = DateTime.now();
-
-      try {
-        debugPrint("[PointAutomation] Creating new point from GPS (loop)");
-        final result =
-        await _localPointService.createPointFromGps(persist: false);
-
-        if (result case Ok(value: final LocalPoint point)) {
-          onNewPoint(point);
-        } else if (result case Err(value: final err)) {
-          debugPrint("[PointAutomation] Point not created: $err");
-        }
-      } catch (e, s) {
-        debugPrint("[PointAutomation] Exception: $e\n$s");
-      }
-
-      // Ensure delay is respected
-      final elapsed = DateTime.now().difference(start);
-      final waitTime = Duration(seconds: trackingFrequency) - elapsed;
-      if (waitTime > Duration.zero) {
-        await Future.delayed(waitTime);
-      } else {
-        debugPrint("[PointAutomation] Skipping delay — iteration took too long.");
-      }
-    }
-
-    debugPrint("[PointAutomation] GPS loop stopped");
-    _gpsLoopActive = false;
-  }
 
   /// A timer that forces a brand new location fetch from Geolocator every N seconds
   /// (based on user’s preference).
   Future<void> startGpsTimer() async {
-    if (_gpsTimer == null || !_gpsTimer!.isActive) {
+    final frequency = await _trackerPreferencesService
+        .getTrackingFrequencyPreference();
+    _gpsTimerFrequency = frequency;
 
-      final int trackingFrequency =
-          await _trackerPreferencesService.getTrackingFrequencyPreference();
+    _gpsTimer?.cancel();
+    _gpsTimer = Timer.periodic(Duration(seconds: frequency), _gpsTimerHandler);
 
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Starting GPS timer with $trackingFrequency seconds frequency.");
-      }
-
-      _gpsTimer = Timer.periodic(
-        Duration(seconds: trackingFrequency),
-        _gpsTimerHandler,
-      );
-    } else if (kDebugMode) {
-      debugPrint(
-          "[DEBUG: GPS Timer] A GPS timer is already active, not starting another one.");
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Started GPS timer with $frequency second interval.");
     }
   }
 
@@ -173,7 +125,7 @@ final class PointAutomationService with ChangeNotifier {
 
     if (_isTracking) {
       final int newFrequency = await _trackerPreferencesService.getTrackingFrequencyPreference();
-      if (_gpsTimer?.tick != newFrequency) {
+      if (_gpsTimerFrequency != newFrequency) {
         await stopGpsTimer();
         await startGpsTimer();
 

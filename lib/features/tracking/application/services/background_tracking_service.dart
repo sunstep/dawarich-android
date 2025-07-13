@@ -80,6 +80,15 @@ Future<void> _startBackgroundTracking(ServiceInstance service) async {
 
     debugPrint("[Background] Dependencies injected, and user session refreshed");
 
+    service.on('updateFrequency').listen((_) async {
+      try {
+        await backgroundGetIt<PointAutomationService>().updateTimers();
+        debugPrint("[Background] updateTimers() triggered from main isolate");
+      } catch (e, s) {
+        debugPrint("[Background] Failed to update timers: $e\n$s");
+      }
+    });
+
     service.invoke('ready');
   } catch (e, s) {
     debugPrint("[Background] Dependency injection failed: $e\n$s");

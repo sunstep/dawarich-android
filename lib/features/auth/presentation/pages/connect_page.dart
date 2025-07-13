@@ -112,7 +112,7 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
 
       if (ok) {
         // use the pre–captured navigator
-        navigator.pushReplacementNamed(AppRouter.map);
+        navigator.pushReplacementNamed(AppRouter.timeline);
       }
     }
   }

@@ -15,8 +15,8 @@ import 'package:provider/provider.dart';
 final class AppRouter {
 
   static const String migration =     '/migration';
-  static const String connect =       '/connect';
-  static const String map =           '/map';
+  static const String auth =          '/auth';
+  static const String timeline =      '/timeline';
   static const String stats =         '/stats';
   static const String points =        '/points';
   static const String tracker =       '/tracker';
@@ -38,11 +38,11 @@ final class AppRouter {
                     child: const MigrationPage(),
                   ));
         }
-      case connect:
+      case auth:
         {
           return MaterialPageRoute(builder: (_) => const ConnectPage());
         }
-      case map:
+      case timeline:
         {
           return MaterialPageRoute(builder: (_) => const TimelinePage());
         }

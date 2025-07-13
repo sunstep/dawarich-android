@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/application/services/local_point_service.dart';
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
@@ -470,9 +469,11 @@ final class TrackerPageViewModel extends ChangeNotifier {
     _trackingFrequency = seconds;
     await _trackerPreferencesService
         .setTrackingFrequencyPreference(_trackingFrequency);
-    await _pointAutomationService.updateTimers();
-    notifyListeners();
 
+    final service = FlutterBackgroundService();
+    service.invoke("updateFrequency");
+
+    notifyListeners();
   }
 
 
@@ -496,7 +497,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
     _minimumPointDistance = meters;
     await _trackerPreferencesService
         .setMinimumPointDistancePreference(_minimumPointDistance);
-    await _pointAutomationService.updateTimers();
+
     notifyListeners();
   }
 

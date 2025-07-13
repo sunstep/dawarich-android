@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dawarich/core/database/drift/entities/point/point_geometry_table.dart';
 import 'package:dawarich/core/database/drift/entities/point/point_properties_table.dart';
@@ -7,8 +8,10 @@ import 'package:dawarich/core/database/drift/entities/track/track_table.dart';
 import 'package:dawarich/core/database/drift/entities/user/user_settings_table.dart';
 import 'package:dawarich/core/database/drift/entities/user/user_table.dart';
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
+import 'package:drift/isolate.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 part 'sqlite_client.g.dart';
@@ -22,7 +25,33 @@ part 'sqlite_client.g.dart';
   TrackTable
 ])
 final class SQLiteClient extends _$SQLiteClient {
-  SQLiteClient([QueryExecutor? executor]) : super(executor ?? _openConnection());
+
+  static DriftIsolate? _sharedIsolate;
+  static const _dbFileName = 'dawarich_db.sqlite';
+
+  SQLiteClient(super.executor);
+
+  static Future<DriftIsolate> getSharedDriftIsolate() async {
+    return _sharedIsolate ??= await createDriftIsolate();
+
+  }
+
+  static Future<SQLiteClient> connectSharedIsolate() async {
+    if (_sharedIsolate == null) {
+      final dbFile = await getDatabaseFile();
+      _sharedIsolate = await DriftIsolate.spawn(
+            () => DatabaseConnection(NativeDatabase(dbFile, logStatements: kDebugMode)),
+      );
+    }
+
+    final connection = await _sharedIsolate!.connect();
+    return SQLiteClient(connection);
+  }
+
+  static Future<File> getDatabaseFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File(p.join(dir.path, _dbFileName));
+  }
 
   final _migrationCtl = StreamController<bool>.broadcast();
   /// Emits `true` if an actual onUpgrade ran, or `false` if we hit beforeOpen
@@ -163,14 +192,15 @@ final class SQLiteClient extends _$SQLiteClient {
     },
   );
 
-  static QueryExecutor _openConnection() {
-    return driftDatabase(
-      name: 'dawarich_db',
-      native: const DriftNativeOptions(
-        // By default, `driftDatabase` from `package:drift_flutter` stores the
-        // database files in `getApplicationDocumentsDirectory()`.
-        databaseDirectory: getApplicationDocumentsDirectory,
-      ),
+
+  static Future<DriftIsolate> createDriftIsolate() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final dbFile = File('${directory.path}/$_dbFileName');
+
+    return DriftIsolate.spawn(
+        () => DatabaseConnection(
+          NativeDatabase(dbFile, logStatements: kDebugMode),
+        ),
     );
   }
 }

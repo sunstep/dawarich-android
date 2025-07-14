@@ -2,8 +2,6 @@ import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/database/drift/extensions/mappers/point_mapper.dart';
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
@@ -16,49 +14,50 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   @override
   Future<int> storePoint(LocalPointDto point) async {
     try {
-      final int pointId = await _database.into(_database.pointsTable).insert(
+
+      return await _database.transaction(() async {
+        final int geometryId = await _database.into(_database.pointGeometryTable).insert(
+          PointGeometryTableCompanion(
+            type: Value(point.geometry.type),
+            longitude: Value(point.geometry.longitude),
+            latitude: Value(point.geometry.latitude),
+          ),
+        );
+
+        final int propertiesId = await _database.into(_database.pointPropertiesTable).insert(
+          PointPropertiesTableCompanion(
+            batteryState: Value(point.properties.batteryState),
+            batteryLevel: Value(point.properties.batteryLevel),
+            wifi: Value(point.properties.wifi),
+            timestamp: Value(point.properties.timestamp),
+            horizontalAccuracy: Value(point.properties.horizontalAccuracy),
+            verticalAccuracy: Value(point.properties.verticalAccuracy),
+            altitude: Value(point.properties.altitude),
+            speed: Value(point.properties.speed),
+            speedAccuracy: Value(point.properties.speedAccuracy),
+            course: Value(point.properties.course),
+            courseAccuracy: Value(point.properties.courseAccuracy),
+            trackId: const Value(null),
+            deviceId: Value(point.properties.deviceId),
+          ),
+        );
+
+        final int pointId = await _database.into(_database.pointsTable).insert(
           PointsTableCompanion(
             type: Value(point.type),
-            geometryId: Value(await _storeGeometry(point.geometry)),
-            propertiesId: Value(await _storeProperties(point.properties)),
+            geometryId: Value(geometryId),
+            propertiesId: Value(propertiesId),
             deduplicationKey: Value(point.deduplicationKey),
             userId: Value(point.userId),
           ),
-          mode: InsertMode.insertOrIgnore);
-      return pointId;
+          mode: InsertMode.insertOrIgnore,
+        );
+
+        return pointId;
+      });
     } catch (e) {
       rethrow;
     }
-  }
-
-  Future<int> _storeGeometry(LocalPointGeometryDto geometry) async {
-    return await _database.into(_database.pointGeometryTable).insert(
-          PointGeometryTableCompanion(
-            type: Value(geometry.type),
-            longitude: Value(geometry.longitude),
-            latitude: Value(geometry.latitude)
-          ),
-        );
-  }
-
-  Future<int> _storeProperties(LocalPointPropertiesDto properties) async {
-    return await _database.into(_database.pointPropertiesTable).insert(
-          PointPropertiesTableCompanion(
-            batteryState: Value(properties.batteryState),
-            batteryLevel: Value(properties.batteryLevel),
-            wifi: Value(properties.wifi),
-            timestamp: Value(properties.timestamp),
-            horizontalAccuracy: Value(properties.horizontalAccuracy),
-            verticalAccuracy: Value(properties.verticalAccuracy),
-            altitude: Value(properties.altitude),
-            speed: Value(properties.speed),
-            speedAccuracy: Value(properties.speedAccuracy),
-            course: Value(properties.course),
-            courseAccuracy: Value(properties.courseAccuracy),
-            trackId: const Value(null),
-            deviceId: Value(properties.deviceId),
-          ),
-        );
   }
 
   @override

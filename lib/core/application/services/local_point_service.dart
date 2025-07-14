@@ -76,7 +76,8 @@ final class LocalPointService {
         debugPrint('[Upload] Failed to upload chunk [$i..$end]: $error');
         failedChunks.addAll(chunk);
       } else {
-        await markBatchAsUploaded(chunk);
+        List<int> chunkIds = chunk.map((p) => p.id).toList();
+        await deletePoints(chunkIds);
         onChunkUploaded?.call(end, dedupedLocalPoints.length);
       }
 
@@ -444,12 +445,12 @@ final class LocalPointService {
         .map((dtos) => dtos.map((dto) => dto.toDomain()).toList());
   }
 
-  Future<bool> deletePoint(int pointId) async {
+  Future<bool> deletePoints(List<int> pointIds) async {
     final int userId = await _requireUserId();
 
-    final result = await _localPointRepository.deletePoint(userId, pointId);
+    final result = await _localPointRepository.deletePoints(userId, pointIds);
 
-    return result == 1;
+    return result > 0;
   }
 
   Future<bool> clearBatch() async {

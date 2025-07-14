@@ -128,7 +128,7 @@ class _BatchContent extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Uploading ${progress.uploaded} / ${progress.total} points...',
+                      'Uploaded ${progress.uploaded} / ${progress.total} points...',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -282,7 +282,7 @@ abstract class _Dialogs {
           TextButton(
             onPressed: () {
               Navigator.pop(c);
-              vm.deletePoint(pt);
+              vm.deletePoints([pt]);
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),

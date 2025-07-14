@@ -43,7 +43,7 @@ final class MockLocalPointRepository implements IPointLocalRepository {
   int? lastMarkUploadedUserId;
 
   int deletePointCount = 0;
-  int? lastDeletePointId;
+  List<int> lastDeletePointIds = [];
   int? lastDeletePointUserId;
 
   int clearBatchCount = 0;
@@ -183,10 +183,10 @@ final class MockLocalPointRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<int> deletePoint(int userId, int pointId) async {
+  Future<int> deletePoints(int userId, List<int> pointId) async {
 
     deletePointCount++;
-    lastDeletePointId = pointId;
+    lastDeletePointIds = pointId;
     lastDeletePointUserId = userId;
 
     if (failDeletePoint) {

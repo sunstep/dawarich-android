@@ -301,14 +301,36 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<int> deletePoint(int userId, int pointId) async {
+  Future<int> deletePoints(int userId, List<int> pointIds) async {
+
+    if (pointIds.isEmpty) {
+      return 0;
+    }
+
+
     try {
-      final int deletedCount = await (_database.delete(_database.pointsTable)
-            ..where((t) => t.id.equals(pointId) & t.userId.equals(userId)))
-          .go();
+      return await _database.transaction(() async {
+        final pointRows = await (_database.select(_database.pointsTable)
+          ..where((tbl) => tbl.userId.equals(userId) & tbl.id.isIn(pointIds)))
+            .get();
 
+        final geometryIds = pointRows.map((p) => p.geometryId).toSet();
+        final propertiesIds = pointRows.map((p) => p.propertiesId).toSet();
 
-      return deletedCount;
+        final deletedCount = await (_database.delete(_database.pointsTable)
+          ..where((tbl) => tbl.userId.equals(userId) & tbl.id.isIn(pointIds)))
+            .go();
+
+        await (_database.delete(_database.pointGeometryTable)
+          ..where((tbl) => tbl.id.isIn(geometryIds)))
+            .go();
+
+        await (_database.delete(_database.pointPropertiesTable)
+          ..where((tbl) => tbl.id.isIn(propertiesIds)))
+            .go();
+
+        return deletedCount;
+      });
     } catch (e) {
       rethrow;
     }

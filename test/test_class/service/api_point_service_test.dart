@@ -24,12 +24,12 @@ void main() {
         }),
       ]
       ..stubSlimPoints = [
-        SlimApiPointDTO({
+        SlimApiPointDTO.fromJson({
           'latitude': '1.1',
           'longitude': '2.2',
           'timestamp': 333,
         }),
-        SlimApiPointDTO({
+        SlimApiPointDTO.fromJson({
           'latitude': '3.3',
           'longitude': '4.4',
           'timestamp': 444,

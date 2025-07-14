@@ -1,3 +1,4 @@
+import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/location_service.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
@@ -10,9 +11,10 @@ final class TimelineViewModel extends ChangeNotifier {
 
   final MapService _mapService;
   final LocationService _locationService;
+  final LocalPointService _localPointService;
   AnimatedMapController? animatedMapController;
 
-  TimelineViewModel(this._mapService, this._locationService);
+  TimelineViewModel(this._mapService, this._locationService, this._localPointService);
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -56,41 +58,14 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-      return;
-    }
 
-    var perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-    }
+    loadToday();
+    _resolveAndSetInitialLocation();
+  }
 
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-      return;
-    }
-
-    Position? position;
-
-    try {
-      position = await _locationService.getCurrentLocation();
-    } catch (_) {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-    }
-
-    position ??= await Geolocator.getLastKnownPosition();
-
-    if (position != null) {
-      setCurrentLocation(
-        LatLng(position.latitude, position.longitude),
-      );
-    } else {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-    }
-
-    await loadToday();
+  Future<void> _resolveAndSetInitialLocation() async {
+    final center = await _mapService.getDefaultMapCenter();
+    setCurrentLocation(center);
   }
 
   Future<void> getAndSetPoints() async {

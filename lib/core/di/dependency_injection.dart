@@ -144,7 +144,7 @@ final class DependencyInjection {
     ));
     getIt.registerLazySingleton<LocationService>(() => LocationService());
     getIt.registerLazySingleton<MapService>(
-        () => MapService(getIt<ApiPointService>()));
+        () => MapService(getIt<IApiPointRepository>()));
     getIt.registerLazySingleton<ApiPointService>(
         () => ApiPointService(getIt<IApiPointRepository>()));
     getIt.registerLazySingleton<TrackService>(() => TrackService(
@@ -174,7 +174,7 @@ final class DependencyInjection {
         MigrationViewModel());
 
     getIt.registerLazySingleton<TimelineViewModel>(() =>
-        TimelineViewModel(getIt<MapService>(), getIt<LocationService>()),
+        TimelineViewModel(getIt<MapService>(), getIt<LocationService>(), getIt<LocalPointService>()),
     );
 
     getIt.registerLazySingleton<StatsPageViewModel>(() =>

@@ -49,7 +49,7 @@ final class LocalPointService {
   }) async {
 
     final List<LocalPoint> failedChunks = [];
-    const int chunkSize = 2;
+    const int chunkSize = 250;
 
     final dedupedLocalPoints = await _deduplicateLocalPoints(points);
 

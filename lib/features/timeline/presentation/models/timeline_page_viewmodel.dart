@@ -1,4 +1,5 @@
 import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
@@ -67,9 +68,15 @@ final class TimelineViewModel extends ChangeNotifier {
     final batchStream = await _localPointService.watchCurrentBatch();
 
     batchStream.listen((points) {
-      final List<LatLng> localPointList = points.map((point) {
-        return LatLng(point.geometry.latitude, point.geometry.longitude);
+
+      final List<SlimApiPoint> slimApiPoints = points.map((point) {
+        return SlimApiPoint(
+          latitude: point.geometry.latitude.toString(),
+          longitude: point.geometry.longitude.toString(),
+          timestamp: point.properties.timestamp.millisecondsSinceEpoch,
+        );
       }).toList();
+      final List<LatLng> localPointList = _mapService.prepPoints(slimApiPoints);
       addPoints(localPointList);
     });
   }

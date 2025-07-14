@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -17,7 +17,7 @@ final class PointAutomationService with ChangeNotifier {
   int _gpsTimerFrequency = 0;
 
   final ServiceInstance? _serviceInstance;
-  final TrackerPreferencesService _trackerPreferencesService;
+  final TrackerSettingsService _trackerPreferencesService;
   final LocalPointService _localPointService;
 
   PointAutomationService(this._trackerPreferencesService,
@@ -110,7 +110,7 @@ final class PointAutomationService with ChangeNotifier {
   /// (based on user’s preference).
   Future<void> startGpsTimer() async {
     final frequency = await _trackerPreferencesService
-        .getTrackingFrequencyPreference();
+        .getTrackingFrequencySetting();
     _gpsTimerFrequency = frequency;
 
     _gpsTimer?.cancel();
@@ -123,8 +123,17 @@ final class PointAutomationService with ChangeNotifier {
 
   Future<void> updateTimers() async {
 
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Restarting GPS timer for frequency update.");
+    }
+
     if (_isTracking) {
-      final int newFrequency = await _trackerPreferencesService.getTrackingFrequencyPreference();
+      // Beware: since this is running in a background isolate, it does not share the same memory space as the main app.
+      // That means changing the frequency in the ui requires the settings to be synced before restarting the timer.
+      final int newFrequency = await _trackerPreferencesService.getTrackingFrequencySetting();
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] New GPS frequency: $newFrequency seconds.");
+      }
       if (_gpsTimerFrequency != newFrequency) {
         await stopGpsTimer();
         await startGpsTimer();

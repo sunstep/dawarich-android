@@ -46,11 +46,12 @@ dependencies:
   flutter_map_animations: ^0.9.0
   flutter_map_location_marker: ^10.1.0
   flutter_secure_storage: ^9.2.4
-  freezed: ^3.1.0
+  freezed_annotation: ^3.1.0
   geolocator: ^14.0.1
   get_it: ^8.0.3
   http: ^1.4.0
   intl: ^0.20.2
+  json_annotation: ^4.9.0
   latlong2: ^0.9.1
   network_info_plus: ^6.1.4
   objectbox: ^4.3.0
@@ -78,6 +79,8 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
+  freezed: ^3.1.0
+  json_serializable: ^6.9.5
   mockito: ^5.4.6
   objectbox_generator: ^4.3.0
 

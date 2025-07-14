@@ -4,7 +4,9 @@ import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
+import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/settings/tracker_settings_dto.dart';
+import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_settings_repository.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -80,6 +82,21 @@ Future<void> _startBackgroundTracking(ServiceInstance service) async {
 
     debugPrint("[Background] Dependencies injected, and user session refreshed");
 
+    service.on('syncSettings').listen((event) {
+      if (event != null && event['userId'] != null) {
+        try {
+          final settings = TrackerSettingsDto.fromJson(Map<String, dynamic>.from(event));
+          backgroundGetIt<ITrackerSettingsRepository>().setAll(settings);
+
+          service.invoke('syncSettingsAck');
+
+          debugPrint('[Background] Tracker settings synchronized.');
+        } catch (e, s) {
+          debugPrint('[Background] Failed to parse tracker settings: $e\n$s');
+        }
+      }
+    });
+
     service.on('updateFrequency').listen((_) async {
       try {
         await backgroundGetIt<PointAutomationService>().updateTimers();
@@ -110,8 +127,8 @@ Future<void> _startBackgroundTracking(ServiceInstance service) async {
   }
 
   try {
-    final shouldTrack = await backgroundGetIt<TrackerPreferencesService>()
-        .getAutomaticTrackingPreference();
+    final shouldTrack = await backgroundGetIt<TrackerSettingsService>()
+        .getAutomaticTrackingSetting();
 
     if (!shouldTrack) {
       debugPrint("[Background] Automatic tracking is disabled — skipping startTracking()");

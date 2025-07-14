@@ -200,12 +200,12 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
 
     try {
       final query = _database.select(_database.pointsTable).join([
-        innerJoin(
+        leftOuterJoin(
           _database.pointGeometryTable,
           _database.pointGeometryTable.id
               .equalsExp(_database.pointsTable.geometryId),
         ),
-        innerJoin(
+        leftOuterJoin(
           _database.pointPropertiesTable,
           _database.pointPropertiesTable.id
               .equalsExp(_database.pointsTable.propertiesId),

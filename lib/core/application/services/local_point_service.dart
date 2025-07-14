@@ -49,7 +49,7 @@ final class LocalPointService {
   }) async {
 
     final List<LocalPoint> failedChunks = [];
-    const int chunkSize = 1;
+    const int chunkSize = 250;
 
     final dedupedLocalPoints = await _deduplicateLocalPoints(points);
 
@@ -115,41 +115,17 @@ final class LocalPointService {
   }
 
   /// A private local point service helper method that checks if the current point batch is due for upload. This method gets called after a point gets stored locally.
-  // Future<bool> _checkBatchThreshold() async {
-  //
-  //   final int userId = await _requireUserId();
-  //
-  //   final int maxPoints =
-  //       await _trackerPreferencesService.getPointsPerBatchPreference();
-  //   final int currentPoints =
-  //       await _localPointRepository.getBatchPointCount(userId);
-  //
-  //   if (currentPoints < maxPoints) {
-  //     return false;
-  //   }
-  //
-  //   List<LocalPointDto> localPointDtoList =
-  //       await _localPointRepository.getCurrentBatch(userId);
-  //
-  //   List<LocalPoint> localPointList = localPointDtoList.map((point) =>
-  //       point.toDomain()).toList();
-  //   List<DawarichPoint> apiPointList = localPointList.map((point) =>
-  //       point.toApi()).toList();
-  //   DawarichPointBatch fullBatch = DawarichPointBatch(points: apiPointList);
-  //
-  //   Result<(), String> uploaded = await _api.uploadBatch(fullBatch);
-  //
-  //   if (uploaded case Ok(value: ())) {
-  //     _localPointRepository.markBatchAsUploaded(userId);
-  //   } else {
-  //     if (kDebugMode) {
-  //       debugPrint("[DEBUG] Failed to upload batch!");
-  //       return false;
-  //     }
-  //   }
-  //
-  //   return true;
-  // }
+  Future<bool> _checkBatchThreshold() async {
+
+    final int userId = await _requireUserId();
+
+    final int maxPoints =
+        await _trackerPreferencesService.getPointsPerBatchSetting();
+    final int currentPoints =
+        await _localPointRepository.getBatchPointCount(userId);
+
+    return currentPoints < maxPoints;
+  }
 
   /// Creates a full point using a position object.
   Future<Result<LocalPoint, String>> createPointFromPosition(
@@ -201,7 +177,23 @@ final class LocalPointService {
       return pointResult;
     }
 
-    return await storePoint(pointResult.unwrap());
+    final Result<LocalPoint, String> storeResult = await storePoint(
+        pointResult.unwrap()
+    );
+
+    final bool uploadDue = await _checkBatchThreshold();
+
+    if (uploadDue) {
+      final List<LocalPoint> batch = await getCurrentBatch();
+      if (batch.isNotEmpty) {
+        final Result<(), String> uploadResult = await prepareBatchUpload(batch);
+        if (uploadResult case Err(value: String error)) {
+          return Err("Failed to upload batch: $error");
+        }
+      }
+    }
+
+    return storeResult;
   }
 
   /// Creates a full point, position data is retrieved from cache.

@@ -1,20 +1,17 @@
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/features/timeline/application/services/location_service.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 final class TimelineViewModel extends ChangeNotifier {
 
   final MapService _mapService;
-  final LocationService _locationService;
   final LocalPointService _localPointService;
   AnimatedMapController? animatedMapController;
 
-  TimelineViewModel(this._mapService, this._locationService, this._localPointService);
+  TimelineViewModel(this._mapService, this._localPointService);
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -52,6 +49,11 @@ final class TimelineViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addPoints(List<LatLng> points) {
+    _points.addAll(points);
+    notifyListeners();
+  }
+
   void clearPoints() {
     _points.clear();
     notifyListeners();
@@ -61,6 +63,15 @@ final class TimelineViewModel extends ChangeNotifier {
 
     loadToday();
     _resolveAndSetInitialLocation();
+
+    final batchStream = await _localPointService.watchCurrentBatch();
+
+    batchStream.listen((points) {
+      final List<LatLng> localPointList = points.map((point) {
+        return LatLng(point.geometry.latitude, point.geometry.longitude);
+      }).toList();
+      addPoints(localPointList);
+    });
   }
 
   Future<void> _resolveAndSetInitialLocation() async {

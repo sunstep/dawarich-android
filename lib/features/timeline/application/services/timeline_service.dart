@@ -22,7 +22,11 @@ class MapService {
     final end = DateTime.utc(date.year, date.month, date.day, 23, 59, 59);
 
     Option<List<SlimApiPointDTO>> result =
-        await _apiPointRepository.getSlimPoints(startDate: start, endDate:  end, perPage:  1750);
+        await _apiPointRepository.getSlimPoints(
+            startDate: start,
+            endDate:  end,
+            perPage:  1750
+        );
 
     if (result case Some(value: final List<SlimApiPointDTO> pointDtos)) {
       List<SlimApiPoint> slimPoints = pointDtos

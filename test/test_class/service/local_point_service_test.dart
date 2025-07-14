@@ -284,12 +284,12 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       repo.failDeletePoint = false;
 
-      final result = await repo.deletePoint(testUser, 1);
+      final result = await repo.deletePoints(testUser, [1]);
 
       expect(result, 1);
 
       expect(repo.deletePointCount, 1);
-      expect(repo.lastDeletePointId, 1);
+      expect(repo.lastDeletePointIds, [1]);
       expect(repo.lastDeletePointUserId, testUser);
 
       final batch = await repo.getFullBatch(testUser);
@@ -298,7 +298,7 @@ void main() {
 
     test('deletePoint: not found', () async {
       expect(
-        () => repo.deletePoint(testUser, 999),
+        () => repo.deletePoints(testUser, [999]),
         throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
@@ -313,7 +313,7 @@ void main() {
       repo.failDeletePoint = true;
 
       expect(
-        () => repo.deletePoint(testUser, 1),
+        () => repo.deletePoints(testUser, [1]),
         throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 

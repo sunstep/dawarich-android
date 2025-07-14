@@ -111,9 +111,11 @@ final class BatchExplorerViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> deletePoint(LocalPointViewModel point) async {
-    await _localPointService.deletePoint(point.id);
-    batch.remove(point);
+  Future<void> deletePoints(List<LocalPointViewModel> points) async {
+
+    List<int> pointIds = points.map((point) => point.id).toList();
+    await _localPointService.deletePoints(pointIds);
+    batch.removeWhere((point) => pointIds.contains(point.id));
     notifyListeners();
   }
 

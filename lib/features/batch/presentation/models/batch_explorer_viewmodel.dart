@@ -10,9 +10,17 @@ import 'package:option_result/option_result.dart';
 class UploadProgress {
   final int uploaded;
   final int total;
-  const UploadProgress(this.uploaded, this.total);
-}
 
+  const UploadProgress(this.uploaded, this.total)
+      : assert(total >= 0, 'Total must not be negative'),
+        assert(uploaded >= 0, 'Uploaded must not be negative');
+
+  double get fraction => total > 0
+      ? (uploaded / total).clamp(0.0, 1.0)
+      : 0.0;
+
+  bool get isMeaningful => total > 0;
+}
 final class BatchExplorerViewModel extends ChangeNotifier {
 
   StreamSubscription<List<LocalPoint>>? _batchSubscription;
@@ -42,11 +50,19 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   bool _isLoadingPoints = true;
   bool get isLoadingPoints => _isLoadingPoints;
 
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
+
   final LocalPointService _localPointService;
   BatchExplorerViewModel(this._localPointService);
 
   void _setBatch(List<LocalPointViewModel> batch) {
     _batch = batch;
+    notifyListeners();
+  }
+
+  void setIsUploading(bool trueOrFalse) {
+    _isUploading = trueOrFalse;
     notifyListeners();
   }
 
@@ -97,6 +113,8 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
   Future<void> uploadBatch() async {
 
+    setIsUploading(true);
+
     List<LocalPoint> localPoints = _batch
         .map((point) => point.toDomain())
         .toList();
@@ -109,6 +127,10 @@ final class BatchExplorerViewModel extends ChangeNotifier {
     if (uploadResult case Err(value: final String error)) {
       _uploadResultController.add(error);
     }
+
+    _progressController.add(const UploadProgress(0, 0));
+
+    setIsUploading(false);
   }
 
   Future<void> deletePoints(List<LocalPointViewModel> points) async {

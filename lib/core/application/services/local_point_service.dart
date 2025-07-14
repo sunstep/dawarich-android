@@ -7,7 +7,7 @@ import 'package:dawarich/features/tracking/application/converters/point/dawarich
 import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/last_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/track_converter.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
@@ -33,7 +33,7 @@ final class LocalPointService {
   final SessionBox<User> _userSession;
   final IPointLocalRepository _localPointRepository;
   final IHardwareRepository _hardwareInterfaces;
-  final TrackerPreferencesService _trackerPreferencesService;
+  final TrackerSettingsService _trackerPreferencesService;
   final ITrackRepository _trackRepository;
 
   LocalPointService(
@@ -181,7 +181,7 @@ final class LocalPointService {
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
   Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
     final LocationAccuracy accuracy =
-        await _trackerPreferencesService.getLocationAccuracyPreference();
+        await _trackerPreferencesService.getLocationAccuracySetting();
     final Result<Position, String> posResult =
         await _hardwareInterfaces.getPosition(accuracy);
 
@@ -341,7 +341,7 @@ final class LocalPointService {
   Future<bool> _isPointDistanceGreaterThanPreference(LocalPoint point) async {
     bool answer = true;
     int minimumDistance =
-        await _trackerPreferencesService.getMinimumPointDistancePreference();
+        await _trackerPreferencesService.getMinimumPointDistanceSetting();
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
@@ -365,7 +365,7 @@ final class LocalPointService {
   Future<bool> _isPointAccurateEnough(LocalPoint candidate) async {
     bool answer = false;
     LocationAccuracy requiredAccuracy =
-        await _trackerPreferencesService.getLocationAccuracyPreference();
+        await _trackerPreferencesService.getLocationAccuracySetting();
 
     double requiredAccuracyMeters = _getAccuracyThreshold(requiredAccuracy);
 

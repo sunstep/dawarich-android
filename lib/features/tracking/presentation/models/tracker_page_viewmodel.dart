@@ -5,7 +5,7 @@ import 'package:dawarich/features/tracking/application/services/background_track
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
@@ -157,7 +157,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   final LocalPointService _pointService;
   final PointAutomationService _pointAutomationService;
-  final TrackerPreferencesService _trackerPreferencesService;
+  final TrackerSettingsService _trackerPreferencesService;
   final TrackService _trackService;
   final SystemSettingsService _systemSettingsService;
 
@@ -212,7 +212,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> persistPreferences() async {
-    await _trackerPreferencesService.persistPreferences();
+    await _trackerPreferencesService.persistSettings();
   }
 
   Future<void> _getTrackRecordingStatus() async {
@@ -313,11 +313,11 @@ final class TrackerPageViewModel extends ChangeNotifier {
     _maxPointsPerBatch = amount;
     notifyListeners();
     await _trackerPreferencesService
-        .setPointsPerBatchPreference(_maxPointsPerBatch);
+        .setPointsPerBatchSetting(_maxPointsPerBatch);
   }
 
   Future<void> _getMaxPointsPerBatchPreference() async => setMaxPointsPerBatch(
-      await _trackerPreferencesService.getPointsPerBatchPreference());
+      await _trackerPreferencesService.getPointsPerBatchSetting());
 
   Future<bool> requestConsentFromUser(String message) {
     _consentResponseCompleter = Completer<bool>();
@@ -372,7 +372,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
     setIsUpdatingTracking(true);
     setAutomaticTracking(enable);
 
-    await _trackerPreferencesService.setAutomaticTrackingPreference(enable);
+    await _trackerPreferencesService.setAutomaticTrackingSetting(enable);
 
     if (enable) {
       if (await _shouldShowConsentDialog()) {
@@ -383,7 +383,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
         if (!confirmed) {
           setAutomaticTracking(false);
-          await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+          await _trackerPreferencesService.setAutomaticTrackingSetting(false);
           setIsUpdatingTracking(false);
           return Err("Permission setup cancelled by user.");
         }
@@ -392,7 +392,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
       final permissionResult = await _requestTrackingPermissions();
       if (permissionResult case Err(value: final message)) {
         setAutomaticTracking(false);
-        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        await _trackerPreferencesService.setAutomaticTrackingSetting(false);
         setIsUpdatingTracking(false);
         return Err(message);
       }
@@ -400,7 +400,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
       final notificationGranted = await _requestNotificationPermission();
       if (!notificationGranted) {
         setAutomaticTracking(false);
-        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        await _trackerPreferencesService.setAutomaticTrackingSetting(false);
         setIsUpdatingTracking(false);
         return Err("Notification permission is required.");
       }
@@ -419,7 +419,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
         }
 
         setAutomaticTracking(false);
-        await _trackerPreferencesService.setAutomaticTrackingPreference(false);
+        await _trackerPreferencesService.setAutomaticTrackingSetting(false);
         setIsUpdatingTracking(false);
 
         return Err("Failed to start background service: $message");
@@ -460,7 +460,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   Future<void> _getAutomaticTrackingPreference() async {
     final bool shouldTrackAutomatically =
-        await _trackerPreferencesService.getAutomaticTrackingPreference();
+        await _trackerPreferencesService.getAutomaticTrackingSetting();
     await toggleAutomaticTracking(shouldTrackAutomatically);
   }
 
@@ -468,42 +468,40 @@ final class TrackerPageViewModel extends ChangeNotifier {
     seconds ??= 10;
     _trackingFrequency = seconds;
     await _trackerPreferencesService
-        .setTrackingFrequencyPreference(_trackingFrequency);
+        .setTrackingFrequencySetting(_trackingFrequency);
 
-    final service = FlutterBackgroundService();
-    service.invoke("updateFrequency");
 
     notifyListeners();
   }
 
 
   Future<void> _getTrackingFrequencyPreference() async => setTrackingFrequency(
-      await _trackerPreferencesService.getTrackingFrequencyPreference());
+      await _trackerPreferencesService.getTrackingFrequencySetting());
 
   Future<void> setLocationAccuracy(LocationAccuracy accuracy) async {
     _locationAccuracy = accuracy;
     await _trackerPreferencesService
-        .setLocationAccuracyPreference(_locationAccuracy);
+        .setLocationAccuracySetting(_locationAccuracy);
     notifyListeners();
   }
 
 
   Future<void> _getLocationAccuracyPreference() async {
     setLocationAccuracy(
-        await _trackerPreferencesService.getLocationAccuracyPreference());
+        await _trackerPreferencesService.getLocationAccuracySetting());
   }
 
   Future<void> setMinimumPointDistance(int meters) async {
     _minimumPointDistance = meters;
     await _trackerPreferencesService
-        .setMinimumPointDistancePreference(_minimumPointDistance);
+        .setMinimumPointDistanceSetting(_minimumPointDistance);
 
     notifyListeners();
   }
 
   Future<void> _getMinimumPointDistancePreference() async =>
       setMinimumPointDistance(
-          await _trackerPreferencesService.getMinimumPointDistancePreference());
+          await _trackerPreferencesService.getMinimumPointDistanceSetting());
 
   Future<void> setDeviceId(String id) async {
     _deviceId = id;

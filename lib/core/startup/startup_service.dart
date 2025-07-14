@@ -4,7 +4,7 @@ import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:session_box/session_box.dart';
@@ -59,7 +59,7 @@ final class StartupService {
 
       sessionService.setUserId(refreshedSessionUser.id);
 
-      final shouldTrack = await getIt<TrackerPreferencesService>().getAutomaticTrackingPreference();
+      final shouldTrack = await getIt<TrackerSettingsService>().getAutomaticTrackingSetting();
 
       if (shouldTrack) {
         debugPrint('[StartupService] Auto-tracking is ON — sending proceed');

@@ -19,14 +19,14 @@ import 'package:dawarich/features/tracking/application/services/point_automation
 import 'package:dawarich/features/stats/application/services/stats_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/core/network/configs/api_config_manager.dart';
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/auth/data/repositories/connect_repository.dart';
 import 'package:dawarich/features/tracking/data/repositories/hardware_repository.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
-import 'package:dawarich/features/tracking/data/repositories/tracker_preferences_repository.dart';
+import 'package:dawarich/features/tracking/data/repositories/tracker_settings_repository.dart';
 import 'package:dawarich/features/tracking/data/sources/battery_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/gps_data_client.dart';
@@ -38,7 +38,7 @@ import 'package:dawarich/core/database/repositories/local_point_repository_inter
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:dawarich/features/stats/data_contracts/interfaces/stats_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
-import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_preferences_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_settings_repository.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
 import 'package:dawarich/features/auth/presentation/models/connect_page_viewmodel.dart';
 import 'package:dawarich/core/shell/drawer/drawer_viewmodel.dart';
@@ -108,8 +108,8 @@ final class DependencyInjection {
         () => StatsRepository(getIt<DioClient>()));
     getIt.registerLazySingleton<ITrackRepository>(
         () => DriftTrackRepository(getIt<SQLiteClient>()));
-    getIt.registerLazySingleton<ITrackerPreferencesRepository>(
-        () => TrackerPreferencesRepository());
+    getIt.registerLazySingleton<ITrackerSettingsRepository>(
+        () => TrackerSettingsRepository());
 
 
     // Services
@@ -149,20 +149,20 @@ final class DependencyInjection {
         () => ApiPointService(getIt<IApiPointRepository>()));
     getIt.registerLazySingleton<TrackService>(() => TrackService(
         getIt<ITrackRepository>(), getIt<SessionBox<User>>()));
-    getIt.registerLazySingleton<TrackerPreferencesService>(() =>
-        TrackerPreferencesService(getIt<ITrackerPreferencesRepository>(),
+    getIt.registerLazySingleton<TrackerSettingsService>(() =>
+        TrackerSettingsService(getIt<ITrackerSettingsRepository>(),
             getIt<IHardwareRepository>(), getIt<SessionBox<User>>()));
     getIt.registerLazySingleton<LocalPointService>(() => LocalPointService(
         getIt<IApiPointRepository>(),
         getIt<SessionBox<User>>(),
         getIt<IPointLocalRepository>(),
-        getIt<TrackerPreferencesService>(),
+        getIt<TrackerSettingsService>(),
         getIt<ITrackRepository>(),
         getIt<IHardwareRepository>()));
     // getIt.registerLazySingleton<BackgroundTrackingService>(() => BackgroundTrackingService());
     getIt.registerLazySingleton<PointAutomationService>(() =>
         PointAutomationService(
-            getIt<TrackerPreferencesService>(), getIt<LocalPointService>()));
+            getIt<TrackerSettingsService>(), getIt<LocalPointService>()));
     getIt.registerLazySingleton<StatsService>(
         () => StatsService(getIt<IStatsRepository>()));
 
@@ -190,7 +190,7 @@ final class DependencyInjection {
           getIt<LocalPointService>(),
           getIt<PointAutomationService>(),
           getIt<TrackService>(),
-          getIt<TrackerPreferencesService>(),
+          getIt<TrackerSettingsService>(),
           getIt<SystemSettingsService>())
     );
 
@@ -242,8 +242,8 @@ final class DependencyInjection {
           () => SQLiteClient.connectSharedIsolate(),
     );
 
-    backgroundGetIt.registerLazySingleton<ITrackerPreferencesRepository>(
-            () => TrackerPreferencesRepository());
+    backgroundGetIt.registerLazySingleton<ITrackerSettingsRepository>(
+            () => TrackerSettingsRepository());
     backgroundGetIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
         backgroundGetIt<GpsDataClient>(),
         backgroundGetIt<DeviceDataClient>(),
@@ -287,9 +287,9 @@ final class DependencyInjection {
     backgroundGetIt.registerLazySingleton<ApiPointService>(() => ApiPointService(
         backgroundGetIt<IApiPointRepository>()));
 
-    backgroundGetIt.registerSingletonWithDependencies<TrackerPreferencesService>(
-          () => TrackerPreferencesService(
-          backgroundGetIt<ITrackerPreferencesRepository>(),
+    backgroundGetIt.registerSingletonWithDependencies<TrackerSettingsService>(
+          () => TrackerSettingsService(
+          backgroundGetIt<ITrackerSettingsRepository>(),
           backgroundGetIt<IHardwareRepository>(),
           backgroundGetIt<SessionBox<User>>()),
       dependsOn: [SessionBox<User>],
@@ -300,7 +300,7 @@ final class DependencyInjection {
         backgroundGetIt<IApiPointRepository>(),
         backgroundGetIt<SessionBox<User>>(),
         backgroundGetIt<IPointLocalRepository>(),
-        backgroundGetIt<TrackerPreferencesService>(),
+        backgroundGetIt<TrackerSettingsService>(),
         backgroundGetIt<ITrackRepository>(),
         backgroundGetIt<IHardwareRepository>(),
       ),
@@ -308,17 +308,17 @@ final class DependencyInjection {
         SessionBox<User>,
         IPointLocalRepository,
         ITrackRepository,
-        TrackerPreferencesService,
+        TrackerSettingsService,
       ],
     );
 
     backgroundGetIt.registerSingletonWithDependencies<PointAutomationService>(
           () => PointAutomationService(
-        backgroundGetIt<TrackerPreferencesService>(),
+        backgroundGetIt<TrackerSettingsService>(),
         backgroundGetIt<LocalPointService>(),
         instance,
       ),
-      dependsOn: [LocalPointService, TrackerPreferencesService],
+      dependsOn: [LocalPointService, TrackerSettingsService],
     );
 
   }

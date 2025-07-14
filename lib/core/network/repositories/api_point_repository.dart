@@ -147,7 +147,7 @@ final class ApiPointRepository implements IApiPointRepository {
     required String startIso,
     required String endIso,
     required int perPage,
-    int maxConcurrent = 5, // you can tune this
+    int maxConcurrent = 5,
   }) async {
     final results = <SlimApiPointDTO>[];
     final queue = List<int>.generate(totalPages, (i) => i + 1);
@@ -168,7 +168,7 @@ final class ApiPointRepository implements IApiPointRepository {
         )
             .timeout(const Duration(seconds: 15));
         final points = resp.data!
-            .map((e) => SlimApiPointDTO(e as Map<String, dynamic>))
+            .map((e) => SlimApiPointDTO.fromJson(e))
             .toList();
         results.addAll(points);
       } catch (e, st) {

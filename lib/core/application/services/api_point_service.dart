@@ -1,4 +1,5 @@
 
+import 'package:dawarich/features/timeline/application/converters/slim_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
 import 'package:dawarich/features/timeline/data_contracts/data_transfer_objects/slim_api_point_dto.dart';
@@ -59,7 +60,7 @@ final class ApiPointService {
     switch (result) {
       case Some(value: List<SlimApiPointDTO> points):
         {
-          return Some(points.map((dto) => SlimApiPoint(dto)).toList());
+          return Some(points.map((dto) => dto.toDomain()).toList());
         }
       case None():
         return const None();
@@ -84,21 +85,6 @@ final class ApiPointService {
   Future<int> getTotalPages(
       DateTime startDate, DateTime endDate, int perPage) async {
     return await _pointInterfaces.getTotalPages(startDate: startDate, endDate:  endDate, perPage:  perPage);
-  }
-
-  List<SlimApiPoint> sortPoints(List<SlimApiPoint> data) {
-    if (data.isEmpty) {
-      return [];
-    }
-
-    data.sort((a, b) {
-      int? timestampA = a.timestamp!;
-      int? timestampB = b.timestamp!;
-
-      return timestampA.compareTo(timestampB);
-    });
-
-    return data;
   }
 
 }

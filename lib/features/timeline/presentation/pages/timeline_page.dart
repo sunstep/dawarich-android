@@ -25,8 +25,13 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _viewModel = getIt<TimelineViewModel>();
-    _viewModel.initialize();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel = getIt<TimelineViewModel>();
+      _viewModel.initialize();
+
+    });
+
     _animatedMapController = AnimatedMapController(vsync: this);
   }
 

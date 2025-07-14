@@ -38,6 +38,13 @@ class MapService {
     return [];
   }
 
+
+  List<LatLng> prepPoints(List<SlimApiPoint> points) {
+    final List<SlimApiPoint> sortedPoints = sortPoints(points);
+    final List<SlimApiPoint> mergedPoints = mergePoints(sortedPoints);
+    return parsePoints(mergedPoints);
+  }
+
   List<SlimApiPoint> sortPoints(List<SlimApiPoint> data) {
     if (data.isEmpty) {
       return [];
@@ -51,12 +58,6 @@ class MapService {
     });
 
     return data;
-  }
-
-  List<LatLng> prepPoints(List<SlimApiPoint> points) {
-    final List<SlimApiPoint> sortedPoints = sortPoints(points);
-    final List<SlimApiPoint> mergedPoints = mergePoints(sortedPoints);
-    return parsePoints(mergedPoints);
   }
 
   List<SlimApiPoint> mergePoints(List<SlimApiPoint> points) {

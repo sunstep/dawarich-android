@@ -174,7 +174,7 @@ final class DependencyInjection {
         MigrationViewModel());
 
     getIt.registerLazySingleton<TimelineViewModel>(() =>
-        TimelineViewModel(getIt<MapService>(), getIt<LocationService>(), getIt<LocalPointService>()),
+        TimelineViewModel(getIt<MapService>(), getIt<LocalPointService>()),
     );
 
     getIt.registerLazySingleton<StatsPageViewModel>(() =>

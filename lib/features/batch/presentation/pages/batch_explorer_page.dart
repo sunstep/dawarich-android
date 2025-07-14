@@ -116,14 +116,16 @@ class _BatchContent extends StatelessWidget {
             stream: vm.uploadProgress,
             builder: (context, snapshot) {
               final progress = snapshot.data;
-              if (progress == null) return const SizedBox.shrink();
+              if (progress == null || !progress.isMeaningful) {
+                return const SizedBox.shrink();
+              }
 
               return Padding(
                 padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                 child: Column(
                   children: [
                     LinearProgressIndicator(
-                      value: progress.uploaded / progress.total,
+                      value: progress.fraction,
                       minHeight: 6,
                     ),
                     const SizedBox(height: 8),

@@ -169,7 +169,7 @@ final class BackgroundTrackingService {
           final point = LocalPoint.fromJson(event);
 
           final localPointService = getIt<LocalPointService>();
-          final storeResult = await localPointService.storePoint(point);
+          final storeResult = await localPointService.autoStoreAndUpload(point);
 
           if (storeResult case Ok()) {
             debugPrint('[BackgroundTrackingService] Successfully stored background point');

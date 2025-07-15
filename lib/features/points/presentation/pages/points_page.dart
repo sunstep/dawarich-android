@@ -22,16 +22,19 @@ class _PointsPageState extends State<PointsPage> {
   @override
   void initState() {
     super.initState();
+
     _viewModel = getIt<PointsPageViewModel>();
-    _viewModel.searchPressed();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.initialize();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => getIt<PointsPageViewModel>()..searchPressed(),
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
       child: Container(
-        // pull gradient straight from theme extension
         decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
         child: const Scaffold(
           backgroundColor: Colors.transparent,
@@ -132,10 +135,6 @@ class _PointsBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<PointsPageViewModel>();
 
-    // 2) If we're loading, show the skeleton (full-screen).
-    if (vm.isLoading) {
-      return const PointsPageSkeleton();
-    }
 
     // 3) Otherwise, real content:
     return Padding(
@@ -179,32 +178,23 @@ class _PointsBody extends StatelessWidget {
           ],
 
           // ————— results list or skeleton —————
-          if (vm.isLoading)
-            const SizedBox()
-          else if (vm.pagePoints.isEmpty)
-            const Expanded(child: _EmptyPointsState())
-          else
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CheckboxListTile(
-                    title: const Text('Select all'),
-                    value: vm.selectAll,
-                    onChanged: vm.setAllSelected,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(child: _PointsList()),
-                ],
-              ),
+          Expanded(
+            child: Builder(
+              builder: (_) {
+                if (vm.isLoading) {
+                  return const PointsPageSkeleton();
+                } else if (vm.pagePoints.isEmpty) {
+                  return const _EmptyPointsState();
+                } else {
+                  return _PointsList();
+                }
+              },
             ),
+          ),
 
           // ————— footer —————
 
-          if (vm.points.isNotEmpty) ...[
+          if (vm.pagePoints.isNotEmpty) ...[
             const SizedBox(height: 16),
             _FooterBar(
               hasSelection: vm.hasSelectedItems(),

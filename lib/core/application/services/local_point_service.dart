@@ -125,7 +125,7 @@ final class LocalPointService {
     final int currentPoints =
         await _localPointRepository.getBatchPointCount(userId);
 
-    return currentPoints < maxPoints;
+    return currentPoints >= maxPoints;
   }
 
   /// Creates a full point using a position object.
@@ -155,46 +155,61 @@ final class LocalPointService {
         : Err("Failed to store point");
   }
 
+  Future<void> autoStoreAndUpload(LocalPoint point) async {
+    final storeResult = await storePoint(point);
+
+    if (storeResult case Ok()) {
+      final uploadDue = await _checkBatchThreshold();
+      if (uploadDue) {
+        final batch = await getCurrentBatch();
+        if (batch.isNotEmpty) {
+          final uploadResult = await prepareBatchUpload(batch);
+          if (uploadResult case Err(value: final err)) {
+            debugPrint("[LocalPointService] Auto-upload failed: $err");
+          }
+        }
+      }
+    } else if (storeResult case Err(value: final err)) {
+      debugPrint("[LocalPointService] Failed to store point: $err");
+    }
+  }
+
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
   Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
-    final LocationAccuracy accuracy =
-        await _trackerPreferencesService.getLocationAccuracySetting();
-    final Result<Position, String> posResult =
-        await _hardwareInterfaces.getPosition(accuracy);
+    final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracySetting();
+    final Result<Position, String> posResult = await _hardwareInterfaces.getPosition(accuracy);
 
     if (posResult case Err(value: final String error)) {
       return Err(error);
     }
 
     final Position position = posResult.unwrap();
-    final Result<LocalPoint, String> pointResult =
-        await createPointFromPosition(position);
+    final Result<LocalPoint, String> pointResult = await createPointFromPosition(position);
 
     if (pointResult case Err()) {
       return pointResult;
     }
 
-    if (!persist) {
-      return pointResult;
-    }
+    Result<LocalPoint, String> finalResult = pointResult;
 
-    final Result<LocalPoint, String> storeResult = await storePoint(
-        pointResult.unwrap()
-    );
+    if (persist) {
+      final stored = await storePoint(pointResult.unwrap());
+      finalResult = stored;
 
-    final bool uploadDue = await _checkBatchThreshold();
+      final bool uploadDue = await _checkBatchThreshold();
 
-    if (uploadDue) {
-      final List<LocalPoint> batch = await getCurrentBatch();
-      if (batch.isNotEmpty) {
-        final Result<(), String> uploadResult = await prepareBatchUpload(batch);
-        if (uploadResult case Err(value: String error)) {
-          return Err("Failed to upload batch: $error");
+      if (uploadDue) {
+        final List<LocalPoint> batch = await getCurrentBatch();
+        if (batch.isNotEmpty) {
+          final Result<(), String> uploadResult = await prepareBatchUpload(batch);
+          if (uploadResult case Err(value: String error)) {
+            return Err("Failed to upload batch: $error");
+          }
         }
       }
     }
 
-    return storeResult;
+    return finalResult;
   }
 
   /// Creates a full point, position data is retrieved from cache.

@@ -12,7 +12,6 @@ final class PointAutomationService with ChangeNotifier {
   Timer? _gpsTimer;
 
   bool _isTracking = false;
-  bool _isHandlingNewPoint = false;
 
   int _gpsTimerFrequency = 0;
 
@@ -145,11 +144,9 @@ final class PointAutomationService with ChangeNotifier {
   /// Forces a new position fetch by calling localPointService.createNewPoint().
   Future<void> _gpsTimerHandler(Timer timer) async {
 
-    if (!_isTracking || _isHandlingNewPoint) {
+    if (!_isTracking) {
       return;
     }
-
-    _isHandlingNewPoint = true;
 
     if (kDebugMode) {
       debugPrint("[PointAutomation] Creating new point from GPS");
@@ -165,8 +162,6 @@ final class PointAutomationService with ChangeNotifier {
       }
     } catch (e, s) {
       debugPrint("[PointAutomation] Error creating new GPS point: $e\n$s");
-    } finally {
-      _isHandlingNewPoint = false;
     }
 
   }

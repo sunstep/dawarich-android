@@ -47,20 +47,16 @@ final class PointsPageViewModel with ChangeNotifier {
 
   List<ApiPointViewModel> get pagePoints {
 
-    if (kDebugMode) {
-      debugPrint('[DEBUG] showUnprocessed: $_showUnprocessed');
-    }
+    final filtered = _showUnprocessed
+        ? _points
+        : _points.where((p) => p.geodata?.geometry?.coordinates != null).toList();
+
     final int start = (currentPage - 1) * pointsPerPage;
     final int end = start + pointsPerPage;
-    final safeStart = start.clamp(0, _points.length);
-    final safeEnd = end.clamp(0, _points.length);
-    final slice = _points.sublist(safeStart, safeEnd);
+    final safeStart = start.clamp(0, filtered.length);
+    final safeEnd = end.clamp(0, filtered.length);
 
-    if (_showUnprocessed) {
-      return slice;
-    }
-
-    return slice.where((p) => p.geodata?.geometry?.coordinates != null).toList();
+    return filtered.sublist(safeStart, safeEnd);
   }
 
   Set<String> get selectedItems => _selectedItems;
@@ -279,5 +275,6 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   bool hasSelectedItems() => _selectedItems.isNotEmpty;
-  bool _isAllSelected() => _selectedItems.length == pointsPerPage;
+  bool _isAllSelected() => _selectedItems.length == pagePoints.length;
+
 }

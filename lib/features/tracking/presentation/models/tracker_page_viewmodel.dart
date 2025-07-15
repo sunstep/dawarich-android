@@ -177,11 +177,12 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
     _lastPointSub = lastPointStream.listen((option) {
 
-      if (kDebugMode) {
-        debugPrint("[DEBUG] Last point stream received: ${option.unwrap()}");
-      }
-
       if (option case Some(value: LastPoint lastPoint)) {
+
+        if (kDebugMode) {
+          debugPrint("[DEBUG] Last point stream received: ${option.unwrap()}");
+        }
+
         LastPointViewModel lastPointViewModel = lastPoint.toViewModel();
         setLastPoint(lastPointViewModel);
       } else {

@@ -182,7 +182,7 @@ class _PointsBody extends StatelessWidget {
           if (vm.isLoading)
             const SizedBox()
           else if (vm.pagePoints.isEmpty)
-            const _EmptyPointsState()
+            const Expanded(child: _EmptyPointsState())
           else
             Expanded(
               child: Column(

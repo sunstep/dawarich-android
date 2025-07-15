@@ -336,7 +336,7 @@ class _FilterCard extends StatelessWidget {
                 SwitchListTile(
                   value: vm.showUnprocessed,
                   onChanged: vm.toggleShowUnprocessed,
-                  title: const Text('Hide unprocessed'),
+                  title: const Text('Show unprocessed'),
                 ),
                 ElevatedButton(
                   onPressed: vm.searchPressed,

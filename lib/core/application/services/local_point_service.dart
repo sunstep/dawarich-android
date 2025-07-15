@@ -125,7 +125,7 @@ final class LocalPointService {
     final int currentPoints =
         await _localPointRepository.getBatchPointCount(userId);
 
-    return currentPoints >= maxPoints;
+    return currentPoints > maxPoints;
   }
 
   /// Creates a full point using a position object.

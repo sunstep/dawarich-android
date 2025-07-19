@@ -215,6 +215,8 @@ final class DependencyInjection {
 
     backgroundDependenciesInjected = true;
 
+    backgroundGetIt.registerSingleton(instance);
+
     final configManager = ApiConfigManager();
     await configManager.load();
     backgroundGetIt.registerSingleton<IApiConfigManager>(configManager);

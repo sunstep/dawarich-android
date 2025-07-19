@@ -155,7 +155,7 @@ final class LocalPointService {
         : Err("Failed to store point");
   }
 
-  Future<void> autoStoreAndUpload(LocalPoint point) async {
+  Future<Result<(), String>> autoStoreAndUpload(LocalPoint point) async {
     final storeResult = await storePoint(point);
 
     if (storeResult case Ok()) {
@@ -169,9 +169,14 @@ final class LocalPointService {
           }
         }
       }
+
+      return const Ok(());
     } else if (storeResult case Err(value: final err)) {
       debugPrint("[LocalPointService] Failed to store point: $err");
+      return Err("Failed to store point: $err");
     }
+
+    return const Err("Failed to store point for unknown reason.");
   }
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.

@@ -44,7 +44,7 @@ void backgroundTrackingEntry(ServiceInstance service) {
   // This causes the background tracking service to fail, causing it to clear the user session.
   // Which then causes the main isolate to also fail with the user session because the background tracking cleared it.
   // Here, we wait for the main isolate to signal that it is ready before starting the background tracking.
-  // Thre are only two places where this is used:
+  // There are only two places where this is used:
   // 1. When the app is starting up (when the main isolate has done its initialization).
   // 2. When the user toggles on automatic tracking. Or else the the tracking will never start.
   bool hasProceeded = false;
@@ -163,21 +163,29 @@ final class BackgroundTrackingService {
     if (_hasInitializedListeners) return;
     _hasInitializedListeners = true;
 
-    FlutterBackgroundService().on('newPoint').listen((event) async {
+    final LocalPointService localPointService = getIt<LocalPointService>();
+    final FlutterBackgroundService service = FlutterBackgroundService();
+
+    service.on('newPoint').listen((event) async {
       if (event is Map<String, dynamic>) {
         try {
           final point = LocalPoint.fromJson(event);
+          final String key = point.deduplicationKey;
 
-          final localPointService = getIt<LocalPointService>();
           final storeResult = await localPointService.autoStoreAndUpload(point);
 
+          service.invoke('pointStoredAck', {
+          'deduplicationKey': key,
+          'success': storeResult is Ok,
+          });
+
           if (storeResult case Ok()) {
-            debugPrint('[BackgroundTrackingService] Successfully stored background point');
+            debugPrint('[BackgroundTrackingService] Stored background point');
           } else if (storeResult case Err(value: final err)) {
-            debugPrint('[BackgroundTrackingService] Failed to store background point: $err');
+            debugPrint('[BackgroundTrackingService] Store failed: $err');
           }
         } catch (e, s) {
-          debugPrint('[BackgroundTrackingService] Error handling newPoint: $e\n$s');
+          debugPrint('[BackgroundTrackingService] Error: $e\n$s');
         }
       }
     });

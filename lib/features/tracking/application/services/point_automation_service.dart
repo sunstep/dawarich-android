@@ -23,6 +23,7 @@ final class PointAutomationService with ChangeNotifier {
       this._localPointService, [this._serviceInstance]);
 
   Future<void> startTracking() async {
+
     if (kDebugMode) {
       debugPrint("[PointAutomation] Starting automatic tracking...");
     }
@@ -153,6 +154,7 @@ final class PointAutomationService with ChangeNotifier {
     }
 
     try {
+
       final result = await _localPointService.createPointFromGps(persist: false);
 
       if (result case Ok(value: final point)) {
@@ -167,21 +169,66 @@ final class PointAutomationService with ChangeNotifier {
   }
 
   void onNewPoint(LocalPoint point) async {
+
     if (_serviceInstance is AndroidServiceInstance) {
-      final isForeground = await _serviceInstance.isForegroundService();
-      if (isForeground) {
-        await _serviceInstance.setForegroundNotificationInfo(
-          title: 'Tracking location...',
-          content: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}',
-        );
+      final AndroidServiceInstance service = _serviceInstance;
+      final String key = point.deduplicationKey;
+
+      final Completer<bool> ackCompleter = Completer<bool>();
+
+      final StreamSubscription sub = service.on('pointStoredAck').listen((event) {
+        if (event is Map<String, dynamic> &&
+            event['deduplicationKey'] == key &&
+            event['success'] == true) {
+          ackCompleter.complete(true);
+        }
+      });
+
+      final Map<String, dynamic> payload = point.toJson();
+      service.invoke('newPoint', payload);
+
+      final bool wasStoredInMain = await Future.any([
+        ackCompleter.future,
+        Future.delayed(const Duration(seconds: 2), () => false),
+      ]);
+
+      await sub.cancel();
+
+      if (wasStoredInMain) {
+        if (kDebugMode) {
+          debugPrint('[PointAutomation] Stored in main isolate');
+        }
+        return;
       }
 
-      _serviceInstance.invoke('newPoint', point.toJson());
+      // Fallback: store in background
+      if (kDebugMode) {
+        debugPrint('[PointAutomation] Main isolate did not respond, storing in background');
+      }
+
+      final storeResult = await _localPointService.autoStoreAndUpload(point);
+
+      if (storeResult case Ok()) {
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Stored in background isolate");
+        }
+
+        final isForeground = await service.isForegroundService();
+        if (isForeground) {
+          await service.setForegroundNotificationInfo(
+            title: 'Tracking location...',
+            content: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
+                '${await _localPointService.getBatchPointsCount()} points in batch.',
+          );
+        }
+      } else if (storeResult case Err(value: final err)) {
+        debugPrint("[PointAutomation] Failed to store point in background: $err");
+      }
     } else {
-      // Main isolate handles storage directly
+      // Foreground path (main isolate)
       final storeResult = await _localPointService.storePoint(point);
       if (storeResult case Ok()) {
-        debugPrint("[PointAutomation] Successfully stored");
+        debugPrint("[PointAutomation] Successfully stored in main isolate");
       } else if (storeResult case Err(value: String err)) {
         debugPrint("[PointAutomation] Failed to store point: $err");
       }

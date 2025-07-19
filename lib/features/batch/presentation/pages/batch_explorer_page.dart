@@ -50,6 +50,7 @@ class _BatchExplorerPageState extends State<BatchExplorerPage> {
   @override
   void dispose() {
     _errorSub.cancel();
+    _viewModel.dispose();
     super.dispose();
   }
 

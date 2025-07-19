@@ -69,6 +69,7 @@ final class _TrackerPageState extends State<TrackerPage> with
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     _consentPromptSub.cancel();
+    _viewModel.dispose();
     super.dispose();
   }
 

@@ -172,7 +172,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
     await BackgroundTrackingService.initializeListeners();
 
-    await _pointService.watchLastPoint(onData: (option) {
+    Stream<Option<LastPoint>> lastPointStream = await _pointService
+        .watchLastPoint();
+
+    _lastPointSub = lastPointStream.listen((option) {
 
       if (option case Some(value: LastPoint lastPoint)) {
 
@@ -187,9 +190,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
       }
     });
 
+    Stream<int> batchCountStream = await _pointService.watchBatchPointsCount();
 
-    await _pointService.watchBatchPointsCount(onData: (count) {
-
+    _batchCountSub = batchCountStream.listen((count) {
       if (kDebugMode) {
         debugPrint("[DEBUG] Batch count stream received: $count");
       }
@@ -207,20 +210,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
 
     setIsRetrievingSettings(false);
-  }
-
-  @override
-  void dispose() {
-
-    if (kDebugMode) {
-      debugPrint("[TrackerPageViewModel] Disposing and stopping live queries");
-    }
-
-    _pointService.stopWatchingLastPoint();
-    _pointService.stopWatchingBatchPointsCount();
-    _consentPromptController.close();
-    deviceIdController.dispose();
-    super.dispose();
   }
 
   Future<void> persistPreferences() async {
@@ -560,5 +549,14 @@ final class TrackerPageViewModel extends ChangeNotifier {
       ];
     }
     return [];
+  }
+
+  @override
+  void dispose() {
+    _lastPointSub?.cancel();
+    _batchCountSub?.cancel();
+    _consentPromptController.close();
+    deviceIdController.dispose();
+    super.dispose();
   }
 }

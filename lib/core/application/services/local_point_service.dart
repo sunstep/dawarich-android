@@ -406,14 +406,21 @@ final class LocalPointService {
     }
   }
 
-  Future<Stream<Option<LastPoint>>> watchLastPoint() async {
+  StreamSubscription<Option<LastPoint>>? _lastPointSub;
+
+  Future<void> watchLastPoint({required void Function(Option<LastPoint>) onData}) async {
     final int userId = await _requireUserId();
 
-    return _localPointRepository
+    _lastPointSub = _localPointRepository
         .watchLastPoint(userId)
         .map((option) => option.map(
             (dto) => dto.toDomain())
-        );
+        ).listen(onData);
+  }
+
+  Future<void> stopWatchingLastPoint() async {
+    await _lastPointSub?.cancel();
+    _lastPointSub = null;
   }
 
 
@@ -439,10 +446,21 @@ final class LocalPointService {
     return result;
   }
 
-  Future<Stream<int>> watchBatchPointsCount() async {
+  StreamSubscription<int>? _batchCountSub;
+
+  Future<void> watchBatchPointsCount({required void Function(int) onData}) async {
+
     final int userId = await _requireUserId();
 
-    return _localPointRepository.watchBatchPointCount(userId);
+
+    _batchCountSub = _localPointRepository
+        .watchBatchPointCount(userId)
+        .listen(onData);
+  }
+
+  Future<void> stopWatchingBatchPointsCount() async {
+    await _batchCountSub?.cancel();
+    _batchCountSub = null;
   }
 
   Future<List<LocalPoint>> getCurrentBatch() async {
@@ -457,12 +475,21 @@ final class LocalPointService {
       return batch;
   }
 
-  Future<Stream<List<LocalPoint>>> watchCurrentBatch() async {
+  StreamSubscription<List<LocalPoint>>? _batchSub;
+
+  Future<void> watchCurrentBatch({required void Function(List<LocalPoint>) onData}) async {
 
     final int userId = await _requireUserId();
 
-    return _localPointRepository.watchCurrentBatch(userId)
-        .map((dtos) => dtos.map((dto) => dto.toDomain()).toList());
+    _batchSub = _localPointRepository
+        .watchCurrentBatch(userId)
+        .map((dtos) => dtos.map((dto) => dto.toDomain()).toList())
+        .listen(onData);
+  }
+
+  Future<void> stopWatchingBatch() async {
+    await _batchSub?.cancel();
+    _batchSub = null;
   }
 
   Future<bool> deletePoints(List<int> pointIds) async {

@@ -173,7 +173,7 @@ final class DependencyInjection {
     getIt.registerLazySingleton<MigrationViewModel>(() =>
         MigrationViewModel());
 
-    getIt.registerLazySingleton<TimelineViewModel>(() =>
+    getIt.registerFactory<TimelineViewModel>(() =>
         TimelineViewModel(getIt<MapService>(), getIt<LocalPointService>()),
     );
 
@@ -185,7 +185,7 @@ final class DependencyInjection {
       PointsPageViewModel(getIt<ApiPointService>())
     );
 
-    getIt.registerLazySingleton<TrackerPageViewModel>(() =>
+    getIt.registerFactory<TrackerPageViewModel>(() =>
       TrackerPageViewModel(
           getIt<LocalPointService>(),
           getIt<PointAutomationService>(),
@@ -194,7 +194,7 @@ final class DependencyInjection {
           getIt<SystemSettingsService>())
     );
 
-    getIt.registerLazySingleton<BatchExplorerViewModel>(() =>
+    getIt.registerFactory<BatchExplorerViewModel>(() =>
       BatchExplorerViewModel(
           getIt<LocalPointService>())
     );

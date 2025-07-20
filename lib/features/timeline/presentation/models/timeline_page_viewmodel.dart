@@ -1,5 +1,6 @@
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
@@ -65,9 +66,7 @@ final class TimelineViewModel extends ChangeNotifier {
     loadToday();
     _resolveAndSetInitialLocation();
 
-    final batchStream = await _localPointService.watchCurrentBatch();
-
-    batchStream.listen((points) {
+    await _localPointService.watchCurrentBatch(onData: (points) {
 
       final List<SlimApiPoint> slimApiPoints = points.map((point) {
         return SlimApiPoint(
@@ -79,6 +78,19 @@ final class TimelineViewModel extends ChangeNotifier {
       final List<LatLng> localPointList = _mapService.prepPoints(slimApiPoints);
       addPoints(localPointList);
     });
+
+  }
+
+  @override
+  void dispose() {
+
+    if (kDebugMode) {
+      debugPrint("[TimelineViewModel] Disposing and stopping live queries");
+    }
+    animatedMapController?.dispose();
+    animatedMapController = null;
+    _localPointService.stopWatchingBatch();
+    super.dispose();
   }
 
   Future<void> _resolveAndSetInitialLocation() async {
@@ -179,4 +191,5 @@ final class TimelineViewModel extends ChangeNotifier {
       );
     }
   }
+
 }

@@ -18,8 +18,8 @@ final class TimelinePage extends StatefulWidget {
 }
 
 class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMixin {
-  late final AnimatedMapController _animatedMapController;
 
+  late final AnimatedMapController _animatedMapController;
   late final TimelineViewModel _viewModel;
 
   @override
@@ -33,6 +33,13 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
     });
 
     _animatedMapController = AnimatedMapController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _animatedMapController.dispose();
+    _viewModel.dispose();
+    super.dispose();
   }
 
   Widget _bottomsheetContent(BuildContext context, TimelineViewModel mapModel,

@@ -406,21 +406,14 @@ final class LocalPointService {
     }
   }
 
-  StreamSubscription<Option<LastPoint>>? _lastPointSub;
-
-  Future<void> watchLastPoint({required void Function(Option<LastPoint>) onData}) async {
+  Future<Stream<Option<LastPoint>>> watchLastPoint() async {
     final int userId = await _requireUserId();
 
-    _lastPointSub = _localPointRepository
+    return _localPointRepository
         .watchLastPoint(userId)
         .map((option) => option.map(
             (dto) => dto.toDomain())
-        ).listen(onData);
-  }
-
-  Future<void> stopWatchingLastPoint() async {
-    await _lastPointSub?.cancel();
-    _lastPointSub = null;
+        );
   }
 
 
@@ -446,21 +439,10 @@ final class LocalPointService {
     return result;
   }
 
-  StreamSubscription<int>? _batchCountSub;
-
-  Future<void> watchBatchPointsCount({required void Function(int) onData}) async {
-
+  Future<Stream<int>> watchBatchPointsCount() async {
     final int userId = await _requireUserId();
 
-
-    _batchCountSub = _localPointRepository
-        .watchBatchPointCount(userId)
-        .listen(onData);
-  }
-
-  Future<void> stopWatchingBatchPointsCount() async {
-    await _batchCountSub?.cancel();
-    _batchCountSub = null;
+    return _localPointRepository.watchBatchPointCount(userId);
   }
 
   Future<List<LocalPoint>> getCurrentBatch() async {
@@ -475,21 +457,12 @@ final class LocalPointService {
       return batch;
   }
 
-  StreamSubscription<List<LocalPoint>>? _batchSub;
-
-  Future<void> watchCurrentBatch({required void Function(List<LocalPoint>) onData}) async {
+  Future<Stream<List<LocalPoint>>> watchCurrentBatch() async {
 
     final int userId = await _requireUserId();
 
-    _batchSub = _localPointRepository
-        .watchCurrentBatch(userId)
-        .map((dtos) => dtos.map((dto) => dto.toDomain()).toList())
-        .listen(onData);
-  }
-
-  Future<void> stopWatchingBatch() async {
-    await _batchSub?.cancel();
-    _batchSub = null;
+    return _localPointRepository.watchCurrentBatch(userId)
+        .map((dtos) => dtos.map((dto) => dto.toDomain()).toList());
   }
 
   Future<bool> deletePoints(List<int> pointIds) async {

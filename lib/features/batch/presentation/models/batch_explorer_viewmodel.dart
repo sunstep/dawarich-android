@@ -91,7 +91,9 @@ final class BatchExplorerViewModel extends ChangeNotifier {
       return;
     }
 
-    await _localPointService.watchCurrentBatch(onData: (batch) async {
+    final stream = await _localPointService.watchCurrentBatch();
+
+    _batchSubscription = stream.listen((batch) async {
       final batchVm = await compute(BatchExplorerViewModel._convertToViewModels, batch);
 
       batchVm.sort((a, b) {
@@ -103,7 +105,6 @@ final class BatchExplorerViewModel extends ChangeNotifier {
       _setBatch(batchVm);
       _setIsLoadingPoints(false);
     });
-
   }
 
   static List<LocalPointViewModel> _convertToViewModels(List<LocalPoint> points) {
@@ -148,10 +149,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    if (kDebugMode) {
-      debugPrint("[BatchExplorerViewModel] Disposing and stopping batch watch.");
-    }
-    _localPointService.stopWatchingBatch();
+    _batchSubscription?.cancel();
     super.dispose();
   }
 }

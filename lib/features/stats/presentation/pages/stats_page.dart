@@ -27,7 +27,7 @@ class StatsPage extends StatelessWidget {
             titleFontSize: 32,
             backgroundColor: Colors.transparent,
           ),
-          drawer: const CustomDrawer(),
+          drawer: CustomDrawer(),
           body: SafeArea(
             child: Consumer<StatsPageViewModel>(
               builder: (ctx, vm, _) {

@@ -36,7 +36,7 @@ class _PointsPageState extends State<PointsPage> {
       value: _viewModel,
       child: Container(
         decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: const Scaffold(
+        child: Scaffold(
           backgroundColor: Colors.transparent,
           appBar: CustomAppbar(
             title: 'Points',

@@ -15,7 +15,7 @@ class SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       appBar: const CustomAppbar(title: "Settings", titleFontSize: 40),
       body: _pageContent(),
-      drawer: const CustomDrawer(),
+      drawer: CustomDrawer(),
     );
   }
 

@@ -14,7 +14,6 @@ class StatsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      // This fires off the initial load so vm.isLoading kicks in right away
       create: (_) => getIt<StatsPageViewModel>()..refreshStats(),
       child: Container(
         decoration: BoxDecoration(
@@ -27,7 +26,7 @@ class StatsPage extends StatelessWidget {
             titleFontSize: 32,
             backgroundColor: Colors.transparent,
           ),
-          drawer: const CustomDrawer(),
+          drawer: CustomDrawer(),
           body: SafeArea(
             child: Consumer<StatsPageViewModel>(
               builder: (ctx, vm, _) {

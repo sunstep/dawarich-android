@@ -553,6 +553,11 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+
+    if (kDebugMode) {
+      debugPrint("[TrackerPageViewModel] Disposing viewmodel...");
+    }
+
     _lastPointSub?.cancel();
     _batchCountSub?.cancel();
     _consentPromptController.close();

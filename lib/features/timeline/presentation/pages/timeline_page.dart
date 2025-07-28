@@ -266,7 +266,7 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
     return Scaffold(
       appBar: const CustomAppbar(title: "Timeline", titleFontSize: 20),
       body: _pageContent(viewModel),
-      drawer: const CustomDrawer(),
+      drawer: CustomDrawer(),
     );
   }
 

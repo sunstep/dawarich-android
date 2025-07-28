@@ -18,21 +18,27 @@ final class TimelinePage extends StatefulWidget {
 }
 
 class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMixin {
+
   late final AnimatedMapController _animatedMapController;
 
-  late final TimelineViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel = getIt<TimelineViewModel>();
-      _viewModel.initialize();
-
-    });
-
     _animatedMapController = AnimatedMapController(vsync: this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => getIt<TimelineViewModel>()..initialize(),
+      builder: (ctx, child) => Consumer<TimelineViewModel>(
+          builder: (context, mapModel, child) {
+            mapModel.setAnimatedMapController(_animatedMapController);
+            return _pageBase(context);
+      })
+    );
   }
 
   Widget _bottomsheetContent(BuildContext context, TimelineViewModel mapModel,
@@ -270,19 +276,5 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final TimelineViewModel mapViewModel = getIt<TimelineViewModel>();
-    return ChangeNotifierProvider.value(
-      value: mapViewModel,
-      child: Builder(
-        builder: (context) {
-          context
-              .read<TimelineViewModel>()
-              .setAnimatedMapController(_animatedMapController);
-          return _pageBase(context);
-        },
-      ),
-    );
-  }
+
 }

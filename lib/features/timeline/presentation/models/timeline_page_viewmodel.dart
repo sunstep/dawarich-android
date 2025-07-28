@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
@@ -22,6 +26,8 @@ final class TimelineViewModel extends ChangeNotifier {
 
   DateTime _selectedDate = DateTime.now();
   DateTime get selectedDate => _selectedDate;
+
+  StreamSubscription<List<LocalPoint>>? _localPointSubscription;
 
   List<LatLng> _points = [];
   List<LatLng> get points => _points;
@@ -67,7 +73,7 @@ final class TimelineViewModel extends ChangeNotifier {
 
     final batchStream = await _localPointService.watchCurrentBatch();
 
-    batchStream.listen((points) {
+    _localPointSubscription = batchStream.listen((points) {
 
       final List<SlimApiPoint> slimApiPoints = points.map((point) {
         return SlimApiPoint(
@@ -79,6 +85,18 @@ final class TimelineViewModel extends ChangeNotifier {
       final List<LatLng> localPointList = _mapService.prepPoints(slimApiPoints);
       addPoints(localPointList);
     });
+  }
+
+  @override
+  void dispose() {
+
+    if (kDebugMode) {
+      debugPrint("[TimelineViewModel] Disposing...");
+    }
+
+    animatedMapController?.dispose();
+    _localPointSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _resolveAndSetInitialLocation() async {

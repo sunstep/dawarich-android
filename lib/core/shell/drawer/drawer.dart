@@ -8,8 +8,9 @@ import 'package:provider/provider.dart';
 
 class CustomDrawer extends StatelessWidget {
 
-  bool _isNavigating = false;
   CustomDrawer({super.key});
+
+  bool _isNavigating = false;
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +93,7 @@ class CustomDrawer extends StatelessWidget {
 
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
                       Navigator.of(context).pop();
-                      await Navigator.of(context, rootNavigator: true).pushNamed(AppRouter.timeline);
+                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.timeline);
                       _isNavigating = false;
                     });
                   }
@@ -114,7 +115,7 @@ class CustomDrawer extends StatelessWidget {
 
                     Navigator.of(context).pop();
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
-                      await Navigator.of(context, rootNavigator: true).pushNamed(AppRouter.stats);
+                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.stats);
                       _isNavigating = false;
                     });
                   }
@@ -136,7 +137,7 @@ class CustomDrawer extends StatelessWidget {
 
                     Navigator.of(context).pop();
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
-                      await Navigator.of(context, rootNavigator: true).pushNamed(AppRouter.points);
+                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.points);
                       _isNavigating = false;
                     });
                   }
@@ -158,7 +159,7 @@ class CustomDrawer extends StatelessWidget {
 
                     Navigator.of(context).pop();
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
-                      await Navigator.of(context, rootNavigator: true).pushNamed(AppRouter.tracker);
+                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.tracker);
                       _isNavigating = false;
                     });
                   }

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
@@ -8,76 +6,56 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-final class BatchExplorerPage extends StatefulWidget {
+final class BatchExplorerPage extends StatelessWidget {
   const BatchExplorerPage({super.key});
 
   @override
-  State<BatchExplorerPage> createState() => _BatchExplorerPageState();
-}
-
-class _BatchExplorerPageState extends State<BatchExplorerPage> {
-
-  late final BatchExplorerViewModel _viewModel;
-  late final StreamSubscription<String> _errorSub;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = getIt<BatchExplorerViewModel>();
-
-    _errorSub = _viewModel.uploadResultStream.listen((msg) {
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: Text('Upload failed'),
-            content: Text(msg),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context),
-                  child: Text('OK')),
-            ],
-          ),
-        );
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel.initialize();
-    });
-  }
-
-  @override
-  void dispose() {
-    _errorSub.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: const CustomAppbar(
-                title: "Batch Explorer",
-                titleFontSize: 30,
-                backgroundColor: Colors.transparent),
-            body: SafeArea(child: _BatchContent()),
-            bottomNavigationBar: Consumer<BatchExplorerViewModel>(
-              builder: (context, vm, _) {
-                return vm.hasPoints
-                    ? const _BatchFooter()
-                    : const SizedBox.shrink();
+    return ChangeNotifierProvider(
+        create: (_) => getIt<BatchExplorerViewModel>()..initialize(),
+        builder: (context, child) => Consumer<BatchExplorerViewModel>(
+              builder: (context, vm, child) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  vm.uploadResultStream.listen((msg) {
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Upload failed'),
+                          content: Text(msg),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  });
+                });
+
+                return Container(
+                  decoration:
+                      BoxDecoration(gradient: Theme.of(context).pageBackground),
+                  child: Scaffold(
+                    backgroundColor: Colors.transparent,
+                    appBar: const CustomAppbar(
+                        title: "Batch Explorer",
+                        titleFontSize: 30,
+                        backgroundColor: Colors.transparent),
+                    body: SafeArea(child: _BatchContent()),
+                    bottomNavigationBar: Consumer<BatchExplorerViewModel>(
+                      builder: (context, vm, _) {
+                        return vm.hasPoints
+                            ? const _BatchFooter()
+                            : const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                );
               },
-            ),
-          ),
-        );
-      },
-    );
+            ));
   }
 }
 
@@ -85,33 +63,39 @@ class _BatchContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<BatchExplorerViewModel>();
+    final hasPoints = vm.visibleBatch.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
           Text(
-            vm.hasPoints
-                ? '${vm.batch.length} Point${vm.batch.length > 1 ? 's' : ''}'
-                : 'No points in batch',
+            vm.isLoadingPoints
+                ? 'Loading...'
+                : hasPoints
+                    ? '${vm.batch.length} Point${vm.batch.length > 1 ? 's' : ''}'
+                    : 'No points in batch',
             style: Theme.of(context)
                 .textTheme
                 .headlineSmall
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(vm.newestFirst ? "Newest first" : "Oldest first",
-                  style: Theme.of(context).textTheme.bodyMedium),
-              IconButton(
-                icon: const Icon(Icons.swap_vert),
-                tooltip: "Toggle sort order",
-                onPressed: vm.toggleSortOrder,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          if (hasPoints) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(vm.newestFirst ? "Newest first" : "Oldest first",
+                    style: Theme.of(context).textTheme.bodyMedium),
+                IconButton(
+                  icon: const Icon(Icons.swap_vert),
+                  tooltip: "Toggle sort order",
+                  onPressed: vm.toggleSortOrder,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
           StreamBuilder<UploadProgress>(
             stream: vm.uploadProgress,
             builder: (context, snapshot) {
@@ -138,26 +122,35 @@ class _BatchContent extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 16),
           Expanded(
             child: vm.isLoadingPoints
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                itemCount: vm.visibleBatch.length,
-                itemBuilder: (_, i) {
-                  final pt = vm.visibleBatch[i];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _PointCard(
-                      timestamp: pt.properties.formattedTimestamp,
-                      latitude: pt.geometry.latitude,
-                      longitude: pt.geometry.longitude,
-                      onDelete: () =>
-                          _Dialogs.confirmDeletePoint(context, vm, pt),
-                    ),
-                  );
-                },
-              ),
-            ),
+                : hasPoints
+                    ? ListView.builder(
+                        itemCount: vm.visibleBatch.length,
+                        itemBuilder: (_, i) {
+                          final pt = vm.visibleBatch[i];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _PointCard(
+                              timestamp: pt.properties.formattedTimestamp,
+                              latitude: pt.geometry.latitude,
+                              longitude: pt.geometry.longitude,
+                              onDelete: () =>
+                                  _Dialogs.confirmDeletePoint(context, vm, pt),
+                            ),
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Text(
+                          'There are no unuploaded points in your batch.\nTry recording or tracking points first.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+          ),
           const SizedBox(height: 80), // leave room for footer
         ],
       ),

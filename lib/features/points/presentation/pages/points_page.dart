@@ -8,45 +8,30 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
-final class PointsPage extends StatefulWidget {
+class PointsPage extends StatelessWidget {
+
   const PointsPage({super.key});
 
   @override
-  State<PointsPage> createState() => _PointsPageState();
-}
-
-class _PointsPageState extends State<PointsPage> {
-
-  late final PointsPageViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _viewModel = getIt<PointsPageViewModel>();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel.initialize();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      child: Container(
-        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: CustomAppbar(
-            title: 'Points',
-            titleFontSize: 32,
+    return ChangeNotifierProvider(
+      create: (_) => getIt<PointsPageViewModel>()..initialize(),
+      builder: (ctx, child) => Consumer<PointsPageViewModel>(builder: (ctx, vm, child) {
+        return Container(
+          decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+          child: Scaffold(
             backgroundColor: Colors.transparent,
+            appBar: CustomAppbar(
+              title: 'Points',
+              titleFontSize: 32,
+              backgroundColor: Colors.transparent,
+            ),
+            drawer: CustomDrawer(),
+            body: SafeArea(child: _PointsBody()),
           ),
-          drawer: CustomDrawer(),
-          body: SafeArea(child: _PointsBody()),
-        ),
-      ),
+        );
+      },
+      )
     );
   }
 }

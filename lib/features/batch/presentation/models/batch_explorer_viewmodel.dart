@@ -21,6 +21,7 @@ class UploadProgress {
 
   bool get isMeaningful => total > 0;
 }
+
 final class BatchExplorerViewModel extends ChangeNotifier {
 
   StreamSubscription<List<LocalPoint>>? _batchSubscription;
@@ -85,7 +86,19 @@ final class BatchExplorerViewModel extends ChangeNotifier {
     });
   }
 
+  bool _hasInitialized = false;
+  bool get hasInitialized => _hasInitialized;
+
+  void setInitialized(bool value) {
+    _hasInitialized = value;
+    notifyListeners();
+  }
+
   Future<void> initialize() async {
+
+    if (kDebugMode) {
+      debugPrint("[BatchExplorerViewModel] Initializing...");
+    }
 
     if (_batchSubscription != null) {
       return;
@@ -104,6 +117,10 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
       _setBatch(batchVm);
       _setIsLoadingPoints(false);
+
+      if (!hasInitialized) {
+        setInitialized(true);
+      }
     });
   }
 

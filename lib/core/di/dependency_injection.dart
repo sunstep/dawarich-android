@@ -27,7 +27,6 @@ import 'package:dawarich/features/tracking/data/repositories/hardware_repository
 import 'package:dawarich/core/network/repositories/api_point_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
 import 'package:dawarich/features/tracking/data/repositories/tracker_settings_repository.dart';
-import 'package:dawarich/features/tracking/data/sources/battery_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/gps_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
@@ -86,7 +85,6 @@ final class DependencyInjection {
     );
     getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
     getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
-    getIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
     getIt.registerLazySingleton<ConnectivityDataClient>(
         () => ConnectivityDataClient());
 
@@ -96,7 +94,6 @@ final class DependencyInjection {
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
         getIt<GpsDataClient>(),
         getIt<DeviceDataClient>(),
-        getIt<BatteryDataClient>(),
         getIt<ConnectivityDataClient>()));
     getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(
         getIt<IApiConfigManager>(), getIt<DioClient>()));
@@ -237,7 +234,6 @@ final class DependencyInjection {
 
     backgroundGetIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
     backgroundGetIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
-    backgroundGetIt.registerLazySingleton<BatteryDataClient>(() => BatteryDataClient());
     backgroundGetIt.registerLazySingleton<ConnectivityDataClient>(() => ConnectivityDataClient());
 
     backgroundGetIt.registerSingletonAsync<SQLiteClient>(
@@ -249,7 +245,6 @@ final class DependencyInjection {
     backgroundGetIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
         backgroundGetIt<GpsDataClient>(),
         backgroundGetIt<DeviceDataClient>(),
-        backgroundGetIt<BatteryDataClient>(),
         backgroundGetIt<ConnectivityDataClient>()));
     backgroundGetIt.registerSingletonWithDependencies<IUserRepository>(
           () => DriftUserRepository(backgroundGetIt<SQLiteClient>()),

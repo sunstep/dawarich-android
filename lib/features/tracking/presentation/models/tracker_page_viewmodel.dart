@@ -38,9 +38,15 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   TrackViewModel? _currentTrack;
   TrackViewModel? get currentTrack => _currentTrack;
+
+  bool _isDisposed = false;
+
   void setCurrentTrack(TrackViewModel track) {
     _currentTrack = track;
-    notifyListeners();
+
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   bool _isRecording = false;
@@ -56,7 +62,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setTrackPointCount(int count) {
     _trackPointCount = count;
-    notifyListeners();
+
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   // Duration _recordDuration = Duration();
@@ -84,7 +93,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setCurrentPage(int index) {
     _currentPage = index;
-    notifyListeners();
+
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   void nextPage() {
@@ -93,7 +105,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
     } else {
       _currentPage = 0;
     }
-    notifyListeners();
+
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   String get pageTitle {
@@ -240,7 +255,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setLastPoint(LastPointViewModel? point) {
     _lastPoint = point;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<void> getLastPoint() async {
@@ -254,12 +271,16 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setHideLastPoint(bool trueOrFalse) {
     _hideLastPoint = trueOrFalse;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   void setBatchPointCount(int value) {
     _batchPointCount = value;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<void> getPointInBatchCount() async =>
@@ -267,7 +288,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setIsRetrievingSettings(bool trueOrFalse) {
     _isRetrievingSettings = trueOrFalse;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<Result<(), String>> trackPoint() async {
@@ -306,13 +329,17 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setIsTracking(bool trueOrFalse) {
     _isTracking = trueOrFalse;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<void> setMaxPointsPerBatch(int? amount) async {
     amount ??= 50; // If null somehow, just fall back to default
     _maxPointsPerBatch = amount;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
     await _trackerPreferencesService
         .setPointsPerBatchSetting(_maxPointsPerBatch);
   }
@@ -356,12 +383,16 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setAutomaticTracking(bool enable) {
     _isTrackingAutomatically = enable;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   void setIsUpdatingTracking(bool trueOrFalse) {
     _isUpdatingTracking = trueOrFalse;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<Result<(), String>> toggleAutomaticTracking(bool enable) async {
@@ -472,7 +503,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
         .setTrackingFrequencySetting(_trackingFrequency);
 
 
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
 
@@ -483,7 +516,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
     _locationAccuracy = accuracy;
     await _trackerPreferencesService
         .setLocationAccuracySetting(_locationAccuracy);
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
 
@@ -497,7 +532,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
     await _trackerPreferencesService
         .setMinimumPointDistanceSetting(_minimumPointDistance);
 
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<void> _getMinimumPointDistancePreference() async =>
@@ -507,7 +544,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
   Future<void> setDeviceId(String id) async {
     _deviceId = id;
     await _trackerPreferencesService.setDeviceId(_deviceId);
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   Future<void> resetDeviceId() async {
@@ -516,14 +555,21 @@ final class TrackerPageViewModel extends ChangeNotifier {
     if (isReset) {
       String deviceId = await _trackerPreferencesService.getDeviceId();
       setDeviceId(deviceId);
-      deviceIdController.text = deviceId;
+
+      if (!_isDisposed) {
+        deviceIdController.text = deviceId;
+      }
+
     }
   }
 
   Future<void> _getDeviceId() async {
     String trackerId = await _trackerPreferencesService.getDeviceId();
     setDeviceId(trackerId);
-    deviceIdController.text = trackerId;
+
+    if (!_isDisposed) {
+      deviceIdController.text = trackerId;
+    }
   }
 
   List<Map<String, dynamic>> get accuracyOptions {
@@ -557,6 +603,8 @@ final class TrackerPageViewModel extends ChangeNotifier {
     if (kDebugMode) {
       debugPrint("[TrackerPageViewModel] Disposing viewmodel...");
     }
+
+    _isDisposed = true;
 
     _lastPointSub?.cancel();
     _batchCountSub?.cancel();

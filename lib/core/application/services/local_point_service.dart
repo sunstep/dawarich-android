@@ -42,7 +42,8 @@ final class LocalPointService {
       this._localPointRepository,
       this._trackerPreferencesService,
       this._trackRepository,
-      this._hardwareInterfaces);
+      this._hardwareInterfaces
+  );
 
   Future<Result<(), String>> prepareBatchUpload(List<LocalPoint> points, {
     void Function(int uploaded, int total)? onChunkUploaded,

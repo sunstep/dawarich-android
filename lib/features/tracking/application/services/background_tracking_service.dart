@@ -56,10 +56,10 @@ void backgroundTrackingEntry(ServiceInstance service) {
 
   Future.delayed(const Duration(seconds: 10), () {
     if (!hasProceeded) {
-      debugPrint("[Background] No 'proceed' signal received after 10s - stopping.");
-      service.stopSelf();
+      debugPrint("[Background] No 'proceed' received — auto-starting after delay.");
+      hasProceeded = true;
+      unawaited(_startBackgroundTracking(service));
     }
-
   });
 }
 

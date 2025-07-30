@@ -121,6 +121,11 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
 
   @override
   Stream<List<LocalPointDto>> watchCurrentBatch(int userId) {
+
+    if (kDebugMode) {
+      debugPrint("[DriftPointLocalRepository] Watching current batch for user $userId");
+    }
+
     try {
       final query = _database.select(_database.pointsTable).join([
         innerJoin(
@@ -197,6 +202,10 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   @override
   Stream<Option<LastPointDto>> watchLastPoint(int userId) {
 
+    if (kDebugMode) {
+      debugPrint("[DriftPointLocalRepository] Watching last point for user $userId");
+    }
+
     try {
       final query = _database.select(_database.pointsTable).join([
         leftOuterJoin(
@@ -262,6 +271,11 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
 
   @override
   Stream<int> watchBatchPointCount(int userId) {
+
+    if (kDebugMode) {
+      debugPrint("[DriftPointLocalRepository] Watching batch point count for user $userId");
+    }
+
     try {
       final query = _database.selectOnly(_database.pointsTable)
         ..addColumns([_database.pointsTable.id.count()])

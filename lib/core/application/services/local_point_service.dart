@@ -96,17 +96,12 @@ final class LocalPointService {
     final sorted = List<LocalPoint>.from(points)
       ..sort((a, b) => a.properties.timestamp.compareTo(b.properties.timestamp));
 
-    final userId = await _requireUserId();
-
     final seen = <String>{};
     final deduped = <LocalPoint>[];
 
     for (final p in sorted) {
-      final ts  = p.properties.timestamp;
-      final lon = p.geometry.longitude;
-      final lat = p.geometry.latitude;
+      final key = p.deduplicationKey;
 
-      final key = '$userId|$ts|$lon|$lat';
       if (seen.add(key)) {
         deduped.add(p);
       }

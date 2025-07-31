@@ -215,13 +215,14 @@ final class BackgroundTrackingService {
     await FlutterBackgroundService().configure(
       androidConfiguration: AndroidConfiguration(
         onStart: backgroundTrackingEntry,
+        autoStartOnBoot: true,
         isForegroundMode: true,
         foregroundServiceTypes: [AndroidForegroundType.location],
         autoStart: false,
         foregroundServiceNotificationId: 777,
         notificationChannelId: 'dawarich_foreground',
-        initialNotificationTitle: 'Dawarich is running',
-        initialNotificationContent: 'Tracking your location in background',
+        initialNotificationTitle: 'Dawarich Tracking',
+        initialNotificationContent: 'Starting background tracking...',
       ),
       iosConfiguration: IosConfiguration(
         onForeground: backgroundTrackingEntry,

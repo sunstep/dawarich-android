@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/core/constants/notification.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/user.dart';
@@ -48,8 +49,28 @@ void backgroundTrackingEntry(ServiceInstance service) {
   // 1. When the app is starting up (when the main isolate has done its initialization).
   // 2. When the user toggles on automatic tracking. Or else the the tracking will never start.
   bool hasProceeded = false;
-  service.on('proceed').listen((_) {
+  service.on('proceed').listen((_) async {
     debugPrint("[Background] UI signaled readiness via invoke");
+
+    FlutterLocalNotificationsPlugin().show(
+      NotificationConstants.notificationId,
+      'Dawarich Tracking',
+      'Tracking is running in the background',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          NotificationConstants.channelId,
+          NotificationConstants.channelName,
+          channelDescription: NotificationConstants.channelDescription,
+          icon: NotificationConstants.notificationIcon,
+          ongoing: true,
+          importance: Importance.low,
+          priority: Priority.low,
+          showWhen: false,
+        ),
+      ),
+    );
+
+
     unawaited(_startBackgroundTracking(service));
     hasProceeded = true;
   });
@@ -193,9 +214,9 @@ final class BackgroundTrackingService {
 
   static Future<void> ensureNotificationChannelExists() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'dawarich_foreground',
-      'Dawarich Background Tracking',
-      description: 'Used for location tracking in background',
+      NotificationConstants.channelId,
+      NotificationConstants.channelName,
+      description: NotificationConstants.channelDescription,
       importance: Importance.low,
     );
 
@@ -219,16 +240,16 @@ final class BackgroundTrackingService {
         isForegroundMode: true,
         foregroundServiceTypes: [AndroidForegroundType.location],
         autoStart: false,
-        foregroundServiceNotificationId: 777,
-        notificationChannelId: 'dawarich_foreground',
-        initialNotificationTitle: 'Dawarich Tracking',
-        initialNotificationContent: 'Starting background tracking...',
+        foregroundServiceNotificationId: NotificationConstants.notificationId,
+        notificationChannelId: NotificationConstants.channelId
       ),
       iosConfiguration: IosConfiguration(
         onForeground: backgroundTrackingEntry,
         onBackground: (_) async => true,
       ),
     );
+
+
   }
 
   static Future<Result<(), String>> start() async {

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/core/constants/notification.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointAutomationService with ChangeNotifier {
@@ -75,12 +77,25 @@ final class PointAutomationService with ChangeNotifier {
           final androidService = _serviceInstance;
           final isForeground = await androidService.isForegroundService();
           if (isForeground) {
-            androidService.setForegroundNotificationInfo(
-              title: 'Tracking location...',
-              content: 'Last updated at ${DateTime
-                  .now()
-                  .toLocal()
-                  .toIso8601String()}',
+            const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+              NotificationConstants.channelId,
+              NotificationConstants.notificationTitle,
+              channelDescription: NotificationConstants.channelDescription,
+              importance: Importance.low,
+              priority: Priority.low,
+              icon: NotificationConstants.notificationIcon,
+              ongoing: true,
+            );
+
+            const NotificationDetails notificationDetails = NotificationDetails(
+              android: androidDetails,
+            );
+
+            FlutterLocalNotificationsPlugin().show(
+              NotificationConstants.notificationId,
+              NotificationConstants.notificationTitle,
+              'Last updated at ${DateTime.now().toLocal().toIso8601String()}',
+              notificationDetails,
             );
           }
         }

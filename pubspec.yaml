@@ -41,7 +41,7 @@ dependencies:
   drift_flutter: ^0.2.4
   fl_chart: ^1.0.0
   flutter_background_service: ^5.1.0
-  flutter_local_notifications: ^19.3.0
+  flutter_local_notifications: ^19.4.0
   flutter_map: ^8.1.1
   flutter_map_animations: ^0.9.0
   flutter_map_location_marker: ^10.1.0

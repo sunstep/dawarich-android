@@ -59,13 +59,12 @@ final class LocalPointService {
       return const Err("All points already exist on the server.");
     }
 
+    int uploaded = 0;
     for (int i = 0; i < dedupedLocalPoints.length; i += chunkSize) {
-      final end = (i + chunkSize) > dedupedLocalPoints.length
-          ? dedupedLocalPoints.length
-          : (i + chunkSize);
+      final end = (i + chunkSize).clamp(0, dedupedLocalPoints.length);
       final chunk = dedupedLocalPoints.sublist(i, end);
 
-      List<DawarichPoint> apiPoints = chunk
+      final List<DawarichPoint> apiPoints = chunk
           .map((point) => point.toApi())
           .toList();
 
@@ -79,13 +78,43 @@ final class LocalPointService {
       } else {
         List<int> chunkIds = chunk.map((p) => p.id).toList();
         await deletePoints(chunkIds);
-        onChunkUploaded?.call(end, dedupedLocalPoints.length);
+        uploaded += chunk.length;
+        onChunkUploaded?.call(uploaded, dedupedLocalPoints.length);
       }
 
     }
 
     if (failedChunks.isNotEmpty) {
-      return Err("${failedChunks.length} points were failed to be uploaded.");
+      if (kDebugMode) {
+        debugPrint('[Batch Upload] Some batch chunks failed: retrying individually...');
+      }
+
+      int failedCount = 0;
+      int uploadedCount = 0;
+
+      for (final LocalPoint point in failedChunks) {
+        final dto = DawarichPointBatch(points: [point.toApi()]).toDto();
+        final result = await _api.uploadBatch(dto);
+
+        if (result case Err(value: final error)) {
+          if (error.contains("already exists")) {
+            await deletePoints([point.id]);
+            uploadedCount++;
+            onChunkUploaded?.call(uploadedCount, failedChunks.length);
+            continue;
+          }
+
+          failedCount++;
+        } else {
+          await deletePoints([point.id]);
+          uploadedCount++;
+          onChunkUploaded?.call(uploadedCount, failedChunks.length);
+        }
+      }
+
+      if (failedCount > 0) {
+        return Err("$failedCount point(s) failed to upload after retrying.");
+      }
     }
 
     return const Ok(());

@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   android_intent_plus: ^5.3.0
+
   battery_plus: ^6.2.2
   connectivity_plus: ^6.1.4
   country: ^6.0.0
@@ -62,6 +63,7 @@ dependencies:
   path_provider: ^2.1.5
   permission_handler: ^12.0.0+1
   provider: ^6.1.5
+  pub_semver: ^2.2.0
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
   session_box:

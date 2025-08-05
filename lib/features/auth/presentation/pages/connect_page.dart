@@ -88,7 +88,6 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
     );
   }
 
-  /// and re-connects your real logic.
   Future<void> _handleContinue(
       BuildContext context, ConnectViewModel vm) async {
     final navigator = Navigator.of(context);
@@ -104,6 +103,7 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
         vm.goToNextStep();
       }
     } else {
+
       if (!(_apiFormKey.currentState?.validate() ?? false)) {
         return;
       }
@@ -111,8 +111,17 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
       final ok = await vm.tryLoginApiKey(vm.apiKeyController.text.trim());
 
       if (ok) {
-        // use the pre–captured navigator
-        navigator.pushReplacementNamed(AppRouter.timeline);
+
+        final bool isServerSupported = await vm.checkServerSupport();
+
+        if (isServerSupported) {
+          navigator.pushReplacementNamed(AppRouter.timeline);
+        } else {
+          navigator.pushReplacementNamed(AppRouter.versionCheck);
+        }
+
+
+
       }
     }
   }

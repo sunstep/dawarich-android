@@ -46,6 +46,10 @@ import 'package:dawarich/features/migration/presentation/models/migration_viewmo
 import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
+import 'package:dawarich/features/version_check/application/version_check_service.dart';
+import 'package:dawarich/features/version_check/data/repositories/version_repository.dart';
+import 'package:dawarich/features/version_check/data_contracts/IVersionRepository.dart';
+import 'package:dawarich/features/version_check/presentation/models/version_check_viewmodel.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:session_box/session_box.dart';
@@ -89,6 +93,9 @@ final class DependencyInjection {
         () => ConnectivityDataClient());
 
     // Repositories
+    getIt.registerLazySingleton<IVersionRepository>(() => VersionRepository(
+        getIt<DioClient>())
+    );
     getIt.registerLazySingleton<IUserRepository>(
         () => DriftUserRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
@@ -129,6 +136,9 @@ final class DependencyInjection {
 
     getIt.registerLazySingleton<MigrationService>(
         () => MigrationService(getIt<SQLiteClient>()));
+    getIt.registerLazySingleton<VersionCheckService>(
+        () => VersionCheckService(getIt<IVersionRepository>())
+    );
     getIt.registerLazySingleton<SystemSettingsService>(
         () => SystemSettingsService());
     getIt.registerLazySingleton<ApiConfigService>(
@@ -156,7 +166,6 @@ final class DependencyInjection {
         getIt<TrackerSettingsService>(),
         getIt<ITrackRepository>(),
         getIt<IHardwareRepository>()));
-    // getIt.registerLazySingleton<BackgroundTrackingService>(() => BackgroundTrackingService());
     getIt.registerLazySingleton<PointAutomationService>(() =>
         PointAutomationService(
             getIt<TrackerSettingsService>(), getIt<LocalPointService>()));
@@ -165,10 +174,14 @@ final class DependencyInjection {
 
     // ViewModels
     getIt.registerLazySingleton<ConnectViewModel>(() =>
-        ConnectViewModel(getIt<ConnectService>()));
+        ConnectViewModel(getIt<ConnectService>(), getIt<VersionCheckService>()));
 
     getIt.registerFactory<MigrationViewModel>(() =>
         MigrationViewModel());
+
+    getIt.registerFactory<VersionCheckViewModel>(() => VersionCheckViewModel(
+        getIt<VersionCheckService>())
+    );
 
     getIt.registerFactory<TimelineViewModel>(() =>
         TimelineViewModel(getIt<MapService>(), getIt<LocalPointService>()),

@@ -1,5 +1,5 @@
 import 'package:dawarich/core/domain/models/user.dart';
-import 'package:dawarich/features/auth/application/user_converter.dart';
+import 'package:dawarich/features/auth/application/converters/user_converter.dart';
 import 'package:dawarich/features/auth/data_contracts/data_transfer_objects/users/user_dto.dart';
 import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/connect_repository_interfaces.dart';

@@ -2,6 +2,7 @@ import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/migration/presentation/models/migration_viewmodel.dart';
 import 'package:dawarich/features/migration/presentation/pages/migration_page.dart';
 import 'package:dawarich/features/batch/presentation/pages/batch_explorer_page.dart';
+import 'package:dawarich/features/version_check/presentation/pages/version_check_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/auth/presentation/pages/connect_page.dart';
@@ -16,6 +17,7 @@ final class AppRouter {
 
   static const String migration =     '/migration';
   static const String auth =          '/auth';
+  static const String versionCheck =  '/versionCheck';
   static const String timeline =      '/timeline';
   static const String stats =         '/stats';
   static const String points =        '/points';
@@ -41,6 +43,10 @@ final class AppRouter {
       case auth:
         {
           return MaterialPageRoute(builder: (_) => const ConnectPage());
+        }
+        case versionCheck:
+        {
+          return MaterialPageRoute(builder: (_) => const VersionCheckPage());
         }
       case timeline:
         {

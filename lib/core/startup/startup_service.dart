@@ -5,6 +5,7 @@ import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
+import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:session_box/session_box.dart';
@@ -58,6 +59,14 @@ final class StartupService {
     if (refreshedSessionUser != null) {
 
       sessionService.setUserId(refreshedSessionUser.id);
+
+      final VersionCheckService versionCheckService = getIt<VersionCheckService>();
+      final bool isSupported = await versionCheckService.isServerVersionSupported();
+
+      if (!isSupported) {
+        initialRoute = AppRouter.versionCheck;
+        return;
+      }
 
       final shouldTrack = await getIt<TrackerSettingsService>().getAutomaticTrackingSetting();
 

@@ -65,7 +65,7 @@ final class DioClient {
 
   Future<Response<T>> head<T>(String path,
       {Object? data,
-      required Map<String, dynamic> queryParameters,
+      Map<String, dynamic>? queryParameters,
       Options? options,
       CancelToken? cancelToken}) {
     return _dio.head(path,

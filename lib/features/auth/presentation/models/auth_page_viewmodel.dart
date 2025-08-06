@@ -2,11 +2,11 @@ import 'package:dawarich/features/auth/application/services/connect_service.dart
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:flutter/material.dart';
 
-final class ConnectViewModel extends ChangeNotifier {
+final class AuthPageViewModel extends ChangeNotifier {
 
   final ConnectService _connectService;
   final VersionCheckService _versionCheckService;
-  ConnectViewModel(this._connectService, this._versionCheckService);
+  AuthPageViewModel(this._connectService, this._versionCheckService);
 
   // final GlobalKey _emailController = TextEditingController();
   // final GlobalKey _passwordController = TextEditingController();

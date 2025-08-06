@@ -1,4 +1,5 @@
 
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/version_check/presentation/models/version_check_viewmodel.dart';
@@ -6,6 +7,7 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+@RoutePage()
 final class VersionCheckPage extends StatelessWidget {
 
   const VersionCheckPage({super.key});

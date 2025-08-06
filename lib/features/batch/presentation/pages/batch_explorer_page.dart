@@ -1,3 +1,4 @@
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
@@ -6,6 +7,7 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+@RoutePage()
 final class BatchExplorerPage extends StatelessWidget {
   const BatchExplorerPage({super.key});
 

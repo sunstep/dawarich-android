@@ -1,3 +1,4 @@
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
@@ -8,6 +9,7 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
+@RoutePage()
 class StatsPage extends StatelessWidget {
   const StatsPage({super.key});
 

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/core/routing/app_router.dart';
@@ -12,6 +14,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
 
+@RoutePage()
 final class TrackerPage extends StatelessWidget {
   const TrackerPage({super.key});
 
@@ -350,8 +353,7 @@ class LastPointCard extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.view_list),
                             label: const Text('View Batch'),
-                            onPressed: () => Navigator.pushNamed(
-                                context, AppRouter.batchExplorer),
+                            onPressed: () => context.router.root.push(const BatchExplorerRoute()),
                           ),
                         ),
                       ],

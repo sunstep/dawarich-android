@@ -1,3 +1,4 @@
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/custom_loading_indicator.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
+@RoutePage()
 final class TimelinePage extends StatefulWidget {
   const TimelinePage({super.key});
 

@@ -1,4 +1,4 @@
-import 'package:dawarich/features/auth/presentation/models/connect_page_viewmodel.dart';
+import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,7 +8,7 @@ class ServerStepWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<ConnectViewModel>();
+    final vm = context.watch<AuthPageViewModel>();
     return Form(
       key: formKey,
       child: Padding(
@@ -51,7 +51,7 @@ class LoginStepWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<ConnectViewModel>();
+    final vm = context.watch<AuthPageViewModel>();
     return Form(
       key: formKey,
       child: Padding(

@@ -1,18 +1,21 @@
+import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/features/auth/presentation/models/connect_page_viewmodel.dart';
+import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/auth/presentation/widgets/connect_steps.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-final class ConnectPage extends StatelessWidget {
-  const ConnectPage({super.key});
+@RoutePage()
+final class AuthPage extends StatelessWidget {
+  const AuthPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => getIt<ConnectViewModel>(),
+      create: (context) => getIt<AuthPageViewModel>(),
       child: Container(
         decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
         child: const Scaffold(
@@ -20,7 +23,7 @@ final class ConnectPage extends StatelessWidget {
           body: Center(
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              child: _ConnectFormCard(),
+              child: _AuthFormCard(),
             ),
           ),
         ),
@@ -29,20 +32,20 @@ final class ConnectPage extends StatelessWidget {
   }
 }
 
-final class _ConnectFormCard extends StatefulWidget {
-  const _ConnectFormCard();
+final class _AuthFormCard extends StatefulWidget {
+  const _AuthFormCard();
 
   @override
-  State<_ConnectFormCard> createState() => _ConnectFormCardState();
+  State<_AuthFormCard> createState() => _AuthFormCardState();
 }
 
-class _ConnectFormCardState extends State<_ConnectFormCard> {
+class _AuthFormCardState extends State<_AuthFormCard> {
   final _hostFormKey = GlobalKey<FormState>();
   final _apiFormKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
-    final ConnectViewModel vm = context.watch<ConnectViewModel>();
+    final AuthPageViewModel vm = context.watch<AuthPageViewModel>();
     return Card(
       elevation: 12,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -89,7 +92,7 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
   }
 
   Future<void> _handleContinue(
-      BuildContext context, ConnectViewModel vm) async {
+      BuildContext context, AuthPageViewModel vm) async {
     final navigator = Navigator.of(context);
 
     if (vm.currentStep == 0) {
@@ -115,9 +118,12 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
         final bool isServerSupported = await vm.checkServerSupport();
 
         if (isServerSupported) {
-          navigator.pushReplacementNamed(AppRouter.timeline);
-        } else {
-          navigator.pushReplacementNamed(AppRouter.versionCheck);
+          if (context.mounted) {
+            context.router.root.replaceAll([const TimelineRoute()]);
+          }
+
+        } else if (context.mounted) {
+          context.router.root.replaceAll([const VersionCheckRoute()]);
         }
 
 
@@ -127,7 +133,7 @@ class _ConnectFormCardState extends State<_ConnectFormCard> {
   }
 
   Widget _buildControls(
-      BuildContext context, ControlsDetails d, ConnectViewModel vm) {
+      BuildContext context, ControlsDetails d, AuthPageViewModel vm) {
     final busy = vm.isVerifyingHost || vm.isLoggingIn;
     final isLast = vm.currentStep == 1;
     return Padding(
@@ -160,7 +166,7 @@ final class _ConnectHeader extends StatelessWidget {
   const _ConnectHeader();
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<ConnectViewModel>();
+    final vm = context.watch<AuthPageViewModel>();
     return Column(
       children: [
         AnimatedSwitcher(

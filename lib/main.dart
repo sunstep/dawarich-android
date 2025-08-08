@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
 
+final AppRouter appRouter = AppRouter();
+
 Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,17 +25,19 @@ Future<void> main() async {
 }
 
 class Dawarich extends StatelessWidget {
+
   const Dawarich({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
         title: 'Dawarich',
         theme: LightTheme.primaryTheme,
         darkTheme: DarkTheme.primaryTheme,
         themeMode: ThemeMode.system,
-        onGenerateRoute: AppRouter.generateRoute,
-        initialRoute: StartupService.initialRoute,
-        navigatorObservers: [routeObserver]);
+        routerConfig: appRouter.config(
+          navigatorObservers: () => [routeObserver],
+        ),
+    );
   }
 }

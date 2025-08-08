@@ -1,3 +1,4 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
@@ -30,11 +31,11 @@ final class MigrationViewModel extends ChangeNotifier {
 
       if (context.mounted && refreshedSessionUser != null) {
         sessionService.setUserId(refreshedSessionUser.id);
-        Navigator.pushReplacementNamed(context, AppRouter.timeline);
+        context.router.root.replace(const TimelineRoute());
       } else {
         await sessionService.logout();
         if (context.mounted) {
-          Navigator.pushReplacementNamed(context, AppRouter.auth);
+          context.router.root.replace(const AuthRoute());
         }
       }
     } catch (e) {

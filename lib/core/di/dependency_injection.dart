@@ -10,6 +10,7 @@ import 'package:dawarich/core/shell/drawer/i_api_config_logout.dart';
 import 'package:dawarich/features/auth/application/services/auth_service.dart';
 import 'package:dawarich/features/auth/application/services/connect_service.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/user_repository_interfaces.dart';
+import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';
 import 'package:dawarich/features/timeline/application/services/location_service.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:dawarich/core/application/services/local_point_service.dart';
@@ -39,7 +40,6 @@ import 'package:dawarich/features/stats/data_contracts/interfaces/stats_reposito
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_settings_repository.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
-import 'package:dawarich/features/auth/presentation/models/connect_page_viewmodel.dart';
 import 'package:dawarich/core/shell/drawer/drawer_viewmodel.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
 import 'package:dawarich/features/migration/presentation/models/migration_viewmodel.dart';
@@ -173,8 +173,8 @@ final class DependencyInjection {
         () => StatsService(getIt<IStatsRepository>()));
 
     // ViewModels
-    getIt.registerLazySingleton<ConnectViewModel>(() =>
-        ConnectViewModel(getIt<ConnectService>(), getIt<VersionCheckService>()));
+    getIt.registerLazySingleton<AuthPageViewModel>(() =>
+        AuthPageViewModel(getIt<ConnectService>(), getIt<VersionCheckService>()));
 
     getIt.registerFactory<MigrationViewModel>(() =>
         MigrationViewModel());

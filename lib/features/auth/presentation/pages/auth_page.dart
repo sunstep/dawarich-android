@@ -1,4 +1,5 @@
 import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';
 import 'package:dawarich/core/routing/app_router.dart';
@@ -117,9 +118,12 @@ class _AuthFormCardState extends State<_AuthFormCard> {
         final bool isServerSupported = await vm.checkServerSupport();
 
         if (isServerSupported) {
-          navigator.pushReplacementNamed(AppRouter.timeline);
-        } else {
-          navigator.pushReplacementNamed(AppRouter.versionCheck);
+          if (context.mounted) {
+            context.router.root.replaceAll([const TimelineRoute()]);
+          }
+
+        } else if (context.mounted) {
+          context.router.root.replaceAll([const VersionCheckRoute()]);
         }
 
 

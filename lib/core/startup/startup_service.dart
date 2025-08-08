@@ -6,13 +6,12 @@ import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
+import 'package:dawarich/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:session_box/session_box.dart';
 
 final class StartupService {
-  static late final String initialRoute;
-
   static Future<void> initializeApp() async {
 
     final SQLiteClient db = getIt<SQLiteClient>();
@@ -48,7 +47,7 @@ final class StartupService {
     final didMigrate = await migrateFuture;
 
     if (didMigrate) {
-      initialRoute = AppRouter.migration;
+      appRouter.replaceAll([const MigrationRoute()]);
       return;
     }
 
@@ -64,7 +63,7 @@ final class StartupService {
       final bool isSupported = await versionCheckService.isServerVersionSupported();
 
       if (!isSupported) {
-        initialRoute = AppRouter.versionCheck;
+        appRouter.replaceAll([const VersionCheckRoute()]);
         return;
       }
 
@@ -77,10 +76,10 @@ final class StartupService {
         debugPrint('[StartupService] Auto-tracking is OFF — skipping background start');
       }
 
-      initialRoute = AppRouter.timeline;
+      appRouter.replaceAll([const TimelineRoute()]);
     } else {
       sessionService.logout();
-      initialRoute = AppRouter.auth;
+      appRouter.replaceAll([const AuthRoute()]);
     }
   }
 

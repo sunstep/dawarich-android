@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/core/routing/app_router.dart';
@@ -352,8 +353,7 @@ class LastPointCard extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.view_list),
                             label: const Text('View Batch'),
-                            onPressed: () => Navigator.pushNamed(
-                                context, AppRouter.batchExplorer),
+                            onPressed: () => context.router.root.push(const BatchExplorerRoute()),
                           ),
                         ),
                       ],

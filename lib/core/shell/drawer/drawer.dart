@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/shell/drawer/drawer_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
@@ -6,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:provider/provider.dart';
 
-class CustomDrawer extends StatelessWidget {
+final class CustomDrawer extends StatelessWidget {
 
   CustomDrawer({super.key});
 
@@ -21,6 +22,18 @@ class CustomDrawer extends StatelessWidget {
       ),
     );
   }
+
+  void _closeDrawer(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _replaceRoute(
+      BuildContext context, PageRouteInfo<Object?> route) async {
+    await context.router.root.replace(route);
+  }
+
 
   Widget _buildDrawer(BuildContext context) {
     // full‐height safe area
@@ -92,8 +105,8 @@ class CustomDrawer extends StatelessWidget {
                     _isNavigating = true;
 
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
-                      Navigator.of(context).pop();
-                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.timeline);
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const TimelineRoute());
                       _isNavigating = false;
                     });
                   }
@@ -113,9 +126,9 @@ class CustomDrawer extends StatelessWidget {
                   if (!_isNavigating) {
                     _isNavigating = true;
 
-                    Navigator.of(context).pop();
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
-                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.stats);
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const StatsRoute());
                       _isNavigating = false;
                     });
                   }
@@ -135,9 +148,9 @@ class CustomDrawer extends StatelessWidget {
                   if (!_isNavigating) {
                     _isNavigating = true;
 
-                    Navigator.of(context).pop();
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
-                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.points);
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const PointsRoute());
                       _isNavigating = false;
                     });
                   }
@@ -157,9 +170,9 @@ class CustomDrawer extends StatelessWidget {
                   if (!_isNavigating) {
                     _isNavigating = true;
 
-                    Navigator.of(context).pop();
                     WidgetsBinding.instance.addPostFrameCallback((_) async {
-                      await Navigator.of(context, rootNavigator: true).pushReplacementNamed(AppRouter.tracker);
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const TrackerRoute());
                       _isNavigating = false;
                     });
                   }
@@ -200,10 +213,8 @@ class CustomDrawer extends StatelessWidget {
             Navigator.pop(context);
             await vm.logout();
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRouter.auth,
-                (route) => false,
-              );
+              _closeDrawer(context);
+              context.router.root.replaceAll([const AuthRoute()]);
             });
           },
           textColor: Colors.red.shade300,

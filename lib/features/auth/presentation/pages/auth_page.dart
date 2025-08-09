@@ -5,6 +5,7 @@ import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.d
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/auth/presentation/widgets/connect_steps.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -93,7 +94,6 @@ class _AuthFormCardState extends State<_AuthFormCard> {
 
   Future<void> _handleContinue(
       BuildContext context, AuthPageViewModel vm) async {
-    final navigator = Navigator.of(context);
 
     if (vm.currentStep == 0) {
       if (!(_hostFormKey.currentState?.validate() ?? false)) {
@@ -117,7 +117,7 @@ class _AuthFormCardState extends State<_AuthFormCard> {
 
         final bool isServerSupported = await vm.checkServerSupport();
 
-        if (isServerSupported) {
+        if (kDebugMode || isServerSupported) {
           if (context.mounted) {
             context.router.root.replaceAll([const TimelineRoute()]);
           }

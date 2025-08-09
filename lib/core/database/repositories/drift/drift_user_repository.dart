@@ -34,17 +34,53 @@ final class DriftUserRepository implements IUserRepository {
       }
     }
 
-    return await _database.into(_database.userTable).insertOnConflictUpdate(
-          UserTableCompanion(
-              dawarichId: Value(userDto.remoteId),
-              dawarichEndpoint: Value(userDto.dawarichEndpoint),
-              email: Value(userDto.email),
-              createdAt: Value(userDto.createdAt),
-              updatedAt: Value(userDto.updatedAt),
-              theme: Value(userDto.theme),
-              admin: Value(userDto.admin)),
-        );
+    return _database.transaction(() async {
+      // 1) Upsert user
+      final userId = await _database.into(_database.userTable).insertOnConflictUpdate(
+        UserTableCompanion(
+          // if your PK is autoincrement, omit id; otherwise include it
+          id: userDto.id > 0 ? Value(userDto.id) : const Value.absent(),
+          dawarichId: Value(userDto.remoteId),
+          dawarichEndpoint: Value(userDto.dawarichEndpoint),
+          email: Value(userDto.email),
+          createdAt: Value(userDto.createdAt),
+          updatedAt: Value(userDto.updatedAt),
+          theme: Value(userDto.theme),
+          admin: Value(userDto.admin),
+        ),
+      );
+
+      // 2) Upsert settings (if present)
+      final s = userDto.settings;
+      if (s != null) {
+        await _database
+            .into(_database.userSettingsTable)
+            .insertOnConflictUpdate(UserSettingsTableCompanion(
+          userId: Value(userId), // FK to user
+          distanceUnit: Value(s.maps?.distanceUnit),
+          fogOfWarMeters: Value(s.fogOfWarMeters),
+          metersBetweenRoutes: Value(s.metersBetweenRoutes),
+          preferredMapLayer: Value(s.preferredMapLayer),
+          speedColoredRoutes: Value(s.speedColoredRoutes),
+          pointsRenderingMode: Value(s.pointsRenderingMode),
+          minutesBetweenRoutes: Value(s.minutesBetweenRoutes),
+          timeThresholdMinutes: Value(s.timeThresholdMinutes),
+          mergeThresholdMinutes: Value(s.mergeThresholdMinutes),
+          liveMapEnabled: Value(s.liveMapEnabled),
+          routeOpacity: Value(s.routeOpacity),
+          immichUrl: Value(s.immichUrl),
+          photoprismUrl: Value(s.photoprismUrl),
+          visitsSuggestionsEnabled: Value(s.visitsSuggestionsEnabled),
+          // optional/nullables:
+          speedColorScale: const Value.absent(),   // map if you have a column
+          fogOfWarThreshold: const Value.absent(), // map if you have a column
+        ));
+      }
+
+      return userId;
+    });
   }
+
 
   @override
   Future<Option<UserDto>> getUserByRemoteId(

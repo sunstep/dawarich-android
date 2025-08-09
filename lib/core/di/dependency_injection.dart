@@ -173,7 +173,7 @@ final class DependencyInjection {
         () => StatsService(getIt<IStatsRepository>()));
 
     // ViewModels
-    getIt.registerLazySingleton<AuthPageViewModel>(() =>
+    getIt.registerFactory<AuthPageViewModel>(() =>
         AuthPageViewModel(getIt<ConnectService>(), getIt<VersionCheckService>()));
 
     getIt.registerFactory<MigrationViewModel>(() =>

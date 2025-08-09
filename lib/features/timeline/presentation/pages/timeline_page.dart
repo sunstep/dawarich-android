@@ -218,6 +218,7 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
               userAgentPackageName: 'app.dawarich.android',
               maxNativeZoom: 19,
             ),
+            // --- API points (historical) ---
             if (mapModel.points.isNotEmpty)
               PolylineLayer(
                 polylines: [
@@ -232,9 +233,9 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
               ),
             if (mapModel.points.isNotEmpty)
               MarkerLayer(
-                markers: mapModel.points.map((point) {
+                markers: mapModel.points.map((p) {
                   return Marker(
-                    point: point,
+                    point: p,
                     width: 5,
                     height: 5,
                     child: Container(
@@ -242,6 +243,37 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
                         shape: BoxShape.circle,
                         color: Colors.blue,
                         border: Border.all(color: Colors.white, width: 1),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+            // --- Local points (live) - drawn ABOVE API points ---
+            if (mapModel.localPoints.isNotEmpty)
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: mapModel.localPoints,
+                    strokeWidth: 6.0,
+                    color: Colors.orange.withValues(alpha: 0.85),
+                    borderStrokeWidth: 2.0,
+                    borderColor: Colors.black.withValues(alpha: 0.5),
+                  ),
+                ],
+              ),
+            if (mapModel.localPoints.isNotEmpty)
+              MarkerLayer(
+                markers: mapModel.localPoints.map((p) {
+                  return Marker(
+                    point: p,
+                    width: 6,
+                    height: 6,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.orange,
+                        border: Border.all(color: Colors.black.withValues(alpha: 0.6), width: 1),
                       ),
                     ),
                   );

@@ -8,6 +8,7 @@ import 'package:dawarich/features/tracking/application/services/tracker_settings
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:session_box/session_box.dart';
 
@@ -62,7 +63,7 @@ final class StartupService {
       final VersionCheckService versionCheckService = getIt<VersionCheckService>();
       final bool isSupported = await versionCheckService.isServerVersionSupported();
 
-      if (!isSupported) {
+      if (!kDebugMode && !isSupported) {
         appRouter.replaceAll([const VersionCheckRoute()]);
         return;
       }

@@ -64,6 +64,11 @@ final class TimelineViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setLocalPoints(List<LatLng> points) {
+    _localPoints = points;
+    notifyListeners();
+  }
+
   void addLocalPoints(List<LatLng> points) {
     _localPoints.addAll(points);
     notifyListeners();
@@ -91,7 +96,7 @@ final class TimelineViewModel extends ChangeNotifier {
         );
       }).toList();
       final List<LatLng> localPointList = _mapService.prepPoints(slimApiPoints);
-      addLocalPoints(localPointList);
+      setLocalPoints(localPointList);
     });
   }
 

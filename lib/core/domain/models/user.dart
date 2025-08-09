@@ -7,7 +7,6 @@ final class User {
   final String email;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  final String apiKey;
   final String theme;
   final bool admin;
 
@@ -22,7 +21,6 @@ final class User {
       email: email,
       createdAt: createdAt,
       updatedAt: updatedAt,
-      apiKey: apiKey,
       theme: theme,
       admin: admin,
     );
@@ -35,7 +33,6 @@ final class User {
         required this.email,
         required this.createdAt,
         required this.updatedAt,
-        required this.apiKey,
         required this.theme,
         required this.admin});
 
@@ -49,7 +46,6 @@ final class User {
         updatedAt: json["updated_at"] != null
             ? DateTime.parse(json["updated_at"])
             : null,
-        apiKey: json["api_key"],
         theme: json["theme"],
         admin: json["admin"]);
   }
@@ -62,7 +58,6 @@ final class User {
       "email": email,
       "created_at": createdAt.toIso8601String(),
       "updated_at": updatedAt?.toIso8601String(),
-      "api_key": apiKey,
       "theme": theme,
       "admin": admin,
     };

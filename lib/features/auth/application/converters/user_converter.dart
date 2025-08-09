@@ -12,7 +12,6 @@ extension UserDomainDtoConverter on User {
         email: email,
         createdAt: createdAt,
         updatedAt: updatedAt,
-        apiKey: apiKey,
         theme: theme,
         admin: admin
     );
@@ -30,7 +29,6 @@ extension UserDtoDomainConverter on UserDto {
         email: email,
         createdAt: createdAt,
         updatedAt: updatedAt,
-        apiKey: apiKey,
         theme: theme,
         admin: admin
     );

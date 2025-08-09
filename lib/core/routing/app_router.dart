@@ -11,7 +11,7 @@ import 'package:dawarich/features/settings/presentation/pages/settings_page.dart
 
 part 'app_router.gr.dart';
 
-@AutoRouterConfig(replaceInRouteName: 'Page,Route,Screen')
+@AutoRouterConfig()
 final class AppRouter extends RootStackRouter {
 
   @override

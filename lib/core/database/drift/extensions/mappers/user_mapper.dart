@@ -13,7 +13,6 @@ extension DriftUserMapper on UserTableData {
       email: email,
       createdAt: createdAt,
       updatedAt: updatedAt,
-      apiKey: "",
       theme: theme,
       admin: admin,
     );

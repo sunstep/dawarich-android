@@ -2,6 +2,7 @@
 
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:flutter/material.dart';
+import 'package:option_result/option_result.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 final class VersionCheckViewModel extends ChangeNotifier {
@@ -28,10 +29,18 @@ final class VersionCheckViewModel extends ChangeNotifier {
     try {
       setIsLoading(true);
 
-      _isSupported = await _versionCheckService.isServerVersionSupported();
+      Result<(), String> serverSupportedResult = await _versionCheckService.isServerVersionSupported();
+
+      _isSupported = serverSupportedResult.isOk();
+
+      if (_isSupported) {
+        _errorMessage = null; // clear any old message
+      } else if (serverSupportedResult case Err(value: final String message)) {
+        setErrorMessage(message);
+      }
+
       final Version serverVersion = await _versionCheckService.getServerVersion();
       setServerVersion(serverVersion);
-      setRequiredVersion(Version(0, 30, 6));
     } catch (e) {
       _errorMessage = 'Failed to check server version: $e';
     } finally {
@@ -59,7 +68,30 @@ final class VersionCheckViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> retry() async {
+  Future<bool> retry() async {
+    setIsLoading(true);
+    setErrorMessage(null);
 
+    try {
+      final Version sv = await _versionCheckService.getServerVersion();
+      setServerVersion(sv);
+
+      final Result<void, String> r = await _versionCheckService.isServerVersionSupported();
+      final ok = r.isOk();
+
+      _isSupported = ok;
+      if (!ok) {
+        setErrorMessage(r.unwrapErr());
+      } else {
+        setErrorMessage(null);
+      }
+      return ok;
+    } catch (e) {
+      _isSupported = false;
+      setErrorMessage('Failed to check server version: $e');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   }
 }

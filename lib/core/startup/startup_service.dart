@@ -7,9 +7,9 @@ import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:dawarich/main.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:option_result/option_result.dart';
 import 'package:session_box/session_box.dart';
 
 final class StartupService {
@@ -61,9 +61,9 @@ final class StartupService {
       sessionService.setUserId(refreshedSessionUser.id);
 
       final VersionCheckService versionCheckService = getIt<VersionCheckService>();
-      final bool isSupported = await versionCheckService.isServerVersionSupported();
+      final Result<(), String> isSupported = await versionCheckService.isServerVersionSupported();
 
-      if (!kDebugMode && !isSupported) {
+      if (!kDebugMode && !isSupported.isOk()) {
         appRouter.replaceAll([const VersionCheckRoute()]);
         return;
       }

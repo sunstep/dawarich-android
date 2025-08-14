@@ -1,8 +1,9 @@
-
 import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/version_check/presentation/models/version_check_viewmodel.dart';
+import 'package:dawarich/main.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -61,9 +62,8 @@ class _VersionCheckContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      "Your server is running version ${vm.serverVersion}, "
-                          "but this app requires at least version ${vm.requiredVersion}.",
+                    Text(vm.errorMessage ??
+                        "Verifying compatibility with the server. Please wait...",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                       ),
@@ -74,7 +74,14 @@ class _VersionCheckContent extends StatelessWidget {
                       const CircularProgressIndicator()
                     else
                       ElevatedButton.icon(
-                        onPressed: vm.retry,
+                        onPressed: () async {
+                          final bool success = await vm.retry();
+
+                          if (success) {
+                            appRouter.replaceAll([const TimelineRoute()]);
+                          }
+
+                        },
                         icon: const Icon(Icons.refresh),
                         label: const Text("Retry"),
                         style: ElevatedButton.styleFrom(

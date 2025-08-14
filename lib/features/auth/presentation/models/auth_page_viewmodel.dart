@@ -1,6 +1,7 @@
 import 'package:dawarich/features/auth/application/services/connect_service.dart';
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:flutter/material.dart';
+import 'package:option_result/option_result.dart';
 
 final class AuthPageViewModel extends ChangeNotifier {
 
@@ -96,7 +97,8 @@ final class AuthPageViewModel extends ChangeNotifier {
   // }
 
   Future<bool> checkServerSupport() async {
-    return await _versionCheckService.isServerVersionSupported();
+    final Result<(), String> supportResult = await _versionCheckService.isServerVersionSupported();
+    return supportResult.isOk();
   }
 
   void goToNextStep() {

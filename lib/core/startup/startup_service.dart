@@ -63,18 +63,21 @@ final class StartupService {
       final VersionCheckService versionCheckService = getIt<VersionCheckService>();
       final Result<(), String> isSupported = await versionCheckService.isServerVersionSupported();
 
-      if (!kDebugMode && !isSupported.isOk()) {
+      if (!isSupported.isOk()) {
         appRouter.replaceAll([const VersionCheckRoute()]);
         return;
       }
 
       final shouldTrack = await getIt<TrackerSettingsService>().getAutomaticTrackingSetting();
 
+      final FlutterBackgroundService backgroundService = FlutterBackgroundService();
+
       if (shouldTrack) {
         debugPrint('[StartupService] Auto-tracking is ON — sending proceed');
-        FlutterBackgroundService().invoke('proceed');
+        backgroundService.invoke('proceed');
       } else {
         debugPrint('[StartupService] Auto-tracking is OFF — skipping background start');
+        backgroundService.invoke('stopService');
       }
 
       appRouter.replaceAll([const TimelineRoute()]);

@@ -54,8 +54,6 @@ dependencies:
   json_annotation: ^4.9.0
   latlong2: ^0.9.1
   network_info_plus: ^6.1.4
-  objectbox: ^4.3.0
-  objectbox_flutter_libs: any
   option_result: ^3.2.1
   package_info_plus: ^8.3.1
   path: ^1.9.1
@@ -65,7 +63,7 @@ dependencies:
   pub_semver: ^2.2.0
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
-  session_box: ^1.0.0
+  session_box: ^1.0.4
   uuid: ^4.5.1
 
 

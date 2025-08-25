@@ -11,7 +11,7 @@ final class VersionRepository implements IVersionRepository {
 
   Future<String> getCompatUrl() async {
     final sha = await _getCompatCommitSha(); // commit sha, not blob sha
-    return 'https://raw.githubusercontent.com/sunstep/dawarich-android-feedback/$sha/compat-test.json';
+    return 'https://raw.githubusercontent.com/sunstep/dawarich-android-feedback/$sha/compat.json'; // In the future this will be same repository as the code it self.
   }
 
   @override
@@ -39,7 +39,7 @@ final class VersionRepository implements IVersionRepository {
 
     try {
       final resp = await _apiClient.get(
-        "https://api.github.com/repos/sunstep/dawarich-android-feedback/commits?path=compat-test.json&sha=main&per_page=1",
+        "https://api.github.com/repos/sunstep/dawarich-android-feedback/commits?path=compat.json&sha=main&per_page=1", // In the future this will be same repository as the code it self.
         options: Options(
           extra: {'skipAuth': true},
           headers: {

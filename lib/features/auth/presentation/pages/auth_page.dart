@@ -1,4 +1,3 @@
-import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';

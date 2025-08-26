@@ -14,6 +14,9 @@ final class StatsRepository implements IStatsRepository {
     try {
       final resp = await _apiClient.get<Map<String, dynamic>>(
         '/api/v1/stats',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 30)
+        )
       );
 
       final Map<String, dynamic>? json = resp.data;

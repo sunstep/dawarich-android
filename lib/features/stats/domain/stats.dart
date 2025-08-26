@@ -9,17 +9,23 @@ class Stats {
   int totalCities;
   List<YearlyStats> yearlyStats;
 
-  Stats(this.totalDistance, this.totalPoints, this.totalReverseGeocodedPoints,
-      this.totalCountries, this.totalCities, this.yearlyStats);
+  Stats({
+    required this.totalDistance,
+    required this.totalPoints,
+    required this.totalReverseGeocodedPoints,
+    required this.totalCountries,
+    required this.totalCities,
+    required this.yearlyStats
+  });
 
   factory Stats.fromDTO(StatsDTO dto) {
     return Stats(
-      dto.totalDistance,
-      dto.totalPoints,
-      dto.totalReverseGeocodedPoints,
-      dto.totalCountries,
-      dto.totalCities,
-      dto.yearlyStats
+      totalDistance: dto.totalDistance,
+      totalPoints: dto.totalPoints,
+      totalReverseGeocodedPoints: dto.totalReverseGeocodedPoints,
+      totalCountries: dto.totalCountries,
+      totalCities: dto.totalCities,
+      yearlyStats: dto.yearlyStats
           .map((yearlyStatsDTO) => YearlyStats.fromDTO(yearlyStatsDTO))
           .toList(),
     );

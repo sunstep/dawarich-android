@@ -14,33 +14,35 @@ class MonthlyStats {
   int november;
   int december;
 
-  MonthlyStats(
-      this.january,
-      this.february,
-      this.march,
-      this.april,
-      this.may,
-      this.june,
-      this.july,
-      this.august,
-      this.september,
-      this.october,
-      this.december,
-      this.november);
+  MonthlyStats({
+    required this.january,
+    required this.february,
+    required this.march,
+    required this.april,
+    required this.may,
+    required this.june,
+    required this.july,
+    required this.august,
+    required this.september,
+    required this.october,
+    required this.november,
+    required this.december
+  });
 
   factory MonthlyStats.fromDTO(MonthlyStatsDTO dto) {
     return MonthlyStats(
-        dto.january,
-        dto.february,
-        dto.march,
-        dto.april,
-        dto.may,
-        dto.june,
-        dto.july,
-        dto.august,
-        dto.september,
-        dto.october,
-        dto.november,
-        dto.december);
+        january: dto.january,
+        february: dto.february,
+        march: dto.march,
+        april: dto.april,
+        may: dto.may,
+        june: dto.june,
+        july: dto.july,
+        august: dto.august,
+        september: dto.september,
+        october: dto.october,
+        november: dto.november,
+        december: dto.december
+    );
   }
 }

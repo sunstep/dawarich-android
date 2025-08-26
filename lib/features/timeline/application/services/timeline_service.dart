@@ -1,5 +1,4 @@
 import 'package:country/country.dart';
-import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:dawarich/core/domain/models/point/point_pair.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';

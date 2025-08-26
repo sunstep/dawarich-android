@@ -484,7 +484,7 @@ class _EmptyPointsState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.map_outlined, size: 64, color: cs.onBackground.withOpacity(0.5)),
+          Icon(Icons.map_outlined, size: 64, color: cs.onSurface.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             'No points found',
@@ -493,7 +493,7 @@ class _EmptyPointsState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Try picking a different date.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: cs.onBackground.withOpacity(0.6)),
+            style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),

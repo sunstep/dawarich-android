@@ -8,15 +8,18 @@ class YearlyStatsViewModel {
   int totalCities;
   MonthlyStatsViewModel monthlyStats;
 
-  YearlyStatsViewModel(this.year, this.totalDistance, this.totalCountries,
-      this.totalCities, this.monthlyStats);
-
-  factory YearlyStatsViewModel.fromEntity(YearlyStats entity) {
+  YearlyStatsViewModel({required this.year,
+    required this.totalDistance,
+    required this.totalCountries,
+    required this.totalCities,
+    required this.monthlyStats
+  });
+  factory YearlyStatsViewModel.fromDomain(YearlyStats entity) {
     return YearlyStatsViewModel(
-        entity.year,
-        entity.totalDistance,
-        entity.totalCountries,
-        entity.totalCities,
-        MonthlyStatsViewModel.fromEntity(entity.monthlyStats));
+        year: entity.year,
+        totalDistance: entity.totalDistance,
+        totalCountries: entity.totalCountries,
+        totalCities: entity.totalCities,
+        monthlyStats: MonthlyStatsViewModel.fromDomain(entity.monthlyStats));
   }
 }

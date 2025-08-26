@@ -28,7 +28,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
   List<LocalPointViewModel> _batch = [];
   List<LocalPointViewModel> get batch => _batch;
-  int _itemsPerPage = 100;
+  final int _itemsPerPage = 100;
   int get _currentPage => (_batch.length / _itemsPerPage)
       .ceil().clamp(1, double.infinity).toInt();
 

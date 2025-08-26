@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/main.dart';

@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:dawarich/features/version_check/data_contracts/IVersionRepository.dart';
+import 'package:dawarich/features/version_check/data_contracts/version_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 import 'package:package_info_plus/package_info_plus.dart';

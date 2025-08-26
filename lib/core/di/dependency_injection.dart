@@ -48,7 +48,7 @@ import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:dawarich/features/version_check/data/repositories/version_repository.dart';
-import 'package:dawarich/features/version_check/data_contracts/IVersionRepository.dart';
+import 'package:dawarich/features/version_check/data_contracts/version_repository_interfaces.dart';
 import 'package:dawarich/features/version_check/presentation/models/version_check_viewmodel.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get_it/get_it.dart';

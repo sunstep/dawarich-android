@@ -109,7 +109,7 @@ final class UserDto {
     'theme': theme,
     'admin': admin ? 1 : 0,
     // serialize settings separately or as JSON:
-    'settings_json': settings == null ? null : settings!.toJson(),
+    'settings_json': settings?.toJson(),
   };
 
   static DateTime? _parseDate(dynamic v) {

@@ -1,4 +1,3 @@
-import 'package:dawarich/features/stats/domain/stats.dart';
 import 'package:dawarich/features/stats/presentation/models/yearly_stats_viewmodel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
@@ -19,18 +18,11 @@ final class StatsViewModel {
       this._totalCities,
       this.yearlyStats);
 
-  factory StatsViewModel.fromDomain(Stats entity) {
-    return StatsViewModel(
-      entity.totalDistance,
-      entity.totalPoints,
-      entity.totalReverseGeocodedPoints,
-      entity.totalCountries,
-      entity.totalCities,
-      entity.yearlyStats
-          .map((yearlyStats) => YearlyStatsViewModel.fromEntity(yearlyStats))
-          .toList(),
-    );
-  }
+  int get totalDistanceValue => _totalDistance;
+  int get totalPointsValue => _totalPoints;
+  int get totalReverseGeocodedPointsValue => _totalReverseGeocodedPoints;
+  int get totalCountriesValue => _totalCountries;
+  int get totalCitiesValue => _totalCities;
 
   String _format(int number, BuildContext context) {
     final locale = Localizations.localeOf(context).toString();

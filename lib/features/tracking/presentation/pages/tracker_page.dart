@@ -1,135 +1,204 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
 
-final class TrackerPage extends StatefulWidget {
+@RoutePage()
+final class TrackerPage extends StatelessWidget {
   const TrackerPage({super.key});
 
   @override
-  State<TrackerPage> createState() => _TrackerPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+        create: (_) => getIt<TrackerPageViewModel>()..initialize(),
+        builder: (context, child) => Consumer<TrackerPageViewModel>(
+            builder: (context, vm, child) => _TrackerPageContent()
+        )
+    );
+  }
 }
 
-final class _TrackerPageState extends State<TrackerPage>
-    with WidgetsBindingObserver, RouteAware {
-  late final TrackerPageViewModel _viewModel;
-  late final StreamSubscription<void> _settingsSub;
+final class _TrackerPageContent extends StatefulWidget {
+
+  @override
+  State<_TrackerPageContent> createState() => _TrackerPageContentState();
+}
+
+final class _TrackerPageContentState extends State<_TrackerPageContent> with
+    WidgetsBindingObserver, RouteAware {
+
+  StreamSubscription<String>? _consentPromptSub;
+  _TrackerPageContentState();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
-    _viewModel = getIt<TrackerPageViewModel>();
-    _viewModel.initialize();
-
-    // delay the actual showDialog until after build()
-    _settingsSub = _viewModel.onSystemSettingsPrompt.listen((_) {
-      if (!mounted) return;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
-        final open = await _showSystemSettingsConfirmation(context);
-        if (open) {
-          await _viewModel.openSystemSettings();
-        }
-      });
-    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
-    _settingsSub.cancel();
-    _viewModel.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final TrackerPageViewModel vm = context.read<TrackerPageViewModel>();
+    return buildTrackerPage(context, vm);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
-  }
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final route = ModalRoute.of(context);
+      if (route != null) {
+        routeObserver.subscribe(this, route);
+      }
+    });
+
+    if (_consentPromptSub == null) {
+      Future.microtask(() {
+        if (!mounted) return;
+
+        final vm = context.read<TrackerPageViewModel>();
+        _consentPromptSub = vm.onConsentPrompt.listen((message) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!context.mounted) return;
+
+            final result = await showDialog<bool>(
+              context: context,
+              barrierDismissible: true,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Dawarich Needs Permission'),
+                content: Text(message),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text('No thanks'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+
+            vm.handleConsentResponse(result ?? false);
+          });
+        });
+      });
+    }
+  }
   @override
   void didPushNext() {
-    _viewModel.persistPreferences();
+    _consentPromptSub?.cancel();
+    _consentPromptSub = null;
+
+    Future.microtask(() {
+      try {
+
+        final BuildContext localContext = context;
+
+        if (localContext.mounted) {
+          final viewModel = localContext.read<TrackerPageViewModel>();
+          viewModel.persistPreferences();
+        }
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint("Error persisting preferences on didPushNext: $error");
+        }
+      }
+    });
   }
 
   @override
   void didPopNext() {
-    _viewModel.getLastPoint();
-    _viewModel.getPointInBatchCount();
+    _consentPromptSub?.cancel();
+    _consentPromptSub = null;
+
+    Future.microtask(() {
+      try {
+
+        final BuildContext localContext = context;
+
+        if (localContext.mounted) {
+          final viewModel = localContext.read<TrackerPageViewModel>();
+          viewModel.getLastPoint();
+          viewModel.getPointInBatchCount();
+        }
+
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint("Error fetching last point on didPopNext: $error");
+        }
+      }
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _viewModel.persistPreferences();
-    }
-    if (state == AppLifecycleState.resumed) {
-      _viewModel.getLastPoint();
-      _viewModel.getPointInBatchCount();
-    }
+    Future.microtask(() {
+      try {
+
+        final BuildContext localContext = context;
+
+        if (localContext.mounted) {
+          final viewModel = localContext.read<TrackerPageViewModel>();
+
+          if (state == AppLifecycleState.paused ||
+              state == AppLifecycleState.inactive) {
+            viewModel.persistPreferences();
+          }
+          if (state == AppLifecycleState.resumed) {
+            viewModel.getLastPoint();
+            viewModel.getPointInBatchCount();
+          }
+        }
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint("Error handling app lifecycle state change: $error");
+        }
+      }
+    });
   }
 
-  Future<bool> _showSystemSettingsConfirmation(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Background Tracking Needs Your Help'),
-        content: Text(
-          Platform.isAndroid
-              ? 'To keep tracking running in the background, disable battery optimization for this app.'
-              : 'To keep tracking running in the background, grant “Always” location permission in Settings.',
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Later')),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Open Settings')),
-        ],
-      ),
-    ).then((v) => v ?? false);
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      child: Container(
-        // full-screen diagonal gradient from our theme extension
-        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: const Scaffold(
+  Widget buildTrackerPage(BuildContext context, TrackerPageViewModel vm) {
+
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: CustomAppbar(
+          title: 'Tracker',
+          titleFontSize: 32,
           backgroundColor: Colors.transparent,
-          appBar: CustomAppbar(
-            title: 'Tracker',
-            titleFontSize: 32,
-            backgroundColor: Colors.transparent,
-          ),
-          drawer: CustomDrawer(),
-          body: SafeArea(child: _TrackerBody()),
         ),
+        drawer: CustomDrawer(),
+        body: SafeArea(child: _TrackerBody()),
       ),
     );
   }
 }
 
 class _TrackerBody extends StatelessWidget {
-  const _TrackerBody();
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +336,9 @@ class LastPointCard extends StatelessWidget {
                                 : Icon(Icons.add_location_alt, color: accent),
                             label: Text('Track Point',
                                 style: TextStyle(color: white)),
-                            onPressed: vm.isTracking ? null : vm.trackPoint,
+                            onPressed: vm.isTracking ? null : () async {
+                              await handleManualPointRequest(context, vm);
+                            },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -281,8 +352,7 @@ class LastPointCard extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.view_list),
                             label: const Text('View Batch'),
-                            onPressed: () => Navigator.pushNamed(
-                                context, AppRouter.batchExplorer),
+                            onPressed: () => context.router.root.push(const BatchExplorerRoute()),
                           ),
                         ),
                       ],
@@ -300,6 +370,31 @@ class LastPointCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> handleManualPointRequest(BuildContext context, TrackerPageViewModel vm) async {
+
+    if (vm.isTrackingAutomatically) {
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Manual Tracking Disabled'),
+          content: const Text(
+            'Manual tracking is disabled while automatic tracking is active. '
+                'Please stop automatic tracking first if you want to manually add a point.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    await vm.trackPoint();
   }
 }
 
@@ -456,7 +551,27 @@ class _BasicSettingsSection extends StatelessWidget {
         SwitchListTile(
           title: const Text('Automatic Tracking'),
           value: vm.isTrackingAutomatically,
-          onChanged: vm.toggleAutomaticTracking,
+          onChanged: (enabled) async {
+            final result = await vm.toggleAutomaticTracking(enabled);
+            if (!context.mounted) {
+              return;
+            }
+            if (result case Err(value: final message)) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Tracking Setup Failed"),
+                  content: Text(message),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
+              );
+            }
+          },
         ),
         const SizedBox(height: 24),
         Row(
@@ -578,11 +693,11 @@ class _AdvancedSettingsSection extends StatelessWidget {
           decoration: InputDecoration(
             suffixIcon: IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: vm.resetTrackerId,
+              onPressed: vm.resetDeviceId,
               tooltip: 'Reset ID',
             ),
           ),
-          onChanged: vm.setTrackerId,
+          onChanged: vm.setDeviceId,
         ),
       ],
     );

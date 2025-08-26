@@ -24,12 +24,12 @@ void main() {
         }),
       ]
       ..stubSlimPoints = [
-        SlimApiPointDTO({
+        SlimApiPointDTO.fromJson({
           'latitude': '1.1',
           'longitude': '2.2',
           'timestamp': 333,
         }),
-        SlimApiPointDTO({
+        SlimApiPointDTO.fromJson({
           'latitude': '3.3',
           'longitude': '4.4',
           'timestamp': 444,
@@ -72,7 +72,7 @@ void main() {
     const perPage = 5;
     test('success → Some(list), args tracked', () async {
       repo.shouldFetchPointsFail = false;
-      final opt = await repo.fetchPoints(start, end, perPage);
+      final opt = await repo.getPoints(startDate: start, endDate: end, perPage: perPage);
       expect(opt.isSome(), isTrue);
       expect(opt.unwrap(), repo.stubPoints);
       expect(repo.fetchAllPointsCallCount, 1);
@@ -82,7 +82,7 @@ void main() {
     });
     test('failure → None, callCount tracked', () async {
       repo.shouldFetchPointsFail = true;
-      final opt = await repo.fetchPoints(start, end, perPage);
+      final opt = await repo.getPoints(startDate: start, endDate: end, perPage: perPage);
       expect(opt.isNone(), isTrue);
       expect(repo.fetchAllPointsCallCount, 1);
     });
@@ -93,7 +93,7 @@ void main() {
     const perPage = 10;
     test('success → Some(list), args tracked', () async {
       repo.shouldFetchSlimFail = false;
-      final opt = await repo.fetchSlimPoints(start, end, perPage);
+      final opt = await repo.getSlimPoints(startDate: start, endDate: end, perPage: perPage);
       expect(opt.isSome(), isTrue);
       expect(opt.unwrap(), repo.stubSlimPoints);
       expect(repo.fetchAllSlimCallCount, 1);
@@ -103,7 +103,7 @@ void main() {
     });
     test('failure → None, callCount tracked', () async {
       repo.shouldFetchSlimFail = true;
-      final opt = await repo.fetchSlimPoints(start, end, perPage);
+      final opt = await repo.getSlimPoints(startDate: start, endDate: end, perPage: perPage);
       expect(opt.isNone(), isTrue);
       expect(repo.fetchAllSlimCallCount, 1);
     });
@@ -115,7 +115,7 @@ void main() {
     test('success → parsed int, args tracked', () async {
       repo.shouldFetchHeadersFail = false;
       repo.stubHeaders = {'x-total-pages': '5'};
-      final pages = await repo.getTotalPages(start, end, perPage);
+      final pages = await repo.getTotalPages(startDate: start, endDate: end, perPage: perPage);
       expect(pages, 5);
       expect(repo.getTotalPagesCallCount, 1);
       expect(repo.lastGetTotalPagesStart, start);
@@ -124,7 +124,7 @@ void main() {
     });
     test('failure → 0, callCount tracked', () async {
       repo.shouldFetchHeadersFail = true;
-      final pages = await repo.getTotalPages(start, end, perPage);
+      final pages = await repo.getTotalPages(startDate: start, endDate: end, perPage: perPage);
       expect(pages, 0);
       expect(repo.getTotalPagesCallCount, 1);
     });

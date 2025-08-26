@@ -6,6 +6,7 @@ class LocalPointDto {
   final String type;
   final LocalPointGeometryDto geometry;
   final LocalPointPropertiesDto properties;
+  String get deduplicationKey => '$userId|${properties.timestamp}|${geometry.longitude},${geometry.latitude}';
   final int userId;
   final bool isUploaded;
 

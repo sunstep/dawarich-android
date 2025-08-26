@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
@@ -34,16 +32,16 @@ final class ApiPointRepository implements IApiPointRepository {
       }
     } on DioException catch (e) {
       // network / timeout / cancellation / 4xx/5xx
-      return Err(e.message ?? 'Unknown network error');
+      return Err(e.message ?? 'The API rejected the batch.');
     }
   }
 
   @override
-  Future<Option<List<ApiPointDTO>>> fetchPoints(
-      DateTime startDate,
-      DateTime endDate,
-      int perPage,
-      ) async {
+  Future<Option<List<ApiPointDTO>>> getPoints({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int perPage,
+  }) async {
     final startIso = _formatStartDate(startDate);
     final endIso   = _formatEndDate(endDate);
 
@@ -102,11 +100,11 @@ final class ApiPointRepository implements IApiPointRepository {
   }
 
   @override
-  Future<Option<List<SlimApiPointDTO>>> fetchSlimPoints(
-      DateTime startDate,
-      DateTime endDate,
-      int perPage,
-      ) async {
+  Future<Option<List<SlimApiPointDTO>>> getSlimPoints({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int perPage,
+  }) async {
     final startIso = _formatStartDate(startDate);
     final endIso   = _formatEndDate(endDate);
 
@@ -129,35 +127,13 @@ final class ApiPointRepository implements IApiPointRepository {
         return const Some(<SlimApiPointDTO>[]);
       }
 
-      final pageFutures = List<Future<List<SlimApiPointDTO>>>.generate(
-        totalPages,
-            (i) async {
-          final pageNumber = i + 1;
-          try {
-            final resp = await _apiClient.get<List<dynamic>>(
-              '/api/v1/points',
-              queryParameters: {
-                'start_at': startIso,
-                'end_at':   endIso,
-                'per_page': perPage,
-                'page':     pageNumber,
-                'slim':     true
-              },
-            );
 
-            return resp.data!
-                .map((json) => SlimApiPointDTO(
-                json as Map<String, dynamic>))
-                .toList();
-          } catch (e, st) {
-            debugPrint('Error fetching points page $pageNumber: $e\n$st');
-            return <SlimApiPointDTO>[];
-          }
-        },
+      final allPoints = await _fetchAllPagesThrottled(
+        totalPages: totalPages,
+        startIso: startIso,
+        endIso: endIso,
+        perPage: perPage,
       );
-
-      final pages = await Future.wait(pageFutures);
-      final allPoints = pages.expand((list) => list).toList();
 
       return Some(allPoints);
     } catch (e, st) {
@@ -166,12 +142,61 @@ final class ApiPointRepository implements IApiPointRepository {
     }
   }
 
+  Future<List<SlimApiPointDTO>> _fetchAllPagesThrottled({
+    required int totalPages,
+    required String startIso,
+    required String endIso,
+    required int perPage,
+    int maxConcurrent = 5,
+  }) async {
+    final results = <SlimApiPointDTO>[];
+    final queue = List<int>.generate(totalPages, (i) => i + 1);
+    final active = <Future<void>>[];
+
+    Future<void> handlePage(int pageNumber) async {
+      try {
+        final resp = await _apiClient
+            .get<List<dynamic>>(
+          '/api/v1/points',
+          queryParameters: {
+            'start_at': startIso,
+            'end_at': endIso,
+            'per_page': perPage,
+            'page': pageNumber,
+            'slim': true,
+          },
+        )
+            .timeout(const Duration(seconds: 15));
+        final points = resp.data!
+            .map((e) => SlimApiPointDTO.fromJson(e))
+            .toList();
+        results.addAll(points);
+      } catch (e, st) {
+        debugPrint('⚠️ Failed page $pageNumber: $e\n$st');
+      }
+    }
+
+    while (queue.isNotEmpty || active.isNotEmpty) {
+      while (active.length < maxConcurrent && queue.isNotEmpty) {
+        final page = queue.removeAt(0);
+        final future = handlePage(page);
+        active.add(future);
+        future.whenComplete(() => active.remove(future));
+      }
+      if (active.isNotEmpty) {
+        await Future.any(active);
+      }
+    }
+
+    return results;
+  }
+
   @override
-  Future<int> getTotalPages(
-      DateTime startDate,
-      DateTime endDate,
-      int perPage,
-      ) async {
+  Future<int> getTotalPages({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int perPage,
+  }) async {
     final startIso = _formatStartDate(startDate);
     final endIso   = _formatEndDate(endDate);
 
@@ -243,13 +268,6 @@ final class ApiPointRepository implements IApiPointRepository {
     }
   }
 
-  String _formatStartDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day).toUtc().toIso8601String();
-  }
-
-  String _formatEndDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day, 23, 59, 59)
-        .toUtc()
-        .toIso8601String();
-  }
+  String _formatStartDate(DateTime date) => date.toUtc().toIso8601String();
+  String _formatEndDate(DateTime date) => date.toUtc().toIso8601String();
 }

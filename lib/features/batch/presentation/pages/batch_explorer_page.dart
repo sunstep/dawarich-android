@@ -1,3 +1,4 @@
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/batch/presentation/models/batch_explorer_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
@@ -6,36 +7,57 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+@RoutePage()
 final class BatchExplorerPage extends StatelessWidget {
   const BatchExplorerPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = getIt<BatchExplorerViewModel>();
+    return ChangeNotifierProvider(
+        create: (_) => getIt<BatchExplorerViewModel>()..initialize(),
+        builder: (context, child) => Consumer<BatchExplorerViewModel>(
+              builder: (context, vm, child) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  vm.uploadResultStream.listen((msg) {
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Upload failed'),
+                          content: Text(msg),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  });
+                });
 
-    return ChangeNotifierProvider.value(
-      value: viewModel,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: const CustomAppbar(
-                title: "Batch Explorer",
-                titleFontSize: 30,
-                backgroundColor: Colors.transparent),
-            body: SafeArea(child: _BatchContent()),
-            bottomNavigationBar: Consumer<BatchExplorerViewModel>(
-              builder: (context, vm, _) {
-                return vm.hasPoints
-                    ? const _BatchFooter()
-                    : const SizedBox.shrink();
+                return Container(
+                  decoration:
+                      BoxDecoration(gradient: Theme.of(context).pageBackground),
+                  child: Scaffold(
+                    backgroundColor: Colors.transparent,
+                    appBar: const CustomAppbar(
+                        title: "Batch Explorer",
+                        titleFontSize: 30,
+                        backgroundColor: Colors.transparent),
+                    body: SafeArea(child: _BatchContent()),
+                    bottomNavigationBar: Consumer<BatchExplorerViewModel>(
+                      builder: (context, vm, _) {
+                        return vm.hasPoints
+                            ? const _BatchFooter()
+                            : const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                );
               },
-            ),
-          ),
-        );
-      },
-    );
+            ));
   }
 }
 
@@ -43,37 +65,93 @@ class _BatchContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<BatchExplorerViewModel>();
+    final hasPoints = vm.visibleBatch.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
           Text(
-            vm.hasPoints
-                ? '${vm.batch.length} Point${vm.batch.length > 1 ? 's' : ''}'
-                : 'No points in batch',
+            vm.isLoadingPoints
+                ? 'Loading...'
+                : hasPoints
+                    ? '${vm.batch.length} Point${vm.batch.length > 1 ? 's' : ''}'
+                    : 'No points in batch',
             style: Theme.of(context)
                 .textTheme
                 .headlineSmall
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
+          if (hasPoints) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(vm.newestFirst ? "Newest first" : "Oldest first",
+                    style: Theme.of(context).textTheme.bodyMedium),
+                IconButton(
+                  icon: const Icon(Icons.swap_vert),
+                  tooltip: "Toggle sort order",
+                  onPressed: vm.toggleSortOrder,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          StreamBuilder<UploadProgress>(
+            stream: vm.uploadProgress,
+            builder: (context, snapshot) {
+              final progress = snapshot.data;
+              if (progress == null || !progress.isMeaningful) {
+                return const SizedBox.shrink();
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                child: Column(
+                  children: [
+                    LinearProgressIndicator(
+                      value: progress.fraction,
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Uploaded ${progress.uploaded} / ${progress.total} points...',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
           Expanded(
             child: vm.isLoadingPoints
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.separated(
-                    itemCount: vm.batch.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) {
-                      final pt = vm.batch[i];
-                      return _PointCard(
-                        timestamp: pt.properties.formattedTimestamp,
-                        latitude: pt.geometry.coordinates[1],
-                        longitude: pt.geometry.coordinates[0],
-                        onDelete: () =>
-                            _Dialogs.confirmDeletePoint(context, vm, pt),
-                      );
-                    },
-                  ),
+                : hasPoints
+                    ? ListView.builder(
+                        itemCount: vm.visibleBatch.length,
+                        itemBuilder: (_, i) {
+                          final pt = vm.visibleBatch[i];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _PointCard(
+                              timestamp: pt.properties.formattedTimestamp,
+                              latitude: pt.geometry.latitude,
+                              longitude: pt.geometry.longitude,
+                              onDelete: () =>
+                                  _Dialogs.confirmDeletePoint(context, vm, pt),
+                            ),
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Text(
+                          'There are no unuploaded points in your batch.\nTry recording or tracking points first.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
           ),
           const SizedBox(height: 80), // leave room for footer
         ],
@@ -201,7 +279,7 @@ abstract class _Dialogs {
           TextButton(
             onPressed: () {
               Navigator.pop(c);
-              vm.deletePoint(pt);
+              vm.deletePoints([pt]);
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),

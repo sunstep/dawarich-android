@@ -1,25 +1,21 @@
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/converters/track_converter.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
-import 'package:dawarich/core/session/domain/legacy_user_session_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
 import 'package:option_result/option.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:session_box/session_box.dart';
 import 'package:uuid/uuid.dart';
 
-class TrackService {
+final class TrackService {
   final ITrackRepository _trackRepository;
-  final UserSessionManager<int> _userSession;
+  final SessionBox<User> _userSession;
 
   TrackService(this._trackRepository, this._userSession);
 
   Future<Track> startTracking() async {
 
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return null!;
-    }
+    final int userId = await _requireUserId();
 
     final DateTime startTime = DateTime.now().toUtc();
 
@@ -39,11 +35,7 @@ class TrackService {
 
   Future<void> stopTracking() async {
 
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return;
-    }
+    final int userId = await _requireUserId();
 
     final DateTime endTime = DateTime.now().toUtc();
 
@@ -57,11 +49,7 @@ class TrackService {
   }
 
   Future<Option<Track>> getActiveTrack() async {
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return const None();
-    }
+    final int userId = await _requireUserId();
 
     Option<TrackDto> trackResult =
         await _trackRepository.getActiveTrack(userId);
@@ -73,5 +61,14 @@ class TrackService {
     }
 
     return const None();
+  }
+
+  Future<int> _requireUserId() async {
+    final int? userId = _userSession.getUserId();
+    if (userId == null) {
+      await _userSession.logout();
+      throw Exception('[TrackService] No user session found.');
+    }
+    return userId;
   }
 }

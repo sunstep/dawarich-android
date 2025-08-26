@@ -1,13 +1,18 @@
 class LocalPointGeometryViewModel {
   final String type;
-  final List<double> coordinates;
+  final double longitude;
+  final double latitude;
 
-  LocalPointGeometryViewModel({required this.type, required this.coordinates});
+  LocalPointGeometryViewModel({
+    required this.type,
+    required this.longitude,
+    required this.latitude});
 
   Map<String, dynamic> toJson() {
     return {
       'type': type,
-      'coordinates': coordinates,
+      'longitude': longitude,
+      'latitude': latitude
     };
   }
 }

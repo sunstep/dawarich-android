@@ -3,10 +3,13 @@ import 'package:dawarich/core/startup/startup_service.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';
+import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:flutter/material.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
+
+final AppRouter appRouter = AppRouter();
 
 Future<void> main() async {
 
@@ -14,23 +17,27 @@ Future<void> main() async {
 
   await DependencyInjection.injectDependencies();
   await getIt.allReady();
-  await StartupService.initializeApp();
 
-  runApp(const AppBase());
+  await StartupService.initializeApp();
+  await BackgroundTrackingService.configureService();
+
+  runApp(const Dawarich());
 }
 
-class AppBase extends StatelessWidget {
-  const AppBase({super.key});
+class Dawarich extends StatelessWidget {
+
+  const Dawarich({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
         title: 'Dawarich',
         theme: LightTheme.primaryTheme,
         darkTheme: DarkTheme.primaryTheme,
         themeMode: ThemeMode.system,
-        onGenerateRoute: AppRouter.generateRoute,
-        initialRoute: StartupService.initialRoute,
-        navigatorObservers: [routeObserver]);
+        routerConfig: appRouter.config(
+          navigatorObservers: () => [routeObserver],
+        ),
+    );
   }
 }

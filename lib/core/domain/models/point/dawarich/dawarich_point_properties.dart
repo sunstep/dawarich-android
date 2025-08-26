@@ -2,7 +2,7 @@ class DawarichPointProperties {
   final String batteryState;
   final double batteryLevel;
   final String wifi;
-  final String timestamp;
+  final DateTime timestamp;
   final double horizontalAccuracy;
   final double verticalAccuracy;
   final double altitude;
@@ -34,7 +34,7 @@ class DawarichPointProperties {
       'battery_state': batteryState,
       'battery_level': batteryLevel,
       'wifi': wifi,
-      'timestamp': timestamp,
+      'timestamp': timestamp.toString(),
       'horizontal_accuracy': horizontalAccuracy,
       'vertical_accuracy': verticalAccuracy,
       'altitude': altitude,

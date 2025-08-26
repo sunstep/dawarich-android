@@ -10,19 +10,14 @@ extension PointMapper on TypedResult {
     final propertiesRow = readTable(database.pointPropertiesTable);
     final geometryRow = readTable(database.pointGeometryTable);
 
-    final coordinates = geometryRow.coordinates.split(',');
-    if (coordinates.length != 2) {
-      throw Exception("Invalid coordinates format: ${geometryRow.coordinates}");
-    }
-    final longitude = double.parse(coordinates[0]);
-    final latitude = double.parse(coordinates[1]);
 
     return LocalPointDto(
         id: pointRow.id,
         type: pointRow.type,
         geometry: LocalPointGeometryDto(
           type: geometryRow.type,
-          coordinates: [longitude, latitude],
+          longitude: geometryRow.longitude,
+          latitude: geometryRow.latitude
         ),
         properties: LocalPointPropertiesDto(
           batteryState: propertiesRow.batteryState,

@@ -1,9 +1,10 @@
-import 'package:dawarich/features/migration/application/services/migration_service.dart';
-import 'package:dawarich/core/session/application/user_session_service.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:session_box/session_box.dart';
 
 final class MigrationViewModel extends ChangeNotifier {
   bool _isMigrating = false;
@@ -12,37 +13,30 @@ final class MigrationViewModel extends ChangeNotifier {
   bool get isMigrating => _isMigrating;
   String? get error => _error;
 
-  final MigrationService _migrationService;
-  MigrationViewModel(this._migrationService);
+  // final MigrationService _migrationService;
+  // MigrationViewModel(this._migrationService);
 
-  Future<void> runMigration() async {
-    _setMigrating(true);
-    try {
-      _setError(null);
-      await _migrationService.runIfNeeded();
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setMigrating(false);
-    }
-  }
 
   Future<void> runMigrationAndNavigate(BuildContext context) async {
     _setMigrating(true);
     try {
-      await _migrationService.runIfNeeded();
       _setError(null);
 
-      // After migration, check login state
-      final sessionService = getIt<UserSessionManager<int>>();
-      final int? userId = await sessionService.getUser();
+      // This only runs when the migration is finished. So this blocks us until the migration is finished.
+      await getIt<SQLiteClient>().customSelect('SELECT 1').get();
 
-      if (userId != null && userId > 0) {
-        // final apiConfig = getIt<ApiConfigService>();
-        // await apiConfig.initialize();
-        Navigator.pushReplacementNamed(context, AppRouter.map);
+      // After migration, check login state
+      final SessionBox<User> sessionService = getIt<SessionBox<User>>();
+      final User? refreshedSessionUser = await sessionService.refreshSession();
+
+      if (context.mounted && refreshedSessionUser != null) {
+        sessionService.setUserId(refreshedSessionUser.id);
+        context.router.root.replace(const TimelineRoute());
       } else {
-        Navigator.pushReplacementNamed(context, AppRouter.connect);
+        await sessionService.logout();
+        if (context.mounted) {
+          context.router.root.replace(const AuthRoute());
+        }
       }
     } catch (e) {
       _setError(e.toString());

@@ -1,8 +1,13 @@
+import 'package:auto_route/annotations.dart';
+import 'package:dawarich/core/constants/constants.dart';
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/migration/presentation/models/migration_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+@RoutePage()
 final class MigrationPage extends StatefulWidget {
   const MigrationPage({super.key});
 
@@ -14,8 +19,11 @@ class _MigrationPageState extends State<MigrationPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 300), () {
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(kMigrationDelay);
       if (mounted) {
+        getIt<SQLiteClient>().signalMigrationUiReady();
         context.read<MigrationViewModel>().runMigrationAndNavigate(context);
       }
     });
@@ -64,7 +72,7 @@ class _MigrationPageState extends State<MigrationPage> {
                 if (vm.error != null)
                   _ErrorCard(
                     errorMessage: vm.error!,
-                    onRetry: vm.runMigration,
+                    onRetry: () => vm.runMigrationAndNavigate(context),
                   )
                 else
                   Column(

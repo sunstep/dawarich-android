@@ -1,3 +1,4 @@
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
@@ -8,27 +9,31 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
-final class PointsPage extends StatelessWidget {
+@RoutePage()
+class PointsPage extends StatelessWidget {
+
   const PointsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => getIt<PointsPageViewModel>()..searchPressed(),
-      child: Container(
-        // pull gradient straight from theme extension
-        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: const Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: CustomAppbar(
-            title: 'Points',
-            titleFontSize: 32,
+      create: (_) => getIt<PointsPageViewModel>()..initialize(),
+      builder: (ctx, child) => Consumer<PointsPageViewModel>(builder: (ctx, vm, child) {
+        return Container(
+          decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+          child: Scaffold(
             backgroundColor: Colors.transparent,
+            appBar: CustomAppbar(
+              title: 'Points',
+              titleFontSize: 32,
+              backgroundColor: Colors.transparent,
+            ),
+            drawer: CustomDrawer(),
+            body: SafeArea(child: _PointsBody()),
           ),
-          drawer: CustomDrawer(),
-          body: SafeArea(child: _PointsBody()),
-        ),
-      ),
+        );
+      },
+      )
     );
   }
 }
@@ -66,16 +71,57 @@ class _PointsBody extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmDeletion(BuildContext c) async {/* … */}
+  Future<void> _confirmDeletion(BuildContext c, PointsPageViewModel vm) async {
+
+    final confirmed = await showDialog<bool>(
+      context: c,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Deletion"),
+        content: const Text(
+          "Are you sure you want to delete the selected point(s)? This cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await vm.deleteSelection();
+        await vm.searchPressed();
+
+        if (c.mounted) {
+          ScaffoldMessenger.of(c).showSnackBar(
+            const SnackBar(content: Text("Points deleted.")),
+          );
+        }
+      } catch (e) {
+        if (c.mounted) {
+          ScaffoldMessenger.of(c).showSnackBar(
+            SnackBar(content: Text("Failed to delete points: $e")),
+          );
+        }
+      }
+    }
+
+  }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<PointsPageViewModel>();
 
-    // 2) If we're loading, show the skeleton (full-screen).
-    if (vm.isLoading) {
-      return const PointsPageSkeleton();
-    }
 
     // 3) Otherwise, real content:
     return Padding(
@@ -120,24 +166,38 @@ class _PointsBody extends StatelessWidget {
 
           // ————— results list or skeleton —————
           Expanded(
-            child: vm.isLoading ? const SizedBox() : _PointsList(),
+            child: Builder(
+              builder: (_) {
+                if (vm.isLoading) {
+                  return const PointsPageSkeleton();
+                } else if (vm.pagePoints.isEmpty) {
+                  return const _EmptyPointsState();
+                } else {
+                  return _PointsList();
+                }
+              },
+            ),
           ),
 
           // ————— footer —————
-          const SizedBox(height: 16),
-          _FooterBar(
-            hasSelection: vm.hasSelectedItems(),
-            onDelete: () => _confirmDeletion(context),
-            onRefresh: vm.searchPressed,
-            onFirst: vm.navigateFirst,
-            onBack: vm.navigateBack,
-            onNext: vm.navigateNext,
-            onLast: vm.navigateLast,
-            currentPage: vm.currentPage,
-            totalPages: vm.totalPages,
-            sortByNew: vm.sortByNew,
-            toggleSort: vm.toggleSort,
-          ),
+
+          if (vm.pagePoints.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _FooterBar(
+              hasSelection: vm.hasSelectedItems(),
+              onSelectAll: vm.toggleSelectAll,
+              onDelete: () => _confirmDeletion(context, vm),
+              onRefresh: vm.searchPressed,
+              onFirst: vm.navigateFirst,
+              onBack: vm.navigateBack,
+              onNext: vm.navigateNext,
+              onLast: vm.navigateLast,
+              currentPage: vm.currentPage,
+              totalPages: vm.totalPages,
+              sortByNew: vm.sortByNew,
+              toggleSort: vm.toggleSort,
+            ),
+          ]
         ],
       ),
     );
@@ -263,7 +323,7 @@ class _FilterCard extends StatelessWidget {
                 SwitchListTile(
                   value: vm.showUnprocessed,
                   onChanged: vm.toggleShowUnprocessed,
-                  title: const Text('Hide unprocessed'),
+                  title: const Text('Show unprocessed'),
                 ),
                 ElevatedButton(
                   onPressed: vm.searchPressed,
@@ -382,6 +442,11 @@ class _PointsList extends StatelessWidget {
   @override
   Widget build(BuildContext c) {
     final vm = c.watch<PointsPageViewModel>();
+
+    if (vm.pagePoints.isEmpty) {
+      return const _EmptyPointsState();
+    }
+
     final fmt = DateFormat('dd MMM yyyy, HH:mm:ss');
     return ListView.separated(
       itemCount: vm.pagePoints.length,
@@ -391,8 +456,7 @@ class _PointsList extends StatelessWidget {
         final selected = vm.selectedItems.contains(p.id.toString());
         return Card(
           elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: CheckboxListTile(
             value: selected,
             onChanged: (v) => vm.toggleSelection(idx, v),
@@ -408,10 +472,43 @@ class _PointsList extends StatelessWidget {
   }
 }
 
+class _EmptyPointsState extends StatelessWidget {
+  const _EmptyPointsState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.map_outlined, size: 64, color: cs.onSurface.withValues(alpha: 0.5)),
+          const SizedBox(height: 16),
+          Text(
+            'No points found',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try picking a different date.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
 /// Footer: either deletion buttons (when items selected) or pagination + sort toggle
 class _FooterBar extends StatelessWidget {
   final bool hasSelection;
-  final VoidCallback onDelete,
+  final VoidCallback
+      onSelectAll,
+      onDelete,
       onRefresh,
       onFirst,
       onBack,
@@ -423,6 +520,7 @@ class _FooterBar extends StatelessWidget {
 
   const _FooterBar({
     required this.hasSelection,
+    required this.onSelectAll,
     required this.onDelete,
     required this.onRefresh,
     required this.onFirst,
@@ -447,47 +545,31 @@ class _FooterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         child: hasSelection
             ? Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  ElevatedButton(
-                    onPressed: onDelete,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Delete', style: textStyle),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: onRefresh,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Refresh', style: textStyle),
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  IconButton(
-                      onPressed: onFirst, icon: const Icon(Icons.first_page)),
-                  IconButton(
-                      onPressed: onBack,
-                      icon: const Icon(Icons.navigate_before)),
-                  Text('$currentPage/$totalPages', style: textStyle),
-                  IconButton(
-                      onPressed: onNext, icon: const Icon(Icons.navigate_next)),
-                  IconButton(
-                      onPressed: onLast, icon: const Icon(Icons.last_page)),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: toggleSort,
-                    child:
-                        Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
-                  ),
-                ],
+          children: [
+            ElevatedButton(
+              onPressed: onDelete,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
               ),
+              child: Text('Delete', style: textStyle),
+            ),
+          ],
+        )
+            : Row(
+          children: [
+            const Spacer(),
+            IconButton(onPressed: onFirst, icon: const Icon(Icons.first_page)),
+            IconButton(onPressed: onBack, icon: const Icon(Icons.navigate_before)),
+            Text('$currentPage/$totalPages', style: textStyle),
+            IconButton(onPressed: onNext, icon: const Icon(Icons.navigate_next)),
+            IconButton(onPressed: onLast, icon: const Icon(Icons.last_page)),
+            TextButton(
+              onPressed: toggleSort,
+              child: Text(sortByNew ? 'Newest' : 'Oldest', style: textStyle),
+            ),
+          ],
+        ),
       ),
     );
   }

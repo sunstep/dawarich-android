@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
+final class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final double? titleFontSize;
   final Color? backgroundColor;

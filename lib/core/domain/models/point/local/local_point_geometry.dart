@@ -1,13 +1,26 @@
 class LocalPointGeometry {
   final String type;
-  final List<double> coordinates;
+  final double longitude;
+  final double latitude;
 
-  LocalPointGeometry({required this.type, required this.coordinates});
+  LocalPointGeometry({
+    required this.type,
+    required this.longitude,
+    required this.latitude});
 
   Map<String, dynamic> toJson() {
     return {
       'type': type,
-      'coordinates': coordinates,
+      'longitude': longitude,
+      'latitude': latitude,
     };
+  }
+
+  factory LocalPointGeometry.fromJson(Map<String, dynamic> json) {
+    return LocalPointGeometry(
+      type: json['type'] as String,
+      longitude: json['longitude'] as double,
+      latitude: json['latitude'] as double,
+    );
   }
 }

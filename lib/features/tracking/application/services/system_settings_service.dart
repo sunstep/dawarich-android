@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class SystemSettingsService {
+final class SystemSettingsService {
   /// On Android: returns `true` if battery optimization is still enabled.
   /// On iOS: returns `true` if “Always” location permission is denied.
   Future<bool> needsSystemSettingsFix() async {

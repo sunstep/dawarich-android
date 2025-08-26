@@ -2,12 +2,11 @@ import 'package:dawarich/core/domain/models/point/api/api_point.dart';
 import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/features/points/presentation/models/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointsPageViewModel with ChangeNotifier {
-  final ApiPointService _pointService = GetIt.I<ApiPointService>();
+  final ApiPointService _pointService;
 
   late DateTime _startDate;
   late DateTime _endDate;
@@ -22,16 +21,13 @@ final class PointsPageViewModel with ChangeNotifier {
   final int _pointsPerPage = 100;
 
   List<ApiPointViewModel> _points = [];
-  List<ApiPointViewModel> _pagePoints = [];
 
   Set<String> _selectedItems = {};
 
-  PointsPageViewModel() {
-    DateTime now = DateTime.now();
+  PointsPageViewModel(this._pointService) {
+    final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
     _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);
-
-    _initialize();
   }
 
   DateTime get startDate => _startDate;
@@ -49,15 +45,18 @@ final class PointsPageViewModel with ChangeNotifier {
   int get totalPages => _totalPages;
   int get pointsPerPage => _pointsPerPage;
 
-  List<ApiPointViewModel> get points => _points;
   List<ApiPointViewModel> get pagePoints {
-    if (_showUnprocessed) {
-      return _pagePoints;
-    }
 
-    return _pagePoints
-        .where((p) => p.geodata?.geometry?.coordinates != null)
-        .toList();
+    final filtered = _showUnprocessed
+        ? _points
+        : _points.where((p) => p.geodata?.geometry?.coordinates != null).toList();
+
+    final int start = (currentPage - 1) * pointsPerPage;
+    final int end = start + pointsPerPage;
+    final safeStart = start.clamp(0, filtered.length);
+    final safeEnd = end.clamp(0, filtered.length);
+
+    return filtered.sublist(safeStart, safeEnd);
   }
 
   Set<String> get selectedItems => _selectedItems;
@@ -132,55 +131,9 @@ final class PointsPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  void setPagePoints(List<ApiPointViewModel> list) {
-    _pagePoints = list;
-    notifyListeners();
-  }
+  Future<void> initialize() async {
 
-  void clearPagedPoints() {
-    _pagePoints.clear();
-    notifyListeners();
-  }
-
-  void setCurrentPagePoints() {
-    final int start = (currentPage - 1) * pointsPerPage;
-    final int end = start + pointsPerPage;
-
-    if (start >= points.length) {
-      pagePoints.clear();
-    }
-
-    setPagePoints(
-        points.sublist(start, end > points.length ? points.length : end));
-  }
-
-  Future<void> _initialize() async {
-    setLoading(true);
-
-    int amountOfPages =
-        await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
-    setTotalPages(amountOfPages);
-
-    Option<List<ApiPoint>> result =
-        await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
-
-    switch (result) {
-      case Some(value: List<ApiPoint> fetchedPoints):
-        {
-          List<ApiPointViewModel> points =
-              fetchedPoints.map((point) => ApiPointViewModel(point)).toList();
-
-          setPoints(points);
-          setCurrentPagePoints();
-
-          setLoading(false);
-        }
-
-      case None():
-        {
-          // Handle error
-        }
-    }
+    searchPressed();
   }
 
   Future<void> searchPressed() async {
@@ -194,38 +147,28 @@ final class PointsPageViewModel with ChangeNotifier {
     setCurrentPage(1);
 
     Option<List<ApiPoint>> result =
-        await _pointService.fetchAllPoints(startDate, endDate, pointsPerPage);
+        await _pointService.getPoints(
+            startDate: startDate,
+            endDate:  endDate,
+            perPage:  pointsPerPage
+        );
 
-    switch (result) {
-      case Some(value: List<ApiPoint> fetchedPoints):
-        {
-          List<ApiPointViewModel> points =
-              fetchedPoints.map((point) => ApiPointViewModel(point)).toList();
+    if (result case Some(value: List<ApiPoint> fetchedPoints)) {
+      List<ApiPointViewModel> points =
+          fetchedPoints.map((point) => ApiPointViewModel(point)).toList();
 
-          setPoints(points);
-          getCurrentPagePoints();
-          sortPoints();
+      if (kDebugMode) {
+        debugPrint('[DEBUG] Fetched ${points.length} points');
+      }
 
-          setLoading(false);
-        }
-
-      case None():
-        {
-          // Edit view to error page
-        }
-    }
-  }
-
-  List<ApiPointViewModel> getCurrentPagePoints() {
-    final int start = (currentPage - 1) * pointsPerPage;
-    final int end = start + pointsPerPage;
-
-    if (start >= points.length || start < 0) {
-      return [];
+      setPoints(points);
+      sortPoints();
+      setLoading(false);
+    } else {
+      // to do
+      setLoading(false);
     }
 
-    final int safeEnd = end > points.length ? points.length : end;
-    return points.sublist(start, safeEnd);
   }
 
   Future<void> deleteSelection() async {
@@ -235,7 +178,7 @@ final class PointsPageViewModel with ChangeNotifier {
       bool deleted = await _pointService.deletePoint(pointId);
 
       if (deleted) {
-        points.removeWhere((point) => point.id.toString() == pointId);
+        _points.removeWhere((point) => point.id.toString() == pointId);
         selectedItems.remove(pointId);
         setSelectAll(_isAllSelected());
       }
@@ -244,45 +187,37 @@ final class PointsPageViewModel with ChangeNotifier {
 
   void navigateFirst() {
     if (currentPage > 0) {
-      _isLoading = true;
-      _currentPage = 1;
+      setLoading(true);
+      setCurrentPage(1);
 
-      setCurrentPagePoints();
-
-      _isLoading = false;
+      setLoading(false);
     }
   }
 
   void navigateBack() {
     if (currentPage > 1) {
-      _isLoading = true;
-      _currentPage--;
+      setLoading(true);
+      setCurrentPage(_currentPage--);
 
-      setCurrentPagePoints();
-
-      _isLoading = false;
+      setLoading(false);
     }
   }
 
   void navigateNext() {
     if (currentPage < totalPages) {
-      _isLoading = true;
-      _currentPage++;
+      setLoading(true);
+      setCurrentPage(_currentPage++);
 
-      setCurrentPagePoints();
-
-      _isLoading = false;
+      setLoading(false);
     }
   }
 
   void navigateLast() {
     if (currentPage < totalPages) {
-      _isLoading = true;
-      _currentPage = totalPages;
+      setLoading(true);
+      setCurrentPage(totalPages);
 
-      setCurrentPagePoints();
-
-      _isLoading = false;
+      setLoading(false);
     }
   }
 
@@ -291,14 +226,27 @@ final class PointsPageViewModel with ChangeNotifier {
 
     if (selectAll) {
       setSelectedItems(
-          getCurrentPagePoints().map((point) => point.id.toString()).toSet());
+          pagePoints.map((point) => point.id.toString()).toSet());
     } else {
       clearSelectedItems();
     }
   }
 
+  void setAllSelected(bool? value) {
+    if (value == true) {
+      for (final p in pagePoints) {
+        selectedItems.add(p.id.toString());
+      }
+    } else {
+      for (final p in pagePoints) {
+        selectedItems.remove(p.id.toString());
+      }
+    }
+    notifyListeners();
+  }
+
   void toggleSelection(int index, bool? value) {
-    final String pointId = points[index].id.toString();
+    final String pointId = pagePoints[index].id.toString();
 
     if (value == true) {
       _selectedItems.add(pointId);
@@ -316,15 +264,17 @@ final class PointsPageViewModel with ChangeNotifier {
   }
 
   void sortPoints() {
-    points.sort((a, b) {
+    _points.sort((a, b) {
       DateTime dateA = DateTime.fromMillisecondsSinceEpoch(a.timestamp! * 1000);
       DateTime dateB = DateTime.fromMillisecondsSinceEpoch(b.timestamp! * 1000);
       return _sortByNew ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
     });
 
-    setCurrentPagePoints();
+    notifyListeners();
+
   }
 
   bool hasSelectedItems() => _selectedItems.isNotEmpty;
-  bool _isAllSelected() => _selectedItems.length == pointsPerPage;
+  bool _isAllSelected() => _selectedItems.length == pagePoints.length;
+
 }

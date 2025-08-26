@@ -47,9 +47,8 @@ final class ConnectRepository implements IConnectRepository {
 
       final userJson = resp.data!['user'] as Map<String, dynamic>;
 
-      var user = UserDto.fromJson(userJson);
-
-      user = user.withDawarichEndpoint(_apiConfig.apiConfig?.host);
+      var user = UserDto.fromRemote(userJson)
+          .withDawarichEndpoint(_apiConfig.apiConfig?.host);
 
       return Ok(user);
     } on DioException catch (e) {

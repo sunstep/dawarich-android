@@ -1,33 +1,69 @@
-import 'package:dawarich/core/application/services/api_point_service.dart';
+import 'dart:async';
+
 import 'package:dawarich/core/application/services/local_point_service.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_geometry.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/converters/local_point_converter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:option_result/option_result.dart';
 
-class BatchExplorerViewModel extends ChangeNotifier {
+class UploadProgress {
+  final int uploaded;
+  final int total;
+
+  const UploadProgress(this.uploaded, this.total)
+      : assert(total >= 0, 'Total must not be negative'),
+        assert(uploaded >= 0, 'Uploaded must not be negative');
+
+  double get fraction => total > 0
+      ? (uploaded / total).clamp(0.0, 1.0)
+      : 0.0;
+
+  bool get isMeaningful => total > 0;
+}
+
+final class BatchExplorerViewModel extends ChangeNotifier {
+
+  StreamSubscription<List<LocalPoint>>? _batchSubscription;
 
   List<LocalPointViewModel> _batch = [];
   List<LocalPointViewModel> get batch => _batch;
+  final int _itemsPerPage = 100;
+  int get _currentPage => (_batch.length / _itemsPerPage)
+      .ceil().clamp(1, double.infinity).toInt();
 
-  bool get hasPoints => batch.isNotEmpty;
+  final _uploadResultController = StreamController<String>.broadcast();
+  Stream<String> get uploadResultStream => _uploadResultController.stream;
+
+  final _progressController = StreamController<UploadProgress>.broadcast();
+  Stream<UploadProgress> get uploadProgress => _progressController.stream;
+
+  List<LocalPointViewModel> get visibleBatch {
+    final end = (_itemsPerPage * _currentPage).clamp(0, _batch.length);
+    return _batch.take(end).toList();
+  }
+
+  bool _newestFirst = true;
+  bool get newestFirst => _newestFirst;
+
+  bool get hasPoints => visibleBatch.isNotEmpty;
 
   bool _isLoadingPoints = true;
   bool get isLoadingPoints => _isLoadingPoints;
 
-  final LocalPointService _localPointService;
-  final ApiPointService _apiPointService;
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
 
-  BatchExplorerViewModel(this._localPointService, this._apiPointService) {
-    _initialize();
-  }
+  final LocalPointService _localPointService;
+  BatchExplorerViewModel(this._localPointService);
 
   void _setBatch(List<LocalPointViewModel> batch) {
     _batch = batch;
+    notifyListeners();
+  }
+
+  void setIsUploading(bool trueOrFalse) {
+    _isUploading = trueOrFalse;
     notifyListeners();
   }
 
@@ -36,65 +72,89 @@ class BatchExplorerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _initialize() async {
-    await _loadBatchPoints();
+  void toggleSortOrder() {
+    _newestFirst = !_newestFirst;
+    _sortBatch();
+    notifyListeners();
   }
 
-  Future<void> _loadBatchPoints() async {
-    List<LocalPoint> batch = await _localPointService.getCurrentBatch();
-    List<LocalPointViewModel> batchVm = batch.map((point) =>
-        point.toViewModel()).toList();
+  void _sortBatch() {
+    _batch.sort((a, b) {
+      final aTime = DateTime.parse(a.properties.timestamp);
+      final bTime = DateTime.parse(b.properties.timestamp);
+      return _newestFirst ? bTime.compareTo(aTime) : aTime.compareTo(bTime);
+    });
+  }
 
-    _setBatch(batchVm);
-    _setIsLoadingPoints(false);
+  bool _hasInitialized = false;
+  bool get hasInitialized => _hasInitialized;
+
+  void setInitialized(bool value) {
+    _hasInitialized = value;
     notifyListeners();
+  }
+
+  Future<void> initialize() async {
+
+    if (kDebugMode) {
+      debugPrint("[BatchExplorerViewModel] Initializing...");
+    }
+
+    if (_batchSubscription != null) {
+      return;
+    }
+
+    final stream = await _localPointService.watchCurrentBatch();
+
+    _batchSubscription = stream.listen((batch) async {
+      final batchVm = await compute(BatchExplorerViewModel._convertToViewModels, batch);
+
+      batchVm.sort((a, b) {
+        final aTime = DateTime.parse(a.properties.timestamp);
+        final bTime = DateTime.parse(b.properties.timestamp);
+        return _newestFirst ? bTime.compareTo(aTime) : aTime.compareTo(bTime);
+      });
+
+      _setBatch(batchVm);
+      _setIsLoadingPoints(false);
+
+      if (!hasInitialized) {
+        setInitialized(true);
+      }
+    });
+  }
+
+  static List<LocalPointViewModel> _convertToViewModels(List<LocalPoint> points) {
+    return points.map((point) => point.toViewModel()).toList();
   }
 
   Future<void> uploadBatch() async {
 
-    List<DawarichPoint> pointsToUpload = _batch.map((localPoint) {
-      return DawarichPoint(
-        type: localPoint.type,
-        geometry: DawarichPointGeometry(
-            type: localPoint.geometry.type,
-            coordinates: localPoint.geometry.coordinates),
-        properties: DawarichPointProperties(
-          batteryState: localPoint.properties.batteryState,
-          batteryLevel: localPoint.properties.batteryLevel,
-          wifi: localPoint.properties.wifi,
-          timestamp: localPoint.properties.timestamp,
-          horizontalAccuracy: localPoint.properties.horizontalAccuracy,
-          verticalAccuracy: localPoint.properties.verticalAccuracy,
-          altitude: localPoint.properties.altitude,
-          speed: localPoint.properties.speed,
-          speedAccuracy: localPoint.properties.speedAccuracy,
-          course: localPoint.properties.course,
-          courseAccuracy: localPoint.properties.courseAccuracy,
-          trackId: localPoint.properties.trackId,
-          deviceId: localPoint.properties.deviceId,
-        ),
-      );
-    }).toList();
+    setIsUploading(true);
 
-    DawarichPointBatch apiBatch = DawarichPointBatch(points: pointsToUpload);
+    List<LocalPoint> localPoints = _batch
+        .map((point) => point.toDomain())
+        .toList();
 
-    bool uploaded = await _apiPointService.uploadBatch(apiBatch);
+    Result<(), String> uploadResult = await _localPointService
+        .prepareBatchUpload(localPoints, onChunkUploaded: (uploaded, total) {
+      _progressController.add(UploadProgress(uploaded, total));
+    });
 
-    if (uploaded) {
-      List<LocalPoint> batchD = _batch.map((point) =>
-          point.toDomain()).toList();
-      bool marked =
-          await _localPointService.markBatchAsUploaded(batchD);
-
-      if (marked) {
-        await _loadBatchPoints();
-      }
+    if (uploadResult case Err(value: final String error)) {
+      _uploadResultController.add(error);
     }
+
+    _progressController.add(const UploadProgress(0, 0));
+
+    setIsUploading(false);
   }
 
-  Future<void> deletePoint(LocalPointViewModel point) async {
-    await _localPointService.deletePoint(point.id);
-    batch.remove(point);
+  Future<void> deletePoints(List<LocalPointViewModel> points) async {
+
+    List<int> pointIds = points.map((point) => point.id).toList();
+    await _localPointService.deletePoints(pointIds);
+    batch.removeWhere((point) => pointIds.contains(point.id));
     notifyListeners();
   }
 
@@ -102,5 +162,11 @@ class BatchExplorerViewModel extends ChangeNotifier {
     await _localPointService.clearBatch();
     batch.clear();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _batchSubscription?.cancel();
+    super.dispose();
   }
 }

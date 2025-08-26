@@ -1,3 +1,4 @@
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/custom_loading_indicator.dart';
@@ -10,20 +11,36 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-final class MapPage extends StatefulWidget {
-  const MapPage({super.key});
+@RoutePage()
+final class TimelinePage extends StatefulWidget {
+  const TimelinePage({super.key});
 
   @override
-  State<MapPage> createState() => _MapPageState();
+  State<TimelinePage> createState() => _TimelinePageState();
 }
 
-class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
+class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMixin {
+
   late final AnimatedMapController _animatedMapController;
+
 
   @override
   void initState() {
     super.initState();
+
     _animatedMapController = AnimatedMapController(vsync: this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => getIt<TimelineViewModel>()..initialize(),
+      builder: (ctx, child) => Consumer<TimelineViewModel>(
+          builder: (context, mapModel, child) {
+            mapModel.setAnimatedMapController(_animatedMapController);
+            return _pageBase(context);
+      })
+    );
   }
 
   Widget _bottomsheetContent(BuildContext context, TimelineViewModel mapModel,
@@ -45,7 +62,6 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
       ),
       child: Column(
         children: [
-          // Top draggable handle
           Container(
             margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
             height: 5.0,
@@ -202,6 +218,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               userAgentPackageName: 'app.dawarich.android',
               maxNativeZoom: 19,
             ),
+            // --- API points (historical) ---
             if (mapModel.points.isNotEmpty)
               PolylineLayer(
                 polylines: [
@@ -216,9 +233,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               ),
             if (mapModel.points.isNotEmpty)
               MarkerLayer(
-                markers: mapModel.points.map((point) {
+                markers: mapModel.points.map((p) {
                   return Marker(
-                    point: point,
+                    point: p,
                     width: 5,
                     height: 5,
                     child: Container(
@@ -226,6 +243,37 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                         shape: BoxShape.circle,
                         color: Colors.blue,
                         border: Border.all(color: Colors.white, width: 1),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+            // --- Local points (live) - drawn ABOVE API points ---
+            if (mapModel.localPoints.isNotEmpty)
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: mapModel.localPoints,
+                    strokeWidth: 6.0,
+                    color: Colors.orange.withValues(alpha: 0.85),
+                    borderStrokeWidth: 2.0,
+                    borderColor: Colors.black.withValues(alpha: 0.5),
+                  ),
+                ],
+              ),
+            if (mapModel.localPoints.isNotEmpty)
+              MarkerLayer(
+                markers: mapModel.localPoints.map((p) {
+                  return Marker(
+                    point: p,
+                    width: 6,
+                    height: 6,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.orange,
+                        border: Border.all(color: Colors.black.withValues(alpha: 0.6), width: 1),
                       ),
                     ),
                   );
@@ -258,23 +306,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
     return Scaffold(
       appBar: const CustomAppbar(title: "Timeline", titleFontSize: 20),
       body: _pageContent(viewModel),
-      drawer: const CustomDrawer(),
+      drawer: CustomDrawer(),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final TimelineViewModel mapViewModel = getIt<TimelineViewModel>();
-    return ChangeNotifierProvider.value(
-      value: mapViewModel,
-      child: Builder(
-        builder: (context) {
-          context
-              .read<TimelineViewModel>()
-              .setAnimatedMapController(_animatedMapController);
-          return _pageBase(context);
-        },
-      ),
-    );
-  }
+
 }

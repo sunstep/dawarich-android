@@ -2,7 +2,7 @@ class LocalPointProperties {
   final String batteryState;
   final double batteryLevel;
   final String wifi;
-  final String timestamp;
+  final DateTime timestamp;
   final double horizontalAccuracy;
   final double verticalAccuracy;
   final double altitude;
@@ -34,7 +34,7 @@ class LocalPointProperties {
       'battery_state': batteryState,
       'battery_level': batteryLevel,
       'wifi': wifi,
-      'timestamp': timestamp,
+      'timestamp': timestamp.toIso8601String(),
       'horizontal_accuracy': horizontalAccuracy,
       'vertical_accuracy': verticalAccuracy,
       'altitude': altitude,
@@ -45,5 +45,23 @@ class LocalPointProperties {
       'track_id': trackId,
       'device_id': deviceId,
     };
+  }
+
+  factory LocalPointProperties.fromJson(Map<String, dynamic> json) {
+    return LocalPointProperties(
+      batteryState: json['battery_state'] as String,
+      batteryLevel: (json['battery_level'] as num).toDouble(),
+      wifi: json['wifi'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      horizontalAccuracy: (json['horizontal_accuracy'] as num).toDouble(),
+      verticalAccuracy: (json['vertical_accuracy'] as num).toDouble(),
+      altitude: (json['altitude'] as num).toDouble(),
+      speed: (json['speed'] as num).toDouble(),
+      speedAccuracy: (json['speed_accuracy'] as num).toDouble(),
+      course: (json['course'] as num).toDouble(),
+      courseAccuracy: (json['course_accuracy'] as num).toDouble(),
+      trackId: json['track_id'] as String?, // nullable
+      deviceId: json['device_id'] as String,
+    );
   }
 }

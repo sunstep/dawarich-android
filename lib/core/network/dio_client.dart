@@ -6,7 +6,7 @@ final class DioClient {
 
   DioClient(List<Interceptor> interceptors)
       : _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 5),
+    connectTimeout: const Duration(seconds: 20),
     receiveTimeout: const Duration(seconds: 20),
   )) {
     _dio.interceptors.addAll(interceptors);
@@ -65,7 +65,7 @@ final class DioClient {
 
   Future<Response<T>> head<T>(String path,
       {Object? data,
-      required Map<String, dynamic> queryParameters,
+      Map<String, dynamic>? queryParameters,
       Options? options,
       CancelToken? cancelToken}) {
     return _dio.head(path,

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/shell/drawer/drawer_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
@@ -6,19 +7,33 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:provider/provider.dart';
 
-class CustomDrawer extends StatelessWidget {
-  const CustomDrawer({super.key});
+final class CustomDrawer extends StatelessWidget {
+
+  CustomDrawer({super.key});
+
+  bool _isNavigating = false;
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = getIt<DrawerViewModel>();
     return ChangeNotifierProvider.value(
-      value: viewModel,
+      value: getIt<DrawerViewModel>(),
       child: Consumer<DrawerViewModel>(
         builder: (ctx, vm, _) => _buildDrawer(ctx),
       ),
     );
   }
+
+  void _closeDrawer(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _replaceRoute(
+      BuildContext context, PageRouteInfo<Object?> route) async {
+    await context.router.root.replace(route);
+  }
+
 
   Widget _buildDrawer(BuildContext context) {
     // full‐height safe area
@@ -85,7 +100,17 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.map,
                 label: 'Timeline',
                 onTap: () {
-                  Navigator.of(context).popAndPushNamed(AppRouter.map);
+
+                  if (!_isNavigating) {
+                    _isNavigating = true;
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const TimelineRoute());
+                      _isNavigating = false;
+                    });
+                  }
+
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -97,7 +122,17 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.analytics,
                 label: 'Stats',
                 onTap: () {
-                  Navigator.of(context).popAndPushNamed(AppRouter.stats);
+
+                  if (!_isNavigating) {
+                    _isNavigating = true;
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const StatsRoute());
+                      _isNavigating = false;
+                    });
+                  }
+
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -109,7 +144,17 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.place,
                 label: 'Points',
                 onTap: () {
-                  Navigator.of(context).popAndPushNamed(AppRouter.points);
+
+                  if (!_isNavigating) {
+                    _isNavigating = true;
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const PointsRoute());
+                      _isNavigating = false;
+                    });
+                  }
+
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -121,7 +166,17 @@ class CustomDrawer extends StatelessWidget {
                 icon: Icons.gps_fixed,
                 label: 'Tracker',
                 onTap: () {
-                  Navigator.of(context).popAndPushNamed(AppRouter.tracker);
+
+                  if (!_isNavigating) {
+                    _isNavigating = true;
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      _closeDrawer(context);
+                      await _replaceRoute(context, const TrackerRoute());
+                      _isNavigating = false;
+                    });
+                  }
+
                 },
                 textColor: textColor,
                 iconColor: iconColor,
@@ -158,10 +213,8 @@ class CustomDrawer extends StatelessWidget {
             Navigator.pop(context);
             await vm.logout();
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRouter.connect,
-                (route) => false,
-              );
+              _closeDrawer(context);
+              context.router.root.replaceAll([const AuthRoute()]);
             });
           },
           textColor: Colors.red.shade300,

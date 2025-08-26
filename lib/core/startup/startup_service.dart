@@ -1,53 +1,91 @@
-import 'package:dawarich/features/migration/application/services/migration_service.dart';
-import 'package:dawarich/core/session/application/user_session_service.dart';
+import 'dart:async';
+
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
+import 'package:dawarich/features/version_check/application/version_check_service.dart';
+import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get_it/get_it.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:option_result/option_result.dart';
+import 'package:session_box/session_box.dart';
 
 final class StartupService {
-  static late final String initialRoute;
-
   static Future<void> initializeApp() async {
 
-    final migrationService = GetIt.I<MigrationService>();
-    bool needsMigration = false;
-    try {
-      needsMigration = await migrationService.needsMigration();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[StartupService] Migration check failed, skipping: $e');
-      }
-    }
+    final SQLiteClient db = getIt<SQLiteClient>();
 
-    if (needsMigration) {
-      initialRoute = AppRouter.migration;
+    final Future<bool> migrateFuture  = db.migrationStream.first;
+
+    /*
+      You might wonder what this is doing here: db migrations do not run until the db is first interacted with.
+      Here we run a dummy query to force the migration to run on start up rather than deep in the app.
+      This is kinda hacky, but Drift does not provide a way to check if migrations are about to be run or not.
+      So the only way to know if there is a migration to run, is to make it run the migration.
+      The reason we do this in the first place, is because we want to show a migration screen, if we don't, the app gets stuck on the splash screen while it runs the migrations which is not a good user experience.
+
+      When the migration runs, it will signal there is a migration, after signalling, it will block the migration until the UI is ready.
+      When the UI is ready, it signals that to the migration logic which then unblocks the migration and proceeds with it.
+
+      Flow (in a nutshell):
+      1. Trigger migration with a dummy query.
+      2. Migration logic runs and signals that there is a migration. Migration blocks it self with a Completer.
+      3. Using the migration signal, we decide to show the migration screen (or not).
+      4. When the migration screen is ready, it signals the migration logic to proceed, so it unblocks.
+    */
+    unawaited(
+      (() async {
+        try {
+          await db.customSelect('SELECT 1').get();
+        } catch (_) {
+          // This is just a dummy query, so errors are irrelevant.
+        }
+      })(),
+    );
+
+    final didMigrate = await migrateFuture;
+
+    if (didMigrate) {
+      appRouter.replaceAll([const MigrationRoute()]);
       return;
     }
 
-    final LegacyUserSessionService legacySession = getIt<LegacyUserSessionService>();
-    final UserSessionManager<int> sessionService = getIt<UserSessionManager<int>>();
+    // Get the session box and verify if the logged in user is still in the database
+    final SessionBox<User> sessionService = getIt<SessionBox<User>>();
+    final User? refreshedSessionUser = await sessionService.refreshSession();
 
-    final int legacyId = await legacySession.getCurrentUserId();
+    if (refreshedSessionUser != null) {
 
+      sessionService.setUserId(refreshedSessionUser.id);
 
-    if (legacyId > 0) {
-      sessionService.login(legacyId);
-      await legacySession.clearCurrentUserId();
+      final VersionCheckService versionCheckService = getIt<VersionCheckService>();
+      final Result<(), String> isSupported = await versionCheckService.isServerVersionSupported();
 
-      if (kDebugMode) {
-        debugPrint('[Startup] Migrated legacy session with userId $legacyId');
+      if (!isSupported.isOk()) {
+        appRouter.replaceAll([const VersionCheckRoute()]);
+        return;
       }
-    }
 
-    final bool isLoggedIn = await sessionService.isLoggedIn();
+      final shouldTrack = await getIt<TrackerSettingsService>().getAutomaticTrackingSetting();
 
+      final FlutterBackgroundService backgroundService = FlutterBackgroundService();
 
-    if (isLoggedIn) {
-      initialRoute = AppRouter.map;
+      if (shouldTrack) {
+        debugPrint('[StartupService] Auto-tracking is ON — sending proceed');
+        backgroundService.invoke('proceed');
+      } else {
+        debugPrint('[StartupService] Auto-tracking is OFF — skipping background start');
+        backgroundService.invoke('stopService');
+      }
+
+      appRouter.replaceAll([const TimelineRoute()]);
     } else {
-      initialRoute = AppRouter.connect;
+      sessionService.logout();
+      appRouter.replaceAll([const AuthRoute()]);
     }
   }
+
+
 }

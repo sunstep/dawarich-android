@@ -1,19 +1,20 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
+import 'package:dawarich/core/domain/models/user.dart';
+import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/last_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/track_converter.dart';
-import 'package:dawarich/core/application/services/api_point_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_preferences_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
-import 'package:dawarich/core/database/%20repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/i_track_repository.dart';
-import 'package:dawarich/core/session/domain/legacy_user_session_repository_interfaces.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
-import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
 import 'package:dawarich/core/domain/models/point/local/additional_point_data.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/core/domain/models/point/point_pair.dart';
@@ -25,73 +26,137 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:option_result/option_result.dart';
-import 'package:user_session_manager/user_session_manager.dart';
+import 'package:session_box/session_box.dart';
 
-class LocalPointService {
-  final ApiPointService _api;
-  final UserSessionManager<int> _userSession;
-  final IPointLocalRepository _localPointInterfaces;
+final class LocalPointService {
+  final IApiPointRepository _api;
+  final SessionBox<User> _userSession;
+  final IPointLocalRepository _localPointRepository;
   final IHardwareRepository _hardwareInterfaces;
-  final TrackerPreferencesService _trackerPreferencesService;
+  final TrackerSettingsService _trackerPreferencesService;
   final ITrackRepository _trackRepository;
 
   LocalPointService(
       this._api,
       this._userSession,
-      this._localPointInterfaces,
+      this._localPointRepository,
       this._trackerPreferencesService,
       this._trackRepository,
-      this._hardwareInterfaces);
+      this._hardwareInterfaces
+  );
+
+  Future<Result<(), String>> prepareBatchUpload(List<LocalPoint> points, {
+    void Function(int uploaded, int total)? onChunkUploaded,
+  }) async {
+
+    final List<LocalPoint> failedChunks = [];
+    const int chunkSize = 250;
+
+    final dedupedLocalPoints = await _deduplicateLocalPoints(points);
+
+    if (dedupedLocalPoints.isEmpty) {
+      debugPrint('[Upload] No new points to upload after full deduplication.');
+      return const Err("All points already exist on the server.");
+    }
+
+    int uploaded = 0;
+    for (int i = 0; i < dedupedLocalPoints.length; i += chunkSize) {
+      final end = (i + chunkSize).clamp(0, dedupedLocalPoints.length);
+      final chunk = dedupedLocalPoints.sublist(i, end);
+
+      final List<DawarichPoint> apiPoints = chunk
+          .map((point) => point.toApi())
+          .toList();
+
+      final dto = DawarichPointBatch(points: apiPoints).toDto();
+
+      final result = await _api.uploadBatch(dto);
+
+      if (result case Err(value: final String error)) {
+        debugPrint('[Upload] Failed to upload chunk [$i..$end]: $error');
+        failedChunks.addAll(chunk);
+      } else {
+        List<int> chunkIds = chunk.map((p) => p.id).toList();
+        await deletePoints(chunkIds);
+        uploaded += chunk.length;
+        onChunkUploaded?.call(uploaded, dedupedLocalPoints.length);
+      }
+
+    }
+
+    if (failedChunks.isNotEmpty) {
+      if (kDebugMode) {
+        debugPrint('[Batch Upload] Some batch chunks failed: retrying individually...');
+      }
+
+      int failedCount = 0;
+      int uploadedCount = 0;
+
+      for (final LocalPoint point in failedChunks) {
+        final dto = DawarichPointBatch(points: [point.toApi()]).toDto();
+        final result = await _api.uploadBatch(dto);
+
+        if (result case Err(value: final error)) {
+          if (error.contains("already exists")) {
+            await deletePoints([point.id]);
+            uploadedCount++;
+            onChunkUploaded?.call(uploadedCount, failedChunks.length);
+            continue;
+          }
+
+          failedCount++;
+        } else {
+          await deletePoints([point.id]);
+          uploadedCount++;
+          onChunkUploaded?.call(uploadedCount, failedChunks.length);
+        }
+      }
+
+      if (failedCount > 0) {
+        return Err("$failedCount point(s) failed to upload after retrying.");
+      }
+    }
+
+    return const Ok(());
+  }
+
+  Future<List<LocalPoint>> _deduplicateLocalPoints(
+      List<LocalPoint> points) async {
+    final sorted = List<LocalPoint>.from(points)
+      ..sort((a, b) => a.properties.timestamp.compareTo(b.properties.timestamp));
+
+    final seen = <String>{};
+    final deduped = <LocalPoint>[];
+
+    for (final p in sorted) {
+      final key = p.deduplicationKey;
+
+      if (seen.add(key)) {
+        deduped.add(p);
+      }
+    }
+
+    debugPrint('[Upload] Deduplicated from ${points.length} → ${deduped.length}');
+    return deduped;
+  }
 
   /// A private local point service helper method that checks if the current point batch is due for upload. This method gets called after a point gets stored locally.
   Future<bool> _checkBatchThreshold() async {
 
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return false;
-    }
+    final int userId = await _requireUserId();
 
     final int maxPoints =
-        await _trackerPreferencesService.getPointsPerBatchPreference();
+        await _trackerPreferencesService.getPointsPerBatchSetting();
     final int currentPoints =
-        await _localPointInterfaces.getBatchPointCount(userId);
+        await _localPointRepository.getBatchPointCount(userId);
 
-    if (currentPoints < maxPoints) {
-      return false;
-    }
-
-    List<LocalPointDto> localPointDtoList =
-        await _localPointInterfaces.getCurrentBatch(userId);
-
-    List<LocalPoint> localPointList = localPointDtoList.map((point) =>
-        point.toDomain()).toList();
-    List<DawarichPoint> apiPointList = localPointList.map((point) =>
-        point.toApi()).toList();
-    DawarichPointBatch fullBatch = DawarichPointBatch(points: apiPointList);
-
-    bool uploaded = await _api.uploadBatch(fullBatch);
-
-    if (uploaded) {
-      _localPointInterfaces.markBatchAsUploaded(userId);
-    } else {
-      if (kDebugMode) {
-        debugPrint("[DEBUG] Failed to upload batch!");
-        return false;
-      }
-    }
-
-    return true;
+    return currentPoints > maxPoints;
   }
 
   /// Creates a full point using a position object.
-  Future<Result<LocalPoint, String>> createAndStorePoint(
+  Future<Result<LocalPoint, String>> createPointFromPosition(
       Position position) async {
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return Err("Must be logged in to create points");
-    }
+    final int userId = await _requireUserId();
 
     final AdditionalPointData additionalData =
         await _getAdditionalPointData(userId);
@@ -103,36 +168,82 @@ class LocalPointService {
       return Err("Point validation did not pass: $validationError");
     }
 
-    LocalPointDto pointDto = point.toDto();
-    final int storeResult =
-        await _localPointInterfaces.storePoint(pointDto);
-    await _checkBatchThreshold();
+    return Ok(point);
+  }
+
+  Future<Result<LocalPoint, String>> storePoint(LocalPoint point) async {
+    final LocalPointDto pointDto = point.toDto();
+    final int storeResult = await _localPointRepository.storePoint(pointDto);
 
     return storeResult > 0
         ? Ok(point)
         : Err("Failed to store point");
   }
 
+  Future<Result<(), String>> autoStoreAndUpload(LocalPoint point) async {
+    final storeResult = await storePoint(point);
+
+    if (storeResult case Ok()) {
+      final uploadDue = await _checkBatchThreshold();
+      if (uploadDue) {
+        final batch = await getCurrentBatch();
+        if (batch.isNotEmpty) {
+          final uploadResult = await prepareBatchUpload(batch);
+          if (uploadResult case Err(value: final err)) {
+            debugPrint("[LocalPointService] Auto-upload failed: $err");
+          }
+        }
+      }
+
+      return const Ok(());
+    } else if (storeResult case Err(value: final err)) {
+      debugPrint("[LocalPointService] Failed to store point: $err");
+      return Err("Failed to store point: $err");
+    }
+
+    return const Err("Failed to store point for unknown reason.");
+  }
+
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
-  Future<Result<LocalPoint, String>> createPointFromGps() async {
-    final LocationAccuracy accuracy =
-        await _trackerPreferencesService.getLocationAccuracyPreference();
-    final Result<Position, String> posResult =
-        await _hardwareInterfaces.getPosition(accuracy);
+  Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
+    final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracySetting();
+    final Result<Position, String> posResult = await _hardwareInterfaces.getPosition(accuracy);
 
     if (posResult case Err(value: final String error)) {
       return Err(error);
     }
 
     final Position position = posResult.unwrap();
-    final Result<LocalPoint, String> pointResult =
-        await createAndStorePoint(position);
+    final Result<LocalPoint, String> pointResult = await createPointFromPosition(position);
 
-    return pointResult;
+    if (pointResult case Err()) {
+      return pointResult;
+    }
+
+    Result<LocalPoint, String> finalResult = pointResult;
+
+    if (persist) {
+      final stored = await storePoint(pointResult.unwrap());
+      finalResult = stored;
+
+      final bool uploadDue = await _checkBatchThreshold();
+
+      if (uploadDue) {
+        final List<LocalPoint> batch = await getCurrentBatch();
+        if (batch.isNotEmpty) {
+          final Result<(), String> uploadResult = await prepareBatchUpload(batch);
+          if (uploadResult case Err(value: String error)) {
+            return Err("Failed to upload batch: $error");
+          }
+        }
+      }
+    }
+
+    return finalResult;
   }
 
   /// Creates a full point, position data is retrieved from cache.
-  Future<Result<LocalPoint, String>> createPointFromCache() async {
+  Future<Result<LocalPoint, String>> createPointFromCache({bool persist = true}) async {
     final Option<Position> posResult =
         await _hardwareInterfaces.getCachedPosition();
 
@@ -142,14 +253,17 @@ class LocalPointService {
 
     final Position position = posResult.unwrap();
     final Result<LocalPoint, String> pointResult =
-        await createAndStorePoint(position);
+        await createPointFromPosition(position);
 
     if (pointResult case Err(value: String error)) {
       return Err("[DEBUG] Cached point was rejected: $error");
     }
 
-    final LocalPoint point = pointResult.unwrap();
-    return Ok(point);
+    if (!persist) {
+      return pointResult;
+    }
+
+    return await storePoint(pointResult.unwrap());
   }
 
   Future<AdditionalPointData> _getAdditionalPointData(int userId) async {
@@ -158,7 +272,7 @@ class LocalPointService {
     final String wifi = await _hardwareInterfaces.getWiFiStatus();
     final String batteryState = await _hardwareInterfaces.getBatteryState();
     final double batteryLevel = await _hardwareInterfaces.getBatteryLevel();
-    final String deviceId = await _trackerPreferencesService.getTrackerId();
+    final String deviceId = await _trackerPreferencesService.getDeviceId();
     final Option<TrackDto> trackerIdResult =
         await _trackRepository.getActiveTrack(userId);
 
@@ -182,14 +296,15 @@ class LocalPointService {
       Position position, AdditionalPointData additionalData, int userId) {
     final geometry = LocalPointGeometry(
       type: "Point",
-      coordinates: [position.longitude, position.latitude],
+      longitude: position.longitude,
+      latitude: position.latitude
     );
 
     final properties = LocalPointProperties(
       batteryState: additionalData.batteryState,
       batteryLevel: additionalData.batteryLevel,
       wifi: additionalData.wifi,
-      timestamp: position.timestamp.toUtc().toIso8601String(),
+      timestamp: position.timestamp.toUtc(),
       horizontalAccuracy: position.accuracy,
       verticalAccuracy: position.altitudeAccuracy,
       altitude: position.altitude,
@@ -210,18 +325,11 @@ class LocalPointService {
         isUploaded: false);
   }
 
-  Future<bool> markBatchAsUploaded(List<LocalPoint> batch) async {
+  Future<bool> markBatchAsUploaded(List<LocalPoint> points) async {
 
-    final int? userId = await _userSession.getUser();
+    final int userId = await _requireUserId();
 
-    if (userId == null) {
-      return false;
-    }
-
-    final List<int> batchIds =
-        batch.map((point) => point.id).whereType<int>().toList();
-
-    if (batchIds.isEmpty) {
+    if (points.isEmpty) {
       if (kDebugMode) {
         debugPrint("[DEBUG] No points need to be marked as uploaded.");
       }
@@ -229,15 +337,15 @@ class LocalPointService {
       return false;
     }
 
-    int result = await _localPointInterfaces.markBatchAsUploaded(userId);
+
+    final pointIds = points.map((p) => p.id).whereType<int>().toList();
+    int result = await _localPointRepository.markBatchAsUploaded(userId, pointIds);
+
 
     return result > 0;
   }
 
   Future<Result<(), String>> _validatePoint(LocalPoint point) async {
-    if (!await _isUniquePoint(point)) {
-      return const Err("This point is not unique compared to previous ones.");
-    }
 
     if (!await _isPointNewerThanLastPoint(point)) {
       return const Err("The point is older than the last tracked point.");
@@ -259,7 +367,7 @@ class LocalPointService {
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      DateTime candidateTime = DateTime.parse(point.properties.timestamp);
+      DateTime candidateTime = point.properties.timestamp;
       DateTime lastTime = DateTime.parse(lastPoint.timestamp);
 
       answer = candidateTime.isAfter(lastTime);
@@ -271,12 +379,12 @@ class LocalPointService {
   Future<bool> _isPointDistanceGreaterThanPreference(LocalPoint point) async {
     bool answer = true;
     int minimumDistance =
-        await _trackerPreferencesService.getMinimumPointDistancePreference();
+        await _trackerPreferencesService.getMinimumPointDistanceSetting();
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      double lastPointLongitude = point.geometry.coordinates[0];
-      double lastPointLatitude = point.geometry.coordinates[1];
+      double lastPointLongitude = point.geometry.longitude;
+      double lastPointLatitude = point.geometry.latitude;
 
       LatLng lastPointCoordinates =
           LatLng(lastPoint.latitude, lastPoint.longitude);
@@ -295,7 +403,7 @@ class LocalPointService {
   Future<bool> _isPointAccurateEnough(LocalPoint candidate) async {
     bool answer = false;
     LocationAccuracy requiredAccuracy =
-        await _trackerPreferencesService.getLocationAccuracyPreference();
+        await _trackerPreferencesService.getLocationAccuracySetting();
 
     double requiredAccuracyMeters = _getAccuracyThreshold(requiredAccuracy);
 
@@ -304,34 +412,11 @@ class LocalPointService {
     return answer;
   }
 
-  Future<bool> _isUniquePoint(LocalPoint candidate) async {
-    final List<LocalPoint> batch = await _getFullBatch();
-    bool answer = true;
-    int batchIndex = 0;
-
-    DateTime candidateTime = DateTime.parse(candidate.properties.timestamp);
-
-    while (answer == true && batchIndex < batch.length) {
-      LocalPoint batchPoint = batch[batchIndex];
-      String batchPointTimeString = batchPoint.properties.timestamp;
-      DateTime batchPointTime = DateTime.parse(batchPointTimeString);
-
-      answer = !candidateTime.isAtSameMomentAs(batchPointTime);
-      batchIndex++;
-    }
-
-    return answer;
-  }
-
   Future<Option<LastPoint>> getLastPoint() async {
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return const None();
-    }
+    final int userId = await _requireUserId();
 
     Option<LastPointDto> pointResult =
-        await _localPointInterfaces.getLastPoint(userId);
+        await _localPointRepository.getLastPoint(userId);
 
     switch (pointResult) {
       case Some(value: LastPointDto pointDto):
@@ -346,16 +431,23 @@ class LocalPointService {
     }
   }
 
+  Future<Stream<Option<LastPoint>>> watchLastPoint() async {
+    final int userId = await _requireUserId();
+
+    return _localPointRepository
+        .watchLastPoint(userId)
+        .map((option) => option.map(
+            (dto) => dto.toDomain())
+        );
+  }
+
+
   Future<List<LocalPoint>> _getFullBatch() async {
 
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return [];
-    }
+    final int userId = await _requireUserId();
 
     List<LocalPointDto> result =
-        await _localPointInterfaces.getFullBatch(userId);
+        await _localPointRepository.getFullBatch(userId);
 
     List<LocalPoint> batch = result.map((point) => point.toDomain()).toList();
 
@@ -363,54 +455,57 @@ class LocalPointService {
   }
 
   Future<int> getBatchPointsCount() async {
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return 0;
-    }
+    final int userId = await _requireUserId();
 
     int result =
-        await _localPointInterfaces.getBatchPointCount(userId);
+        await _localPointRepository.getBatchPointCount(userId);
 
 
     return result;
   }
 
+  Future<Stream<int>> watchBatchPointsCount() async {
+    final int userId = await _requireUserId();
+
+    return _localPointRepository.watchBatchPointCount(userId);
+  }
+
   Future<List<LocalPoint>> getCurrentBatch() async {
 
-    final int? userId = await _userSession.getUser();
-
-    if (userId == null) {
-      return [];
-    }
+    final int userId = await _requireUserId();
 
     List<LocalPointDto> pointBatchDto =
-        await _localPointInterfaces.getCurrentBatch(userId);
+        await _localPointRepository.getCurrentBatch(userId);
 
-    List<LocalPoint> batch = pointBatchDto.map((point) => point.toDomain()).toList();
+    List<LocalPoint> batch = pointBatchDto.map(
+            (point) => point.toDomain()).toList();
       return batch;
   }
 
-  Future<bool> deletePoint(int pointId) async {
-    final int? userId = await _userSession.getUser();
+  Future<Stream<List<LocalPoint>>> watchCurrentBatch() async {
 
-    if (userId == null) {
-      return false;
-    }
+    final int userId = await _requireUserId();
 
-    final result = await _localPointInterfaces.deletePoint(userId, pointId);
+    return _localPointRepository.watchCurrentBatch(userId)
+        .map((dtos) => dtos.map((dto) => dto.toDomain()).toList());
+  }
 
-    return result == 1;
+  Future<bool> deletePoints(List<int> pointIds) async {
+    final int userId = await _requireUserId();
+
+    final result = await _localPointRepository.deletePoints(userId, pointIds);
+
+    return result > 0;
   }
 
   Future<bool> clearBatch() async {
-    final int? userId = await _userSession.getUser();
+    final int? userId = _userSession.getUserId();
 
     if (userId == null) {
       return false;
     }
 
-    final result = await _localPointInterfaces.clearBatch(userId);
+    final result = await _localPointRepository.clearBatch(userId);
     return result > 0;
   }
 
@@ -452,5 +547,14 @@ class LocalPointService {
       throw UnsupportedError(
           "Unsupported platform for LocationAccuracy handling.");
     }
+  }
+
+  Future<int> _requireUserId() async {
+    final int? userId = _userSession.getUserId();
+    if (userId == null) {
+      await _userSession.logout();
+      throw Exception('[ApiPointService] No user session found.');
+    }
+    return userId;
   }
 }

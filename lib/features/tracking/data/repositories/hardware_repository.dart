@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:dawarich/features/tracking/data/sources/battery_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/gps_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
@@ -13,13 +13,11 @@ import 'package:option_result/option_result.dart';
 final class HardwareRepository implements IHardwareRepository {
   final GpsDataClient _gpsDataClient;
   final DeviceDataClient _deviceDataClient;
-  final BatteryDataClient _batteryDataClient;
   final ConnectivityDataClient _wiFiDataClient;
 
   HardwareRepository(
     this._gpsDataClient,
     this._deviceDataClient,
-    this._batteryDataClient,
     this._wiFiDataClient,
   );
 
@@ -58,20 +56,23 @@ final class HardwareRepository implements IHardwareRepository {
 
   @override
   Future<String> getBatteryState() async {
-    String batteryState = await _batteryDataClient.getBatteryState();
 
-    if (batteryState == "connectedNotCharging") {
-      batteryState = "full";
-    } else if (batteryState == "discharging") {
-      batteryState = "unplugged";
+    final Battery battery = Battery();
+    BatteryState batteryState = await battery.batteryState;
+    String stateString;
+
+    if (batteryState == BatteryState.connectedNotCharging) {
+      stateString = "connected_not_charging";
+    } else {
+      stateString = batteryState.toString().split('.').last;
     }
 
-    return batteryState;
+    return stateString;
   }
 
   @override
   Future<double> getBatteryLevel() async {
-    return await _batteryDataClient.getBatteryLevel() / 100;
+    return await Battery().batteryLevel / 100;
   }
 
   @override

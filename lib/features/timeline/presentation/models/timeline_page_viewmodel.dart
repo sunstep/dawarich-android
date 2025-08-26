@@ -1,18 +1,22 @@
+import 'dart:async';
+
+import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/features/timeline/application/services/location_service.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 final class TimelineViewModel extends ChangeNotifier {
 
   final MapService _mapService;
-  final LocationService _locationService;
+  final LocalPointService _localPointService;
   AnimatedMapController? animatedMapController;
 
-  TimelineViewModel(this._mapService, this._locationService);
+  TimelineViewModel(this._mapService, this._localPointService);
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -23,8 +27,13 @@ final class TimelineViewModel extends ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
   DateTime get selectedDate => _selectedDate;
 
+  StreamSubscription<List<LocalPoint>>? _localPointSubscription;
+
   List<LatLng> _points = [];
   List<LatLng> get points => _points;
+
+  List<LatLng> _localPoints = [];
+  List<LatLng> get localPoints => _localPoints;
 
   void setAnimatedMapController(AnimatedMapController controller) {
     animatedMapController ??= controller;
@@ -50,47 +59,62 @@ final class TimelineViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addPoints(List<LatLng> points) {
+    _points.addAll(points);
+    notifyListeners();
+  }
+
+  void setLocalPoints(List<LatLng> points) {
+    _localPoints = points;
+    notifyListeners();
+  }
+
+  void addLocalPoints(List<LatLng> points) {
+    _localPoints.addAll(points);
+    notifyListeners();
+  }
+
   void clearPoints() {
     _points.clear();
     notifyListeners();
   }
 
   Future<void> initialize() async {
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-      return;
+
+    loadToday();
+    _resolveAndSetInitialLocation();
+
+    final batchStream = await _localPointService.watchCurrentBatch();
+
+    _localPointSubscription = batchStream.listen((points) {
+
+      final List<SlimApiPoint> slimApiPoints = points.map((point) {
+        return SlimApiPoint(
+          latitude: point.geometry.latitude.toString(),
+          longitude: point.geometry.longitude.toString(),
+          timestamp: point.properties.timestamp.millisecondsSinceEpoch,
+        );
+      }).toList();
+      final List<LatLng> localPointList = _mapService.prepPoints(slimApiPoints);
+      setLocalPoints(localPointList);
+    });
+  }
+
+  @override
+  void dispose() {
+
+    if (kDebugMode) {
+      debugPrint("[TimelineViewModel] Disposing...");
     }
 
-    var perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-    }
+    animatedMapController?.dispose();
+    _localPointSubscription?.cancel();
+    super.dispose();
+  }
 
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-      return;
-    }
-
-    Position? position;
-
-    try {
-      position = await _locationService.getCurrentLocation();
-    } catch (_) {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-    }
-
-    position ??= await Geolocator.getLastKnownPosition();
-
-    if (position != null) {
-      setCurrentLocation(
-        LatLng(position.latitude, position.longitude),
-      );
-    } else {
-      setCurrentLocation(await _mapService.getDefaultMapCenter());
-    }
-
-    await loadToday();
+  Future<void> _resolveAndSetInitialLocation() async {
+    final center = await _mapService.getDefaultMapCenter();
+    setCurrentLocation(center);
   }
 
   Future<void> getAndSetPoints() async {

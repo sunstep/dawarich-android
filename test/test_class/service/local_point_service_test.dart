@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
-import 'package:dawarich/objectbox.g.dart';
 import 'package:option_result/option_result.dart';
 import '../../mock/repository/local_point_repository_mock.dart';
 
@@ -27,7 +26,8 @@ void main() {
       type: 'Feature',
       geometry: LocalPointGeometryDto(
         type: 'Point',
-        coordinates: [lon, lat],
+        longitude: lon,
+        latitude: lat
       ),
       properties: LocalPointPropertiesDto(
         batteryState: 'ok',
@@ -79,7 +79,7 @@ void main() {
 
       expect(
         () => repo.storePoint(p),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Simulated store point error')
@@ -161,7 +161,7 @@ void main() {
       
       expect(
         () => repo.getFullBatch(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced getFullBatch failure')
@@ -179,7 +179,7 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       await repo
           .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
-      await repo.markBatchAsUploaded(testUser);
+      await repo.markBatchAsUploaded(testUser, [1]); // Mark first as uploaded
       repo.failGetCurrentBatch = false;
 
       final batch = await repo.getCurrentBatch(testUser);
@@ -195,7 +195,7 @@ void main() {
       
       expect(
         () => repo.getCurrentBatch(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced getCurrentBatch failure')
@@ -213,7 +213,7 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       await repo
           .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
-      await repo.markBatchAsUploaded(testUser);
+      await repo.markBatchAsUploaded(testUser, [1]); // Mark first as uploaded
       repo.failGetBatchCount = false;
 
       final cnt = await repo.getBatchPointCount(testUser);
@@ -229,7 +229,7 @@ void main() {
       
       expect(
         () => repo.getBatchPointCount(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced getBatchPointCount failure')
@@ -249,7 +249,7 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 3, lat: 4, ts: 't2'));
       repo.failMarkUploaded = false;
 
-      final updated = await repo.markBatchAsUploaded(testUser);
+      final updated = await repo.markBatchAsUploaded(testUser, [1, 2]);
 
       expect(updated, 2);
 
@@ -265,8 +265,8 @@ void main() {
       repo.failMarkUploaded = true;
       
       expect(
-        () => repo.markBatchAsUploaded(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        () => repo.markBatchAsUploaded(testUser, [1, 2]),
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced markBatchAsUploaded failure')
@@ -284,12 +284,12 @@ void main() {
           .storePoint(makePoint(userId: testUser, lon: 1, lat: 2, ts: 't1'));
       repo.failDeletePoint = false;
 
-      final result = await repo.deletePoint(testUser, 1);
+      final result = await repo.deletePoints(testUser, [1]);
 
       expect(result, 1);
 
       expect(repo.deletePointCount, 1);
-      expect(repo.lastDeletePointId, 1);
+      expect(repo.lastDeletePointIds, [1]);
       expect(repo.lastDeletePointUserId, testUser);
 
       final batch = await repo.getFullBatch(testUser);
@@ -298,8 +298,8 @@ void main() {
 
     test('deletePoint: not found', () async {
       expect(
-        () => repo.deletePoint(testUser, 999),
-        throwsA(isA<ObjectBoxException>().having(
+        () => repo.deletePoints(testUser, [999]),
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Point not found')
@@ -313,8 +313,8 @@ void main() {
       repo.failDeletePoint = true;
 
       expect(
-        () => repo.deletePoint(testUser, 1),
-        throwsA(isA<ObjectBoxException>().having(
+        () => repo.deletePoints(testUser, [1]),
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced deletePoint failure')
@@ -350,7 +350,7 @@ void main() {
       
       expect(
         () => repo.clearBatch(testUser),
-        throwsA(isA<ObjectBoxException>().having(
+        throwsA(isA<Exception>().having(
           (e) => e.toString(), 
           'message', 
           contains('Forced clearBatch failure')

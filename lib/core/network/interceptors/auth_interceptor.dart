@@ -7,6 +7,9 @@ final class AuthInterceptor extends Interceptor {
   final IApiConfigManager _apiConfig;
   AuthInterceptor(this._apiConfig);
 
+  bool _isAbsolute(String path) =>
+      path.startsWith('http://') || path.startsWith('https://');
+
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -18,10 +21,26 @@ final class AuthInterceptor extends Interceptor {
       return;
     }
 
-    options.baseUrl = config.host;
+    if (!_isAbsolute(options.path) && (options.baseUrl.isEmpty || options.baseUrl == '/')) {
+      options.baseUrl = config.host; // e.g. https://dawarich.app
+    }
 
-    if (config.isConfigured) {
+    final skipAuthFlag = options.extra['skipAuth'] == true;
+
+    final requestUri = _isAbsolute(options.path)
+        ? Uri.parse(options.path)
+        : Uri.parse(options.baseUrl).resolve(options.path);
+
+    final apiHost = Uri.parse(config.host).host;
+    final isApiHost = requestUri.host == apiHost;
+
+
+    final shouldAttachAuth = !skipAuthFlag && isApiHost && config.isConfigured;
+
+    if (shouldAttachAuth) {
       options.headers['Authorization'] = 'Bearer ${config.apiKey}';
+    } else {
+      options.headers.remove('Authorization');
     }
 
     handler.next(options);

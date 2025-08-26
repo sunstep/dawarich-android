@@ -8,7 +8,7 @@ extension LocalPointPropertiesToDto on LocalPointProperties {
       batteryState: batteryState,
       batteryLevel: batteryLevel,
       wifi: wifi,
-      timestamp: timestamp,
+      timestamp: timestamp.toIso8601String(),
       horizontalAccuracy: horizontalAccuracy,
       verticalAccuracy: verticalAccuracy,
       altitude: altitude,
@@ -41,12 +41,12 @@ extension LocalPointPropertiesToApi on LocalPointProperties {
 }
 
 extension LocalPointPropertiesDtoToEntity on LocalPointPropertiesDto {
-  LocalPointProperties toEntity() {
+  LocalPointProperties toDomain() {
     return LocalPointProperties(
       batteryState: batteryState,
       batteryLevel: batteryLevel,
       wifi: wifi,
-      timestamp: timestamp,
+      timestamp: DateTime.parse(timestamp),
       horizontalAccuracy: horizontalAccuracy,
       verticalAccuracy: verticalAccuracy,
       altitude: altitude,

@@ -10,6 +10,13 @@ class PointsTable extends Table {
   IntColumn get propertiesId => integer()
       .references(PointPropertiesTable, #id)(); // FK to properties table
 
+  TextColumn get deduplicationKey => text().nullable()();
+
   IntColumn get userId => integer()();
   BoolColumn get isUploaded => boolean().withDefault(const Constant(false))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {deduplicationKey}
+  ];
 }

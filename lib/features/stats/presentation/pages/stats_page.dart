@@ -1,3 +1,4 @@
+import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
@@ -8,13 +9,13 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
+@RoutePage()
 class StatsPage extends StatelessWidget {
   const StatsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      // This fires off the initial load so vm.isLoading kicks in right away
       create: (_) => getIt<StatsPageViewModel>()..refreshStats(),
       child: Container(
         decoration: BoxDecoration(
@@ -27,14 +28,16 @@ class StatsPage extends StatelessWidget {
             titleFontSize: 32,
             backgroundColor: Colors.transparent,
           ),
-          drawer: const CustomDrawer(),
+          drawer: CustomDrawer(),
           body: SafeArea(
             child: Consumer<StatsPageViewModel>(
               builder: (ctx, vm, _) {
                 // Branch on loading
                 return vm.isLoading
                     ? _buildFullSkeleton(ctx)
-                    : _buildFullContent(ctx, vm);
+                    : (vm.stats == null
+                    ? _buildEmptyState(ctx, vm)
+                    : _buildFullContent(ctx, vm));
               },
             ),
           ),
@@ -175,6 +178,54 @@ class StatsPage extends StatelessWidget {
                 label: const Text('Refresh Stats'),
                 style: Theme.of(context).elevatedButtonTheme.style,
                 onPressed: vm.isLoading ? null : vm.refreshStats,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, StatsPageViewModel vm) {
+    return RefreshIndicator(
+      onRefresh: vm.refreshStats,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              elevation: 12,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Icon(Icons.insights_outlined,
+                        size: 48, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No stats available yet',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Pull to refresh, or come back after some activity.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: vm.isLoading ? null : vm.refreshStats,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try again'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

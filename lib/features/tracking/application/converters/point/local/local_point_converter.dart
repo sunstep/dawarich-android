@@ -35,8 +35,8 @@ extension LocalPointToApi on LocalPoint {
 
 extension LocalPointDtoToEntity on LocalPointDto {
   LocalPoint toDomain() {
-    LocalPointGeometry geometry = this.geometry.toEntity();
-    LocalPointProperties properties = this.properties.toEntity();
+    LocalPointGeometry geometry = this.geometry.toDomain();
+    LocalPointProperties properties = this.properties.toDomain();
     return LocalPoint(
         id: id,
         type: type,

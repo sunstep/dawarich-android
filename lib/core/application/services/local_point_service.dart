@@ -368,7 +368,7 @@ final class LocalPointService {
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
       DateTime candidateTime = point.properties.timestamp;
-      DateTime lastTime = DateTime.parse(lastPoint.timestamp);
+      DateTime lastTime = lastPoint.timestamp;
 
       answer = candidateTime.isAfter(lastTime);
     }
@@ -439,19 +439,6 @@ final class LocalPointService {
         .map((option) => option.map(
             (dto) => dto.toDomain())
         );
-  }
-
-
-  Future<List<LocalPoint>> _getFullBatch() async {
-
-    final int userId = await _requireUserId();
-
-    List<LocalPointDto> result =
-        await _localPointRepository.getFullBatch(userId);
-
-    List<LocalPoint> batch = result.map((point) => point.toDomain()).toList();
-
-    return batch;
   }
 
   Future<int> getBatchPointsCount() async {

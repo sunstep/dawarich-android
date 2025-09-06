@@ -1,5 +1,5 @@
 class LastPoint {
-  final String timestamp;
+  final DateTime timestamp;
   final double longitude;
   final double latitude;
 

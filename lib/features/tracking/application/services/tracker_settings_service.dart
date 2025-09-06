@@ -98,44 +98,78 @@ final class TrackerSettingsService {
     _syncWithBackground();
   }
 
-  Future<void> setPointsPerBatchSetting(int amount) async {
-    final int userId = await _requireUserId();
-    _trackerSettingsRepository.setPointsPerBatchSetting(
-        userId, amount);
+  Future<Result<(), String>> setPointsPerBatchSetting(int amount) async {
 
-    _syncWithBackground();
+    try {
+      final int userId = await _requireUserId();
+      _trackerSettingsRepository.setPointsPerBatchSetting(
+          userId, amount);
+
+      _syncWithBackground();
+      return Ok(());
+    } catch (e) {
+      return Err('Failed to update points per batch: $e');
+    }
+
   }
 
-  Future<void> setTrackingFrequencySetting(int seconds) async {
-    final int userId = await _requireUserId();
-    _trackerSettingsRepository.setTrackingFrequencySetting(
-        userId, seconds);
+  Future<Result<(), String>> setTrackingFrequencySetting(int seconds) async {
 
-    await _syncWithBackground(expectOk: true);
-    FlutterBackgroundService().invoke('updateFrequency');
+    try {
+      final int userId = await _requireUserId();
+      _trackerSettingsRepository.setTrackingFrequencySetting(
+          userId, seconds);
+
+      await _syncWithBackground(expectOk: true);
+      FlutterBackgroundService().invoke('updateFrequency');
+      return Ok(());
+    } catch (e) {
+      return Err('Failed to update tracking frequency: $e');
+    }
+
   }
 
-  Future<void> setLocationAccuracySetting(LocationAccuracy accuracy) async {
-    final int userId = await _requireUserId();
-    _trackerSettingsRepository.setLocationAccuracySetting(
-        userId, accuracy.index);
+  Future<Result<(), String>> setLocationAccuracySetting(LocationAccuracy accuracy) async {
 
-    _syncWithBackground();
+    try {
+      final int userId = await _requireUserId();
+      _trackerSettingsRepository.setLocationAccuracySetting(
+          userId, accuracy.index);
+
+      _syncWithBackground();
+      return Ok(());
+    } catch (e) {
+      return Err('Failed to update location accuracy: $e');
+    }
+
   }
 
-  Future<void> setMinimumPointDistanceSetting(int meters) async {
-    final int userId = await _requireUserId();
-    _trackerSettingsRepository.setMinimumPointDistanceSetting(
-        userId, meters);
+  Future<Result<(), String>> setMinimumPointDistanceSetting(int meters) async {
 
-    _syncWithBackground();
+    try {
+      final int userId = await _requireUserId();
+      _trackerSettingsRepository.setMinimumPointDistanceSetting(
+          userId, meters);
+
+      _syncWithBackground();
+      return Ok(());
+    } catch (e) {
+      return Err('Failed to update minimum point distance: $e');
+    }
+
   }
 
-  Future<void> setDeviceId(String newId) async {
-    final int userId = await _requireUserId();
-    _trackerSettingsRepository.setDeviceId(userId, newId);
+  Future<Result<(), String>> setDeviceId(String newId) async {
+    try {
+      final int userId = await _requireUserId();
+      _trackerSettingsRepository.setDeviceId(userId, newId);
 
-    _syncWithBackground();
+      _syncWithBackground();
+      return Ok(());
+    } catch (e) {
+      return Err('Failed to update device ID: $e');
+    }
+
   }
 
   Future<bool> resetDeviceId() async {
@@ -147,10 +181,16 @@ final class TrackerSettingsService {
     return result;
   }
 
-  Future<void> clearCache() async {
-    final int userId = await _requireUserId();
-    _trackerSettingsRepository.clearCaches(userId);
-    _syncWithBackground();
+  Future<Result<(), String>> clearCache() async {
+    try {
+      final int userId = await _requireUserId();
+      _trackerSettingsRepository.clearCaches(userId);
+      _syncWithBackground();
+      return Ok(());
+    } catch (e) {
+      return Err('Failed to clear cache: $e');
+    }
+
   }
 
   Future<void> _syncWithBackground({bool expectOk = false}) async {

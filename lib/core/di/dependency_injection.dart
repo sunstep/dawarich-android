@@ -24,10 +24,10 @@ import 'package:dawarich/features/tracking/application/services/tracker_settings
 import 'package:dawarich/core/network/configs/api_config_manager.dart';
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/auth/data/repositories/connect_repository.dart';
+import 'package:dawarich/features/tracking/data/repositories/drift_tracker_settings_repository.dart';
 import 'package:dawarich/features/tracking/data/repositories/hardware_repository.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
-import 'package:dawarich/features/tracking/data/repositories/tracker_settings_repository.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/gps_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
@@ -50,6 +50,7 @@ import 'package:dawarich/features/version_check/application/version_check_servic
 import 'package:dawarich/features/version_check/data/repositories/version_repository.dart';
 import 'package:dawarich/features/version_check/data_contracts/version_repository_interfaces.dart';
 import 'package:dawarich/features/version_check/presentation/models/version_check_viewmodel.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:session_box/session_box.dart';
@@ -113,7 +114,7 @@ final class DependencyInjection {
     getIt.registerLazySingleton<ITrackRepository>(
         () => DriftTrackRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<ITrackerSettingsRepository>(
-        () => TrackerSettingsRepository());
+        () => DriftTrackerSettingsRepository(getIt<SQLiteClient>()));
 
 
     // Services
@@ -198,7 +199,6 @@ final class DependencyInjection {
     getIt.registerFactory<TrackerPageViewModel>(() =>
       TrackerPageViewModel(
           getIt<LocalPointService>(),
-          getIt<PointAutomationService>(),
           getIt<TrackService>(),
           getIt<TrackerSettingsService>(),
           getIt<SystemSettingsService>())
@@ -253,8 +253,10 @@ final class DependencyInjection {
           () => SQLiteClient.connectSharedIsolate(),
     );
 
+    await backgroundGetIt.isReady<SQLiteClient>();
+
     backgroundGetIt.registerLazySingleton<ITrackerSettingsRepository>(
-            () => TrackerSettingsRepository());
+            () => DriftTrackerSettingsRepository(backgroundGetIt<SQLiteClient>()));
     backgroundGetIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
         backgroundGetIt<GpsDataClient>(),
         backgroundGetIt<DeviceDataClient>(),
@@ -331,5 +333,18 @@ final class DependencyInjection {
       dependsOn: [LocalPointService, TrackerSettingsService],
     );
 
+  }
+
+  static Future<void> disposeBackgroundDependencies() async {
+    try {
+      if (backgroundGetIt.isRegistered<SQLiteClient>()) {
+        await backgroundGetIt<SQLiteClient>().close();
+      }
+
+      await backgroundGetIt.reset(dispose: true);
+      debugPrint("[BG] DI disposed");
+    } catch (e, s) {
+      debugPrint("[BG] DI dispose error: $e\n$s");
+    }
   }
 }

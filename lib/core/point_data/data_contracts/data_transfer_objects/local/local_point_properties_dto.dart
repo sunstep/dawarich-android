@@ -2,7 +2,7 @@ class LocalPointPropertiesDto {
   final String batteryState;
   final double batteryLevel;
   final String wifi;
-  final String timestamp;
+  final DateTime timestamp;
   final double horizontalAccuracy;
   final double verticalAccuracy;
   final double altitude;

@@ -1,4 +1,5 @@
 import 'package:auto_route/annotations.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/constants/constants.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
@@ -8,8 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 @RoutePage()
-final class MigrationPage extends StatefulWidget {
+final class MigrationPage extends StatefulWidget implements AutoRouteWrapper {
   const MigrationPage({super.key});
+
+  @override
+  Widget wrappedRoute(BuildContext context) {
+    return ChangeNotifierProvider<MigrationViewModel>(
+      create: (_) => MigrationViewModel(),
+      child: this,
+    );
+  }
 
   @override
   State<MigrationPage> createState() => _MigrationPageState();

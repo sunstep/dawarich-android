@@ -33,7 +33,7 @@ void main() {
         batteryState: 'ok',
         batteryLevel: 0.5,
         wifi: 'none',
-        timestamp: ts,
+        timestamp: DateTime.parse(ts),
         horizontalAccuracy: 1.0,
         verticalAccuracy: 2.0,
         altitude: 3.0,

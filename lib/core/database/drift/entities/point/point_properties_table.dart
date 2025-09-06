@@ -7,8 +7,8 @@ class PointPropertiesTable extends Table {
   RealColumn get batteryLevel =>
       real()(); // Battery level (percentage as a double)
   TextColumn get wifi => text()(); // Wi-Fi SSID
-  TextColumn get timestamp =>
-      text()(); // e.g. ISO8601 string or Unix epoch as text
+  DateTimeColumn get timestamp =>
+      dateTime()(); // e.g. ISO8601 string or Unix epoch as text
   RealColumn get altitude => real()(); // Altitude in meters
   RealColumn get speed => real()(); // Speed in m/s
   RealColumn get horizontalAccuracy =>

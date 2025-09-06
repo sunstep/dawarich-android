@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dawarich/core/database/drift/entities/point/point_geometry_table.dart';
 import 'package:dawarich/core/database/drift/entities/point/point_properties_table.dart';
 import 'package:dawarich/core/database/drift/entities/point/points_table.dart';
+import 'package:dawarich/core/database/drift/entities/settings/tracker_settings_table.dart';
 import 'package:dawarich/core/database/drift/entities/track/track_table.dart';
 import 'package:dawarich/core/database/drift/entities/user/user_settings_table.dart';
 import 'package:dawarich/core/database/drift/entities/user/user_table.dart';
@@ -22,7 +23,8 @@ part 'sqlite_client.g.dart';
   PointsTable,
   PointGeometryTable,
   PointPropertiesTable,
-  TrackTable
+  TrackTable,
+  TrackerSettingsTable
 ])
 final class SQLiteClient extends _$SQLiteClient {
 
@@ -68,7 +70,7 @@ final class SQLiteClient extends _$SQLiteClient {
 
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -169,6 +171,61 @@ final class SQLiteClient extends _$SQLiteClient {
           if (kDebugMode) {
             debugPrint('[Migration] Successfully ran version 2 migration');
           }
+        } if (from < 3 && to >= 3) {
+          await m.createTable(trackerSettingsTable);
+
+          if (kDebugMode) {
+            debugPrint('[Migration] Successfully ran version 3 migration');
+          }
+        } if (from  < 4 && to >= 4) {
+
+          await transaction(() async {
+            if (kDebugMode) {
+              debugPrint('[Migration] Running version 4 migration');
+              debugPrint('[Migration] Turning off foreign key enforcement...');
+            }
+
+            await customStatement('PRAGMA foreign_keys = OFF;');
+
+            await m.alterTable(
+                TableMigration(pointPropertiesTable,
+                  columnTransformer: {
+                      pointPropertiesTable.timestamp: const CustomExpression<int>(
+                          r"""
+                            CASE
+                              WHEN typeof(timestamp) = 'integer' THEN
+                                CASE
+                                  WHEN length(CAST(timestamp AS TEXT)) >= 16
+                                    THEN CAST(timestamp / 1000000 AS INT)        -- microseconds → seconds
+                                  WHEN length(CAST(timestamp AS TEXT)) BETWEEN 13 AND 14
+                                    THEN CAST(timestamp / 1000 AS INT)           -- milliseconds → seconds
+                                  WHEN length(CAST(timestamp AS TEXT)) BETWEEN 10 AND 11
+                                    THEN timestamp                                -- already seconds
+                                  ELSE NULL
+                                END
+                              WHEN typeof(timestamp) = 'text' THEN
+                                strftime('%s',
+                                  CASE
+                                    -- strip fractional seconds
+                                    WHEN instr(timestamp, '.') > 0
+                                      THEN replace(substr(timestamp, 1, instr(timestamp, '.') - 1), 'T', ' ')
+                                    ELSE replace(replace(timestamp, 'Z', ''), 'T', ' ')
+                                  END
+                                )                                                -- ISO8601 → seconds
+                              ELSE NULL
+                            END
+                          """
+                      )
+                  }
+                )
+            );
+
+            if (kDebugMode) {
+              debugPrint('[Migration] Successfully ran version 4 migration! Turning back on foreign key enforcement...');
+            }
+            await customStatement('PRAGMA foreign_keys = ON;');
+          });
+
         }
 
       }));
@@ -182,7 +239,6 @@ final class SQLiteClient extends _$SQLiteClient {
         // Add operations here in case you need development specific db operations
         // Any code here will run before the database is opened
         debugPrint('[Drift] Currently on schema version: ${details.versionNow}');
-
       }
 
       // The migration controller should emit false, or else the UI will be stuck.

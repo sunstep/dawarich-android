@@ -213,6 +213,13 @@ final class PointAutomationService with ChangeNotifier {
         if (kDebugMode) {
           debugPrint('[PointAutomation] Stored in main isolate');
         }
+
+        await _updateServiceNotification(
+          title: 'Tracking location...',
+          content: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
+              '${await _localPointService.getBatchPointsCount()} points in batch.',
+        );
+
         return;
       }
 
@@ -228,14 +235,12 @@ final class PointAutomationService with ChangeNotifier {
           debugPrint("[PointAutomation] Stored in background isolate");
         }
 
-        final isForeground = await service.isForegroundService();
-        if (isForeground) {
-          await service.setForegroundNotificationInfo(
-            title: 'Tracking location...',
-            content: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
-                '${await _localPointService.getBatchPointsCount()} points in batch.',
-          );
-        }
+        await _updateServiceNotification(
+          title: 'Tracking location...',
+          content: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
+              '${await _localPointService.getBatchPointsCount()} points in batch.',
+        );
+
       } else if (storeResult case Err(value: final err)) {
         debugPrint("[PointAutomation] Failed to store point in background: $err");
       }
@@ -261,6 +266,21 @@ final class PointAutomationService with ChangeNotifier {
     if (_isTracking) {
       await stopGpsTimer();
       await startGpsTimer();
+    }
+  }
+
+  Future<void> _updateServiceNotification({
+    required String title,
+    required String content,
+  }) async {
+    if (_serviceInstance is AndroidServiceInstance) {
+      final isFg = await _serviceInstance.isForegroundService();
+      if (isFg) {
+        await _serviceInstance.setForegroundNotificationInfo(
+          title: title,
+          content: content,
+        );
+      }
     }
   }
 }

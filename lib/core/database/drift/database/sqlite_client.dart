@@ -187,6 +187,12 @@ final class SQLiteClient extends _$SQLiteClient {
 
             await customStatement('PRAGMA foreign_keys = OFF;');
 
+            if (kDebugMode) {
+              debugPrint(
+                  '[Migration] Converting text timestamps to unix timestamps'
+              );
+            }
+
             await m.alterTable(
                 TableMigration(pointPropertiesTable,
                   columnTransformer: {
@@ -196,22 +202,21 @@ final class SQLiteClient extends _$SQLiteClient {
                               WHEN typeof(timestamp) = 'integer' THEN
                                 CASE
                                   WHEN length(CAST(timestamp AS TEXT)) >= 16
-                                    THEN CAST(timestamp / 1000000 AS INT)        -- microseconds → seconds
+                                    THEN CAST(timestamp / 1000000 AS INT)
                                   WHEN length(CAST(timestamp AS TEXT)) BETWEEN 13 AND 14
-                                    THEN CAST(timestamp / 1000 AS INT)           -- milliseconds → seconds
+                                    THEN CAST(timestamp / 1000 AS INT)
                                   WHEN length(CAST(timestamp AS TEXT)) BETWEEN 10 AND 11
-                                    THEN timestamp                                -- already seconds
+                                    THEN timestamp                              
                                   ELSE NULL
                                 END
                               WHEN typeof(timestamp) = 'text' THEN
                                 strftime('%s',
                                   CASE
-                                    -- strip fractional seconds
                                     WHEN instr(timestamp, '.') > 0
                                       THEN replace(substr(timestamp, 1, instr(timestamp, '.') - 1), 'T', ' ')
                                     ELSE replace(replace(timestamp, 'Z', ''), 'T', ' ')
                                   END
-                                )                                                -- ISO8601 → seconds
+                                )
                               ELSE NULL
                             END
                           """
@@ -221,7 +226,9 @@ final class SQLiteClient extends _$SQLiteClient {
             );
 
             if (kDebugMode) {
-              debugPrint('[Migration] Successfully ran version 4 migration! Turning back on foreign key enforcement...');
+              debugPrint(
+                  '[Migration] Successfully ran version 4 migration! Turning back on foreign key enforcement...'
+              );
             }
             await customStatement('PRAGMA foreign_keys = ON;');
           });

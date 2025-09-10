@@ -181,8 +181,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
 
-    await BackgroundTrackingService.initializeListeners();
-
     Stream<Option<LastPoint>> lastPointStream = await _pointService
         .watchLastPoint();
 
@@ -221,10 +219,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
 
     setIsRetrievingSettings(false);
-  }
-
-  Future<void> persistPreferences() async {
-    await _trackerPreferencesService.persistSettings();
   }
 
   Future<void> _getTrackRecordingStatus() async {
@@ -291,7 +285,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   Future<Result<(), String>> trackPoint() async {
     setIsTracking(true);
-    await persistPreferences();
 
     Result<LocalPoint, String> pointResult =
         await _pointService.createPointFromGps();

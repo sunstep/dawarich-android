@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dawarich/core/domain/models/user.dart';
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/settings/tracker_settings_dto.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_settings_repository.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -40,6 +39,11 @@ final class TrackerSettingsService {
         .getTrackingFrequencySetting(userId);
 
     return result.isSome() ? result.unwrap() : 10;
+  }
+
+  Future<Stream<int>> watchTrackingFrequencySetting() async {
+    final int userId = await _requireUserId();
+    return _trackerSettingsRepository.watchTrackingFrequencySetting(userId);
   }
 
   Future<LocationAccuracy> getLocationAccuracySetting() async {
@@ -94,8 +98,6 @@ final class TrackerSettingsService {
 
     _trackerSettingsRepository.setAutomaticTrackingSetting(
         userId, trueOrFalse);
-
-    _syncWithBackground();
   }
 
   Future<Result<(), String>> setPointsPerBatchSetting(int amount) async {
@@ -105,7 +107,6 @@ final class TrackerSettingsService {
       _trackerSettingsRepository.setPointsPerBatchSetting(
           userId, amount);
 
-      _syncWithBackground();
       return Ok(());
     } catch (e) {
       return Err('Failed to update points per batch: $e');
@@ -120,7 +121,6 @@ final class TrackerSettingsService {
       _trackerSettingsRepository.setTrackingFrequencySetting(
           userId, seconds);
 
-      await _syncWithBackground(expectOk: true);
       FlutterBackgroundService().invoke('updateFrequency');
       return Ok(());
     } catch (e) {
@@ -136,7 +136,6 @@ final class TrackerSettingsService {
       _trackerSettingsRepository.setLocationAccuracySetting(
           userId, accuracy.index);
 
-      _syncWithBackground();
       return Ok(());
     } catch (e) {
       return Err('Failed to update location accuracy: $e');
@@ -151,7 +150,6 @@ final class TrackerSettingsService {
       _trackerSettingsRepository.setMinimumPointDistanceSetting(
           userId, meters);
 
-      _syncWithBackground();
       return Ok(());
     } catch (e) {
       return Err('Failed to update minimum point distance: $e');
@@ -164,7 +162,6 @@ final class TrackerSettingsService {
       final int userId = await _requireUserId();
       _trackerSettingsRepository.setDeviceId(userId, newId);
 
-      _syncWithBackground();
       return Ok(());
     } catch (e) {
       return Err('Failed to update device ID: $e');
@@ -177,54 +174,7 @@ final class TrackerSettingsService {
 
     bool result = await _trackerSettingsRepository.deleteDeviceId(userId);
 
-    _syncWithBackground();
     return result;
-  }
-
-  Future<Result<(), String>> clearCache() async {
-    try {
-      final int userId = await _requireUserId();
-      _trackerSettingsRepository.clearCaches(userId);
-      _syncWithBackground();
-      return Ok(());
-    } catch (e) {
-      return Err('Failed to clear cache: $e');
-    }
-
-  }
-
-  Future<void> _syncWithBackground({bool expectOk = false}) async {
-
-    final userId = await _requireUserId();
-
-    final settingsResult = await _trackerSettingsRepository
-        .getTrackerSettings(userId);
-
-    if (settingsResult case Some(value: final TrackerSettingsDto settingsDto)) {
-
-      final service = FlutterBackgroundService();
-
-      if (expectOk) {
-        final completer = Completer<void>();
-
-        service.on('syncSettingsAck').first.then((_) {
-          completer.complete();
-        });
-
-        service.invoke('syncSettings', settingsDto.toJson());
-        await completer.future;
-      } else {
-        service.invoke('syncSettings', settingsDto.toJson());
-      }
-    }
-
-  }
-
-  Future<void> persistSettings() async {
-
-    final int userId = await _requireUserId();
-
-    await _trackerSettingsRepository.persistPreferences(userId);
   }
 
   Future<int> _requireUserId() async {

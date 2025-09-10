@@ -8,87 +8,141 @@ import 'package:drift/drift.dart';
 import 'package:option_result/option.dart';
 
 final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository {
-  final SQLiteClient _db;
-  TrackerSettingsDto? _cache;
 
+  final SQLiteClient _db;
   DriftTrackerSettingsRepository(this._db);
 
   // ---------- Getters ----------
 
   @override
   Future<Option<bool>> getAutomaticTrackingSetting(int userId) async {
-    final dto = await _getOrLoad(userId);
-    return dto.automaticTracking != null ? Some(dto.automaticTracking!) : const None();
+    final row = await _readRow(userId);
+    final v = row?.automaticTracking;
+    return v == null ? const None() : Some(v);
   }
 
   @override
   Future<Option<int>> getPointsPerBatchSetting(int userId) async {
-    final dto = await _getOrLoad(userId);
-    return dto.pointsPerBatch != null ? Some(dto.pointsPerBatch!) : const None();
+    final row = await _readRow(userId);
+    final v = row?.pointsPerBatch;
+    return v == null ? const None() : Some(v);
   }
 
   @override
   Future<Option<int>> getTrackingFrequencySetting(int userId) async {
-    final dto = await _getOrLoad(userId);
-    return dto.trackingFrequency != null ? Some(dto.trackingFrequency!) : const None();
+    final row = await _readRow(userId);
+    final v = row?.trackingFrequency;
+    return v == null ? const None() : Some(v);
   }
 
   @override
   Future<Option<int>> getLocationAccuracySetting(int userId) async {
-    final dto = await _getOrLoad(userId);
-    return dto.locationAccuracy != null ? Some(dto.locationAccuracy!) : const None();
+    final row = await _readRow(userId);
+    final v = row?.locationAccuracy;
+    return v == null ? const None() : Some(v);
   }
 
   @override
   Future<Option<int>> getMinimumPointDistanceSetting(int userId) async {
-    final dto = await _getOrLoad(userId);
-    return dto.minimumPointDistance != null ? Some(dto.minimumPointDistance!) : const None();
+    final row = await _readRow(userId);
+    final v = row?.minimumPointDistance;
+    return v == null ? const None() : Some(v);
   }
 
   @override
   Future<Option<String>> getDeviceId(int userId) async {
-    final dto = await _getOrLoad(userId);
-    return dto.deviceId != null ? Some(dto.deviceId!) : const None();
+    final row = await _readRow(userId);
+    final v = row?.deviceId;
+    return v == null ? const None() : Some(v);
+  }
+
+
+  // ---------- Streams ----------
+
+  @override
+  Stream<int> watchTrackingFrequencySetting(int userId) {
+    final q = (_db.select(_db.trackerSettingsTable)
+      ..where((t) => t.userId.equals(userId)));
+
+    return q
+        .watchSingleOrNull()                 // Stream<TrackerSettingsTableData?>
+        .map((row) => row?.trackingFrequency) // Stream<int?>
+        .where((v) => v != null)              // filter nulls
+        .map((v) => v!)                        // cast to int
+        .distinct();                           // avoid duplicates
   }
 
   // ---------- Setters ----------
 
   @override
   void setAutomaticTrackingSetting(int userId, bool value) {
-    _update(userId, (s) => s.copyWith(automaticTracking: value));
+    _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(
+      TrackerSettingsTableCompanion(
+        userId: Value(userId),
+        automaticTracking: Value(value),
+      ),
+    );
   }
 
   @override
   void setPointsPerBatchSetting(int userId, int amount) {
-    _update(userId, (s) => s.copyWith(pointsPerBatch: amount));
+    _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(
+      TrackerSettingsTableCompanion(
+        userId: Value(userId),
+        pointsPerBatch: Value(amount),
+      ),
+    );
   }
 
   @override
   void setTrackingFrequencySetting(int userId, int seconds) {
-    _update(userId, (s) => s.copyWith(trackingFrequency: seconds));
+    _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(
+      TrackerSettingsTableCompanion(
+        userId: Value(userId),
+        trackingFrequency: Value(seconds),
+      ),
+    );
   }
 
   @override
   void setLocationAccuracySetting(int userId, int index) {
-    _update(userId, (s) => s.copyWith(locationAccuracy: index));
+    _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(
+      TrackerSettingsTableCompanion(
+        userId: Value(userId),
+        locationAccuracy: Value(index),
+      ),
+    );
   }
 
   @override
   void setMinimumPointDistanceSetting(int userId, int meters) {
-    _update(userId, (s) => s.copyWith(minimumPointDistance: meters));
+    _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(
+      TrackerSettingsTableCompanion(
+        userId: Value(userId),
+        minimumPointDistance: Value(meters),
+      ),
+    );
   }
 
   @override
   void setDeviceId(int userId, String newId) {
-    _update(userId, (s) => s.copyWith(deviceId: newId));
+    _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(
+      TrackerSettingsTableCompanion(
+        userId: Value(userId),
+        deviceId: Value(newId),
+      ),
+    );
   }
 
   @override
   Future<bool> deleteDeviceId(int userId) async {
-    final dto = await _getOrLoad(userId);
-    final updated = dto.copyWith(deviceId: null);
-    _cache = updated;
-    await _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(_toCompanion(updated));
+    // For nullable columns, pass Value(null) to clear
+    await _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(
+      TrackerSettingsTableCompanion(
+        userId: Value(userId),
+        deviceId: const Value(null),
+      ),
+    );
     return true;
   }
 
@@ -96,52 +150,25 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
 
   @override
   Future<Option<TrackerSettingsDto>> getTrackerSettings(int userId) async {
-    final dto = await _getOrLoad(userId);
+    final row = await _readRow(userId);
+    if (row == null) return const None();
+    final dto = _fromRow(row);
     return dto == TrackerSettingsDto.empty(userId) ? const None() : Some(dto);
   }
 
   @override
   void setAll(TrackerSettingsDto settings) {
-    _cache = settings;
     _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(_toCompanion(settings));
   }
 
-  @override
-  void clearCaches(int userId) {
-    if (_cache?.userId == userId) {
-      _cache = null;
-    }
-  }
 
-  @override
-  Future<void> persistPreferences(int userId) async {
-    // no-op in Drift implementation, kept for interface compatibility
-    return;
-  }
 
   // ---------- Internal helpers ----------
 
-  Future<TrackerSettingsDto> _getOrLoad(int userId) async {
-    if (_cache?.userId == userId) return _cache!;
-    final row = await (_db.select(_db.trackerSettingsTable)
+  Future<TrackerSettingsTableData?> _readRow(int userId) {
+    return (_db.select(_db.trackerSettingsTable)
       ..where((t) => t.userId.equals(userId)))
         .getSingleOrNull();
-
-    if (row == null) {
-      final empty = TrackerSettingsDto.empty(userId);
-      _cache = empty;
-      return empty;
-    }
-    final dto = _fromRow(row);
-    _cache = dto;
-    return dto;
-  }
-
-  void _update(int userId, TrackerSettingsDto Function(TrackerSettingsDto) fn) {
-    final base = _cache ?? TrackerSettingsDto.empty(userId);
-    final updated = fn(base);
-    _cache = updated;
-    _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(_toCompanion(updated));
   }
 
   TrackerSettingsDto _fromRow(TrackerSettingsTableData r) => TrackerSettingsDto(

@@ -167,9 +167,6 @@ final class DependencyInjection {
         getIt<TrackerSettingsService>(),
         getIt<ITrackRepository>(),
         getIt<IHardwareRepository>()));
-    getIt.registerLazySingleton<PointAutomationService>(() =>
-        PointAutomationService(
-            getIt<TrackerSettingsService>(), getIt<LocalPointService>()));
     getIt.registerLazySingleton<StatsService>(
         () => StatsService(getIt<IStatsRepository>()));
 

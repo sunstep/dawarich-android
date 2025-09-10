@@ -118,7 +118,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
 
         if (localContext.mounted) {
           final viewModel = localContext.read<TrackerPageViewModel>();
-          viewModel.persistPreferences();
         }
       } catch (error) {
         if (kDebugMode) {
@@ -164,7 +163,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
 
           if (state == AppLifecycleState.paused ||
               state == AppLifecycleState.inactive) {
-            viewModel.persistPreferences();
           }
           if (state == AppLifecycleState.resumed) {
             viewModel.getLastPoint();

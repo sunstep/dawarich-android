@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:ui';
 
 import 'package:dawarich/core/database/drift/entities/point/point_geometry_table.dart';
 import 'package:dawarich/core/database/drift/entities/point/point_properties_table.dart';
@@ -28,29 +30,50 @@ part 'sqlite_client.g.dart';
 ])
 final class SQLiteClient extends _$SQLiteClient {
 
-  static DriftIsolate? _sharedIsolate;
   static const _dbFileName = 'dawarich_db.sqlite';
+  static const _driftPortName = 'dawarich_drift_connect_port';
 
   SQLiteClient(super.executor);
 
-  static Future<DriftIsolate> getSharedDriftIsolate() async {
-    return _sharedIsolate ??= await createDriftIsolate();
-
-  }
-
   static Future<SQLiteClient> connectSharedIsolate() async {
-    if (_sharedIsolate == null) {
-      final dbFile = await getDatabaseFile();
-      _sharedIsolate = await DriftIsolate.spawn(
-            () => DatabaseConnection(NativeDatabase(dbFile, logStatements: kDebugMode)),
-      );
+
+    final SendPort? existingPort = IsolateNameServer.lookupPortByName(_driftPortName);
+
+    if (existingPort != null) {
+      final iso = DriftIsolate.fromConnectPort(existingPort);
+      final conn = await iso.connect();
+      return SQLiteClient(conn);
     }
 
-    final connection = await _sharedIsolate!.connect();
-    return SQLiteClient(connection);
+    final dbFile = await _getDatabaseFile();
+
+    final iso = await DriftIsolate.spawn(
+          () => DatabaseConnection(
+        NativeDatabase(dbFile, logStatements: kDebugMode),
+      ),
+    );
+
+    final ok = IsolateNameServer.registerPortWithName(
+      iso.connectPort,
+      _driftPortName,
+    );
+
+    // This is extremely rare, but better safe than sorry: a race where another isolate registered it between our lookup and now.
+    if (!ok) {
+      final port = IsolateNameServer.lookupPortByName(_driftPortName);
+      if (port == null) {
+        throw StateError('Failed to register Drift connectPort and none found.');
+      }
+      final existingIso = DriftIsolate.fromConnectPort(port);
+      final conn = await existingIso.connect();
+      return SQLiteClient(conn);
+    }
+
+    final conn = await iso.connect();
+    return SQLiteClient(conn);
   }
 
-  static Future<File> getDatabaseFile() async {
+  static Future<File> _getDatabaseFile() async {
     final dir = await getApplicationDocumentsDirectory();
     return File(p.join(dir.path, _dbFileName));
   }

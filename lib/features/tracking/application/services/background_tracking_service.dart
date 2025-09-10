@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/constants/notification.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
@@ -135,41 +134,6 @@ class BackgroundTrackingEntry {
 final class BackgroundTrackingService {
 
   static bool _isStopping = false;
-  static bool _hasInitializedListeners = false;
-
-  static Future<void> initializeListeners() async {
-    if (_hasInitializedListeners) return;
-    _hasInitializedListeners = true;
-
-    final FlutterBackgroundService backgroundService = FlutterBackgroundService();
-
-    backgroundService.on('newPoint').listen((event) async {
-
-      if (event is Map<String, dynamic>) {
-        final LocalPointService localPointService = getIt<LocalPointService>();
-        try {
-          final point = LocalPoint.fromJson(event);
-          final String key = point.deduplicationKey;
-
-          final storeResult = await localPointService.autoStoreAndUpload(point);
-
-          backgroundService.invoke('pointStoredAck', {
-            'deduplicationKey': key,
-            'success': storeResult is Ok,
-          });
-
-          if (storeResult case Ok()) {
-            debugPrint('[BackgroundTrackingService] Stored background point');
-          } else if (storeResult case Err(value: final err)) {
-            debugPrint('[BackgroundTrackingService] Store failed: $err');
-          }
-        } catch (e, s) {
-          debugPrint('[BackgroundTrackingService] Error: $e\n$s');
-        }
-      }
-    });
-  }
-
 
   static Future<void> ensureNotificationChannelExists() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(

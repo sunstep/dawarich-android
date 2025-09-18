@@ -20,15 +20,10 @@ final class StartupService {
 
     final SQLiteClient db = getIt<SQLiteClient>();
 
-    if (kDebugMode) {
-      debugPrint('[StartupService] Subscribed to migration stream.');
-    }
-
     final willUpgradeFut = db.willUpgrade;
     unawaited(db.ensureOpened());
 
-    final willUpgrade = await willUpgradeFut
-        .timeout(const Duration(seconds: 20), onTimeout: () => false);
+    final willUpgrade = await willUpgradeFut;
 
     if (willUpgrade) {
 

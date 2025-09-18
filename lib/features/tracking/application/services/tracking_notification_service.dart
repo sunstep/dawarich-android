@@ -8,9 +8,13 @@ final class TrackingNotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  static const trackerPayload = '/tracker';
 
   Future<void> initialize() async {
-    if (_initialized) return;
+
+    if (_initialized) {
+      return;
+    }
     const androidSettings = AndroidInitializationSettings('ic_bg_service_small');
 
     const InitializationSettings initializationSettings =
@@ -58,7 +62,7 @@ final class TrackingNotificationService {
       title,
       body,
       details,
-      payload: payload,
+      payload: payload ?? trackerPayload, // default to tracker
     );
   }
 

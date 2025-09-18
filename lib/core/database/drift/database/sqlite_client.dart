@@ -29,6 +29,7 @@ part 'sqlite_client.g.dart';
   TrackerSettingsTable
 ])
 final class SQLiteClient extends _$SQLiteClient {
+
   static const _dbFileName = 'dawarich_db.sqlite';
   static const _driftPortName = 'dawarich_drift_connect_port';
 
@@ -135,7 +136,6 @@ final class SQLiteClient extends _$SQLiteClient {
       4. When the migration screen is ready, it signals the migration logic to proceed, so it unblocks.
     */
 
-  bool _opened = false;
 
   final _willUpgrade = Completer<bool>();      // true if onUpgrade will run, false otherwise
   Future<bool> get willUpgrade => _willUpgrade.future;
@@ -144,45 +144,64 @@ final class SQLiteClient extends _$SQLiteClient {
   final _migrationDone = Completer<bool>();
   Future<bool> get migrationDone => _migrationDone.future;
   final _uiReady = Completer<void>();
-  Completer<void>? _opening;
 
-  Future<void> ensureOpened() {
-    // If already opened or already opening, return the existing future.
-    if (_opened) return _opening?.future ?? Future.value();
+  Future<void>? _openFuture;
 
-    _opened = true;
-    final completer = _opening = Completer<void>();
+  Future<void> ensureOpened() => _openFuture ??= _openOnce();
 
-    () async {
-      final sw = Stopwatch()..start();
-      try {
+  Future<void> _openOnce() async {
+    final sw = Stopwatch()..start();
+    try {
+      await _forceOpen().timeout(const Duration(seconds: 5));
 
-        await _forceOpen()
-            .timeout(const Duration(seconds: 5)); // keep this tight
+      await Future<void>.delayed(Duration.zero);
 
-
-        if (!completer.isCompleted) completer.complete();
-        if (kDebugMode) {
-          debugPrint('[DB] ensureOpened finished in ${sw.elapsedMilliseconds}ms');
-        }
-      } on TimeoutException catch (e, s) {
-        if (!_willUpgrade.isCompleted) _willUpgrade.completeError(e, s);
-        if (!_migrationDone.isCompleted) _migrationDone.completeError(e, s);
-        if (!completer.isCompleted) completer.completeError(e, s);
-        if (kDebugMode) {
-          debugPrint('[DB] ensureOpened timed out after ${sw.elapsedMilliseconds}ms');
-        }
-      } catch (e, s) {
-        if (!_willUpgrade.isCompleted) _willUpgrade.completeError(e, s);
-        if (!_migrationDone.isCompleted) _migrationDone.completeError(e, s);
-        if (!completer.isCompleted) completer.completeError(e, s);
-        if (kDebugMode) {
-          debugPrint('[DB] ensureOpened failed: $e\n$s');
-        }
+      await _fallbackCompleteWillUpgradeIfUnset();
+    } on TimeoutException catch (e, s) {
+      _completeErrorIfUnset(e, s);
+      rethrow;
+    } catch (e, s) {
+      _completeErrorIfUnset(e, s);
+      rethrow;
+    } finally {
+      if (kDebugMode) {
+        debugPrint('[DB] ensureOpened finished in ${sw.elapsedMilliseconds}ms');
       }
-    }();
+    }
+  }
 
-    return completer.future;
+  void _completeWillUpgrade(bool value) {
+    if (!_willUpgrade.isCompleted) _willUpgrade.complete(value);
+  }
+
+  void _completeMigration(bool didMigrate) {
+    if (!_migrationDone.isCompleted) _migrationDone.complete(didMigrate);
+  }
+
+  void _completeErrorIfUnset(Object e, StackTrace s) {
+    if (!_willUpgrade.isCompleted) _willUpgrade.completeError(e, s);
+    if (!_migrationDone.isCompleted) _migrationDone.completeError(e, s);
+  }
+
+  Future<void> _fallbackCompleteWillUpgradeIfUnset() async {
+
+    if (_willUpgrade.isCompleted) {
+      return;
+    }
+
+    final dir = await getApplicationDocumentsDirectory();
+    final dbPath = p.join(dir.path, _dbFileName);
+    final exists = await File(dbPath).exists();
+    if (!exists) {
+      _completeWillUpgrade(false);
+      return;
+    }
+
+    final rows = await customSelect('PRAGMA user_version').get();
+    final currentVersion = (rows.first.data.values.first as int);
+    final needUpgrade = currentVersion < schemaVersion;
+
+    _completeWillUpgrade(needUpgrade);
   }
 
   Future<void> _forceOpen() async {
@@ -192,18 +211,6 @@ final class SQLiteClient extends _$SQLiteClient {
   void signalUiReadyForMigration() {
     if (!_uiReady.isCompleted) {
       _uiReady.complete();
-    }
-  }
-
-  void _completeWillUpgrade(bool willUpgrade) {
-    if (!_willUpgrade.isCompleted) {
-      _willUpgrade.complete(willUpgrade);
-    }
-  }
-
-  void _completeMigration(bool didMigrate) {
-    if (!_migrationDone.isCompleted) {
-      _migrationDone.complete(didMigrate);
     }
   }
 
@@ -286,6 +293,7 @@ final class SQLiteClient extends _$SQLiteClient {
       _completeMigration(false);
     },
     onUpgrade: (final m, final from, final to) async {
+
       if (kDebugMode) {
         debugPrint('[Migration] Running from version $from to $to');
       }

@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
-import 'package:dawarich/core/constants/notification.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointAutomationService with ChangeNotifier {
@@ -19,9 +18,10 @@ final class PointAutomationService with ChangeNotifier {
   final ServiceInstance? _serviceInstance;
   final TrackerSettingsService _trackerPreferencesService;
   final LocalPointService _localPointService;
+  final TrackingNotificationService _notificationService;
 
   PointAutomationService(this._trackerPreferencesService,
-      this._localPointService, this._serviceInstance);
+      this._localPointService, this._notificationService, this._serviceInstance);
 
   Future<void> startTracking() async {
 
@@ -153,9 +153,9 @@ final class PointAutomationService with ChangeNotifier {
       final result = await _localPointService.createPointFromGps(persist: true);
 
       if (result case Ok(value: final LocalPoint point)) {
-        await _updateServiceNotification(
+        await _notificationService.showOrUpdate(
           title: 'Tracking location...',
-          content: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
+          body: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
               '${await _localPointService.getBatchPointsCount()} points in batch.',
         );
       } else if (result case Err(value: final err)) {
@@ -216,32 +216,12 @@ final class PointAutomationService with ChangeNotifier {
       if (optionPoint case Ok(value: final LocalPoint point)) {
         // We actually got a new point from the phone’s cache, so reset the GPS timer.
         // This basically says “we got a point anyway, so hold off on forcing another one too soon.”
-        if (_serviceInstance is AndroidServiceInstance) {
-          final androidService = _serviceInstance;
-          final isForeground = await androidService.isForegroundService();
-          if (isForeground) {
-            const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-              NotificationConstants.channelId,
-              NotificationConstants.notificationTitle,
-              channelDescription: NotificationConstants.channelDescription,
-              importance: Importance.low,
-              priority: Priority.low,
-              icon: NotificationConstants.notificationIcon,
-              ongoing: true,
-            );
+        await _notificationService.showOrUpdate(
+          title: 'Tracking location...',
+          body: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
+              '${await _localPointService.getBatchPointsCount()} points in batch.',
+        );
 
-            const NotificationDetails notificationDetails = NotificationDetails(
-              android: androidDetails,
-            );
-
-            FlutterLocalNotificationsPlugin().show(
-              NotificationConstants.notificationId,
-              NotificationConstants.notificationTitle,
-              'Last updated at ${DateTime.now().toLocal().toIso8601String()}',
-              notificationDetails,
-            );
-          }
-        }
         await _completeGpsLoop();
 
         if (kDebugMode) {
@@ -259,21 +239,6 @@ final class PointAutomationService with ChangeNotifier {
       debugPrint("[DEBUG] Stopping cached points timer");
     }
 
-
   }
 
-  Future<void> _updateServiceNotification({
-    required String title,
-    required String content,
-  }) async {
-    if (_serviceInstance is AndroidServiceInstance) {
-      final isFg = await _serviceInstance.isForegroundService();
-      if (isFg) {
-        await _serviceInstance.setForegroundNotificationInfo(
-          title: title,
-          content: content,
-        );
-      }
-    }
-  }
 }

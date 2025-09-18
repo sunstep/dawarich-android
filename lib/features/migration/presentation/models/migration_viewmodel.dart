@@ -22,8 +22,7 @@ final class MigrationViewModel extends ChangeNotifier {
     try {
       _setError(null);
 
-      // This only runs when the migration is finished. So this blocks us until the migration is finished.
-      await getIt<SQLiteClient>().customSelect('SELECT 1').get();
+      await getIt<SQLiteClient>().migrationDone;
 
       // After migration, check login state
       final SessionBox<User> sessionService = getIt<SessionBox<User>>();

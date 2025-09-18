@@ -1,4 +1,3 @@
-import 'package:auto_route/annotations.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/constants/constants.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
@@ -32,7 +31,7 @@ class _MigrationPageState extends State<MigrationPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(kMigrationDelay);
       if (mounted) {
-        getIt<SQLiteClient>().signalMigrationUiReady();
+        getIt<SQLiteClient>().signalUiReadyForMigration();
         context.read<MigrationViewModel>().runMigrationAndNavigate(context);
       }
     });

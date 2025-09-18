@@ -51,13 +51,11 @@ final class TrackerSettingsService {
     final Option<int> accuracyIndex = await _trackerSettingsRepository
         .getLocationAccuracySetting(userId);
 
-    switch (accuracyIndex) {
-      case Some(:final value)
-      when value >= 0 && value < LocationAccuracy.values.length:
-        return LocationAccuracy.values[value];
-      default:
-        return LocationAccuracy.high;
+    if (accuracyIndex case Some(: final value) when value >= 0 && value < LocationAccuracy.values.length) {
+      return LocationAccuracy.values[value];
     }
+    return LocationAccuracy.high;
+
   }
 
   Future<int> getMinimumPointDistanceSetting() async {

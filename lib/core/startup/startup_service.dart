@@ -4,50 +4,33 @@ import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:option_result/option_result.dart';
 import 'package:session_box/session_box.dart';
 
 final class StartupService {
   static Future<void> initializeApp() async {
 
+    if (kDebugMode) {
+      debugPrint('[StartupService] Initializing app...');
+    }
+
     final SQLiteClient db = getIt<SQLiteClient>();
 
-    final Future<bool> migrateFuture  = db.migrationStream.first;
+    final willUpgradeFut = db.willUpgrade;
+    unawaited(db.ensureOpened());
 
-    /*
-      You might wonder what this is doing here: db migrations do not run until the db is first interacted with.
-      Here we run a dummy query to force the migration to run on start up rather than deep in the app.
-      This is kinda hacky, but Drift does not provide a way to check if migrations are about to be run or not.
-      So the only way to know if there is a migration to run, is to make it run the migration.
-      The reason we do this in the first place, is because we want to show a migration screen, if we don't, the app gets stuck on the splash screen while it runs the migrations which is not a good user experience.
+    final willUpgrade = await willUpgradeFut;
 
-      When the migration runs, it will signal there is a migration, after signalling, it will block the migration until the UI is ready.
-      When the UI is ready, it signals that to the migration logic which then unblocks the migration and proceeds with it.
+    if (willUpgrade) {
 
-      Flow (in a nutshell):
-      1. Trigger migration with a dummy query.
-      2. Migration logic runs and signals that there is a migration. Migration blocks it self with a Completer.
-      3. Using the migration signal, we decide to show the migration screen (or not).
-      4. When the migration screen is ready, it signals the migration logic to proceed, so it unblocks.
-    */
-    unawaited(
-      (() async {
-        try {
-          await db.customSelect('SELECT 1').get();
-        } catch (_) {
-          // This is just a dummy query, so errors are irrelevant.
-        }
-      })(),
-    );
+      if (kDebugMode) {
+        debugPrint('[StartupService] Migration needed, navigating to migration screen...');
+      }
 
-    final didMigrate = await migrateFuture;
-
-    if (didMigrate) {
       appRouter.replaceAll([const MigrationRoute()]);
       return;
     }
@@ -58,30 +41,48 @@ final class StartupService {
 
     if (refreshedSessionUser != null) {
 
+      if (kDebugMode) {
+        debugPrint('[StartupService] User session found!');
+      }
+
       sessionService.setUserId(refreshedSessionUser.id);
 
       final VersionCheckService versionCheckService = getIt<VersionCheckService>();
       final Result<(), String> isSupported = await versionCheckService.isServerVersionSupported();
 
       if (!isSupported.isOk()) {
+
+        if (kDebugMode) {
+          debugPrint('[StartupService] Server version not supported, navigating to version check screen...');
+        }
+
         appRouter.replaceAll([const VersionCheckRoute()]);
         return;
       }
 
-      final shouldTrack = await getIt<TrackerSettingsService>().getAutomaticTrackingSetting();
+      final TrackingNotificationService notificationService = getIt<TrackingNotificationService>();
 
-      final FlutterBackgroundService backgroundService = FlutterBackgroundService();
+      final bool launchedByNotification = await notificationService.wasLaunchedFromNotification();
 
-      if (shouldTrack) {
-        debugPrint('[StartupService] Auto-tracking is ON — sending proceed');
-        backgroundService.invoke('proceed');
+      if (launchedByNotification) {
+
+        if (kDebugMode) {
+          debugPrint('[StartupService] App launched from tracking notification, navigating to tracker screen...');
+        }
+        appRouter.replaceAll([const TrackerRoute()]);
       } else {
-        debugPrint('[StartupService] Auto-tracking is OFF — skipping background start');
-        backgroundService.invoke('stopService');
+
+        if (kDebugMode) {
+          debugPrint('[StartupService] Navigating to timeline screen...');
+        }
+        appRouter.replaceAll([const TimelineRoute()]);
       }
 
-      appRouter.replaceAll([const TimelineRoute()]);
     } else {
+
+      if (kDebugMode) {
+        debugPrint('[StartupService] No user session found, navigating to auth screen...');
+      }
       sessionService.logout();
       appRouter.replaceAll([const AuthRoute()]);
     }

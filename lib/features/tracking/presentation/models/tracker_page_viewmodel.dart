@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
-import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
@@ -17,7 +16,6 @@ import 'package:dawarich/features/tracking/presentation/models/track_viewmodel.d
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/features/tracking/presentation/models/last_point_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -171,21 +169,17 @@ final class TrackerPageViewModel extends ChangeNotifier {
   final TextEditingController deviceIdController = TextEditingController();
 
   final LocalPointService _pointService;
-  final PointAutomationService _pointAutomationService;
   final TrackerSettingsService _trackerPreferencesService;
   final TrackService _trackService;
   final SystemSettingsService _systemSettingsService;
 
   TrackerPageViewModel(
       this._pointService,
-      this._pointAutomationService,
       this._trackService,
       this._trackerPreferencesService,
       this._systemSettingsService);
 
   Future<void> initialize() async {
-
-    await BackgroundTrackingService.initializeListeners();
 
     Stream<Option<LastPoint>> lastPointStream = await _pointService
         .watchLastPoint();
@@ -225,10 +219,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
 
     setIsRetrievingSettings(false);
-  }
-
-  Future<void> persistPreferences() async {
-    await _trackerPreferencesService.persistSettings();
   }
 
   Future<void> _getTrackRecordingStatus() async {
@@ -295,7 +285,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   Future<Result<(), String>> trackPoint() async {
     setIsTracking(true);
-    await persistPreferences();
 
     Result<LocalPoint, String> pointResult =
         await _pointService.createPointFromGps();
@@ -457,8 +446,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
         return Err("Failed to start background service: $message");
       }
 
-      FlutterBackgroundService().invoke('proceed');
-
     } else {
       BackgroundTrackingService.stop();
     }
@@ -493,23 +480,34 @@ final class TrackerPageViewModel extends ChangeNotifier {
   Future<void> _getAutomaticTrackingPreference() async {
     final bool shouldTrackAutomatically =
         await _trackerPreferencesService.getAutomaticTrackingSetting();
-    await toggleAutomaticTracking(shouldTrackAutomatically);
+    setAutomaticTracking(shouldTrackAutomatically);
+  }
+
+  void setFrequency(int seconds) {
+    _trackingFrequency = seconds;
+    notifyListeners();
   }
 
   Future<void> setTrackingFrequency(int? seconds) async {
-    seconds ??= 10;
-    _trackingFrequency = seconds;
-    await _trackerPreferencesService
-        .setTrackingFrequencySetting(_trackingFrequency);
 
+    if (seconds != null) {
 
-    if (!_isDisposed) {
-      notifyListeners();
+      final int oldValue = _trackingFrequency;
+
+      setFrequency(seconds);
+
+      final frequencySet = await _trackerPreferencesService
+          .setTrackingFrequencySetting(_trackingFrequency);
+
+      if (frequencySet is Err) {
+        setFrequency(oldValue);
+      }
     }
+
   }
 
 
-  Future<void> _getTrackingFrequencyPreference() async => setTrackingFrequency(
+  Future<void> _getTrackingFrequencyPreference() async => setFrequency(
       await _trackerPreferencesService.getTrackingFrequencySetting());
 
   Future<void> setLocationAccuracy(LocationAccuracy accuracy) async {

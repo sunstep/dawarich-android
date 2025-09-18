@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:dawarich/core/shell/splash.dart';
 import 'package:dawarich/features/auth/presentation/pages/auth_page.dart';
 import 'package:dawarich/features/migration/presentation/pages/migration_page.dart';
 import 'package:dawarich/features/batch/presentation/pages/batch_explorer_page.dart';
@@ -16,6 +17,7 @@ final class AppRouter extends RootStackRouter {
 
   @override
   List<AutoRoute> get routes => [
+    AutoRoute(page: SplashRoute.page, initial: true),
     AutoRoute(page: MigrationRoute.page, path: '/migration'),
     AutoRoute(page: AuthRoute.page, path: '/auth'),
     AutoRoute(page: VersionCheckRoute.page, path: '/versionCheck'),

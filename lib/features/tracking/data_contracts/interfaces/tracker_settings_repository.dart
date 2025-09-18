@@ -6,6 +6,7 @@ abstract interface class ITrackerSettingsRepository {
   Future<Option<bool>> getAutomaticTrackingSetting(int userId);
   Future<Option<int>> getPointsPerBatchSetting(int userId);
   Future<Option<int>> getTrackingFrequencySetting(int userId);
+  Stream<int> watchTrackingFrequencySetting(int userId);
   Future<Option<int>> getLocationAccuracySetting(int userId);
   Future<Option<int>> getMinimumPointDistanceSetting(int userId);
   Future<Option<String>> getDeviceId(int userId);
@@ -20,7 +21,4 @@ abstract interface class ITrackerSettingsRepository {
 
   Future<Option<TrackerSettingsDto>> getTrackerSettings(int userId);
   void setAll(TrackerSettingsDto settings);
-  void clearCaches(int userId);
-
-  Future<void> persistPreferences(int userId);
 }

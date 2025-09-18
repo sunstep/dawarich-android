@@ -155,12 +155,25 @@ final class LocalPointService {
 
   /// Creates a full point using a position object.
   Future<Result<LocalPoint, String>> createPointFromPosition(
-      Position position) async {
+      Position position, DateTime timestamp) async {
     final int userId = await _requireUserId();
 
     final AdditionalPointData additionalData =
         await _getAdditionalPointData(userId);
-    LocalPoint point = _constructPoint(position, additionalData, userId);
+
+    final Option<LastPoint> lastPointOption = await getLastPoint();
+    DateTime? lastTimestamp;
+
+    if (lastPointOption case Some(value: final lp)) {
+      lastTimestamp = lp.timestamp;
+    }
+
+    LocalPoint point = _constructPoint(
+        position,
+        additionalData,
+        userId,
+        timestamp,
+    );
 
     Result<(), String> validationResult = await _validatePoint(point);
 
@@ -206,6 +219,7 @@ final class LocalPointService {
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
   Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
+    final DateTime pointCreationTimestamp = DateTime.now().toUtc();
     final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracySetting();
     final Result<Position, String> posResult = await _hardwareInterfaces.getPosition(accuracy);
 
@@ -214,7 +228,7 @@ final class LocalPointService {
     }
 
     final Position position = posResult.unwrap();
-    final Result<LocalPoint, String> pointResult = await createPointFromPosition(position);
+    final Result<LocalPoint, String> pointResult = await createPointFromPosition(position, pointCreationTimestamp);
 
     if (pointResult case Err()) {
       return pointResult;
@@ -244,6 +258,8 @@ final class LocalPointService {
 
   /// Creates a full point, position data is retrieved from cache.
   Future<Result<LocalPoint, String>> createPointFromCache({bool persist = true}) async {
+
+    final DateTime pointCreationTimestamp = DateTime.now().toUtc();
     final Option<Position> posResult =
         await _hardwareInterfaces.getCachedPosition();
 
@@ -253,7 +269,7 @@ final class LocalPointService {
 
     final Position position = posResult.unwrap();
     final Result<LocalPoint, String> pointResult =
-        await createPointFromPosition(position);
+        await createPointFromPosition(position, pointCreationTimestamp);
 
     if (pointResult case Err(value: String error)) {
       return Err("[DEBUG] Cached point was rejected: $error");
@@ -267,14 +283,30 @@ final class LocalPointService {
   }
 
   Future<AdditionalPointData> _getAdditionalPointData(int userId) async {
-    int pointsInBatch = await getBatchPointsCount();
 
-    final String wifi = await _hardwareInterfaces.getWiFiStatus();
-    final String batteryState = await _hardwareInterfaces.getBatteryState();
-    final double batteryLevel = await _hardwareInterfaces.getBatteryLevel();
-    final String deviceId = await _trackerPreferencesService.getDeviceId();
-    final Option<TrackDto> trackerIdResult =
-        await _trackRepository.getActiveTrack(userId);
+    final Future<int> pointsInBatchF = getBatchPointsCount();
+    final Future<String> wifiF = _hardwareInterfaces.getWiFiStatus();
+    final Future<String> batteryStateF = _hardwareInterfaces.getBatteryState();
+    final Future<double> batteryLevelF = _hardwareInterfaces.getBatteryLevel();
+    final Future<String> deviceIdF = _trackerPreferencesService.getDeviceId();
+    final Future<Option<TrackDto>> trackerIdResultF =
+        _trackRepository.getActiveTrack(userId);
+
+    final futureResults = await Future.wait([
+      pointsInBatchF,
+      wifiF,
+      batteryStateF,
+      batteryLevelF,
+      deviceIdF,
+      trackerIdResultF
+    ]);
+
+    final int pointsInBatch = futureResults[0] as int;
+    final String wifi = futureResults[1] as String;
+    final String batteryState = futureResults[2] as String;
+    final double batteryLevel = futureResults[3] as double;
+    final String deviceId = futureResults[4] as String;
+    final Option<TrackDto> trackerIdResult = futureResults[5] as Option<TrackDto>;
 
     String? trackId;
 
@@ -293,7 +325,7 @@ final class LocalPointService {
   }
 
   LocalPoint _constructPoint(
-      Position position, AdditionalPointData additionalData, int userId) {
+      Position position, AdditionalPointData additionalData, int userId, DateTime timestamp) {
     final geometry = LocalPointGeometry(
       type: "Point",
       longitude: position.longitude,
@@ -304,7 +336,7 @@ final class LocalPointService {
       batteryState: additionalData.batteryState,
       batteryLevel: additionalData.batteryLevel,
       wifi: additionalData.wifi,
-      timestamp: position.timestamp.toUtc(),
+      timestamp: timestamp,
       horizontalAccuracy: position.accuracy,
       verticalAccuracy: position.altitudeAccuracy,
       altitude: position.altitude,
@@ -347,28 +379,62 @@ final class LocalPointService {
 
   Future<Result<(), String>> _validatePoint(LocalPoint point) async {
 
-    if (!await _isPointNewerThanLastPoint(point)) {
-      return const Err("The point is older than the last tracked point.");
+    final Future<bool> isNewerF = _isPointNewerThanLastPoint(point);
+    final Future<bool> isDistanceF = _isPointDistanceGreaterThanPreference(point);
+    final Future<bool> isAccurateF = _isPointAccurateEnough(point);
+
+    final results = await Future.wait([
+      isNewerF,
+      isDistanceF,
+      isAccurateF
+    ]);
+
+    final bool isNewer = results[0];
+    final bool isDistance = results[1];
+    final bool isAccurate = results[2];
+
+    if (!isNewer) {
+      return const Err("Point is not newer than the last stored point.");
     }
 
-    if (!await _isPointDistanceGreaterThanPreference(point)) {
-      return const Err("The point is too close to the last point.");
+    if (!isDistance) {
+      return const Err("Point is not sufficiently distant from the last point.");
     }
 
-    if (!await _isPointAccurateEnough(point)) {
-      return const Err("The point's accuracy is below the required threshold.");
+    if (!isAccurate) {
+      return const Err("Point does not meet the required accuracy.");
     }
 
     return const Ok(());
   }
 
   Future<bool> _isPointNewerThanLastPoint(LocalPoint point) async {
+    // TODO (Future update):
+    // Currently this check always passes because `_constructPoint`
+    // guarantees monotonically increasing timestamps by falling back
+    // to DateTime.now() if the GPS timestamp is stale.
+    //
+    // When we add support for last-known points (e.g. from Geolocator or
+    // other apps), we need a smarter duplicate heuristic instead of just
+    // comparing timestamps. Otherwise, valid "older" provider points could
+    // be rejected.
+    //
+    // Future plan:
+    // - Introduce providerTimestamp alongside stored timestamp.
+    // - Replace this check with a heuristic:
+    //     (a) providerTimestamp > last.providerTimestamp OR
+    //     (b) significant distance moved OR
+    //     (c) better accuracy
+    // This will prevent duplicates without dropping legitimate points.
+    //
+    // For now we keep this method in place, since it does no harm and
+    // preserves validation structure.
     bool answer = true;
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
       DateTime candidateTime = point.properties.timestamp;
-      DateTime lastTime = DateTime.parse(lastPoint.timestamp);
+      DateTime lastTime = lastPoint.timestamp;
 
       answer = candidateTime.isAfter(lastTime);
     }
@@ -418,17 +484,12 @@ final class LocalPointService {
     Option<LastPointDto> pointResult =
         await _localPointRepository.getLastPoint(userId);
 
-    switch (pointResult) {
-      case Some(value: LastPointDto pointDto):
-        {
-          return Some(pointDto.toDomain());
-        }
-
-      case None():
-        {
-          return const None();
-        }
+    if (pointResult case Some(value: final LastPointDto lastPointDto)) {
+      final LastPoint lastPoint = lastPointDto.toDomain();
+      return Some(lastPoint);
     }
+
+    return const None();
   }
 
   Future<Stream<Option<LastPoint>>> watchLastPoint() async {
@@ -439,19 +500,6 @@ final class LocalPointService {
         .map((option) => option.map(
             (dto) => dto.toDomain())
         );
-  }
-
-
-  Future<List<LocalPoint>> _getFullBatch() async {
-
-    final int userId = await _requireUserId();
-
-    List<LocalPointDto> result =
-        await _localPointRepository.getFullBatch(userId);
-
-    List<LocalPoint> batch = result.map((point) => point.toDomain()).toList();
-
-    return batch;
   }
 
   Future<int> getBatchPointsCount() async {

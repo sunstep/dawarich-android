@@ -4,7 +4,7 @@ import 'package:dawarich/features/tracking/presentation/models/last_point_viewmo
 extension LastPointToViewModel on LastPoint {
   LastPointViewModel toViewModel() {
     return LastPointViewModel(
-      rawTimestamp: timestamp,
+      rawTimestamp: timestamp.toIso8601String(),
       longitude: longitude,
       latitude: latitude,
     );

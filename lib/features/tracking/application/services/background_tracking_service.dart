@@ -2,13 +2,12 @@ import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/constants/notification.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/settings/tracker_settings_dto.dart';
-import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_settings_repository.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
@@ -17,200 +16,121 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:session_box/session_box.dart';
 
 @pragma('vm:entry-point')
-void backgroundTrackingEntry(ServiceInstance service) {
+void backgroundTrackingEntry(ServiceInstance backgroundService) {
+
+  if (kDebugMode) {
+    debugPrint('[Background] Entry point reached');
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
-
-  debugPrint("[Background] Entry point reached");
-
-  service.on('stopService').listen((event) async {
-    final requestId = event?['requestId'];
-
-    try {
-      if (backgroundGetIt.isRegistered<PointAutomationService>()) {
-        await backgroundGetIt<PointAutomationService>().stopTracking();
-        debugPrint("[Background] stopTracking() completed");
-      } else {
-        debugPrint("[Background] PointAutomationService not registered — skipping stopTracking");
-      }
-    } catch (e, s) {
-      debugPrint("[Background] Error in stopTracking: $e\n$s");
-    }
-
-    service.invoke('stopped', {'requestId': requestId});
-    service.stopSelf();
-  });
-
-  // This is implemented to invert the order of operations:
-  // Usually, the background tracking service starts before the main isolate.
-  // This causes the background tracking service to fail, causing it to clear the user session.
-  // Which then causes the main isolate to also fail with the user session because the background tracking cleared it.
-  // Here, we wait for the main isolate to signal that it is ready before starting the background tracking.
-  // There are only two places where this is used:
-  // 1. When the app is starting up (when the main isolate has done its initialization).
-  // 2. When the user toggles on automatic tracking. Or else the the tracking will never start.
-  bool hasProceeded = false;
-  service.on('proceed').listen((_) async {
-    debugPrint("[Background] UI signaled readiness via invoke");
-
-    FlutterLocalNotificationsPlugin().show(
-      NotificationConstants.notificationId,
-      'Dawarich Tracking',
-      'Tracking is running in the background',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          NotificationConstants.channelId,
-          NotificationConstants.channelName,
-          channelDescription: NotificationConstants.channelDescription,
-          icon: NotificationConstants.notificationIcon,
-          ongoing: true,
-          importance: Importance.low,
-          priority: Priority.low,
-          showWhen: false,
-        ),
-      ),
-    );
-
-
-    unawaited(_startBackgroundTracking(service));
-    hasProceeded = true;
-  });
-
-  Future.delayed(const Duration(seconds: 10), () {
-    if (!hasProceeded) {
-      debugPrint("[Background] No 'proceed' received — auto-starting after delay.");
-      hasProceeded = true;
-      unawaited(_startBackgroundTracking(service));
-    }
-  });
+  unawaited(BackgroundTrackingEntry.checkBackgroundTracking(backgroundService));
 }
 
-Future<void> _startBackgroundTracking(ServiceInstance service) async {
-  try {
+class BackgroundTrackingEntry {
 
-    await DependencyInjection.injectBackgroundDependencies(service);
+  static Future<void> checkBackgroundTracking(ServiceInstance backgroundService) async {
+
+    if (kDebugMode) {
+      debugPrint('[Background] Injecting background thread dependencies...');
+    }
+
+    await DependencyInjection.injectBackgroundDependencies(backgroundService);
     await backgroundGetIt.allReady();
-    
-    SessionBox<User> sessionBox = backgroundGetIt<SessionBox<User>>();
-    final User? user = await sessionBox.refreshSession();
+
+    final session = backgroundGetIt<SessionBox<User>>();
+    final user = await session.refreshSession();
 
     if (user == null) {
-      debugPrint('[Background] No user found in session, stopping background tracking...');
-      service.stopSelf();
+      debugPrint("[Background] No user in session — exiting.");
+      await _shutdown(backgroundService, "No user session");
       return;
     }
 
-    sessionBox.setUserId(user.id);
+    session.setUserId(user.id);
 
-    debugPrint("[Background] Dependencies injected, and user session refreshed");
+    final settingsSvc = backgroundGetIt<TrackerSettingsService>();
+    final shouldTrack = await settingsSvc.getAutomaticTrackingSetting();
 
-    service.on('syncSettings').listen((event) {
-      if (event != null && event['userId'] != null) {
-        try {
-          final settings = TrackerSettingsDto.fromJson(Map<String, dynamic>.from(event));
-          backgroundGetIt<ITrackerSettingsRepository>().setAll(settings);
 
-          service.invoke('syncSettingsAck');
-
-          debugPrint('[Background] Tracker settings synchronized.');
-        } catch (e, s) {
-          debugPrint('[Background] Failed to parse tracker settings: $e\n$s');
-        }
-      }
-    });
-
-    service.on('updateFrequency').listen((_) async {
-      try {
-        await backgroundGetIt<PointAutomationService>().updateTimers();
-        debugPrint("[Background] updateTimers() triggered from main isolate");
-      } catch (e, s) {
-        debugPrint("[Background] Failed to update timers: $e\n$s");
-      }
-    });
-
-    service.invoke('ready');
-  } catch (e, s) {
-    debugPrint("[Background] Dependency injection failed: $e\n$s");
-    service.invoke('stopped');
-    service.stopSelf();
-    return;
-  }
-
-  try {
-    await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 0,
-      ),
-    );
-    debugPrint("[Background] Geolocator warmed up");
-  } catch (e) {
-    debugPrint('[Background] Geolocator warm-up failed: $e');
-  }
-
-  try {
-    final shouldTrack = await backgroundGetIt<TrackerSettingsService>()
-        .getAutomaticTrackingSetting();
-
-    if (!shouldTrack) {
-      debugPrint("[Background] Automatic tracking is disabled — skipping startTracking()");
-      service.stopSelf();
+    if (shouldTrack) {
+      await _startBackgroundTracking(backgroundService);
       return;
     }
+    await _shutdown(backgroundService, "Auto tracking OFF");
+
+
+  }
+
+  static Future<void> _startBackgroundTracking(ServiceInstance backgroundService) async {
+
+    if (kDebugMode) {
+      debugPrint('[Background] Auto tracking ON - Starting background tracking...');
+    }
+
+    _registerListeners(backgroundService);
+
+    // Ensure notification plugin initialized in background isolate.
+    await backgroundGetIt<TrackingNotificationService>().initialize();
+
+    final localPointService = backgroundGetIt<LocalPointService>();
+    await _setInitialForegroundNotification(localPointService, backgroundService);
 
     await backgroundGetIt<PointAutomationService>().startTracking();
-    debugPrint("[Background] startTracking() called");
-  } catch (e, s) {
-    debugPrint("[Background] Error during startTracking: $e\n$s");
   }
+
+  static Future<void> _setInitialForegroundNotification(
+    LocalPointService svc,
+    ServiceInstance backgroundService,
+  ) async {
+    final lastPointResult = await svc.getLastPoint();
+    final batchPointCount = await svc.getBatchPointsCount();
+
+    if (backgroundService is AndroidServiceInstance) {
+      if (lastPointResult case Some(value: final lp)) {
+        await backgroundService.setForegroundNotificationInfo(
+          title: "Dawarich Tracking",
+          content: "Last updated at: ${lp.timestamp.toLocal()}, $batchPointCount points in batch.",
+        );
+      } else {
+        await backgroundService.setForegroundNotificationInfo(
+          title: "Dawarich Tracking",
+          content: "Tracking in the background, no points recorded yet.",
+        );
+      }
+    }
+  }
+
+  static void _registerListeners(ServiceInstance backgroundService) {
+    // Simplified single listener with safe stop.
+    backgroundService.on('stopService').listen((event) async {
+      final requestId = event?['requestId'];
+      try {
+        if (backgroundGetIt.isRegistered<PointAutomationService>()) {
+          await backgroundGetIt<PointAutomationService>().stopTracking();
+        }
+      } catch (e, s) {
+        debugPrint("[Background] Error stopping tracking: $e\n$s");
+      } finally {
+        backgroundService.invoke('stopped', {'requestId': requestId});
+        await _shutdown(backgroundService, "stopService event");
+      }
+    });
+  }
+
+  static Future<void> _shutdown(ServiceInstance svc, String reason) async {
+    if (kDebugMode) {
+      debugPrint('[Background] Shutting down: $reason');
+    }
+    await DependencyInjection.disposeBackgroundDependencies();
+    svc.stopSelf();
+  }
+
 }
 
 @pragma('vm:entry-point')
 final class BackgroundTrackingService {
 
   static bool _isStopping = false;
-  static bool _hasInitializedListeners = false;
-
-  static final Completer<void> _readyCompleter = Completer<void>();
-
-  static Future<void> waitUntilReady() => _readyCompleter.future;
-
-  static void markAsReady() {
-    if (!_readyCompleter.isCompleted) {
-      _readyCompleter.complete();
-    }
-  }
-
-  static Future<void> initializeListeners() async {
-    if (_hasInitializedListeners) return;
-    _hasInitializedListeners = true;
-
-    final LocalPointService localPointService = getIt<LocalPointService>();
-    final FlutterBackgroundService service = FlutterBackgroundService();
-
-    service.on('newPoint').listen((event) async {
-      if (event is Map<String, dynamic>) {
-        try {
-          final point = LocalPoint.fromJson(event);
-          final String key = point.deduplicationKey;
-
-          final storeResult = await localPointService.autoStoreAndUpload(point);
-
-          service.invoke('pointStoredAck', {
-          'deduplicationKey': key,
-          'success': storeResult is Ok,
-          });
-
-          if (storeResult case Ok()) {
-            debugPrint('[BackgroundTrackingService] Stored background point');
-          } else if (storeResult case Err(value: final err)) {
-            debugPrint('[BackgroundTrackingService] Store failed: $err');
-          }
-        } catch (e, s) {
-          debugPrint('[BackgroundTrackingService] Error: $e\n$s');
-        }
-      }
-    });
-  }
 
   static Future<void> ensureNotificationChannelExists() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -243,6 +163,7 @@ final class BackgroundTrackingService {
         foregroundServiceNotificationId: NotificationConstants.notificationId,
         notificationChannelId: NotificationConstants.channelId
       ),
+
       iosConfiguration: IosConfiguration(
         onForeground: backgroundTrackingEntry,
         onBackground: (_) async => true,
@@ -259,10 +180,11 @@ final class BackgroundTrackingService {
       return Err("Notification permission is required.");
     }
 
-    if (!await Geolocator.isLocationServiceEnabled() &&
-        await Permission.locationAlways.isDenied ||
-        await Permission.locationAlways.isPermanentlyDenied) {
-      debugPrint('[BackgroundService] Background location permission missing.');
+    final locEnabled = await Geolocator.isLocationServiceEnabled();
+    final always = await Permission.locationAlways.status;
+    final hasBgPermission = always.isGranted;
+
+    if (!locEnabled || !hasBgPermission) {
       return Err("Background location permission is required.");
     }
 

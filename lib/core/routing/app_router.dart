@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:dawarich/core/shell/splash.dart';
 import 'package:dawarich/features/auth/presentation/pages/auth_page.dart';
 import 'package:dawarich/features/migration/presentation/pages/migration_page.dart';
 import 'package:dawarich/features/batch/presentation/pages/batch_explorer_page.dart';
@@ -8,8 +9,6 @@ import 'package:dawarich/features/stats/presentation/pages/stats_page.dart';
 import 'package:dawarich/features/points/presentation/pages/points_page.dart';
 import 'package:dawarich/features/tracking/presentation/pages/tracker_page.dart';
 import 'package:dawarich/features/settings/presentation/pages/settings_page.dart';
-
-import '../shell/splash.dart';
 
 part 'app_router.gr.dart';
 

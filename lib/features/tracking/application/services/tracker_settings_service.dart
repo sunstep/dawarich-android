@@ -53,9 +53,8 @@ final class TrackerSettingsService {
 
     if (accuracyIndex case Some(: final value) when value >= 0 && value < LocationAccuracy.values.length) {
       return LocationAccuracy.values[value];
-    } else {
-      return LocationAccuracy.high;
     }
+    return LocationAccuracy.high;
 
   }
 

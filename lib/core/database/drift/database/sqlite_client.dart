@@ -152,22 +152,48 @@ final class SQLiteClient extends _$SQLiteClient {
   Future<void> _openOnce() async {
     final sw = Stopwatch()..start();
     try {
+      await _completeWillUpgradeEarlyIfUnset();
+
       await _forceOpen().timeout(const Duration(seconds: 5));
 
       await Future<void>.delayed(Duration.zero);
 
-      await _fallbackCompleteWillUpgradeIfUnset();
+      if (!_willUpgrade.isCompleted) {
+        await _fallbackCompleteWillUpgradeIfUnset();
+      }
     } on TimeoutException catch (e, s) {
       _completeErrorIfUnset(e, s);
-      rethrow;
+      // optional: allow future retries
+      // _openFuture = null;
+      // Do not rethrow if ensureOpened() is commonly unawaited.
     } catch (e, s) {
       _completeErrorIfUnset(e, s);
-      rethrow;
+      // optional: allow future retries
+      // _openFuture = null;
     } finally {
       if (kDebugMode) {
         debugPrint('[DB] ensureOpened finished in ${sw.elapsedMilliseconds}ms');
       }
     }
+  }
+
+  Future<void> _completeWillUpgradeEarlyIfUnset() async {
+    if (_willUpgrade.isCompleted) return;
+
+    final dir = await getApplicationDocumentsDirectory();
+    final dbPath = p.join(dir.path, _dbFileName);
+    final f = File(dbPath);
+    if (!await f.exists()) { _completeWillUpgrade(false); return; }
+
+    RandomAccessFile? raf;
+    try {
+      raf = await f.open(mode: FileMode.read);
+      final hdr = await raf.read(64);
+      if (hdr.length < 64) return; // let hooks finish it
+      final userVersion =
+      (hdr[60] << 24) | (hdr[61] << 16) | (hdr[62] << 8) | hdr[63];
+      _completeWillUpgrade(userVersion < schemaVersion);
+    } finally { await raf?.close(); }
   }
 
   void _completeWillUpgrade(bool value) {

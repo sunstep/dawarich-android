@@ -9,6 +9,8 @@ import 'package:dawarich/features/points/presentation/pages/points_page.dart';
 import 'package:dawarich/features/tracking/presentation/pages/tracker_page.dart';
 import 'package:dawarich/features/settings/presentation/pages/settings_page.dart';
 
+import '../shell/splash.dart';
+
 part 'app_router.gr.dart';
 
 @AutoRouterConfig()
@@ -16,6 +18,7 @@ final class AppRouter extends RootStackRouter {
 
   @override
   List<AutoRoute> get routes => [
+    AutoRoute(page: SplashRoute.page, initial: true),
     AutoRoute(page: MigrationRoute.page, path: '/migration'),
     AutoRoute(page: AuthRoute.page, path: '/auth'),
     AutoRoute(page: VersionCheckRoute.page, path: '/versionCheck'),

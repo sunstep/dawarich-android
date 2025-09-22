@@ -32,7 +32,7 @@ class _MigrationPageState extends State<MigrationPage> {
       await Future.delayed(kMigrationDelay);
       if (mounted) {
         getIt<SQLiteClient>().signalUiReadyForMigration();
-        context.read<MigrationViewModel>().runMigrationAndNavigate(context);
+        context.read<MigrationViewModel>().startMigration(context);
       }
     });
   }
@@ -80,7 +80,7 @@ class _MigrationPageState extends State<MigrationPage> {
                 if (vm.error != null)
                   _ErrorCard(
                     errorMessage: vm.error!,
-                    onRetry: () => vm.runMigrationAndNavigate(context),
+                    onRetry: () => vm.retryMigration(context),
                   )
                 else
                   Column(

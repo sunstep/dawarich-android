@@ -16,6 +16,8 @@ import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3/sqlite3.dart' as s;
+
 
 part 'sqlite_client.g.dart';
 
@@ -30,13 +32,31 @@ part 'sqlite_client.g.dart';
 ])
 final class SQLiteClient extends _$SQLiteClient {
 
-  static const _dbFileName = 'dawarich_db.sqlite';
+  static String get _dbFileName {
+
+    if (kReleaseMode) {
+      return 'dawarich_db.sqlite';
+    }
+
+    return 'dawarich_db_dev.sqlite';
+  }
   static const _driftPortName = 'dawarich_drift_connect_port';
 
   static DriftIsolate? _memo;
   static Completer<DriftIsolate>? _creating;
 
   SQLiteClient(super.executor);
+
+  static Future<DriftIsolate> createDriftIsolate() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final dbFile = File('${directory.path}/$_dbFileName');
+
+    return DriftIsolate.spawn(
+          () => DatabaseConnection(
+        NativeDatabase(dbFile, logStatements: kDebugMode),
+      ),
+    );
+  }
 
   static Future<SQLiteClient> connectSharedIsolate() async {
     if (_memo != null) {
@@ -137,71 +157,57 @@ final class SQLiteClient extends _$SQLiteClient {
     */
 
 
-  final _willUpgrade = Completer<bool>();      // true if onUpgrade will run, false otherwise
-  Future<bool> get willUpgrade => _willUpgrade.future;
-
-
-  final _migrationDone = Completer<bool>();
-  Future<bool> get migrationDone => _migrationDone.future;
-  final _uiReady = Completer<void>();
+  Completer<void>? _uiReady = Completer<void>();
 
   Future<void>? _openFuture;
 
-  Future<void> ensureOpened() => _openFuture ??= _openOnce();
+  Future<void> ensureOpened() => _openFuture ??= _forceOpen();
 
-  Future<void> _openOnce() async {
-    final sw = Stopwatch()..start();
-    try {
-      await _forceOpen().timeout(const Duration(seconds: 5));
+  // If true, onUpgrade will SKIP the heavy logic (UI-flow only)
+  static const bool _devFakeOnly =
+      !kReleaseMode && bool.fromEnvironment('DEV_FAKE_ONLY', defaultValue: true);
 
-      await Future<void>.delayed(Duration.zero);
-
-      await _fallbackCompleteWillUpgradeIfUnset();
-    } on TimeoutException catch (e, s) {
-      _completeErrorIfUnset(e, s);
-      rethrow;
-    } catch (e, s) {
-      _completeErrorIfUnset(e, s);
-      rethrow;
-    } finally {
-      if (kDebugMode) {
-        debugPrint('[DB] ensureOpened finished in ${sw.elapsedMilliseconds}ms');
-      }
-    }
-  }
-
-  void _completeWillUpgrade(bool value) {
-    if (!_willUpgrade.isCompleted) _willUpgrade.complete(value);
-  }
-
-  void _completeMigration(bool didMigrate) {
-    if (!_migrationDone.isCompleted) _migrationDone.complete(didMigrate);
-  }
-
-  void _completeErrorIfUnset(Object e, StackTrace s) {
-    if (!_willUpgrade.isCompleted) _willUpgrade.completeError(e, s);
-    if (!_migrationDone.isCompleted) _migrationDone.completeError(e, s);
-  }
-
-  Future<void> _fallbackCompleteWillUpgradeIfUnset() async {
-
-    if (_willUpgrade.isCompleted) {
-      return;
-    }
-
+  static Future<String> dbPath() async {
     final dir = await getApplicationDocumentsDirectory();
-    final dbPath = p.join(dir.path, _dbFileName);
-    final exists = await File(dbPath).exists();
-    if (!exists) {
-      _completeWillUpgrade(false);
-      return;
+    return p.join(dir.path, _dbFileName);
+  }
+
+  static Future<void> setUserVersion(int v) async {
+    final path = await dbPath();
+    final db = s.sqlite3.open(path);
+    try {
+      db.execute('PRAGMA user_version = $v;');
+      db.execute('PRAGMA wal_checkpoint(TRUNCATE);');
+    } finally {
+      db.dispose();
+    }
+  }
+
+  static Future<bool> peekNeedsUpgrade() async {
+    final path = await dbPath();
+    final f = File(path);
+    if (!await f.exists()) {
+      if (kDebugMode) debugPrint('[DB] no db → no upgrade needed');
+      return false;
     }
 
-    final rows = await customSelect('PRAGMA user_version').get();
-    final currentVersion = (rows.first.data.values.first as int);
-    final needUpgrade = currentVersion < schemaVersion;
-
-    _completeWillUpgrade(needUpgrade);
+    try {
+      final db = s.sqlite3.open(path, mode: s.OpenMode.readOnly);
+      try {
+        final rs = db.select('PRAGMA user_version;');
+        final uv = (rs.isEmpty ? 0 : (rs.first.values.first as int));
+        if (kDebugMode) {
+          debugPrint('[DB] PRAGMA user_version (via SQLite) = $uv, target=$kSchemaVersion');
+        }
+        return uv < kSchemaVersion;
+      } finally {
+        db.dispose();
+      }
+    } catch (e, s_) {
+      if (kDebugMode) debugPrint('[DB] peekNeedsUpgrade failed: $e\n$s_');
+      // Be conservative: assume upgrade pending if we can’t read.
+      return true;
+    }
   }
 
   Future<void> _forceOpen() async {
@@ -209,13 +215,23 @@ final class SQLiteClient extends _$SQLiteClient {
   }
 
   void signalUiReadyForMigration() {
-    if (!_uiReady.isCompleted) {
-      _uiReady.complete();
+
+    final c = _uiReady ??= Completer<void>();
+    if (!c.isCompleted){
+      c.complete();
     }
   }
 
+  Future<void> _waitForUi() => (_uiReady ??= Completer<void>()).future;
+
+  void resetForRetry() {
+    _openFuture = null;     // allow ensureOpened() to run again
+    _uiReady = null;       // re-block until UI signals again
+  }
+
+  static const int kSchemaVersion = 4;
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => kSchemaVersion;
 
   // --- Migration helpers (added) -------------------------------------------
 
@@ -289,8 +305,6 @@ final class SQLiteClient extends _$SQLiteClient {
     onCreate: (final m) async {
       debugPrint("[Drift] onCreate triggered");
       await m.createAll();
-      _completeWillUpgrade(false);
-      _completeMigration(false);
     },
     onUpgrade: (final m, final from, final to) async {
 
@@ -298,33 +312,53 @@ final class SQLiteClient extends _$SQLiteClient {
         debugPrint('[Migration] Running from version $from to $to');
       }
 
-      _completeWillUpgrade(true);
-      await _uiReady.future;
+      await _waitForUi();
 
-      await _withPerfPragmas(() async {
-        await transaction(() async {
+      if (_devFakeOnly) {
 
-          if (from < 2 && to >= 2) {
-            // Version 2: split coordinates + introduce deduplication_key
-            await m.addColumn(pointGeometryTable, pointGeometryTable.longitude);
-            await m.addColumn(pointGeometryTable, pointGeometryTable.latitude);
-            await m.addColumn(pointsTable, pointsTable.deduplicationKey);
+        if (kDebugMode) {
+          debugPrint('[Migration][DEV] Fake-only mode: skipping SQL.');
+        }
 
-            await customStatement(r'''
+        await setUserVersion(kSchemaVersion);
+        await customStatement('PRAGMA wal_checkpoint(FULL);');
+
+        if (kDebugMode) {
+          final version = await customSelect('PRAGMA user_version').getSingle();
+          debugPrint('[Migration] Set user_version to $kSchemaVersion, '
+              'current value: ${version.data['user_version']}');
+        }
+
+
+        await Future.delayed(const Duration(seconds: 5));
+        return;
+      }
+
+      try {
+        await _withPerfPragmas(() async {
+          await transaction(() async {
+
+            if (from < 2 && to >= 2) {
+              // Version 2: split coordinates + introduce deduplication_key
+              await m.addColumn(pointGeometryTable, pointGeometryTable.longitude);
+              await m.addColumn(pointGeometryTable, pointGeometryTable.latitude);
+              await m.addColumn(pointsTable, pointsTable.deduplicationKey);
+
+              await customStatement(r'''
               UPDATE point_geometry_table
               SET
                 longitude = CAST(substr(coordinates, 1, instr(coordinates, ',') - 1) AS REAL),
                 latitude  = CAST(substr(coordinates, instr(coordinates, ',') + 1) AS REAL)
             ''');
 
-            await m.dropColumn(pointGeometryTable, 'coordinates');
+              await m.dropColumn(pointGeometryTable, 'coordinates');
 
-            await _rebuildDedupKeys(forceAll: false);
+              await _rebuildDedupKeys(forceAll: false);
 
-            if (kDebugMode) {
-              debugPrint('[Migration] Successfully ran version 2 migration');
+              if (kDebugMode) {
+                debugPrint('[Migration] Successfully ran version 2 migration');
+              }
             }
-          }
 
             if (from < 3 && to >= 3) {
               await m.createTable(trackerSettingsTable);
@@ -333,17 +367,17 @@ final class SQLiteClient extends _$SQLiteClient {
               }
             }
 
-          if (from < 4 && to >= 4) {
-            if (kDebugMode) {
-              debugPrint('[Migration] Running version 4 migration');
-              debugPrint('[Migration] Converting text timestamps to unix timestamps');
-            }
+            if (from < 4 && to >= 4) {
+              if (kDebugMode) {
+                debugPrint('[Migration] Running version 4 migration');
+                debugPrint('[Migration] Converting text timestamps to unix timestamps');
+              }
 
-            await m.alterTable(
-              TableMigration(
-                pointPropertiesTable,
-                columnTransformer: {
-                  pointPropertiesTable.timestamp: const CustomExpression<int>(r"""
+              await m.alterTable(
+                TableMigration(
+                  pointPropertiesTable,
+                  columnTransformer: {
+                    pointPropertiesTable.timestamp: const CustomExpression<int>(r"""
                     CASE
                       WHEN typeof(timestamp) = 'integer' THEN
                         CASE
@@ -363,22 +397,33 @@ final class SQLiteClient extends _$SQLiteClient {
                       ELSE NULL
                     END
                   """)
-                },
-              ),
-            );
+                  },
+                ),
+              );
 
-            // Rebuild all dedup keys (timestamp base changed)
-            await customStatement('DROP INDEX IF EXISTS unique_deduplication_key;');
-            await _rebuildDedupKeys(forceAll: true);
+              // Rebuild all dedup keys (timestamp base changed)
+              await customStatement('DROP INDEX IF EXISTS unique_deduplication_key;');
+              await _rebuildDedupKeys(forceAll: true);
 
-            if (kDebugMode) {
-              debugPrint('[Migration] Successfully ran version 4 migration!');
+              if (kDebugMode) {
+                debugPrint('[Migration] Successfully ran version 4 migration!');
+              }
             }
-          }
+          });
 
-          _completeMigration(true);
+          await setUserVersion(kSchemaVersion);
+          await customStatement('PRAGMA wal_checkpoint(FULL);');
+          await customStatement('PRAGMA optimize;');
         });
-      });
+      } catch (e, s) {
+        if (kDebugMode) {
+          debugPrint('[Migration] Migration failed: $e\n$s');
+        }
+
+        rethrow;
+      }
+
+
     },
     beforeOpen: (details) async {
       // This gets called after onUpgrade or onCreate
@@ -390,25 +435,11 @@ final class SQLiteClient extends _$SQLiteClient {
         debugPrint('[Drift] Currently on schema version: ${details.versionNow}');
       }
 
-      if (!_willUpgrade.isCompleted) {
-        _completeWillUpgrade(details.hadUpgrade);
+      if (details.hadUpgrade || details.wasCreated) {
+        await customStatement('PRAGMA wal_checkpoint(TRUNCATE);');
       }
 
-      if (!_migrationDone.isCompleted && (details.wasCreated || !details.hadUpgrade)) {
-        _completeMigration(false);
-      }
     },
   );
 
-
-  static Future<DriftIsolate> createDriftIsolate() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final dbFile = File('${directory.path}/$_dbFileName');
-
-    return DriftIsolate.spawn(
-        () => DatabaseConnection(
-          NativeDatabase(dbFile, logStatements: kDebugMode),
-        ),
-    );
-  }
 }

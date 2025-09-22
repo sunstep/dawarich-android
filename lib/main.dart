@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/startup/startup_service.dart';
 import 'package:dawarich/core/routing/app_router.dart';
@@ -19,14 +20,53 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  await DependencyInjection.injectDependencies();
+  FlutterError.onError = (FlutterErrorDetails details) {
+    debugPrint('[FlutterError] ${details.exceptionAsString()}');
+    if (details.stack != null) debugPrint(details.stack!.toString());
+    Zone.current.handleUncaughtError(
+      details.exception,
+      details.stack ?? StackTrace.current,
+    );
+  };
 
-  runApp(const Dawarich());
+  // Catch errors outside Flutter widget tree (platform layer)
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[PlatformError] $error');
+    debugPrint(stack.toString());
+    return true;
+  };
 
-  if (kDebugMode) {
-    debugPrint("Main finished");
+  try {
+    await _dbHook();
+  } catch (e, st) {
+    debugPrint('[dbHook] $e\n$st');
   }
-  unawaited(_boot());
+
+  runZonedGuarded(
+      () {
+        runApp(const Dawarich());
+
+        if (kDebugMode) {
+          debugPrint("Main finished");
+        }
+        unawaited(_boot());
+      }, (Object error, StackTrace stack) {
+        debugPrint('[ZonedError] $error');
+        debugPrint(stack.toString());
+      }
+  );
+
+}
+
+Future<void> _dbHook() async {
+
+  final int schemaVersion = SQLiteClient.kSchemaVersion;
+
+  if (!kReleaseMode && const bool.fromEnvironment('DEV_FORCE_UPGRADE', defaultValue: false)) {
+    final int target = schemaVersion - 1;
+
+    await SQLiteClient.setUserVersion(target);
+  }
 }
 
 Future<void> _boot() async {
@@ -35,16 +75,19 @@ Future<void> _boot() async {
     debugPrint('Booting up...');
   }
   try {
+    await DependencyInjection.injectDependencies();
     await getIt.allReady();
     await getIt<TrackingNotificationService>().initialize();
     await StartupService.initializeApp();
-    await BackgroundTrackingService.configureService();
-  } catch (s, t) {
-
-    if (kDebugMode) {
-      debugPrint("Error during app bootstrap: $s\n$t");
+    if (!await SQLiteClient.peekNeedsUpgrade()) {
+      await BackgroundTrackingService.configureService();
+    } else if (kDebugMode) {
+      debugPrint('[Boot] Skipping tracker start due to pending DB upgrade');
     }
-
+  } catch (e, st) {
+    if (kDebugMode) {
+      debugPrint("Error during app bootstrap: $e\n$st");
+    }
   }
 
   if (kDebugMode) {

@@ -18,12 +18,7 @@ final class StartupService {
       debugPrint('[StartupService] Initializing app...');
     }
 
-    final SQLiteClient db = getIt<SQLiteClient>();
-
-    final willUpgradeFut = db.willUpgrade;
-    unawaited(db.ensureOpened());
-
-    final willUpgrade = await willUpgradeFut;
+    final willUpgrade = await SQLiteClient.peekNeedsUpgrade();
 
     if (willUpgrade) {
 

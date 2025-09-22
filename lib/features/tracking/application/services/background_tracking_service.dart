@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/constants/notification.dart';
+import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
@@ -23,15 +24,34 @@ void backgroundTrackingEntry(ServiceInstance backgroundService) {
   }
 
   WidgetsFlutterBinding.ensureInitialized();
-  unawaited(BackgroundTrackingEntry.checkBackgroundTracking(backgroundService));
-}
 
+  BackgroundTrackingEntry._registerListeners(backgroundService);
+  backgroundService.invoke('ready');
+
+  unawaited(() async {
+    try {
+      await BackgroundTrackingEntry.checkBackgroundTracking(backgroundService);
+    } catch (e, s) {
+      debugPrint('[Background] Fatal in checkBackgroundTracking: $e\n$s');
+      await BackgroundTrackingEntry._shutdown(backgroundService, 'fatal error');
+    }
+  }());
+}
 class BackgroundTrackingEntry {
 
   static Future<void> checkBackgroundTracking(ServiceInstance backgroundService) async {
 
     if (kDebugMode) {
       debugPrint('[Background] Injecting background thread dependencies...');
+    }
+
+    if (await SQLiteClient.peekNeedsUpgrade()) {
+      if (kDebugMode) {
+        debugPrint('[TrackerSvc] Upgrade pending; not touching DB.');
+      }
+      // Optionally stop the foreground service if it restarted:
+      await _shutdown(backgroundService, "DB upgrade pending, stopping service.");
+      return;
     }
 
     await DependencyInjection.injectBackgroundDependencies(backgroundService);
@@ -66,8 +86,6 @@ class BackgroundTrackingEntry {
     if (kDebugMode) {
       debugPrint('[Background] Auto tracking ON - Starting background tracking...');
     }
-
-    _registerListeners(backgroundService);
 
     // Ensure notification plugin initialized in background isolate.
     await backgroundGetIt<TrackingNotificationService>().initialize();
@@ -130,6 +148,8 @@ class BackgroundTrackingEntry {
 @pragma('vm:entry-point')
 final class BackgroundTrackingService {
 
+  static bool _configured = false;
+  static Completer<void>? _starting;
   static bool _isStopping = false;
 
   static Future<void> ensureNotificationChannelExists() async {
@@ -148,29 +168,75 @@ final class BackgroundTrackingService {
         ?.createNotificationChannel(channel);
   }
 
+  static Future<void> installConfigurationOnce() async {
 
-  static Future<void> configureService() async {
+    if (_configured) {
+      return;
+    }
 
     await ensureNotificationChannelExists();
 
     await FlutterBackgroundService().configure(
       androidConfiguration: AndroidConfiguration(
-        onStart: backgroundTrackingEntry,
+        onStart: backgroundTrackingEntry, // your entrypoint
         autoStartOnBoot: true,
         isForegroundMode: true,
         foregroundServiceTypes: [AndroidForegroundType.location],
-        autoStart: false,
+        autoStart: false, // we'll start manually
         foregroundServiceNotificationId: NotificationConstants.notificationId,
-        notificationChannelId: NotificationConstants.channelId
+        notificationChannelId: NotificationConstants.channelId,
       ),
-
       iosConfiguration: IosConfiguration(
         onForeground: backgroundTrackingEntry,
         onBackground: (_) async => true,
       ),
     );
 
+    _configured = true;
+  }
 
+
+  /// Start (if needed) and push runtime config to the service.
+  /// - Skips when a DB upgrade is pending, unless `force: true`
+  /// - Safe/idempotent across concurrent callers
+  static Future<void> configureService({bool force = false}) async {
+    // coalesce concurrent calls
+    if (_starting != null) {
+      return _starting!.future;
+    }
+
+    _starting = Completer<void>();
+
+    try {
+      if (!force && await SQLiteClient.peekNeedsUpgrade()) {
+        if (kDebugMode) debugPrint('[Tracker] Upgrade pending → skipping start');
+        _starting!.complete();
+        return;
+      }
+
+      await installConfigurationOnce();
+
+      final service = FlutterBackgroundService();
+
+      if (!await service.isRunning()) {
+        await service.startService();
+
+        final ready = Completer<void>();
+        final sub = service.on('ready').listen((_) {
+          if (!ready.isCompleted) ready.complete();
+        });
+        await ready.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+        await sub.cancel();
+      }
+
+      _starting!.complete();
+    } catch (e, s) {
+      if (kDebugMode) debugPrint('[Tracker] configureService failed: $e\n$s');
+      _starting!.completeError(e, s);
+      rethrow;
+    } finally {
+      _starting = null;
+    }
   }
 
   static Future<Result<(), String>> start() async {

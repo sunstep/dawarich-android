@@ -161,13 +161,6 @@ final class LocalPointService {
     final AdditionalPointData additionalData =
         await _getAdditionalPointData(userId);
 
-    final Option<LastPoint> lastPointOption = await getLastPoint();
-    DateTime? lastTimestamp;
-
-    if (lastPointOption case Some(value: final lp)) {
-      lastTimestamp = lp.timestamp;
-    }
-
     LocalPoint point = _constructPoint(
         position,
         additionalData,
@@ -221,14 +214,29 @@ final class LocalPointService {
   Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
-    final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracySetting();
-    final int currentTrackingFrequency = await _trackerPreferencesService.getTrackingFrequencySetting();
+    final Future<bool> isTrackingAutomaticallyF = _trackerPreferencesService.getAutomaticTrackingSetting();
+    final Future<LocationAccuracy> accuracyF = _trackerPreferencesService.getLocationAccuracySetting();
+    final Future<int> currentTrackingFrequencyF = _trackerPreferencesService.getTrackingFrequencySetting();
+    const int manualTimeout = 15;
+
+    final result = await Future.wait([
+      isTrackingAutomaticallyF,
+      accuracyF,
+      currentTrackingFrequencyF
+    ]);
+
+    final bool isTrackingAutomatically = result[0] as bool;
+    final LocationAccuracy accuracy = result[1] as LocationAccuracy;
+    final int currentTrackingFrequency = result[2] as int;
+
     Result<Position, String> posResult;
 
     try {
       posResult = await _hardwareInterfaces
           .getPosition(accuracy)
-          .timeout(Duration(seconds: currentTrackingFrequency));
+          .timeout(Duration(seconds: isTrackingAutomatically ?
+              currentTrackingFrequency :
+              manualTimeout));
     } on TimeoutException {
       return Err("NO_FIX_TIMEOUT");
     } catch (e) {

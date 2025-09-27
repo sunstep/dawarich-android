@@ -217,7 +217,6 @@ final class LocalPointService {
     final Future<bool> isTrackingAutomaticallyF = _trackerPreferencesService.getAutomaticTrackingSetting();
     final Future<LocationAccuracy> accuracyF = _trackerPreferencesService.getLocationAccuracySetting();
     final Future<int> currentTrackingFrequencyF = _trackerPreferencesService.getTrackingFrequencySetting();
-    const int manualTimeout = 15;
 
     final result = await Future.wait([
       isTrackingAutomaticallyF,
@@ -229,14 +228,30 @@ final class LocalPointService {
     final LocationAccuracy accuracy = result[1] as LocationAccuracy;
     final int currentTrackingFrequency = result[2] as int;
 
+    final Duration autoAttemptTimeout = _clampDuration(
+      Duration(seconds: currentTrackingFrequency),
+      const Duration(seconds: 5),
+      const Duration(seconds: 30),
+    );
+
+    final Duration autoStaleMax = _clampDuration(
+      Duration(seconds: currentTrackingFrequency * 2),
+      const Duration(seconds: 5),
+      const Duration(seconds: 30),
+    );
+
+    const Duration manualTimeout = Duration(seconds: 15);
+    const Duration manualStaleMax = Duration(seconds: 90);
+
+    final Duration attemptTimeout = isTrackingAutomatically ? autoAttemptTimeout : manualTimeout;
+    final Duration staleMax = isTrackingAutomatically ? autoStaleMax : manualStaleMax;
+
     Result<Position, String> posResult;
 
     try {
       posResult = await _hardwareInterfaces
           .getPosition(accuracy)
-          .timeout(Duration(seconds: isTrackingAutomatically ?
-              currentTrackingFrequency :
-              manualTimeout));
+          .timeout(attemptTimeout);
     } on TimeoutException {
       return Err("NO_FIX_TIMEOUT");
     } catch (e) {
@@ -248,6 +263,15 @@ final class LocalPointService {
     }
 
     final Position position = posResult.unwrap();
+
+    final DateTime nowUtc = DateTime.now().toUtc();
+    final DateTime fixTs = position.timestamp.toUtc();
+
+    final Duration age = nowUtc.difference(fixTs);
+    if (age < Duration.zero || age > staleMax) {
+      return Err("STALE_FIX: age=${age.inSeconds}s (max=${staleMax.inSeconds}s)");
+    }
+
     final Result<LocalPoint, String> pointResult = await createPointFromPosition(position, pointCreationTimestamp);
 
     if (pointResult case Err()) {
@@ -275,6 +299,17 @@ final class LocalPointService {
 
     return finalResult;
   }
+
+  Duration _clampDuration(Duration v, Duration min, Duration max) {
+    if (v < min) {
+      return min;
+    }
+    if (v > max) {
+      return max;
+    }
+    return v;
+  }
+
 
   /// Creates a full point, position data is retrieved from cache.
   Future<Result<LocalPoint, String>> createPointFromCache({bool persist = true}) async {

@@ -219,9 +219,21 @@ final class LocalPointService {
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
   Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
+
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
     final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracySetting();
-    final Result<Position, String> posResult = await _hardwareInterfaces.getPosition(accuracy);
+    final int currentTrackingFrequency = await _trackerPreferencesService.getTrackingFrequencySetting();
+    Result<Position, String> posResult;
+
+    try {
+      posResult = await _hardwareInterfaces
+          .getPosition(accuracy)
+          .timeout(Duration(seconds: currentTrackingFrequency));
+    } on TimeoutException {
+      return Err("NO_FIX_TIMEOUT");
+    } catch (e) {
+      return Err("POSITION_ERROR: $e");
+    }
 
     if (posResult case Err(value: final String error)) {
       return Err(error);

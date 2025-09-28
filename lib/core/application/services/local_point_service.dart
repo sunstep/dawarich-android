@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
@@ -35,6 +36,8 @@ final class LocalPointService {
   final IHardwareRepository _hardwareInterfaces;
   final TrackerSettingsService _trackerPreferencesService;
   final ITrackRepository _trackRepository;
+
+  bool _uploadInFlight = false;
 
   LocalPointService(
       this._api,
@@ -150,7 +153,15 @@ final class LocalPointService {
     final int currentPoints =
         await _localPointRepository.getBatchPointCount(userId);
 
-    return currentPoints > maxPoints;
+    return currentPoints >= maxPoints;
+  }
+
+  Future<bool> _isOnline() async {
+
+    List<ConnectivityResult> connectivity = await Connectivity()
+        .checkConnectivity();
+
+    return !connectivity.contains(ConnectivityResult.none);
   }
 
   /// Creates a full point using a position object.
@@ -186,28 +197,57 @@ final class LocalPointService {
         : Err("Failed to store point");
   }
 
-  Future<Result<(), String>> autoStoreAndUpload(LocalPoint point) async {
-    final storeResult = await storePoint(point);
+  Future<void> tryUploadBatchAfterPointStore(Result<LocalPoint, String> newPoint) async {
 
-    if (storeResult case Ok()) {
-      final uploadDue = await _checkBatchThreshold();
-      if (uploadDue) {
-        final batch = await getCurrentBatch();
-        if (batch.isNotEmpty) {
-          final uploadResult = await prepareBatchUpload(batch);
-          if (uploadResult case Err(value: final err)) {
-            debugPrint("[LocalPointService] Auto-upload failed: $err");
-          }
+    if (newPoint case Ok()) {
+      if (_uploadInFlight) {
+        if (kDebugMode) {
+          debugPrint(
+              "[LocalPointService] Upload already in progress; skipping.");
         }
+        return;
       }
 
-      return const Ok(());
-    } else if (storeResult case Err(value: final err)) {
+      _uploadInFlight = true;
+
+      try {
+        final uploadDueF = _checkBatchThreshold();
+        final isOnlineF = _isOnline();
+
+        final result = await Future.wait([uploadDueF, isOnlineF]);
+        final bool uploadDue = result[0];
+        final bool isOnline = result[1];
+
+        if (isOnline && uploadDue) {
+          final batch = await getCurrentBatch();
+          if (batch.isNotEmpty) {
+            final uploadResult = await prepareBatchUpload(batch);
+            if (uploadResult case Err(value: final err)) {
+              debugPrint("[LocalPointService] Auto-upload failed: $err");
+            }
+          }
+        }
+      } catch (e, s) {
+        debugPrint("[LocalPointService] Error during auto-upload: $e\n$s");
+      } finally {
+        _uploadInFlight = false;
+      }
+    } else if (newPoint case Err(value: final err)) {
       debugPrint("[LocalPointService] Failed to store point: $err");
-      return Err("Failed to store point: $err");
+    }
+  }
+
+  Future<Result<(), String>> autoStoreAndUpload(LocalPoint point) async {
+
+    final Result<LocalPoint, String> storeResult = await storePoint(point);
+
+    if (storeResult case Err(value: final String error)) {
+      return Err("Failed to store point: $error");
     }
 
-    return const Err("Failed to store point for unknown reason.");
+    tryUploadBatchAfterPointStore(storeResult);
+
+    return const Ok(());
   }
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
@@ -281,20 +321,9 @@ final class LocalPointService {
     Result<LocalPoint, String> finalResult = pointResult;
 
     if (persist) {
-      final stored = await storePoint(pointResult.unwrap());
-      finalResult = stored;
 
-      final bool uploadDue = await _checkBatchThreshold();
-
-      if (uploadDue) {
-        final List<LocalPoint> batch = await getCurrentBatch();
-        if (batch.isNotEmpty) {
-          final Result<(), String> uploadResult = await prepareBatchUpload(batch);
-          if (uploadResult case Err(value: String error)) {
-            return Err("Failed to upload batch: $error");
-          }
-        }
-      }
+      final point = pointResult.unwrap();
+      await autoStoreAndUpload(point);
     }
 
     return finalResult;
@@ -504,13 +533,13 @@ final class LocalPointService {
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      double lastPointLongitude = point.geometry.longitude;
-      double lastPointLatitude = point.geometry.latitude;
+      double currentPointLongitude = point.geometry.longitude;
+      double currentPointLatitude = point.geometry.latitude;
 
       LatLng lastPointCoordinates =
           LatLng(lastPoint.latitude, lastPoint.longitude);
       LatLng currentPointCoordinates =
-          LatLng(lastPointLatitude, lastPointLongitude);
+          LatLng(currentPointLatitude, currentPointLongitude);
 
       PointPair pair = PointPair(lastPointCoordinates, currentPointCoordinates);
       double distance = pair.calculateDistance();

@@ -4,6 +4,7 @@ import 'package:dawarich/features/tracking/application/services/tracker_settings
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:option_result/option_result.dart';
 
@@ -14,6 +15,7 @@ final class PointAutomationService with ChangeNotifier {
   Duration _gpsPeriod = const Duration(seconds: 10);
   Completer<void>? _gpsLoopCompleter;
   StreamSubscription<int>? _frequencyListener;
+  static const _ch = MethodChannel('dawarich/keepalive');
 
   final ServiceInstance? _serviceInstance;
   final TrackerSettingsService _trackerPreferencesService;
@@ -158,6 +160,7 @@ final class PointAutomationService with ChangeNotifier {
           body: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
               '${await _localPointService.getBatchPointsCount()} points in batch.',
         );
+        _updateHeartbeat();
       } else if (result case Err(value: final err)) {
         debugPrint("[PointAutomation] Forced GPS point not created: $err");
       }
@@ -239,6 +242,12 @@ final class PointAutomationService with ChangeNotifier {
       debugPrint("[DEBUG] Stopping cached points timer");
     }
 
+  }
+
+  Future<void> _updateHeartbeat() async {
+    try {
+      await _ch.invokeMethod('updateHeartbeat');
+    } catch (_) {}
   }
 
 }

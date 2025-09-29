@@ -178,11 +178,11 @@ final class BackgroundTrackingService {
 
     await FlutterBackgroundService().configure(
       androidConfiguration: AndroidConfiguration(
-        onStart: backgroundTrackingEntry, // your entrypoint
+        onStart: backgroundTrackingEntry,
         autoStartOnBoot: true,
         isForegroundMode: true,
         foregroundServiceTypes: [AndroidForegroundType.location],
-        autoStart: false, // we'll start manually
+        autoStart: false,
         foregroundServiceNotificationId: NotificationConstants.notificationId,
         notificationChannelId: NotificationConstants.channelId,
       ),

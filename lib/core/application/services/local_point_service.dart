@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
@@ -35,6 +36,8 @@ final class LocalPointService {
   final IHardwareRepository _hardwareInterfaces;
   final TrackerSettingsService _trackerPreferencesService;
   final ITrackRepository _trackRepository;
+
+  bool _uploadInFlight = false;
 
   LocalPointService(
       this._api,
@@ -150,7 +153,15 @@ final class LocalPointService {
     final int currentPoints =
         await _localPointRepository.getBatchPointCount(userId);
 
-    return currentPoints > maxPoints;
+    return currentPoints >= maxPoints;
+  }
+
+  Future<bool> _isOnline() async {
+
+    List<ConnectivityResult> connectivity = await Connectivity()
+        .checkConnectivity();
+
+    return !connectivity.contains(ConnectivityResult.none);
   }
 
   /// Creates a full point using a position object.
@@ -160,13 +171,6 @@ final class LocalPointService {
 
     final AdditionalPointData additionalData =
         await _getAdditionalPointData(userId);
-
-    final Option<LastPoint> lastPointOption = await getLastPoint();
-    DateTime? lastTimestamp;
-
-    if (lastPointOption case Some(value: final lp)) {
-      lastTimestamp = lp.timestamp;
-    }
 
     LocalPoint point = _constructPoint(
         position,
@@ -193,41 +197,121 @@ final class LocalPointService {
         : Err("Failed to store point");
   }
 
-  Future<Result<(), String>> autoStoreAndUpload(LocalPoint point) async {
-    final storeResult = await storePoint(point);
+  Future<void> tryUploadBatchAfterPointStore(Result<LocalPoint, String> newPoint) async {
 
-    if (storeResult case Ok()) {
-      final uploadDue = await _checkBatchThreshold();
-      if (uploadDue) {
-        final batch = await getCurrentBatch();
-        if (batch.isNotEmpty) {
-          final uploadResult = await prepareBatchUpload(batch);
-          if (uploadResult case Err(value: final err)) {
-            debugPrint("[LocalPointService] Auto-upload failed: $err");
-          }
+    if (newPoint case Ok()) {
+      if (_uploadInFlight) {
+        if (kDebugMode) {
+          debugPrint(
+              "[LocalPointService] Upload already in progress; skipping.");
         }
+        return;
       }
 
-      return const Ok(());
-    } else if (storeResult case Err(value: final err)) {
+      _uploadInFlight = true;
+
+      try {
+        final uploadDueF = _checkBatchThreshold();
+        final isOnlineF = _isOnline();
+
+        final result = await Future.wait([uploadDueF, isOnlineF]);
+        final bool uploadDue = result[0];
+        final bool isOnline = result[1];
+
+        if (isOnline && uploadDue) {
+          final batch = await getCurrentBatch();
+          if (batch.isNotEmpty) {
+            final uploadResult = await prepareBatchUpload(batch);
+            if (uploadResult case Err(value: final err)) {
+              debugPrint("[LocalPointService] Auto-upload failed: $err");
+            }
+          }
+        }
+      } catch (e, s) {
+        debugPrint("[LocalPointService] Error during auto-upload: $e\n$s");
+      } finally {
+        _uploadInFlight = false;
+      }
+    } else if (newPoint case Err(value: final err)) {
       debugPrint("[LocalPointService] Failed to store point: $err");
-      return Err("Failed to store point: $err");
+    }
+  }
+
+  Future<Result<(), String>> autoStoreAndUpload(LocalPoint point) async {
+
+    final Result<LocalPoint, String> storeResult = await storePoint(point);
+
+    if (storeResult case Err(value: final String error)) {
+      return Err("Failed to store point: $error");
     }
 
-    return const Err("Failed to store point for unknown reason.");
+    tryUploadBatchAfterPointStore(storeResult);
+
+    return const Ok(());
   }
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
   Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
+
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
-    final LocationAccuracy accuracy = await _trackerPreferencesService.getLocationAccuracySetting();
-    final Result<Position, String> posResult = await _hardwareInterfaces.getPosition(accuracy);
+    final Future<bool> isTrackingAutomaticallyF = _trackerPreferencesService.getAutomaticTrackingSetting();
+    final Future<LocationAccuracy> accuracyF = _trackerPreferencesService.getLocationAccuracySetting();
+    final Future<int> currentTrackingFrequencyF = _trackerPreferencesService.getTrackingFrequencySetting();
+
+    final result = await Future.wait([
+      isTrackingAutomaticallyF,
+      accuracyF,
+      currentTrackingFrequencyF
+    ]);
+
+    final bool isTrackingAutomatically = result[0] as bool;
+    final LocationAccuracy accuracy = result[1] as LocationAccuracy;
+    final int currentTrackingFrequency = result[2] as int;
+
+    final Duration autoAttemptTimeout = _clampDuration(
+      Duration(seconds: currentTrackingFrequency),
+      const Duration(seconds: 5),
+      const Duration(seconds: 30),
+    );
+
+    final Duration autoStaleMax = _clampDuration(
+      Duration(seconds: currentTrackingFrequency * 2),
+      const Duration(seconds: 5),
+      const Duration(seconds: 30),
+    );
+
+    const Duration manualTimeout = Duration(seconds: 15);
+    const Duration manualStaleMax = Duration(seconds: 90);
+
+    final Duration attemptTimeout = isTrackingAutomatically ? autoAttemptTimeout : manualTimeout;
+    final Duration staleMax = isTrackingAutomatically ? autoStaleMax : manualStaleMax;
+
+    Result<Position, String> posResult;
+
+    try {
+      posResult = await _hardwareInterfaces
+          .getPosition(accuracy)
+          .timeout(attemptTimeout);
+    } on TimeoutException {
+      return Err("NO_FIX_TIMEOUT");
+    } catch (e) {
+      return Err("POSITION_ERROR: $e");
+    }
 
     if (posResult case Err(value: final String error)) {
       return Err(error);
     }
 
     final Position position = posResult.unwrap();
+
+    final DateTime nowUtc = DateTime.now().toUtc();
+    final DateTime fixTs = position.timestamp.toUtc();
+
+    final Duration age = nowUtc.difference(fixTs);
+    if (age < Duration.zero || age > staleMax) {
+      return Err("STALE_FIX: age=${age.inSeconds}s (max=${staleMax.inSeconds}s)");
+    }
+
     final Result<LocalPoint, String> pointResult = await createPointFromPosition(position, pointCreationTimestamp);
 
     if (pointResult case Err()) {
@@ -237,24 +321,24 @@ final class LocalPointService {
     Result<LocalPoint, String> finalResult = pointResult;
 
     if (persist) {
-      final stored = await storePoint(pointResult.unwrap());
-      finalResult = stored;
 
-      final bool uploadDue = await _checkBatchThreshold();
-
-      if (uploadDue) {
-        final List<LocalPoint> batch = await getCurrentBatch();
-        if (batch.isNotEmpty) {
-          final Result<(), String> uploadResult = await prepareBatchUpload(batch);
-          if (uploadResult case Err(value: String error)) {
-            return Err("Failed to upload batch: $error");
-          }
-        }
-      }
+      final point = pointResult.unwrap();
+      await autoStoreAndUpload(point);
     }
 
     return finalResult;
   }
+
+  Duration _clampDuration(Duration v, Duration min, Duration max) {
+    if (v < min) {
+      return min;
+    }
+    if (v > max) {
+      return max;
+    }
+    return v;
+  }
+
 
   /// Creates a full point, position data is retrieved from cache.
   Future<Result<LocalPoint, String>> createPointFromCache({bool persist = true}) async {
@@ -449,13 +533,13 @@ final class LocalPointService {
     Option<LastPoint> lastPointResult = await getLastPoint();
 
     if (lastPointResult case Some(value: LastPoint lastPoint)) {
-      double lastPointLongitude = point.geometry.longitude;
-      double lastPointLatitude = point.geometry.latitude;
+      double currentPointLongitude = point.geometry.longitude;
+      double currentPointLatitude = point.geometry.latitude;
 
       LatLng lastPointCoordinates =
           LatLng(lastPoint.latitude, lastPoint.longitude);
       LatLng currentPointCoordinates =
-          LatLng(lastPointLatitude, lastPointLongitude);
+          LatLng(currentPointLatitude, currentPointLongitude);
 
       PointPair pair = PointPair(lastPointCoordinates, currentPointCoordinates);
       double distance = pair.calculateDistance();

@@ -39,7 +39,7 @@ dependencies:
   dio: ^5.9.0
   drift: ^2.28.2
   drift_flutter: ^0.2.7
-  fl_chart: ^1.1.1
+  fl_chart: ^1.0.0
   flutter_background_service: ^5.1.0
   flutter_local_notifications: ^19.4.2
   flutter_map: ^8.2.2

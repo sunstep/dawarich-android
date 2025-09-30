@@ -18,38 +18,44 @@ final AppRouter appRouter = AppRouter();
 
 Future<void> main() async {
 
-  WidgetsFlutterBinding.ensureInitialized();
-
-  FlutterError.onError = (FlutterErrorDetails details) {
-    debugPrint('[FlutterError] ${details.exceptionAsString()}');
-    if (details.stack != null) debugPrint(details.stack!.toString());
-    Zone.current.handleUncaughtError(
-      details.exception,
-      details.stack ?? StackTrace.current,
-    );
-  };
-
-  // Catch errors outside Flutter widget tree (platform layer)
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    debugPrint('[PlatformError] $error');
-    debugPrint(stack.toString());
-    return true;
-  };
-
-  try {
-    await _dbHook();
-  } catch (e, st) {
-    debugPrint('[dbHook] $e\n$st');
-  }
+  BindingBase.debugZoneErrorsAreFatal = true;
 
   runZonedGuarded(
-      () {
+      () async {
+        WidgetsFlutterBinding.ensureInitialized();
+
+        FlutterError.onError = (FlutterErrorDetails details) {
+          debugPrint('[FlutterError] ${details.exceptionAsString()}');
+          if (details.stack != null) debugPrint(details.stack!.toString());
+          Zone.current.handleUncaughtError(
+            details.exception,
+            details.stack ?? StackTrace.current,
+          );
+        };
+
+        // Catch errors outside Flutter widget tree (platform layer)
+        PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+          debugPrint('[PlatformError] $error');
+          debugPrint(stack.toString());
+          return true;
+        };
+
+        try {
+          await _dbHook();
+        } catch (e, st) {
+          debugPrint('[dbHook] $e\n$st');
+        }
+
         runApp(const Dawarich());
 
-        if (kDebugMode) {
-          debugPrint("Main finished");
-        }
-        unawaited(_boot());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+
+          if (kDebugMode) {
+            debugPrint('[BOOT] first frame');
+          }
+
+          unawaited(_boot());
+        });
       }, (Object error, StackTrace stack) {
         debugPrint('[ZonedError] $error');
         debugPrint(stack.toString());

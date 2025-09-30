@@ -1,34 +1,40 @@
 package app.dawarich.android
 
+
 import android.content.Context
+import android.os.Build
 import android.os.PowerManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-class MainActivity: FlutterActivity() {
 
-    private val CHANNEL = "app.dawarich.android/system_settings"
+class MainActivity : FlutterActivity() {
 
-    // 1) Override configureFlutterEngine
+    private val _channel = "app.dawarich.android/system_settings"
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // 2) Register your MethodChannel on that engine’s dartExecutor
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            CHANNEL
-        ).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "isBatteryOptimizationEnabled" -> {
-                    // Android: check PowerManager
-                    val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-                    val ignoring = pm.isIgnoringBatteryOptimizations(packageName)
-                    // If ignoring==true, optimizations are disabled → we return false
-                    result.success(!ignoring)
+        // Lightweight channel registration; no heavy work here.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, _channel)
+            .setMethodCallHandler { call, result ->
+                try {
+                    when (call.method) {
+                        "isBatteryOptimizationEnabled" -> {
+                            val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                                val isIgnoring = pm.isIgnoringBatteryOptimizations(packageName)
+                                !isIgnoring
+                            } else {
+                                false
+                            }
+                            result.success(enabled)
+                        }
+                        else -> result.notImplemented()
+                    }
+                } catch (e: Throwable) {
+                    result.success(false) // safe default
                 }
-                else -> result.notImplemented()
             }
-        }
     }
 }
-

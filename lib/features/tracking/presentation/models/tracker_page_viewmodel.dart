@@ -393,11 +393,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
     setIsUpdatingTracking(true);
     setAutomaticTracking(enable);
 
-    await _trackerPreferencesService.setAutomaticTrackingSetting(enable);
-
     if (enable) {
-      if (await _shouldShowConsentDialog()) {
-        final confirmed = await requestConsentFromUser(
+      final bool shouldShowConsentDialog = await _shouldShowConsentDialog();
+      if (shouldShowConsentDialog) {
+        final bool confirmed = await requestConsentFromUser(
             'To enable automatic background tracking, Dawarich needs your permission.\n\n'
                 'It will request background location access, notification permission, and system exclusions.'
         );
@@ -427,6 +426,8 @@ final class TrackerPageViewModel extends ChangeNotifier {
       }
 
       final serviceResult = await BackgroundTrackingService.start();
+      await _systemSettingsService.openSystemSettings();
+      await _trackerPreferencesService.setAutomaticTrackingSetting(enable);
       debugPrint("[TrackerPageViewModel] Background start result: $serviceResult");
 
       final needsFix = await _systemSettingsService.needsSystemSettingsFix();
@@ -466,15 +467,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
       return Err("Location permission 'Always' is required for background tracking.");
     }
 
-    await openSystemSettings();
-
     return const Ok(());
-  }
-
-
-
-  Future<void> openSystemSettings() async {
-    await _systemSettingsService.openSystemSettings();
   }
 
   Future<void> _getAutomaticTrackingPreference() async {

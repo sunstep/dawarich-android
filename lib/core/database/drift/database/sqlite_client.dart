@@ -187,7 +187,9 @@ final class SQLiteClient extends _$SQLiteClient {
     final path = await dbPath();
     final f = File(path);
     if (!await f.exists()) {
-      if (kDebugMode) debugPrint('[DB] no db → no upgrade needed');
+      if (kDebugMode) {
+        debugPrint('[DB] no db → no upgrade needed');
+      }
       return false;
     }
 

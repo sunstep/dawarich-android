@@ -1,0 +1,295 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:189168612860006908",
+      "lastPropertyId": "7:682623942756499471",
+      "name": "PointEntity",
+      "properties": [
+        {
+          "id": "1:3361186547001852815",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:4490387814936172022",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "3:5180993929441855193",
+          "name": "geometryId",
+          "type": 11,
+          "flags": 520,
+          "indexId": "1:1915856381845311294",
+          "relationTarget": "PointGeometryEntity"
+        },
+        {
+          "id": "4:411342817486884629",
+          "name": "propertiesId",
+          "type": 11,
+          "flags": 520,
+          "indexId": "2:6794898590115829910",
+          "relationTarget": "PointPropertiesEntity"
+        },
+        {
+          "id": "6:788944675776452847",
+          "name": "isUploaded",
+          "type": 1
+        },
+        {
+          "id": "7:682623942756499471",
+          "name": "userId",
+          "type": 11,
+          "flags": 520,
+          "indexId": "4:8091469603675826274",
+          "relationTarget": "UserEntity"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:5305707719331597758",
+      "lastPropertyId": "3:3500301730265714852",
+      "name": "PointGeometryEntity",
+      "properties": [
+        {
+          "id": "1:8956225103065917981",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:84972300689647056",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "3:3500301730265714852",
+          "name": "coordinates",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:6084521536945527332",
+      "lastPropertyId": "14:4238500201083029765",
+      "name": "PointPropertiesEntity",
+      "properties": [
+        {
+          "id": "1:4175892896921682711",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:5916974519935709427",
+          "name": "batteryState",
+          "type": 9
+        },
+        {
+          "id": "3:7656247938793853047",
+          "name": "batteryLevel",
+          "type": 8
+        },
+        {
+          "id": "4:4660133112715695061",
+          "name": "wifi",
+          "type": 9
+        },
+        {
+          "id": "5:4917669366722924325",
+          "name": "timestamp",
+          "type": 9
+        },
+        {
+          "id": "6:9030926509065402125",
+          "name": "altitude",
+          "type": 8
+        },
+        {
+          "id": "7:5917380285609223943",
+          "name": "speed",
+          "type": 8
+        },
+        {
+          "id": "8:8021934390922367356",
+          "name": "horizontalAccuracy",
+          "type": 8
+        },
+        {
+          "id": "9:2638692740034620449",
+          "name": "verticalAccuracy",
+          "type": 8
+        },
+        {
+          "id": "10:8549092669442104846",
+          "name": "speedAccuracy",
+          "type": 8
+        },
+        {
+          "id": "11:8135751084837389870",
+          "name": "course",
+          "type": 8
+        },
+        {
+          "id": "12:3315702765337432685",
+          "name": "courseAccuracy",
+          "type": 8
+        },
+        {
+          "id": "13:8837572748849934307",
+          "name": "trackId",
+          "type": 9
+        },
+        {
+          "id": "14:4238500201083029765",
+          "name": "deviceId",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:1778880033938622635",
+      "lastPropertyId": "10:2837733819191780095",
+      "name": "UserEntity",
+      "properties": [
+        {
+          "id": "1:4956678969871497793",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "4:2371581633419402977",
+          "name": "email",
+          "type": 9
+        },
+        {
+          "id": "5:2115809574979560364",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "6:7310706119396848141",
+          "name": "updatedAt",
+          "type": 10
+        },
+        {
+          "id": "7:603410296221482385",
+          "name": "theme",
+          "type": 9
+        },
+        {
+          "id": "8:2791464071581515572",
+          "name": "admin",
+          "type": 1
+        },
+        {
+          "id": "9:6723090270720409355",
+          "name": "remoteId",
+          "type": 6
+        },
+        {
+          "id": "10:2837733819191780095",
+          "name": "dawarichHost",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:8230729941662778934",
+      "lastPropertyId": "4:9138771247612171780",
+      "name": "MigrationsEntity",
+      "properties": [
+        {
+          "id": "1:5269607752579040327",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:4272640741524655383",
+          "name": "fromVersion",
+          "type": 6
+        },
+        {
+          "id": "3:5490716956449034977",
+          "name": "toVersion",
+          "type": 6
+        },
+        {
+          "id": "4:9138771247612171780",
+          "name": "success",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "6:3704203911923221662",
+      "lastPropertyId": "6:7549749159864442383",
+      "name": "TrackEntity",
+      "properties": [
+        {
+          "id": "1:5123641225426606641",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:7303910911563936399",
+          "name": "trackId",
+          "type": 9
+        },
+        {
+          "id": "3:3271779244100735857",
+          "name": "startTimestamp",
+          "type": 10
+        },
+        {
+          "id": "4:3237797509197016097",
+          "name": "endTimestamp",
+          "type": 10
+        },
+        {
+          "id": "5:1112917363693914672",
+          "name": "active",
+          "type": 1
+        },
+        {
+          "id": "6:7549749159864442383",
+          "name": "userId",
+          "type": 11,
+          "flags": 520,
+          "indexId": "5:7111832500708773980",
+          "relationTarget": "UserEntity"
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "6:3704203911923221662",
+  "lastIndexId": "5:7111832500708773980",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [
+    5644831514741121094
+  ],
+  "retiredPropertyUids": [
+    1070645610944448296,
+    3345055034410445876,
+    7411465692872299554
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}

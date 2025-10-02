@@ -1,0 +1,11 @@
+class LastPoint {
+  final DateTime timestamp;
+  final double longitude;
+  final double latitude;
+
+  LastPoint({
+    required this.timestamp,
+    required this.longitude,
+    required this.latitude,
+  });
+}

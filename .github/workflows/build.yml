@@ -25,19 +25,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Determine Project Key
-        id: key
+      - name: Run unit tests with coverage
+        run: flutter test --coverage
+
+      - name: Print coverage summary
         run: |
-          CLEAN_BRANCH="${GITHUB_REF_NAME//\//-}"
-          
-          PROJECT_KEY="sunstep:dawarich-app-${CLEAN_BRANCH}"
+          if [ -f coverage/lcov.info ]; then
+            genhtml coverage/lcov.info --output-directory coverage/html >/dev/null 2>&1 || true
+            echo "Coverage file generated: coverage/lcov.info"
+          else
+            echo "No coverage file found."
+          fi
 
-          echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
-
-      - uses: SonarSource/sonarqube-scan-action@v6.0.0
-        with:
-          args: |
-            -Dsonar.projectKey=${{ steps.key.outputs.project_key }}
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

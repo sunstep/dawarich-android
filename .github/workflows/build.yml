@@ -34,7 +34,7 @@ jobs:
 
           echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
 
-      - uses: SonarSource/sonarqube-scan-action@v5.3.1
+      - uses: SonarSource/sonarqube-scan-action@v6.0.0
         with:
           args: |
             -Dsonar.projectKey=${{ steps.key.outputs.project_key }}

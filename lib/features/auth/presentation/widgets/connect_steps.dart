@@ -1,8 +1,10 @@
+import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';
+import 'package:dawarich/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class ServerStepWidget extends StatelessWidget {
+final class ServerStepWidget extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   const ServerStepWidget({required this.formKey, super.key});
 
@@ -21,6 +23,13 @@ class ServerStepWidget extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'Host URL',
                 prefixIcon: const Icon(Icons.link),
+                suffixIcon: IconButton(
+                  tooltip: 'Scan QR',
+                  icon: const Icon(Icons.qr_code_scanner),
+                  onPressed: vm.isVerifyingHost || vm.isLoggingIn
+                      ? null
+                      : () => _onScanQrTapped(context),
+                ),
                 filled: true,
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -42,6 +51,36 @@ class ServerStepWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _onScanQrTapped(BuildContext context) async {
+    final vm = context.read<AuthPageViewModel>();
+
+    FocusScope.of(context).unfocus();
+
+    final String? qrResult = await appRouter.push<String>(
+        const AuthQrScanRoute()
+    );
+
+    if (qrResult == null) {
+      return;
+    }
+
+    await vm.tryQrLogin(
+      qrResult,
+      onNavigateToTimeline: () => appRouter.replaceAll([
+        const TimelineRoute()
+      ]),
+      onNavigateToVersionCheck: () => appRouter.replaceAll([
+        const VersionCheckRoute()
+      ]),
+      onShowError: (msg) => _showInlineError(context, msg),
+    );
+  }
+
+  void _showInlineError(BuildContext context, String message) {
+    final vm = context.read<AuthPageViewModel>();
+    vm.setSnackbarMessage(message);
   }
 }
 

@@ -38,6 +38,8 @@ final class TimelineViewModel extends ChangeNotifier {
   List<LatLng> _points = [];
   List<LatLng> get points => _points;
 
+  List<LocalPoint> _lastLocalBatch = const [];
+
   List<LatLng> _localPoints = [];
   List<LatLng> get localPoints => _localPoints;
 
@@ -55,6 +57,7 @@ final class TimelineViewModel extends ChangeNotifier {
   void setSelectedDate(DateTime selectedDate) {
     _selectedDate = selectedDate;
     notifyListeners();
+    _applyLocalPointsForSelectedDay();
   }
 
   void setPoints(List<LatLng> points) {
@@ -88,7 +91,7 @@ final class TimelineViewModel extends ChangeNotifier {
     final pending = _pendingCenter;
     if (pending != null) {
       _pendingCenter = null;
-      _animateTo(pending); // will be safe now
+      _animateTo(pending);
     }
   }
 
@@ -148,16 +151,26 @@ final class TimelineViewModel extends ChangeNotifier {
 
     _localPointSubscription = batchStream.listen((points) {
 
-      final List<SlimApiPoint> slimApiPoints = points.map((point) {
-        return SlimApiPoint(
-          latitude: point.geometry.latitude.toString(),
-          longitude: point.geometry.longitude.toString(),
-          timestamp: point.properties.timestamp.millisecondsSinceEpoch,
-        );
-      }).toList();
-      final List<LatLng> localPointList = _mapService.prepPoints(slimApiPoints);
-      setLocalPoints(localPointList);
+      _lastLocalBatch = points;
+      _applyLocalPointsForSelectedDay();
     });
+  }
+
+  void _applyLocalPointsForSelectedDay() {
+    final DateTime d = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+
+    final List<SlimApiPoint> slimForDay = _lastLocalBatch.where((p) {
+      final ts = p.properties.timestamp;
+      final day = DateTime(ts.year, ts.month, ts.day);
+      return day == d;
+    }).map((p) => SlimApiPoint(
+      latitude: p.geometry.latitude.toString(),
+      longitude: p.geometry.longitude.toString(),
+      timestamp: p.properties.timestamp.millisecondsSinceEpoch,
+    )).toList();
+
+    final List<LatLng> localPointList = _mapService.prepPoints(slimForDay);
+    setLocalPoints(localPointList);
   }
 
   @override

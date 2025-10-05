@@ -428,7 +428,7 @@ final class LocalPointService {
       speedAccuracy: position.speedAccuracy,
       course: position.heading,
       courseAccuracy: position.headingAccuracy,
-      trackId: "",
+      trackId: additionalData.trackId,
       deviceId: additionalData.deviceId,
     );
 

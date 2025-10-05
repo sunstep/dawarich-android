@@ -1,5 +1,7 @@
 import 'package:dawarich/features/auth/application/services/connect_service.dart';
+import 'package:dawarich/features/auth/domain/models/AuthQrPayload.dart';
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 
@@ -80,6 +82,55 @@ final class AuthPageViewModel extends ChangeNotifier {
     return false;
   }
 
+  Future<void> tryQrLogin(
+      String qrResult, {
+        required VoidCallback onNavigateToTimeline,
+        required VoidCallback onNavigateToVersionCheck,
+        required void Function(String) onShowError,
+      }) async {
+
+    _setErrorMessage(null);
+    _setLoggingIn(true);
+    _setVerifyingHost(true);
+
+
+    try {
+
+      final payload = AuthQrPayload.fromJsonString(qrResult.trim());
+
+      setHost(payload.serverUrl);
+      setApiKey(payload.apiKey);
+
+      final okHost  = await _connectService.testHost(payload.serverUrl);
+      if (!okHost) {
+        onShowError('Server unreachable or invalid.');
+        return;
+      }
+
+      final okLogin = await _connectService.loginApiKey(payload.apiKey);
+      if (!okLogin) {
+        onShowError('Invalid API key.');
+        return;
+      }
+
+      final isServerSupported = await checkServerSupport();
+      if (kDebugMode || isServerSupported) {
+        onNavigateToTimeline();
+      } else {
+        onNavigateToVersionCheck();
+      }
+
+    } on FormatException {
+      onShowError('The scanned QR code is invalid. Please try again.');
+    } catch (e) {
+      onShowError('Login failed. Please try again.');
+    } finally {
+      _setVerifyingHost(false);
+      _setLoggingIn(false);
+    }
+
+  }
+
   /// Attempts email/password based authentication.
   // Future<bool> tryLoginCredentials(String email, String password) async {
   //   _setLoggingIn(true);
@@ -120,6 +171,16 @@ final class AuthPageViewModel extends ChangeNotifier {
   // Toggle API key vs credential login
   void setApiKeyPreference(bool useApiKey) {
     _apiKeyPreferred = useApiKey;
+    notifyListeners();
+  }
+
+  void setHost(String host) {
+    _hostController.text = host;
+    notifyListeners();
+  }
+
+  void setApiKey(String apiKey) {
+    _apiKeyController.text = apiKey;
     notifyListeners();
   }
 

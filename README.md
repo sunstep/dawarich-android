@@ -23,10 +23,10 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Star History
 
-<a href="https://star-history.com/#sunstep/Dawarich-Companion&Date">
+<a href="https://www.star-history.com/#sunstep/dawarich-android&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=sunstep/Dawarich-Companion&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=sunstep/Dawarich-Companion&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=sunstep/Dawarich-Companion&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=sunstep/dawarich-android&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=sunstep/dawarich-android&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=sunstep/dawarich-android&type=Date" />
  </picture>
 </a>

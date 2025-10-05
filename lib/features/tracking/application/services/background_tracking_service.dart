@@ -37,6 +37,7 @@ void backgroundTrackingEntry(ServiceInstance backgroundService) {
     }
   }());
 }
+
 class BackgroundTrackingEntry {
 
   static Future<void> checkBackgroundTracking(ServiceInstance backgroundService) async {

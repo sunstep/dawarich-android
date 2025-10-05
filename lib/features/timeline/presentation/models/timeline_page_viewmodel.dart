@@ -6,6 +6,7 @@ import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
@@ -24,6 +25,11 @@ final class TimelineViewModel extends ChangeNotifier {
   LatLng? _currentLocation;
   LatLng? get currentLocation => _currentLocation;
 
+  LatLng? _pendingCenter;
+  bool _mapReady = false;
+  LatLng? _lastCameraTarget;
+  final double _epsilon = 1e-7;
+
   DateTime _selectedDate = DateTime.now();
   DateTime get selectedDate => _selectedDate;
 
@@ -35,9 +41,6 @@ final class TimelineViewModel extends ChangeNotifier {
   List<LatLng> _localPoints = [];
   List<LatLng> get localPoints => _localPoints;
 
-  void setAnimatedMapController(AnimatedMapController controller) {
-    animatedMapController ??= controller;
-  }
 
   void setIsLoading(bool value) {
     _isLoading = value;
@@ -79,10 +82,67 @@ final class TimelineViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void markMapReady() {
+    _mapReady = true;
+
+    final pending = _pendingCenter;
+    if (pending != null) {
+      _pendingCenter = null;
+      _animateTo(pending); // will be safe now
+    }
+  }
+
+  void setAnimatedMapController(AnimatedMapController controller) {
+
+    final bool wasNull = animatedMapController == null;
+    animatedMapController ??= controller;
+
+    if (!wasNull) {
+      return;
+    }
+
+    final pendingCenter = _pendingCenter;
+
+    if (_mapReady && pendingCenter != null) {
+      _animateTo(pendingCenter);
+      _pendingCenter = null;
+    }
+  }
+
+  bool _sameTarget(LatLng a, LatLng b) =>
+      (a.latitude - b.latitude).abs() < _epsilon &&
+          (a.longitude - b.longitude).abs() < _epsilon;
+
+
+  void _animateTo(LatLng dest) {
+
+    if (_lastCameraTarget != null && _sameTarget(_lastCameraTarget!, dest)) {
+      return;
+    }
+
+    final AnimatedMapController? controller = animatedMapController;
+
+    if (!_mapReady || controller == null) {
+      _pendingCenter = dest;
+      return;
+    }
+
+    final double zoom = controller.mapController.camera.zoom;
+
+    animatedMapController?.animateTo(
+      dest: dest,
+      zoom: zoom,
+      curve: Curves.easeInOut,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _lastCameraTarget = dest;
+  }
+
   Future<void> initialize() async {
 
-    loadToday();
     _resolveAndSetInitialLocation();
+    loadToday();
 
     final batchStream = await _localPointService.watchCurrentBatch();
 
@@ -120,55 +180,74 @@ final class TimelineViewModel extends ChangeNotifier {
   Future<void> getAndSetPoints() async {
     final List<LatLng> data = await _mapService.loadMap(selectedDate);
     setPoints(data);
+    if (data.isNotEmpty) {
+      _animateTo(data.first);
+    }
   }
 
   Future<void> loadPreviousDay() async {
-    setIsLoading(true);
-    clearPoints();
+    try {
+      setIsLoading(true);
+      clearPoints();
 
-    DateTime previousDay = selectedDate.subtract(const Duration(days: 1));
-    setSelectedDate(
-        DateTime(previousDay.year, previousDay.month, previousDay.day));
+      DateTime previousDay = selectedDate.subtract(const Duration(days: 1));
+      setSelectedDate(
+          DateTime(previousDay.year, previousDay.month, previousDay.day));
 
-    await getAndSetPoints();
+      await getAndSetPoints();
+    } finally {
+      setIsLoading(false);
+    }
 
-    setIsLoading(false);
   }
 
   Future<void> loadToday() async {
-    setIsLoading(true);
-    clearPoints();
+    try {
+      setIsLoading(true);
+      clearPoints();
 
-    await getAndSetPoints();
+      await getAndSetPoints();
 
-    setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+    }
+
   }
 
   Future<void> loadNextDay() async {
-    setIsLoading(true);
-    clearPoints();
 
-    DateTime nextDay = selectedDate.add(const Duration(days: 1));
-    setSelectedDate(DateTime(nextDay.year, nextDay.month, nextDay.day));
+    try {
+      setIsLoading(true);
+      clearPoints();
 
-    await getAndSetPoints();
+      DateTime nextDay = selectedDate.add(const Duration(days: 1));
+      setSelectedDate(DateTime(nextDay.year, nextDay.month, nextDay.day));
 
-    setIsLoading(false);
+      await getAndSetPoints();
+
+    } finally {
+      setIsLoading(false);
+    }
+
   }
 
   Future<void> processNewDate(DateTime pickedDate) async {
+
     if (pickedDate == selectedDate) {
       return;
     }
 
-    setIsLoading(true);
-    clearPoints();
+    try {
+      setIsLoading(true);
+      clearPoints();
 
-    setSelectedDate(pickedDate);
+      setSelectedDate(pickedDate);
 
-    await getAndSetPoints();
+      await getAndSetPoints();
+    } finally {
+      setIsLoading(false);
+    }
 
-    setIsLoading(false);
   }
 
   bool isTodaySelected() {
@@ -201,13 +280,33 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   void centerMap() {
-    if (currentLocation != null) {
-      animatedMapController?.animateTo(
-        dest: currentLocation!,
-        zoom: animatedMapController?.mapController.camera.zoom,
-        curve: Curves.easeInOut,
-        duration: const Duration(milliseconds: 500),
-      );
+
+    final user = currentLocation;
+
+    if (user == null) {
+      return;
     }
+
+    if (_lastCameraTarget != null && _sameTarget(_lastCameraTarget!, user)) {
+      return;
+    }
+
+    final controller = animatedMapController;
+
+    if (!_mapReady || controller == null) {
+      _pendingCenter = user;
+      return;
+    }
+
+    final double zoom = controller.mapController.camera.zoom;
+
+    controller.animateTo(
+      dest: user,
+      zoom: zoom,
+      curve: Curves.easeInOut,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _lastCameraTarget = user;
   }
 }

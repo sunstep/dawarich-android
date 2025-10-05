@@ -5,10 +5,6 @@ abstract interface class IHardwareRepository {
   Future<Result<Position, String>> getPosition(
       LocationAccuracy locationAccuracy);
   Future<Option<Position>> getCachedPosition();
-  Stream<Result<Position, String>> getPositionStream({
-    required LocationAccuracy accuracy,
-    required int minimumDistance,
-  });
 
   Future<String> getDeviceModel();
 

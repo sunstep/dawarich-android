@@ -382,7 +382,7 @@ final class LocalPointService {
       batteryStateF,
       batteryLevelF,
       deviceIdF,
-      trackerIdResultF
+      trackerIdResultF,
     ]);
 
     final int pointsInBatch = futureResults[0] as int;
@@ -426,8 +426,8 @@ final class LocalPointService {
       altitude: position.altitude,
       speed: position.speed,
       speedAccuracy: position.speedAccuracy,
-      course: 0.0,
-      courseAccuracy: 0.0,
+      course: position.heading,
+      courseAccuracy: position.headingAccuracy,
       trackId: "",
       deviceId: additionalData.deviceId,
     );

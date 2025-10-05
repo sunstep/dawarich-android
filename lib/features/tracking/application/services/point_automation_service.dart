@@ -5,7 +5,6 @@ import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointAutomationService with ChangeNotifier {
@@ -17,13 +16,12 @@ final class PointAutomationService with ChangeNotifier {
   StreamSubscription<int>? _frequencyListener;
   static const _ch = MethodChannel('dawarich/keepalive');
 
-  final ServiceInstance? _serviceInstance;
   final TrackerSettingsService _trackerPreferencesService;
   final LocalPointService _localPointService;
   final TrackingNotificationService _notificationService;
 
   PointAutomationService(this._trackerPreferencesService,
-      this._localPointService, this._notificationService, this._serviceInstance);
+      this._localPointService, this._notificationService);
 
   Future<void> startTracking() async {
 

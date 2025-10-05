@@ -31,7 +31,6 @@ import 'package:dawarich/features/tracking/data/repositories/hardware_repository
 import 'package:dawarich/core/network/repositories/api_point_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
-import 'package:dawarich/features/tracking/data/sources/gps_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
 import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dawarich/features/auth/data_contracts/interfaces/connect_repository_interfaces.dart';
@@ -108,7 +107,6 @@ final class DependencyInjection {
       }
       return c;
     });
-    getIt.registerLazySingleton<GpsDataClient>(() => GpsDataClient());
     getIt.registerLazySingleton<DeviceDataClient>(() => DeviceDataClient());
     getIt.registerLazySingleton<ConnectivityDataClient>(
         () => ConnectivityDataClient());
@@ -120,7 +118,6 @@ final class DependencyInjection {
     getIt.registerLazySingleton<IUserRepository>(
         () => DriftUserRepository(getIt<SQLiteClient>()));
     getIt.registerLazySingleton<IHardwareRepository>(() => HardwareRepository(
-        getIt<GpsDataClient>(),
         getIt<DeviceDataClient>(),
         getIt<ConnectivityDataClient>()));
     getIt.registerLazySingleton<IConnectRepository>(() => ConnectRepository(
@@ -277,7 +274,6 @@ final class DependencyInjection {
       ]),
     );
 
-    backgroundGetIt.registerLazySingletonIfAbsent<GpsDataClient>(() => GpsDataClient());
     backgroundGetIt.registerLazySingletonIfAbsent<DeviceDataClient>(() => DeviceDataClient());
     backgroundGetIt.registerLazySingletonIfAbsent<ConnectivityDataClient>(() => ConnectivityDataClient());
 
@@ -290,7 +286,6 @@ final class DependencyInjection {
     backgroundGetIt.registerLazySingletonIfAbsent<ITrackerSettingsRepository>(
             () => DriftTrackerSettingsRepository(backgroundGetIt<SQLiteClient>()));
     backgroundGetIt.registerLazySingletonIfAbsent<IHardwareRepository>(() => HardwareRepository(
-        backgroundGetIt<GpsDataClient>(),
         backgroundGetIt<DeviceDataClient>(),
         backgroundGetIt<ConnectivityDataClient>()));
     backgroundGetIt.registerSingletonWithDependenciesIfAbsent<IUserRepository>(
@@ -362,12 +357,11 @@ final class DependencyInjection {
     });
 
     backgroundGetIt.registerSingletonWithDependenciesIfAbsent<PointAutomationService>(
-          () => PointAutomationService(
-        backgroundGetIt<TrackerSettingsService>(),
-        backgroundGetIt<LocalPointService>(),
-        backgroundGetIt<TrackingNotificationService>(),
-        instance,
-      ),
+        () => PointAutomationService(
+          backgroundGetIt<TrackerSettingsService>(),
+          backgroundGetIt<LocalPointService>(),
+          backgroundGetIt<TrackingNotificationService>()
+        ),
       dependsOn: [LocalPointService, TrackerSettingsService],
     );
 

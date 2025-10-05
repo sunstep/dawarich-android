@@ -210,6 +210,9 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
           options: MapOptions(
             initialCenter: mapModel.currentLocation!,
             initialZoom: 14.0,
+            onMapReady: () {
+              mapModel.markMapReady();
+            }
           ),
           children: [
             TileLayer(

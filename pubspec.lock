@@ -912,6 +912,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mobile_scanner:
+    dependency: "direct main"
+    description:
+      name: mobile_scanner
+      sha256: "5e7e09d904dc01de071b79b3f3789b302b0ed3c9c963109cd3f83ad90de62ecf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.2"
   native_device_orientation:
     dependency: transitive
     description:

@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/shell/splash.dart';
 import 'package:dawarich/features/auth/presentation/pages/auth_page.dart';
+import 'package:dawarich/features/auth/presentation/pages/auth_qr_scan_page.dart';
 import 'package:dawarich/features/migration/presentation/pages/migration_page.dart';
 import 'package:dawarich/features/batch/presentation/pages/batch_explorer_page.dart';
 import 'package:dawarich/features/version_check/presentation/pages/version_check_page.dart';
@@ -20,6 +21,7 @@ final class AppRouter extends RootStackRouter {
     AutoRoute(page: SplashRoute.page, initial: true),
     AutoRoute(page: MigrationRoute.page, path: '/migration'),
     AutoRoute(page: AuthRoute.page, path: '/auth'),
+    AutoRoute(page: AuthQrScanRoute.page, path: '/qrScan'),
     AutoRoute(page: VersionCheckRoute.page, path: '/versionCheck'),
     AutoRoute(page: TimelineRoute.page, path: '/timeline'),
     AutoRoute(page: StatsRoute.page, path: '/stats'),

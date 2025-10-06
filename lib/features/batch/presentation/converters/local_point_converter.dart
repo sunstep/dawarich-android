@@ -23,7 +23,7 @@ extension BatchPointToViewModel on LocalPoint {
 
 extension PointDtoToEntity on LocalPointViewModel {
   LocalPoint toDomain() {
-    LocalPointGeometry geometry = this.geometry.toEntity();
+    LocalPointGeometry geometry = this.geometry.toDomain();
     LocalPointProperties properties = this.properties.toDomain();
     return LocalPoint(
         id: id,

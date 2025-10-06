@@ -23,7 +23,7 @@ extension PointMapper on TypedResult {
           batteryState: propertiesRow.batteryState,
           batteryLevel: propertiesRow.batteryLevel,
           wifi: propertiesRow.wifi,
-          timestamp: propertiesRow.timestamp,
+          timestamp: propertiesRow.timestamp.toUtc(),
           horizontalAccuracy: propertiesRow.horizontalAccuracy,
           verticalAccuracy: propertiesRow.verticalAccuracy,
           altitude: propertiesRow.altitude,

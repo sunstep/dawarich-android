@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:latlong2/latlong.dart';
 
-class PointPair {
+final class PointPair {
   final LatLng A;
   final LatLng B;
 

@@ -117,7 +117,7 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
         final BuildContext localContext = context;
 
         if (localContext.mounted) {
-          final viewModel = localContext.read<TrackerPageViewModel>();
+          localContext.read<TrackerPageViewModel>();
         }
       } catch (error) {
         if (kDebugMode) {

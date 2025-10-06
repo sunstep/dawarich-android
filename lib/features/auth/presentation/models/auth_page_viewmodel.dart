@@ -1,5 +1,5 @@
 import 'package:dawarich/features/auth/application/services/connect_service.dart';
-import 'package:dawarich/features/auth/domain/models/AuthQrPayload.dart';
+import 'package:dawarich/features/auth/domain/models/auth_qr_payload.dart';
 import 'package:dawarich/features/version_check/application/version_check_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

@@ -375,6 +375,8 @@ final class TrackerPageViewModel extends ChangeNotifier {
     if (!_isDisposed) {
       notifyListeners();
     }
+
+    _trackerPreferencesService.setAutomaticTrackingSetting(enable);
   }
 
   void setIsUpdatingTracking(bool trueOrFalse) {

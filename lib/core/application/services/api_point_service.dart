@@ -42,44 +42,38 @@ final class ApiPointService {
     Option<List<ApiPointDTO>> result =
         await _pointInterfaces.getPoints(startDate: startDate, endDate:  endDate, perPage:  perPage);
 
-    switch (result) {
-      case Some(value: List<ApiPointDTO> points):
-        {
-          return Some(points.map((point) => ApiPoint(point)).toList());
-        }
-      case None():
-        return const None();
+
+    if (result case Some(value: final List<ApiPointDTO> points)) {
+      return Some(points.map((point) => ApiPoint(point)).toList());
     }
+
+    return const None();
   }
 
   Future<Option<List<SlimApiPoint>>> getSlimPoints({
-      required DateTime startDate, required DateTime endDate, required int perPage}) async {
+      required DateTime startDate, required DateTime endDate, required int perPage,
+  }) async {
     Option<List<SlimApiPointDTO>> result =
         await _pointInterfaces.getSlimPoints(startDate: startDate, endDate:  endDate, perPage:  perPage);
 
-    switch (result) {
-      case Some(value: List<SlimApiPointDTO> points):
-        {
-          return Some(points.map((dto) => dto.toDomain()).toList());
-        }
-      case None():
-        return const None();
+    if (result case Some(value: final List<SlimApiPointDTO> points)) {
+      return Some(points.map((dto) => dto.toDomain()).toList());
     }
+
+    return const None();
   }
 
   Future<bool> deletePoint(String point) async {
 
     Result<(), String> result = await _pointInterfaces.deletePoint(point);
 
-    switch (result) {
-      case Ok(value: ()):
-        return true;
-      case Err(value: String error):
-        {
-          debugPrint("Failed to delete point: $error");
-          return false;
-        }
+    if (result case Ok(value: ())) {
+      return true;
+    } else if (result case Err(value: final String error)) {
+      debugPrint("[ApiPointService] Error deleting point: $error");
     }
+
+    return false;
   }
 
   Future<int> getTotalPages(

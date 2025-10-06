@@ -12,7 +12,7 @@ extension LocalPointGeometryEntityToViewModel on LocalPointGeometry {
 }
 
 extension LocalPointGeometryViewModelToEntity on LocalPointGeometryViewModel {
-  LocalPointGeometry toEntity() {
+  LocalPointGeometry toDomain() {
     return LocalPointGeometry(
         type: type,
         longitude: longitude,

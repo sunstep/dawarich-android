@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/features/timeline/domain/models/day_map_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
@@ -162,6 +162,7 @@ final class TimelineViewModel extends ChangeNotifier {
     final List<SlimApiPoint> slimForDay = _lastLocalBatch.where((p) {
       final ts = p.properties.timestamp;
       final day = DateTime(ts.year, ts.month, ts.day);
+
       return day == d;
     }).map((p) => SlimApiPoint(
       latitude: p.geometry.latitude.toString(),
@@ -171,6 +172,28 @@ final class TimelineViewModel extends ChangeNotifier {
 
     final List<LatLng> localPointList = _mapService.prepPoints(slimForDay);
     setLocalPoints(localPointList);
+  }
+
+  void _filterLocalPointsForSelectedDay({int? cutoffMs}) {
+    final d = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+
+    final slimForDay = _lastLocalBatch.where((p) {
+      final ts = p.properties.timestamp;
+      final day = DateTime(ts.year, ts.month, ts.day);
+      if (day != d) {
+        return false;
+      }
+      if (cutoffMs != null && ts.millisecondsSinceEpoch <= cutoffMs) {
+        return false;
+      }
+      return true;
+    }).map((p) => SlimApiPoint(
+      latitude: p.geometry.latitude.toString(),
+      longitude: p.geometry.longitude.toString(),
+      timestamp: p.properties.timestamp.millisecondsSinceEpoch,
+    )).toList();
+
+    setLocalPoints(_mapService.prepPoints(slimForDay));
   }
 
   @override
@@ -191,10 +214,12 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> getAndSetPoints() async {
-    final List<LatLng> data = await _mapService.loadMap(selectedDate);
-    setPoints(data);
-    if (data.isNotEmpty) {
-      _animateTo(data.first);
+    final DayMapData day = await _mapService.loadMap(selectedDate);
+    setPoints(day.points);
+    _filterLocalPointsForSelectedDay(cutoffMs: day.lastTimestampMs);
+
+    if (day.points.isNotEmpty) {
+      _animateTo(day.points.first);
     }
   }
 

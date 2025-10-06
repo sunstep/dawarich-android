@@ -133,20 +133,20 @@ void main() {
   group('fetchLastPoint', () {
     test('success → Some(dto), callCount tracked', () async {
       repo.shouldFetchLastFail = false;
-      final opt = await repo.fetchLastPoint();
+      final opt = await repo.fetchLastPoint(start: null, end: null);
       expect(opt.isSome(), isTrue);
       expect(opt.unwrap(), repo.stubLastPoint);
       expect(repo.fetchLastPointCallCount, 1);
     });
     test('flag‐failure → None, callCount tracked', () async {
       repo.shouldFetchLastFail = true;
-      final opt = await repo.fetchLastPoint();
+      final opt = await repo.fetchLastPoint(start: null, end:  null);
       expect(opt.isNone(), isTrue);
       expect(repo.fetchLastPointCallCount, 1);
     });
     test('null stub → None, callCount tracked', () async {
       repo.stubLastPoint = null;
-      final opt = await repo.fetchLastPoint();
+      final opt = await repo.fetchLastPoint(start: null, end: null);
       expect(opt.isNone(), isTrue);
       expect(repo.fetchLastPointCallCount, 1);
     });

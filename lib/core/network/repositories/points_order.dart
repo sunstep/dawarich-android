@@ -1,0 +1,5 @@
+
+enum PointsOrder {
+  ascending,
+  descending,
+}

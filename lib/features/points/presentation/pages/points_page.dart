@@ -463,7 +463,7 @@ class _PointsList extends StatelessWidget {
             title: Text(fmt.format(
                 DateTime.fromMillisecondsSinceEpoch(p.timestamp! * 1000))),
             subtitle: Text(
-                '${p.geodata?.geometry?.coordinates?[0].toString()}, ${p.geodata?.geometry?.coordinates?[1].toString()}'),
+                '${p.longitude}, ${p.latitude.toString()}'),
             controlAffinity: ListTileControlAffinity.leading,
           ),
         );

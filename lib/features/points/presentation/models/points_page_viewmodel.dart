@@ -187,37 +187,25 @@ final class PointsPageViewModel with ChangeNotifier {
 
   void navigateFirst() {
     if (currentPage > 0) {
-      setLoading(true);
       setCurrentPage(1);
-
-      setLoading(false);
     }
   }
 
   void navigateBack() {
     if (currentPage > 1) {
-      setLoading(true);
-      setCurrentPage(_currentPage--);
-
-      setLoading(false);
+      setCurrentPage(--_currentPage);
     }
   }
 
   void navigateNext() {
     if (currentPage < totalPages) {
-      setLoading(true);
-      setCurrentPage(_currentPage++);
-
-      setLoading(false);
+      setCurrentPage(++_currentPage);
     }
   }
 
   void navigateLast() {
     if (currentPage < totalPages) {
-      setLoading(true);
       setCurrentPage(totalPages);
-
-      setLoading(false);
     }
   }
 

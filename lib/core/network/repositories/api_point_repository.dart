@@ -1,4 +1,5 @@
 import 'package:dawarich/core/network/dio_client.dart';
+import 'package:dawarich/core/network/repositories/points_order.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
@@ -41,6 +42,7 @@ final class ApiPointRepository implements IApiPointRepository {
     required DateTime startDate,
     required DateTime endDate,
     required int perPage,
+    PointsOrder order = PointsOrder.descending
   }) async {
     final startIso = _formatStartDate(startDate);
     final endIso   = _formatEndDate(endDate);
@@ -52,6 +54,7 @@ final class ApiPointRepository implements IApiPointRepository {
           'start_at': startIso,
           'end_at':   endIso,
           'per_page': perPage,
+          'order':    order == PointsOrder.ascending ? 'asc' : 'desc',
         },
       );
 
@@ -75,6 +78,7 @@ final class ApiPointRepository implements IApiPointRepository {
                 'end_at':   endIso,
                 'per_page': perPage,
                 'page':     pageNumber,
+                'order':    order == PointsOrder.ascending ? 'asc' : 'desc',
               },
             );
 
@@ -104,6 +108,7 @@ final class ApiPointRepository implements IApiPointRepository {
     required DateTime startDate,
     required DateTime endDate,
     required int perPage,
+    PointsOrder order = PointsOrder.descending
   }) async {
     final startIso = _formatStartDate(startDate);
     final endIso   = _formatEndDate(endDate);
@@ -115,7 +120,8 @@ final class ApiPointRepository implements IApiPointRepository {
           'start_at': startIso,
           'end_at':   endIso,
           'per_page': perPage,
-          'slim':     true
+          'slim':     true,
+          'order':    order == PointsOrder.ascending ? 'asc' : 'desc',
         },
       );
 
@@ -133,6 +139,7 @@ final class ApiPointRepository implements IApiPointRepository {
         startIso: startIso,
         endIso: endIso,
         perPage: perPage,
+        order: order,
       );
 
       return Some(allPoints);
@@ -147,6 +154,7 @@ final class ApiPointRepository implements IApiPointRepository {
     required String startIso,
     required String endIso,
     required int perPage,
+    PointsOrder order = PointsOrder.descending,
     int maxConcurrent = 5,
   }) async {
     final results = <SlimApiPointDTO>[];
@@ -164,6 +172,7 @@ final class ApiPointRepository implements IApiPointRepository {
             'per_page': perPage,
             'page': pageNumber,
             'slim': true,
+            'order': order == PointsOrder.ascending ? 'asc' : 'desc',
           },
         )
             .timeout(const Duration(seconds: 15));
@@ -222,17 +231,24 @@ final class ApiPointRepository implements IApiPointRepository {
   }
 
   @override
-  Future<Option<ApiPointDTO>> fetchLastPoint() async {
+  Future<Option<ApiPointDTO>> fetchLastPoint({DateTime? start, DateTime? end}) async {
 
     try {
 
+      final qp = {
+        'per_page': 1,
+        'page':     1,
+        'order':    'desc',
+      };
+
+      if (start != null && end != null) {
+        qp['start_at'] = _formatStartDate(start);
+        qp['end_at']   = _formatEndDate(end);
+      }
+
       final resp = await _apiClient.get<List<dynamic>>(
         '/api/v1/points',
-        queryParameters: {
-          'per_page': 1,
-          'page':     1,
-          'order':    'desc',
-        },
+        queryParameters: qp,
       );
 
       final data = resp.data;
@@ -246,6 +262,47 @@ final class ApiPointRepository implements IApiPointRepository {
       debugPrint('Failed to fetch last point: ${e.message}');
       return const None();
     }
+  }
+
+  @override
+  Future<Option<SlimApiPointDTO>> fetchLastSlimPoint({DateTime? start, DateTime? end}) async {
+    try {
+
+      final qp = {
+        'per_page': 1,
+        'page':     1,
+        'slim':     true,
+        'order':    'desc',
+      };
+
+      if (start != null && end != null) {
+        qp['start_at'] = _formatStartDate(start);
+        qp['end_at']   = _formatEndDate(end);
+      }
+
+      final resp = await _apiClient.get<List<dynamic>>(
+        '/api/v1/points',
+        queryParameters: qp,
+      );
+
+      final data = resp.data;
+      if (data == null || data.isEmpty) {
+        return const None();
+      }
+
+      final dto = SlimApiPointDTO.fromJson(data.first as Map<String, dynamic>);
+      return Some(dto);
+    } on DioException catch (e) {
+      debugPrint('Failed to fetch last slim point: ${e.message}');
+      return const None();
+    }
+  }
+
+  @override
+  Future<Option<SlimApiPointDTO>> fetchLastSlimPointForDay(DateTime day) {
+    final startLocal = DateTime(day.year, day.month, day.day);
+    final endLocal   = startLocal.add(const Duration(days: 1)); // [start, nextStart)
+    return fetchLastSlimPoint(start: startLocal, end: endLocal);
   }
 
   @override

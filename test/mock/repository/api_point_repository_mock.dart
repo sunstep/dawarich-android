@@ -1,3 +1,4 @@
+import 'package:dawarich/core/network/repositories/points_order.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
 import 'package:dawarich/features/timeline/data_contracts/data_transfer_objects/slim_api_point_dto.dart';
@@ -58,7 +59,8 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   Future<Option<List<ApiPointDTO>>> getPoints({
     required DateTime startDate,
     required DateTime endDate,
-    required int perPage}) async {
+    required int perPage,
+    PointsOrder order = PointsOrder.descending}) async {
     fetchAllPointsCallCount++;
     lastFetchPointsStart = startDate;
     lastFetchPointsEnd = endDate;
@@ -70,7 +72,10 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
 
   @override
   Future<Option<List<SlimApiPointDTO>>> getSlimPoints({
-    required DateTime startDate, required DateTime endDate, required int perPage}) async {
+    required DateTime startDate,
+    required DateTime endDate,
+    required int perPage,
+    PointsOrder order = PointsOrder.descending}) async {
     fetchAllSlimCallCount++;
     lastFetchSlimStart = startDate;
     lastFetchSlimEnd = endDate;
@@ -93,10 +98,22 @@ final class ApiPointRepositoryMock implements IApiPointRepository {
   }
 
   @override
-  Future<Option<ApiPointDTO>> fetchLastPoint() async {
+  Future<Option<ApiPointDTO>> fetchLastPoint({DateTime? start, DateTime? end}) async {
     fetchLastPointCallCount++;
     if (shouldFetchLastFail || stubLastPoint == null) return const None();
     return Some(stubLastPoint!);
+  }
+
+  @override
+  Future<Option<SlimApiPointDTO>> fetchLastSlimPoint({DateTime? start, DateTime? end}) async {
+    // Not implemented in this mock
+    return const None();
+  }
+
+  @override
+  Future<Option<SlimApiPointDTO>> fetchLastSlimPointForDay(DateTime day) async {
+    // Not implemented in this mock
+    return const None();
   }
 
   @override

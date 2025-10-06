@@ -8,9 +8,7 @@ import 'package:dawarich/features/timeline/domain/models/day_map_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -188,10 +186,10 @@ final class TimelineViewModel extends ChangeNotifier {
 
   void _stitchLocalPoints() {
 
-    final lastApiPoint = _points.last;
-
     if (_points.isNotEmpty && _localPoints.isNotEmpty) {
       final firstLocalPoint = _localPoints.first;
+      final lastApiPoint = _points.last;
+
       PointPair pair = PointPair(lastApiPoint, firstLocalPoint);
       final distance = pair.calculateDistance();
 

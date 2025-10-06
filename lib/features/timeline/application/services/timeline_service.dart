@@ -32,7 +32,7 @@ class MapService {
       List<SlimApiPoint> slimPoints = pointDtos
           .map((dto) => dto.toDomain())
           .toList();
-      final lastDayTimestamp = slimPoints.last.timestamp;
+      final lastDayTimestamp = slimPoints.lastOrNull?.timestamp;
       final List<LatLng> dayPoints = processPoints(slimPoints);
 
       return DayMapData(

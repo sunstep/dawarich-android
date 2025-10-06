@@ -189,9 +189,9 @@ final class TimelineViewModel extends ChangeNotifier {
   void _stitchLocalPoints() {
 
     final lastApiPoint = _points.last;
-    final firstLocalPoint = _localPoints.first;
 
     if (_points.isNotEmpty && _localPoints.isNotEmpty) {
+      final firstLocalPoint = _localPoints.first;
       PointPair pair = PointPair(lastApiPoint, firstLocalPoint);
       final distance = pair.calculateDistance();
 

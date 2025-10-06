@@ -33,7 +33,7 @@ class MapService {
           .map((dto) => dto.toDomain())
           .toList();
       final lastDayTimestamp = slimPoints.last.timestamp;
-      final List<LatLng> dayPoints = prepPoints(slimPoints);
+      final List<LatLng> dayPoints = processPoints(slimPoints);
 
       return DayMapData(
         points: dayPoints,
@@ -45,7 +45,7 @@ class MapService {
   }
 
 
-  List<LatLng> prepPoints(List<SlimApiPoint> points) {
+  List<LatLng> processPoints(List<SlimApiPoint> points) {
     final List<SlimApiPoint> sortedPoints = sortPoints(points);
     final List<SlimApiPoint> mergedPoints = mergePoints(sortedPoints);
     return parsePoints(mergedPoints);

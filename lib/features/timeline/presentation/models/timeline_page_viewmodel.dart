@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/core/domain/models/point/point_pair.dart';
 import 'package:dawarich/features/timeline/domain/models/day_map_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -29,6 +31,7 @@ final class TimelineViewModel extends ChangeNotifier {
   bool _mapReady = false;
   LatLng? _lastCameraTarget;
   final double _epsilon = 1e-7;
+  final double _epsilonMeters = 5.0;
 
   DateTime _selectedDate = DateTime.now();
   DateTime get selectedDate => _selectedDate;
@@ -57,7 +60,7 @@ final class TimelineViewModel extends ChangeNotifier {
   void setSelectedDate(DateTime selectedDate) {
     _selectedDate = selectedDate;
     notifyListeners();
-    _applyLocalPointsForSelectedDay();
+    _rebuildLocalPoints();
   }
 
   void setPoints(List<LatLng> points) {
@@ -152,48 +155,50 @@ final class TimelineViewModel extends ChangeNotifier {
     _localPointSubscription = batchStream.listen((points) {
 
       _lastLocalBatch = points;
-      _applyLocalPointsForSelectedDay();
+      _rebuildLocalPoints();
     });
   }
 
-  void _applyLocalPointsForSelectedDay() {
-    final DateTime d = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-
-    final List<SlimApiPoint> slimForDay = _lastLocalBatch.where((p) {
-      final ts = p.properties.timestamp;
-      final day = DateTime(ts.year, ts.month, ts.day);
-
-      return day == d;
-    }).map((p) => SlimApiPoint(
-      latitude: p.geometry.latitude.toString(),
-      longitude: p.geometry.longitude.toString(),
-      timestamp: p.properties.timestamp.millisecondsSinceEpoch,
-    )).toList();
-
-    final List<LatLng> localPointList = _mapService.prepPoints(slimForDay);
-    setLocalPoints(localPointList);
-  }
-
-  void _filterLocalPointsForSelectedDay({int? cutoffMs}) {
+  void _rebuildLocalPoints({int? cutoffMs}) {
     final d = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
 
-    final slimForDay = _lastLocalBatch.where((p) {
+    final slim = _lastLocalBatch.where((p) {
       final ts = p.properties.timestamp;
       final day = DateTime(ts.year, ts.month, ts.day);
-      if (day != d) {
-        return false;
-      }
+      if (day != d) return false;
+
       if (cutoffMs != null && ts.millisecondsSinceEpoch <= cutoffMs) {
         return false;
       }
       return true;
     }).map((p) => SlimApiPoint(
-      latitude: p.geometry.latitude.toString(),
+      latitude:  p.geometry.latitude.toString(),
       longitude: p.geometry.longitude.toString(),
-      timestamp: p.properties.timestamp.millisecondsSinceEpoch,
+      timestamp: p.properties.timestamp.millisecondsSinceEpoch ~/ 1000,
     )).toList();
 
-    setLocalPoints(_mapService.prepPoints(slimForDay));
+    slim.sort((a, b) => a.timestamp!.compareTo(b.timestamp!));
+
+    final List<LatLng> local = _mapService.processPoints(slim);
+
+    setLocalPoints(local);
+    _stitchLocalPoints();
+  }
+
+  void _stitchLocalPoints() {
+
+    final lastApiPoint = _points.last;
+    final firstLocalPoint = _localPoints.first;
+
+    if (_points.isNotEmpty && _localPoints.isNotEmpty) {
+      PointPair pair = PointPair(lastApiPoint, firstLocalPoint);
+      final distance = pair.calculateDistance();
+
+      if (distance > _epsilonMeters) {
+        _localPoints.insert(0, lastApiPoint);
+      }
+    }
+
   }
 
   @override
@@ -216,7 +221,7 @@ final class TimelineViewModel extends ChangeNotifier {
   Future<void> getAndSetPoints() async {
     final DayMapData day = await _mapService.loadMap(selectedDate);
     setPoints(day.points);
-    _filterLocalPointsForSelectedDay(cutoffMs: day.lastTimestampMs);
+    _rebuildLocalPoints(cutoffMs: day.lastTimestampMs);
 
     if (day.points.isNotEmpty) {
       _animateTo(day.points.first);

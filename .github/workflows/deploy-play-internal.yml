@@ -17,12 +17,13 @@ jobs:
 
       - name: Read pubspec version
         id: ver
+        shell: bash
         run: |
           VLINE=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
-          APP_VERSION="${VLINE%%+*}"         # before +
-          BUILD_NUMBER="${VLINE##*+}"        # after +
-          echo "app_version=$APP_VERSION"   >> $GITHUB_OUTPUT
-          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          APP_VERSION="${VLINE%%+*}"
+          BUILD_NUMBER="${VLINE##*+}"
+          echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java 21 (for Gradle/Android)
         uses: actions/setup-java@v4
@@ -39,6 +40,10 @@ jobs:
 
       - name: Install deps
         run: flutter pub get
+
+      - name: Run build_runner
+        shell: bash
+        run: dart run build_runner build --delete-conflicting-outputs
 
       # --- Android signing material
       - name: Decode keystore
@@ -59,28 +64,6 @@ jobs:
       - name: Build appbundle (release)
         run: flutter build appbundle --release
 
-      - name: Read Android release notes (en-US)
-        id: notes
-        shell: bash
-        run: |
-          file=""
-          if [ -f release-notes/android/en-US.txt ]; then
-            file=release-notes/android/en-US.txt
-          elif [ -f release-notes/common.txt ]; then
-            file=release-notes/common.txt
-          else
-            file=/dev/null
-          fi
-
-          # Optional: enforce Play's ~500 char limit
-          NOTES="$(head -c 500 "$file")"
-
-          {
-            echo "text<<EOF"
-            echo "$NOTES"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Upload to Play (internal track)
         uses: r0adkll/upload-google-play@v1
         with:
@@ -91,5 +74,3 @@ jobs:
           whatsNewDirectory: release-notes/android/
           track: internal
           status: draft   # draft|inProgress|completed
-          changesNotSentForReview: 'false'
-          # userFraction: 0.1  # only for inProgress staged rollout

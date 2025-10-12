@@ -1,0 +1,2 @@
+Beta 0.10.0 (2000028)
+* Reduced battery usage when using the tracker along with other apps that use the GPS (such as navigation).

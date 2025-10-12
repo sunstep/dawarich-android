@@ -1,0 +1,71 @@
+name: Deploy to Play Internal
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ "pubspec.yaml" ]
+  workflow_dispatch:
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Read pubspec version
+        id: ver
+        run: |
+          VLINE=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
+          APP_VERSION="${VLINE%%+*}"         # before +
+          BUILD_NUMBER="${VLINE##*+}"        # after +
+          echo "app_version=$APP_VERSION"   >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Setup Java 21 (for Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.35.5
+
+      - name: Install deps
+        run: flutter pub get
+
+      # --- Android signing material
+      - name: Decode keystore
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/release.keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=release.keystore
+          EOF
+
+      - name: Build appbundle (release)
+        run: flutter build appbundle --release
+
+      - name: Upload to Play (internal track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ secrets.PACKAGE_NAME }}
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft   # draft|inProgress|completed
+          changesNotSentForReview: 'false'
+          # userFraction: 0.1  # only for inProgress staged rollout

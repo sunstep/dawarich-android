@@ -4,7 +4,7 @@ import 'package:dawarich/core/constants/notification.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
-import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
+import 'package:dawarich/features/tracking/application/services/point_automation/point_automation_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:flutter/cupertino.dart';

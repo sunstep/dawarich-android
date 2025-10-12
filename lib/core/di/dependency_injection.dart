@@ -17,7 +17,7 @@ import 'package:dawarich/features/timeline/application/services/timeline_service
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/features/migration/application/services/migration_service.dart';
-import 'package:dawarich/features/tracking/application/services/point_automation_service.dart';
+import 'package:dawarich/features/tracking/application/services/point_automation/point_automation_service.dart';
 import 'package:dawarich/features/stats/application/services/stats_service.dart';
 import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
 import 'package:dawarich/features/tracking/application/services/track_service.dart';

@@ -348,7 +348,14 @@ final class LocalPointService {
         await _hardwareInterfaces.getCachedPosition();
 
     if (posResult case None()) {
+      if (kDebugMode) {
+        debugPrint("[DEBUG] No cached position was available");
+      }
       return const Err("[DEBUG] NO cached point was available");
+    }
+
+    if (kDebugMode) {
+      debugPrint("[DEBUG] Cached position found, creating point from it.");
     }
 
     final Position position = posResult.unwrap();

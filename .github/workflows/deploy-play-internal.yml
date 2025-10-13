@@ -47,14 +47,14 @@ jobs:
 
       # --- Android signing material
       - name: Decode keystore
-        run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/release.keystore
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
+      # Write properties INSIDE the app module
       - name: Create keystore.properties
         run: |
-          cat > android/keystore.properties <<EOF
+          cat > android/app/keystore.properties <<'EOF'
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}

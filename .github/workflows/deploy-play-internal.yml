@@ -28,13 +28,6 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: ${{ env.FLUTTER_CHANNEL }}
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
       - name: Setup Java (Gradle/Android)
         uses: actions/setup-java@v4
         with:
@@ -44,6 +37,27 @@ jobs:
 
       - name: Gradle wrapper validation
         uses: gradle/actions/wrapper-validation@v3
+
+      - name: Bootstrap Gradle wrapper script if missing
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ ! -f "$GITHUB_WORKSPACE/android/gradlew" ]; then
+            # read the Gradle version from wrapper properties
+            GRADLE_VERSION=$(grep distributionUrl "$GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.properties" \
+              | sed -E 's@.*/gradle-([0-9.]+)-.*@\1@')
+            echo "Bootstrapping gradle wrapper using Gradle $GRADLE_VERSION"
+
+            # download a temporary Gradle distro and run the wrapper task
+            curl -sSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o gradle.zip
+            unzip -q gradle.zip
+            ./gradle-*/bin/gradle -p "$GITHUB_WORKSPACE/android" wrapper
+
+            # clean up and ensure executable bit
+            rm -rf gradle.zip gradle-*/
+            chmod +x "$GITHUB_WORKSPACE/android/gradlew"
+          fi
+          ls -la "$GITHUB_WORKSPACE/android/gradlew"
 
       - name: Verify Gradle wrapper (absolute path)
         shell: bash
@@ -96,6 +110,14 @@ jobs:
             "build-tools;35.0.0" \
             "ndk;${NDK_VERSION}" \
             "cmake;3.22.1"
+          
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
       - name: Flutter pub get
         run: flutter pub get

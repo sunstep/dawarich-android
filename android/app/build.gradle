@@ -17,7 +17,6 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 android {
     namespace = "app.dawarich.android"
     compileSdk = 36
-    ndkVersion "27.2.12479018"
 
     compileOptions {
         coreLibraryDesugaringEnabled true

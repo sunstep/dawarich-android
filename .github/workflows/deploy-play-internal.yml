@@ -183,4 +183,4 @@ jobs:
           releaseFiles: dist/*.aab
           whatsNewDirectory: distribution/whatsnew
           track: internal
-          status: draft
+          status: completed

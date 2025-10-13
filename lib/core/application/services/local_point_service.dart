@@ -251,7 +251,7 @@ final class LocalPointService {
   }
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
-  Future<Result<LocalPoint, String>> createPointFromGps({bool persist = true}) async {
+  Future<Result<LocalPoint, String>> createPointFromGps() async {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
     final Future<bool> isTrackingAutomaticallyF = _trackerPreferencesService.getAutomaticTrackingSetting();
@@ -320,11 +320,9 @@ final class LocalPointService {
 
     Result<LocalPoint, String> finalResult = pointResult;
 
-    if (persist) {
 
-      final point = pointResult.unwrap();
-      await autoStoreAndUpload(point);
-    }
+    final point = pointResult.unwrap();
+    await autoStoreAndUpload(point);
 
     return finalResult;
   }
@@ -341,7 +339,7 @@ final class LocalPointService {
 
 
   /// Creates a full point, position data is retrieved from cache.
-  Future<Result<LocalPoint, String>> createPointFromCache({bool persist = true}) async {
+  Future<Result<LocalPoint, String>> createPointFromCache() async {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
     final Option<Position> posResult =
@@ -366,11 +364,8 @@ final class LocalPointService {
       return Err("[DEBUG] Cached point was rejected: $error");
     }
 
-    if (!persist) {
-      return pointResult;
-    }
-
-    return await storePoint(pointResult.unwrap());
+    await autoStoreAndUpload(pointResult.unwrap());
+    return pointResult;
   }
 
   Future<AdditionalPointData> _getAdditionalPointData(int userId) async {

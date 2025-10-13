@@ -136,6 +136,9 @@ jobs:
             -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" >/dev/null
 
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
       - name: Gradle signingReport (early failure)
         shell: bash
         run: |

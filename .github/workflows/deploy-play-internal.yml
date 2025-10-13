@@ -101,13 +101,14 @@ jobs:
         run: |
           set -euo pipefail
           test -s android/dawarich-upload.jks
+          # Open store (PKCS12 uses the store password)
           keytool -list -keystore android/dawarich-upload.jks \
             -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' >/dev/null
+          # Validate alias (no -keypass for PKCS12)
           keytool -list -v -keystore android/dawarich-upload.jks \
             -alias '${{ secrets.ANDROID_KEY_ALIAS }}' \
-            -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' \
-            -keypass '${{ secrets.ANDROID_KEY_PASSWORD }}' >/dev/null
-          echo "Keystore + alias + passwords are valid."
+            -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' >/dev/null
+          echo "Keystore + alias validated."
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew

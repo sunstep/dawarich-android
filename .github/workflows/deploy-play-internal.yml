@@ -38,6 +38,9 @@ jobs:
       - name: Gradle wrapper validation
         uses: gradle/actions/wrapper-validation@v3
 
+      - name: Write android/local.properties (sdk.dir)
+        run: printf "sdk.dir=%s\n" "$ANDROID_SDK_ROOT" > android/local.properties
+
       - name: Bootstrap Gradle wrapper script if missing
         shell: bash
         run: |
@@ -144,9 +147,6 @@ jobs:
             -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
             -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" >/dev/null
-
-      - name: Write android/local.properties (sdk.dir)
-        run: printf "sdk.dir=%s\n" "$ANDROID_SDK_ROOT" > android/local.properties
 
       - name: Gradle signingReport (early failure)
         shell: bash

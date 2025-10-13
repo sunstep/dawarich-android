@@ -55,15 +55,33 @@ jobs:
 
       - name: Install Android SDK + NDK (idempotent)
         shell: bash
+        env:
+          SDK_URL: https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         run: |
           set -euxo pipefail
           mkdir -p "$ANDROID_SDK_ROOT"
+
+          # 1) Install cmdline-tools if missing (so we get sdkmanager)
+          if [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            tmp=$(mktemp -d)
+            curl -sSL "$SDK_URL" -o "$tmp/clt.zip"
+            mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+            unzip -q "$tmp/clt.zip" -d "$tmp"
+            # zip extracts to 'cmdline-tools'; move it under 'latest'
+            mv "$tmp/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+            rm -rf "$tmp"
+          fi
+
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+
+          # 2) Accept licenses (non-fatal if already accepted)
           yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+
+          # 3) Install required packages (idempotent)
           sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
-            "cmdline-tools;latest" \
             "ndk;${NDK_VERSION}" \
             "cmake;3.22.1"
 

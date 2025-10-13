@@ -174,6 +174,6 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME }}
           releaseName: ${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}
           releaseFiles: dist/*.aab
-          whatsNewDirectory: release-notes/android/
+          whatsNewDirectory: distribution/whatsnew
           track: internal
           status: draft

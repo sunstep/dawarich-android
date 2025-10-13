@@ -38,8 +38,16 @@ jobs:
       - name: Gradle wrapper validation
         uses: gradle/actions/wrapper-validation@v3
 
-      - name: Write android/local.properties (sdk.dir)
-        run: printf "sdk.dir=%s\n" "$ANDROID_SDK_ROOT" > android/local.properties
+      - name: Write android/local.properties (sdk.dir + flutter.sdk)
+        shell: bash
+        run: |
+          set -e
+          # Resolve Flutter SDK path from the action (FLUTTER_HOME) or from the flutter binary
+          FLUTTER_SDK="${FLUTTER_HOME:-$(dirname "$(dirname "$(readlink -f "$(which flutter)")")")}"
+          {
+            echo "sdk.dir=${ANDROID_SDK_ROOT}"
+            echo "flutter.sdk=${FLUTTER_SDK}"
+          } > android/local.properties
 
       - name: Bootstrap Gradle wrapper script if missing
         shell: bash

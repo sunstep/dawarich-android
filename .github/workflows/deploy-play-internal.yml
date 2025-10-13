@@ -3,18 +3,135 @@ name: Deploy to Play Internal
 on:
   push:
     branches: [ main ]
-    paths: [ "pubspec.yaml" ]
+    paths:
+      - "pubspec.yaml"
+      - "lib/**"
+      - "android/**"
+      - ".github/workflows/**"
   workflow_dispatch:
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
+    env:
+      FLUTTER_CHANNEL: stable
+      FLUTTER_VERSION: "3.35.5"
+      JAVA_VERSION: "21"
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+      NDK_VERSION: "27.2.12479018"
 
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
 
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Setup Java (Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Gradle wrapper validation
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Restore Android SDK cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}
+          key: sdk-${{ runner.os }}-${{ env.NDK_VERSION }}
+          restore-keys: |
+            sdk-${{ runner.os }}-
+
+      - name: Install Android SDK + NDK (idempotent)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "$ANDROID_SDK_ROOT"
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "cmdline-tools;latest" \
+            "ndk;${NDK_VERSION}" \
+            "cmake;3.22.1"
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # --- Signing: write files WHERE Gradle expects them
+      # Your app/build.gradle uses: rootProject.file("keystore.properties")
+      - name: Decode keystore
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > my-release-key.jks
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Create keystore.properties at repo root
+        run: |
+          cat > keystore.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=my-release-key.jks
+          EOF
+
+      - name: Validate keystore passwords & alias
+        run: |
+          keytool -list -v -keystore my-release-key.jks \
+            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" >/dev/null
+
+      - name: Gradle signingReport (early failure if misconfigured)
+        run: ./gradlew :app:signingReport
+
+      # --- Codegen (Dawarich uses build_runner)
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Configure Gradle performance flags
+        run: |
+          cat >> android/gradle.properties <<'EOF'
+          org.gradle.caching=true
+          org.gradle.configuration-cache=true
+          org.gradle.parallel=true
+          org.gradle.daemon=true
+          android.enableR8.fullMode=false
+          EOF
+
+      - name: Build Android AppBundle (release)
+        run: ./gradlew :app:bundleRelease --build-cache --stacktrace
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-bundle
+          path: app/build/outputs/bundle/release/*.aab
+          retention-days: 14
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: app-bundle
+          path: dist
+
+      # Optional: read version from pubspec to label the release (nice but not required)
       - name: Read pubspec version
         id: ver
         shell: bash
@@ -25,52 +142,13 @@ jobs:
           echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Java 21 (for Gradle/Android)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: gradle
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.35.5
-
-      - name: Install deps
-        run: flutter pub get
-
-      - name: Run build_runner
-        shell: bash
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      # --- Android signing material
-      - name: Decode keystore
-        run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/release.keystore
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-
-      - name: Create keystore.properties
-        run: |
-          cat > android/keystore.properties <<EOF
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=release.keystore
-          EOF
-
-      - name: Build appbundle (release)
-        run: flutter build appbundle --release
-
       - name: Upload to Play (internal track)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: ${{ secrets.PACKAGE_NAME }}
+          packageName: ${{ secrets.PACKAGE_NAME }}     # or hardcode: app.dawarich.android
           releaseName: ${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          releaseFiles: dist/*.aab                      # <-- use the downloaded artifact
           whatsNewDirectory: release-notes/android/
           track: internal
-          status: draft   # draft|inProgress|completed
+          status: draft

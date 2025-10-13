@@ -96,12 +96,18 @@ jobs:
           storeFile=../dawarich-upload.jks
           EOF
 
-      - name: Validate keystore passwords & alias
+      - name: Verify keystore & alias (fail-fast)
+        shell: bash
         run: |
+          set -euo pipefail
+          test -s android/dawarich-upload.jks
+          keytool -list -keystore android/dawarich-upload.jks \
+            -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' >/dev/null
           keytool -list -v -keystore android/dawarich-upload.jks \
-            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" >/dev/null
+            -alias '${{ secrets.ANDROID_KEY_ALIAS }}' \
+            -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' \
+            -keypass '${{ secrets.ANDROID_KEY_PASSWORD }}' >/dev/null
+          echo "Keystore + alias + passwords are valid."
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew

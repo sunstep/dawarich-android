@@ -65,10 +65,15 @@ final class PointAutomationService with ChangeNotifier {
           }
           return;
         }
+
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Creating new GPS point...");
+        }
+
         _writeBusy = true;
 
         try {
-          final res = await _localPointService.createPointFromCache(persist: true);
+          final res = await _localPointService.createPointFromCache();
           if (res is Ok<LocalPoint, String>) {
             _gpsTicker.snooze();
             await _notify();
@@ -124,10 +129,14 @@ final class PointAutomationService with ChangeNotifier {
       return;
     }
 
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Creating new GPS point...");
+    }
+
     _writeBusy = true;
 
     try {
-      final result = await _localPointService.createPointFromGps(persist: true);
+      final result = await _localPointService.createPointFromGps();
 
       if (result case Ok(value: final LocalPoint point)) {
        await _notify();

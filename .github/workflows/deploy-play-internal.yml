@@ -21,8 +21,6 @@ jobs:
       FLUTTER_CHANNEL: stable
       FLUTTER_VERSION: "3.35.5"
       JAVA_VERSION: "21"
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
-      NDK_VERSION: "27.2.12479018"
 
     steps:
       - uses: actions/checkout@v4
@@ -43,104 +41,108 @@ jobs:
           cache: gradle
 
       - name: Gradle wrapper validation
-        uses: gradle/wrapper-validation-action@v2
+        uses: gradle/actions/wrapper-validation@v3
 
-      - name: Restore Android SDK cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.ANDROID_SDK_ROOT }}
-          key: sdk-${{ runner.os }}-${{ env.NDK_VERSION }}
-          restore-keys: |
-            sdk-${{ runner.os }}-
-
-      - name: Install Android SDK + NDK (idempotent)
+      - name: Write android/local.properties (sdk.dir + flutter.sdk)
         shell: bash
-        env:
-          SDK_URL: https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         run: |
-          set -euxo pipefail
-          mkdir -p "$ANDROID_SDK_ROOT"
+          set -e
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          FLUTTER_SDK="${FLUTTER_HOME:-$(dirname "$(dirname "$(readlink -f "$(which flutter)")")")}"
+          {
+            echo "sdk.dir=${SDK_DIR}"
+            echo "flutter.sdk=${FLUTTER_SDK}"
+          } > android/local.properties
+          cat android/local.properties
 
-          # 1) Install cmdline-tools if missing (so we get sdkmanager)
-          if [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
-            tmp=$(mktemp -d)
-            curl -sSL "$SDK_URL" -o "$tmp/clt.zip"
-            mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
-            unzip -q "$tmp/clt.zip" -d "$tmp"
-            # zip extracts to 'cmdline-tools'; move it under 'latest'
-            mv "$tmp/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
-            rm -rf "$tmp"
+      - name: Use preinstalled NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+
+          # prefer runner env vars; else pick newest under $SDK_DIR/ndk
+          NDK_DIR="${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-${ANDROID_NDK:-${ANDROID_NDK_LATEST_HOME:-}}}}"
+          if [ -z "${NDK_DIR}" ]; then
+            NDK_DIR=$(ls -d "${SDK_DIR}/ndk/"* 2>/dev/null | sort -V | tail -1 || true)
+          fi
+          [ -n "${NDK_DIR}" ] && [ -d "${NDK_DIR}" ] || { echo "::error::No preinstalled NDK found"; exit 1; }
+
+          NDK_VER="$(basename "$NDK_DIR")"
+          echo "Using preinstalled NDK ${NDK_VER} at ${NDK_DIR}"
+
+          GP=android/gradle.properties
+
+          # ensure file exists
+          touch "${GP}"
+
+          # replace if present, else append on a NEW line
+          if grep -q '^android\.ndkVersion=' "${GP}"; then
+            sed -i "s/^android\.ndkVersion=.*/android.ndkVersion=${NDK_VER}/" "${GP}"
+          else
+            printf '\nandroid.ndkVersion=%s\n' "${NDK_VER}" >> "${GP}"
           fi
 
-          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
-
-          # 2) Accept licenses (non-fatal if already accepted)
-          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
-
-          # 3) Install required packages (idempotent)
-          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0" \
-            "ndk;${NDK_VERSION}" \
-            "cmake;3.22.1"
+          # show the tail for sanity
+          tail -n +1 "${GP}"
 
       - name: Flutter pub get
         run: flutter pub get
 
       # --- Signing: write files WHERE Gradle expects them
       - name: Decode keystore
-        run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/dawarich-upload.jks
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/dawarich-upload.jks
 
-      - name: Create keystore.properties at ANDROID root
+      - name: Create keystore.properties
         run: |
-          cat > android/keystore.properties <<EOF
+          cat > android/keystore.properties <<'EOF'
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=dawarich-upload.jks
+          storeFile=../dawarich-upload.jks
           EOF
 
-      - name: Validate keystore passwords & alias
+      - name: Verify keystore & alias (fail-fast)
+        shell: bash
         run: |
+          set -euo pipefail
+          test -s android/dawarich-upload.jks
+          # Open store (PKCS12 uses the store password)
+          keytool -list -keystore android/dawarich-upload.jks \
+            -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' >/dev/null
+          # Validate alias (no -keypass for PKCS12)
           keytool -list -v -keystore android/dawarich-upload.jks \
-            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" >/dev/null
+            -alias '${{ secrets.ANDROID_KEY_ALIAS }}' \
+            -storepass '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}' >/dev/null
+          echo "Keystore + alias validated."
 
-      - name: Write android/local.properties (sdk.dir)
-        run: printf "sdk.dir=%s\n" "$ANDROID_SDK_ROOT" > android/local.properties
-
-      - name: Gradle signingReport (early failure)
-        working-directory: android
-        run: ./gradlew signingReport
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
       # --- Codegen (Dawarich uses build_runner)
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Configure Gradle performance flags
+      - name: Configure Gradle performance flags (safe)
         run: |
+          sed -i '/^org\.gradle\.configuration-cache/d' android/gradle.properties || true
           cat >> android/gradle.properties <<'EOF'
           org.gradle.caching=true
-          org.gradle.configuration-cache=true
           org.gradle.parallel=true
           org.gradle.daemon=true
-          android.enableR8.fullMode=false
+          org.gradle.configuration-cache=false
           EOF
 
       - name: Build Android AppBundle (release)
-        working-directory: android
-        run: ./gradlew bundleRelease --build-cache --stacktrace
+        run: flutter build appbundle --release
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: app-bundle
-          path: android/app/build/outputs/bundle/release/*.aab
+          path: build/app/outputs/bundle/release/*.aab
           retention-days: 14
 
   upload:
@@ -172,6 +174,6 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME }}
           releaseName: ${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}
           releaseFiles: dist/*.aab
-          whatsNewDirectory: release-notes/android/
+          whatsNewDirectory: distribution/whatsnew
           track: internal
           status: draft

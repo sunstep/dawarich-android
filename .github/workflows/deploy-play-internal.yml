@@ -58,25 +58,33 @@ jobs:
       - name: Use preinstalled NDK
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-      
-          # Prefer the runner's explicit NDK vars, fall back to newest under $SDK_DIR/ndk
+
+          # prefer runner env vars; else pick newest under $SDK_DIR/ndk
           NDK_DIR="${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-${ANDROID_NDK:-${ANDROID_NDK_LATEST_HOME:-}}}}"
-          if [ -z "$NDK_DIR" ]; then
-            NDK_DIR=$(ls -d "${SDK_DIR}/ndk/"* 2>/dev/null | sort -V | tail -1)
+          if [ -z "${NDK_DIR}" ]; then
+            NDK_DIR=$(ls -d "${SDK_DIR}/ndk/"* 2>/dev/null | sort -V | tail -1 || true)
           fi
-          if [ -z "$NDK_DIR" ] || [ ! -d "$NDK_DIR" ]; then
-            echo "::error::No preinstalled NDK found"; exit 1
-          fi
-      
+          [ -n "${NDK_DIR}" ] && [ -d "${NDK_DIR}" ] || { echo "::error::No preinstalled NDK found"; exit 1; }
+
           NDK_VER="$(basename "$NDK_DIR")"
           echo "Using preinstalled NDK ${NDK_VER} at ${NDK_DIR}"
-      
-          # Pin so AGP won't download another version
-          sed -i '/^android\.ndkVersion=/d' android/gradle.properties 2>/dev/null || true
-          echo "android.ndkVersion=${NDK_VER}" >> android/gradle.properties
-          tail -n +1 android/gradle.properties
+
+          GP=android/gradle.properties
+
+          # ensure file exists
+          touch "${GP}"
+
+          # replace if present, else append on a NEW line
+          if grep -q '^android\.ndkVersion=' "${GP}"; then
+            sed -i "s/^android\.ndkVersion=.*/android.ndkVersion=${NDK_VER}/" "${GP}"
+          else
+            printf '\nandroid.ndkVersion=%s\n' "${NDK_VER}" >> "${GP}"
+          fi
+
+          # show the tail for sanity
+          tail -n +1 "${GP}"
 
       - name: Flutter pub get
         run: flutter pub get

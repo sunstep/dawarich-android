@@ -49,26 +49,6 @@ jobs:
             echo "flutter.sdk=${FLUTTER_SDK}"
           } > android/local.properties
 
-      - name: Bootstrap Gradle wrapper script if missing
-        shell: bash
-        run: |
-          set -euxo pipefail
-          if [ ! -f "$GITHUB_WORKSPACE/android/gradlew" ]; then
-            # read the Gradle version from wrapper properties
-            GRADLE_VERSION=$(grep distributionUrl "$GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.properties" \
-              | sed -E 's@.*/gradle-([0-9.]+)-.*@\1@')
-            echo "Bootstrapping gradle wrapper using Gradle $GRADLE_VERSION"
-
-            # download a temporary Gradle distro and run the wrapper task
-            curl -sSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o gradle.zip
-            unzip -q gradle.zip
-            ./gradle-*/bin/gradle -p "$GITHUB_WORKSPACE/android" wrapper
-
-            # clean up and ensure executable bit
-            rm -rf gradle.zip gradle-*/
-            chmod +x "$GITHUB_WORKSPACE/android/gradlew"
-          fi
-          ls -la "$GITHUB_WORKSPACE/android/gradlew"
 
       - name: Verify Gradle wrapper (absolute path)
         shell: bash

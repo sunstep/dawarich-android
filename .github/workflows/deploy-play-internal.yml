@@ -89,31 +89,34 @@ jobs:
         run: flutter pub get
 
       # --- Signing: write files WHERE Gradle expects them
-      # Your app/build.gradle uses: rootProject.file("keystore.properties")
       - name: Decode keystore
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > my-release-key.jks
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/dawarich-upload.jks
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
-      - name: Create keystore.properties at repo root
+      - name: Create keystore.properties at ANDROID root
         run: |
-          cat > keystore.properties <<EOF
+          cat > android/keystore.properties <<EOF
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=my-release-key.jks
+          storeFile=dawarich-upload.jks
           EOF
 
       - name: Validate keystore passwords & alias
         run: |
-          keytool -list -v -keystore my-release-key.jks \
+          keytool -list -v -keystore android/dawarich-upload.jks \
             -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
             -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" >/dev/null
 
-      - name: Gradle signingReport (early failure if misconfigured)
-        run: ./gradlew :app:signingReport
+      - name: Write android/local.properties (sdk.dir)
+        run: printf "sdk.dir=%s\n" "$ANDROID_SDK_ROOT" > android/local.properties
+
+      - name: Gradle signingReport (early failure)
+        working-directory: android
+        run: ./gradlew signingReport
 
       # --- Codegen (Dawarich uses build_runner)
       - name: Run build_runner
@@ -130,19 +133,21 @@ jobs:
           EOF
 
       - name: Build Android AppBundle (release)
-        run: ./gradlew :app:bundleRelease --build-cache --stacktrace
+        working-directory: android
+        run: ./gradlew bundleRelease --build-cache --stacktrace
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: app-bundle
-          path: app/build/outputs/bundle/release/*.aab
+          path: android/app/build/outputs/bundle/release/*.aab
           retention-days: 14
 
   upload:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Download AAB
         uses: actions/download-artifact@v4
         with:

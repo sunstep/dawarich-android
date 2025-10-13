@@ -38,7 +38,11 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Gradle wrapper validation
         uses: gradle/actions/wrapper-validation@v3
@@ -155,6 +159,9 @@ jobs:
         with:
           name: app-bundle
           path: dist
+
+      - name: Ensure whatsnew directory exists
+        run: mkdir -p distribution/whatsnew
 
       # Optional: read version from pubspec to label the release (nice but not required)
       - name: Read pubspec version

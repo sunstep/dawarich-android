@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dawarich/core/database/drift/database/crypto/sqlcipher_bootstrap.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/startup/startup_service.dart';
@@ -23,6 +24,7 @@ Future<void> main() async {
   runZonedGuarded(
       () async {
         WidgetsFlutterBinding.ensureInitialized();
+        await SqlcipherBootstrap.ensure();
 
         FlutterError.onError = (FlutterErrorDetails details) {
           debugPrint('[FlutterError] ${details.exceptionAsString()}');

@@ -164,7 +164,6 @@ final class DependencyInjection {
     });
 
     getIt.registerLazySingleton<TrackingNotificationService>(() {
-      // Removed premature initialize(); now caller (main/startup) ensures it.
       return TrackingNotificationService();
     });
 

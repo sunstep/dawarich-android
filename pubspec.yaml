@@ -38,7 +38,6 @@ dependencies:
   device_region: ^1.4.0
   dio: ^5.9.0
   drift: ^2.28.2
-  drift_flutter: ^0.2.7
   fl_chart: ^1.0.0
   flutter_background_service: ^5.1.0
   flutter_local_notifications: ^19.4.2
@@ -63,6 +62,7 @@ dependencies:
   pub_semver: ^2.2.0
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
+  sqlcipher_flutter_libs: ^0.6.8
   sqlite3: ^2.9.0
   session_box: ^1.0.4
   uuid: ^4.5.1

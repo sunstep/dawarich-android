@@ -237,6 +237,10 @@ final class SQLiteClient extends _$SQLiteClient {
     }
   }
 
+  static bool _hasSqlCipher(s.Database database) {
+    return database.select('PRAGMA cipher_version;').isNotEmpty;
+  }
+
   static void _dbIsolateEntry(List<dynamic> args) {
 
     () async {
@@ -258,6 +262,7 @@ final class SQLiteClient extends _$SQLiteClient {
             File(dbPath),
             logStatements: kDebugMode,
             setup: (rawDb) {
+              assert(_hasSqlCipher(rawDb), 'SQLCipher not available: check deps & bootstrap');
               rawDb.execute('PRAGMA cipher_compatibility = 4;');
               rawDb.execute('PRAGMA key = "x\'$hexKey\'";');
               rawDb.select('PRAGMA cipher_version;');

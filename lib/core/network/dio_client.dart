@@ -1,4 +1,7 @@
+import 'package:dawarich/core/network/errors/remote_request_failure.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:option_result/option_result.dart';
 
 final class DioClient {
 
@@ -13,13 +16,59 @@ final class DioClient {
 
     assert(() {
       _dio.interceptors.add(LogInterceptor(
-        request: true,
-        requestBody: true,
-        responseBody: true,
-        error: true,
+        request: kDebugMode,
+        requestBody: kDebugMode,
+        responseBody: kDebugMode,
+        error: kDebugMode,
       ));
       return true;
     }());
+  }
+
+  Future<Result<T, RemoteRequestFailure>> safe<T>(Future<T> Function() block) async {
+    try {
+      final v = await block();
+      return Ok(v);
+    } on DioException catch (e) {
+      final f = e.error is RemoteRequestFailure
+          ? e.error as RemoteRequestFailure
+          : UnexpectedFailure(technical: e.message, statusCode: e.response?.statusCode);
+      return Err(f);
+    } catch (e) {
+      return Err(UnexpectedFailure(technical: e.toString()));
+    }
+  }
+
+  Future<Result<R, RemoteRequestFailure>> getJson<R>(
+      String path, {
+        required R Function(dynamic json) map,
+        Map<String, dynamic>? query,
+        Options? options,
+        CancelToken? cancel,
+      }) {
+    return safe(() async {
+      final res = await get<dynamic>(path,
+          queryParameters: query, options: options, cancelToken: cancel);
+      return map(res.data);
+    });
+  }
+
+  Future<Result<R, RemoteRequestFailure>> postJson<R>(
+      String path, {
+        required Object data,
+        required R Function(dynamic json) map,
+        Map<String, dynamic>? query,
+        Options? options,
+        CancelToken? cancel,
+      }) {
+    return safe(() async {
+      final res = await post<dynamic>(path,
+          data: data,
+          queryParameters: query,
+          options: options ?? Options(contentType: 'application/json'),
+          cancelToken: cancel);
+      return map(res.data);
+    });
   }
 
   Future<Response<T>> get<T>(String path, {
@@ -69,6 +118,24 @@ final class DioClient {
       Options? options,
       CancelToken? cancelToken}) {
     return _dio.head(path,
+        data: data, queryParameters: queryParameters, options: options);
+  }
+
+  Future<Response<T>> put<T>(String path,
+      {Object? data,
+        Map<String, dynamic>? queryParameters,
+        Options? options,
+        CancelToken? cancelToken}) {
+    return _dio.put(path,
+        data: data, queryParameters: queryParameters, options: options);
+  }
+
+  Future<Response<T>> patch<T>(String path,
+      {Object? data,
+        Map<String, dynamic>? queryParameters,
+        Options? options,
+        CancelToken? cancelToken}) {
+    return _dio.patch(path,
         data: data, queryParameters: queryParameters, options: options);
   }
 }

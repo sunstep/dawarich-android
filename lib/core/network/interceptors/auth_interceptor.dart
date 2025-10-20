@@ -1,6 +1,7 @@
 import 'package:dawarich/core/network/configs/api_config.dart';
 import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 final class AuthInterceptor extends Interceptor {
 
@@ -17,6 +18,10 @@ final class AuthInterceptor extends Interceptor {
     final ApiConfig? config = _apiConfig.apiConfig;
 
     if (config == null) {
+      if (kDebugMode) {
+        debugPrint('AuthInterceptor: No ApiConfig found, skipping auth attachment.');
+      }
+
       handler.next(options);
       return;
     }

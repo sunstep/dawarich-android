@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:dawarich/core/database/drift/database/crypto/db_key_provider.dart';
+import 'package:dawarich/core/database/drift/database/crypto/sqlcipher_bootstrap.dart';
 import 'package:dawarich/core/database/drift/entities/point/point_geometry_table.dart';
 import 'package:dawarich/core/database/drift/entities/point/point_properties_table.dart';
 import 'package:dawarich/core/database/drift/entities/point/points_table.dart';
@@ -14,6 +16,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart' as s;
@@ -40,6 +43,7 @@ final class SQLiteClient extends _$SQLiteClient {
 
     return 'dawarich_db_dev.sqlite';
   }
+
   static const _driftPortName = 'dawarich_drift_connect_port';
 
   static DriftIsolate? _memo;
@@ -47,18 +51,116 @@ final class SQLiteClient extends _$SQLiteClient {
 
   SQLiteClient(super.executor);
 
-  static Future<DriftIsolate> createDriftIsolate() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final dbFile = File('${directory.path}/$_dbFileName');
+  static String _escapeSqlLiteral(String s) =>
+      s.replaceAll(r'\', r'\\').replaceAll("'", "''");
 
-    return DriftIsolate.spawn(
-          () => DatabaseConnection(
-        NativeDatabase(dbFile, logStatements: kDebugMode),
-      ),
-    );
+  static Future<bool> _isPlaintextDb(String path) async {
+    final f = File(path);
+    if (!await f.exists()) {
+      return false;
+    }
+    final raf = await f.open();
+    try {
+      final header = await raf.read(16);
+      if (header.length < 16) {
+        return false;
+      }
+      const sig = [
+        0x53,
+        0x51,
+        0x4C,
+        0x69,
+        0x74,
+        0x65,
+        0x20,
+        0x66,
+        0x6F,
+        0x72,
+        0x6D,
+        0x61,
+        0x74,
+        0x20,
+        0x33,
+        0x00
+      ];
+      for (var i = 0; i < 16; i++) {
+        if (header[i] != sig[i]) {
+          return false;
+        }
+      }
+      return true;
+    } finally {
+      await raf.close();
+    }
+  }
+
+  static Future<void> _migratePlaintextToEncrypted({
+    required String dbPath,
+    required String hexKey,
+  }) async {
+
+    if (kDebugMode) {
+      debugPrint('[DB] Checking if migration from plaintext to encrypted is needed for $dbPath');
+    }
+
+    final existing  = File(dbPath);
+    final encrypted = File('$dbPath.enc_tmp');
+
+    if (!await existing.exists()) {
+      return;
+    }
+
+    if (!await _isPlaintextDb(dbPath)) {
+      if (kDebugMode) {
+        debugPrint('[DB] No migration needed, database is already encrypted.');
+      }
+      return;
+    }
+
+    final plaintextDb = s.sqlite3.open(dbPath, mode: s.OpenMode.readWrite);
+    try {
+      final escaped = _escapeSqlLiteral(encrypted.path);
+
+      plaintextDb.execute(
+          "ATTACH DATABASE '$escaped' AS encrypted KEY \"x'$hexKey'\";"
+      );
+
+      plaintextDb.execute("SELECT sqlcipher_export('encrypted');");
+
+      final userVersion = plaintextDb
+          .select('PRAGMA user_version;')
+          .first.values.first as int;
+      plaintextDb.execute('PRAGMA encrypted.user_version = $userVersion;');
+      plaintextDb.execute('DETACH DATABASE encrypted;');
+    } finally {
+      plaintextDb.dispose();
+    }
+
+    if (await encrypted.exists()) {
+
+      final wal = File('$dbPath-wal');
+      final shm = File('$dbPath-shm');
+
+      if (await wal.exists()) {
+        await wal.delete();
+      }
+
+      if (await shm.exists()) {
+        await shm.delete();
+      }
+
+      await existing.delete();
+      await encrypted.rename(dbPath);
+    }
   }
 
   static Future<SQLiteClient> connectSharedIsolate() async {
+
+    if (kDebugMode) {
+      debugPrint('[Drift] Creating or connecting to a Drift isolate');
+    }
+
+    await SqlcipherBootstrap.ensure();
     if (_memo != null) {
       final conn = await _memo!.connect();
       return SQLiteClient(conn);
@@ -71,10 +173,19 @@ final class SQLiteClient extends _$SQLiteClient {
 
     final existing = IsolateNameServer.lookupPortByName(_driftPortName);
     if (existing != null) {
+
+      if (kDebugMode) {
+        debugPrint('[Drift] Found existing isolate, connecting to it.');
+      }
+
       final iso = DriftIsolate.fromConnectPort(existing);
       final conn = await iso.connect();
       _memo = iso;
       return SQLiteClient(conn);
+    }
+
+    if (kDebugMode) {
+      debugPrint('[Drift] No existing isolate found, creating a new one.');
     }
 
     final dir = await getApplicationDocumentsDirectory();
@@ -94,7 +205,10 @@ final class SQLiteClient extends _$SQLiteClient {
     _creating = Completer<DriftIsolate>();
     try {
       final ready = ReceivePort();
-      await Isolate.spawn(_dbIsolateEntry, [ready.sendPort, dbPath]);
+
+      final String hexKey = await DbKeyProvider().getOrCreateHexKey();
+      final RootIsolateToken? token = RootIsolateToken.instance;
+      await Isolate.spawn(_dbIsolateEntry, [ready.sendPort, dbPath, hexKey, token]);
 
       final iso = await ready.first
           .timeout(const Duration(seconds: 10)) as DriftIsolate;
@@ -123,20 +237,46 @@ final class SQLiteClient extends _$SQLiteClient {
     }
   }
 
+  static bool _hasSqlCipher(s.Database database) {
+    return database.select('PRAGMA cipher_version;').isNotEmpty;
+  }
+
   static void _dbIsolateEntry(List<dynamic> args) {
-    final send = args[0] as SendPort;
-    final dbPath = args[1] as String;
 
-    // Create a DriftIsolate hosted in this isolate
-    final driftIso = DriftIsolate.inCurrent(() {
-      final executor = NativeDatabase(
-        File(dbPath),
-        logStatements: kDebugMode,
-      );
-      return DatabaseConnection(executor);
-    });
+    () async {
 
-    send.send(driftIso);
+      final send = args[0] as SendPort;
+      final dbPath = args[1] as String;
+      final hexKey = args[2] as String;
+      final RootIsolateToken? token = args[3] as RootIsolateToken?;
+
+      if (Platform.isAndroid && token != null) {
+        BackgroundIsolateBinaryMessenger.ensureInitialized(token);
+      }
+
+      await SqlcipherBootstrap.ensure();
+      await _migratePlaintextToEncrypted(dbPath: dbPath, hexKey: hexKey);
+
+      final driftIso = DriftIsolate.inCurrent(() {
+        final executor = NativeDatabase(
+            File(dbPath),
+            logStatements: kDebugMode,
+            setup: (rawDb) {
+              assert(_hasSqlCipher(rawDb), 'SQLCipher not available: check deps & bootstrap');
+              rawDb.execute('PRAGMA cipher_compatibility = 4;');
+              rawDb.execute('PRAGMA key = "x\'$hexKey\'";');
+              rawDb.select('PRAGMA cipher_version;');
+              rawDb.config.doubleQuotedStringLiterals = false;
+              rawDb.execute('PRAGMA foreign_keys = ON;');
+              rawDb.execute('PRAGMA journal_mode = WAL;');
+            }
+        );
+        return DatabaseConnection(executor);
+      });
+
+      send.send(driftIso);
+    }();
+
   }
 
   /*
@@ -173,9 +313,12 @@ final class SQLiteClient extends _$SQLiteClient {
   }
 
   static Future<void> setUserVersion(int v) async {
+    await SqlcipherBootstrap.ensure();
     final path = await dbPath();
     final db = s.sqlite3.open(path);
+    final hexKey = await DbKeyProvider().getOrCreateHexKey();
     try {
+      db.execute('PRAGMA key = "x\'$hexKey\'";');
       db.execute('PRAGMA user_version = $v;');
       db.execute('PRAGMA wal_checkpoint(TRUNCATE);');
     } finally {
@@ -184,30 +327,31 @@ final class SQLiteClient extends _$SQLiteClient {
   }
 
   static Future<bool> peekNeedsUpgrade() async {
+    await SqlcipherBootstrap.ensure();
     final path = await dbPath();
-    final f = File(path);
-    if (!await f.exists()) {
-      if (kDebugMode) {
-        debugPrint('[DB] no db → no upgrade needed');
-      }
+    if (!await File(path).exists()) {
       return false;
     }
+
+    final hexKey = await DbKeyProvider().getOrCreateHexKey();
 
     try {
       final db = s.sqlite3.open(path, mode: s.OpenMode.readOnly);
       try {
-        final rs = db.select('PRAGMA user_version;');
-        final uv = (rs.isEmpty ? 0 : (rs.first.values.first as int));
-        if (kDebugMode) {
-          debugPrint('[DB] PRAGMA user_version (via SQLite) = $uv, target=$kSchemaVersion');
-        }
+        db.execute('PRAGMA key = "x\'$hexKey\'";');
+        final uv = db.select('PRAGMA user_version;').first.values.first as int;
         return uv < kSchemaVersion;
       } finally {
         db.dispose();
       }
-    } catch (e, s_) {
-      if (kDebugMode) debugPrint('[DB] peekNeedsUpgrade failed: $e\n$s_');
-      // Be conservative: assume upgrade pending if we can’t read.
+    } on s.SqliteException catch (e) {
+      if (e.extendedResultCode == 26 || e.message.contains('file is not a database')) {
+        if (kDebugMode) debugPrint('[DB] plaintext/corrupt db detected → not blocking startup');
+        return false;
+      }
+      // other errors → be conservative
+      return true;
+    } catch (_) {
       return true;
     }
   }

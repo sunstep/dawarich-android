@@ -1,4 +1,6 @@
+import 'package:dawarich/core/network/configs/api_endpoints.dart';
 import 'package:dawarich/core/network/dio_client.dart';
+import 'package:dawarich/core/network/errors/remote_request_failure.dart';
 import 'package:dawarich/core/network/repositories/points_order.dart';
 import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_batch_dto.dart';
 import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_dto.dart';
@@ -114,16 +116,26 @@ final class ApiPointRepository implements IApiPointRepository {
     final endIso   = _formatEndDate(endDate);
 
     try {
-      final headResp = await _apiClient.head<Map<String, String?>>(
-        '/api/v1/points',
-        queryParameters: {
-          'start_at': startIso,
-          'end_at':   endIso,
-          'per_page': perPage,
-          'slim':     true,
-          'order':    order == PointsOrder.ascending ? 'asc' : 'desc',
-        },
-      );
+
+      final Result<Response<Map<String, String?>>, RemoteRequestFailure> headRespResult = await _apiClient.safe(() async {
+        return await _apiClient.head<Map<String, String?>>(
+          ApiEndpoints.getPoints,
+          queryParameters: {
+            'start_at': startIso,
+            'end_at':   endIso,
+            'per_page': perPage,
+            'slim':     true,
+            'order':    order == PointsOrder.ascending ? 'asc' : 'desc',
+          },
+        );
+      });
+
+      if (headRespResult case Err(value: final RemoteRequestFailure failure)) {
+        debugPrint('Failed to fetch all points: ${failure.userMessage}');
+        return const None();
+      }
+
+      final Response<Map<String, String?>> headResp = headRespResult.unwrap();
 
       final totalPages = int.tryParse(
         headResp.headers.value('x-total-pages') ?? '',

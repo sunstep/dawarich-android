@@ -13,7 +13,7 @@ abstract final class ApiEndpoints {
   static const String healthCheck = '$_v1/health';
 
   // Points
-  static const String createPointBatchAlt = '$_v1/points';
+  static const String createPointBatch = '$_v1/points';
   static const String getTrackedMonths = '$_v1/points/tracked_months';
   static const String getPoints = '$_v1/points';
   static String deletePoint(String id) => '$_v1/points/$id';

@@ -321,9 +321,9 @@ class _FilterCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  value: vm.showUnprocessed,
-                  onChanged: vm.toggleShowUnprocessed,
-                  title: const Text('Show unprocessed'),
+                  value: vm.showUnGeocoded,
+                  onChanged: vm.toggleShowUnGeocoded,
+                  title: const Text('Show ungeocoded'),
                 ),
                 ElevatedButton(
                   onPressed: vm.searchPressed,
@@ -357,8 +357,8 @@ class _FilterCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 SwitchListTile(
-                  value: vm.showUnprocessed,
-                  onChanged: vm.toggleShowUnprocessed,
+                  value: vm.showUnGeocoded,
+                  onChanged: vm.toggleShowUnGeocoded,
                   title: const Text('Show unprocessed'),
                 ),
                 ElevatedButton(

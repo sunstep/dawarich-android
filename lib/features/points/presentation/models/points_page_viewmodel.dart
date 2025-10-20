@@ -15,7 +15,7 @@ final class PointsPageViewModel with ChangeNotifier {
   bool _displayFilters = true;
   bool _selectAll = false;
   bool _sortByNew = true;
-  bool _showUnprocessed = false;
+  bool _showUnGeocoded = false;
   int _currentPage = 1;
   int _totalPages = 0;
   final int _pointsPerPage = 100;
@@ -40,14 +40,14 @@ final class PointsPageViewModel with ChangeNotifier {
   bool get displayFilters => _displayFilters;
   bool get selectAll => _selectAll;
   bool get sortByNew => _sortByNew;
-  bool get showUnprocessed => _showUnprocessed;
+  bool get showUnGeocoded => _showUnGeocoded;
   int get currentPage => _currentPage;
   int get totalPages => _totalPages;
   int get pointsPerPage => _pointsPerPage;
 
   List<ApiPointViewModel> get pagePoints {
 
-    final filtered = _showUnprocessed
+    final filtered = _showUnGeocoded
         ? _points
         : _points.where((p) => p.geodata?.geometry?.coordinates != null).toList();
 
@@ -91,8 +91,8 @@ final class PointsPageViewModel with ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleShowUnprocessed(bool value) {
-    _showUnprocessed = value;
+  void toggleShowUnGeocoded(bool value) {
+    _showUnGeocoded = value;
     notifyListeners();
   }
 

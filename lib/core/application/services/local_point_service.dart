@@ -5,13 +5,13 @@ import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
-import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/last_point_converter.dart';
+import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/track_converter.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/point/last_point_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/track_dto.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/repositories/i_track_repository.dart';
@@ -397,7 +397,7 @@ final class LocalPointService {
     String? trackId;
 
     if (trackerIdResult case Some(value: TrackDto trackDto)) {
-      Track track = trackDto.toEntity();
+      Track track = trackDto.toDomain();
       trackId = track.trackId;
     }
 

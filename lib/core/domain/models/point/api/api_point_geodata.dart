@@ -1,6 +1,6 @@
 import 'package:dawarich/core/domain/models/point/api/api_point_geometry.dart';
 import 'package:dawarich/core/domain/models/point/api/api_point_properties.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/api/api_point_geodata_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/api/api_point_geodata_dto.dart';
 
 class Geodata {
   String? type;

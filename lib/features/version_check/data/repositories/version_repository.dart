@@ -1,6 +1,6 @@
 
 import 'package:dawarich/core/network/dio_client.dart';
-import 'package:dawarich/features/version_check/data_contracts/version_repository_interfaces.dart';
+import 'package:dawarich/features/version_check/application/repository/version_repository_interfaces.dart';
 import 'package:dio/dio.dart';
 import 'package:option_result/option_result.dart';
 

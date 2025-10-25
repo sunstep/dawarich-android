@@ -1,4 +1,4 @@
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/track_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/track_dto.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
 
 extension TrackToDto on Track {
@@ -14,7 +14,7 @@ extension TrackToDto on Track {
 }
 
 extension TrackDtoToEntity on TrackDto {
-  Track toEntity() {
+  Track toDomain() {
     return Track(
         id: id,
         trackId: trackId,

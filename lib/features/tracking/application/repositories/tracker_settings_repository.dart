@@ -1,4 +1,4 @@
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/settings/tracker_settings_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/settings/tracker_settings_dto.dart';
 import 'package:option_result/option_result.dart';
 
 abstract interface class ITrackerSettingsRepository {

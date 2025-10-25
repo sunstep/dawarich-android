@@ -1,4 +1,4 @@
-import 'package:dawarich/features/stats/data_contracts/data_transfer_objects/yearly_stats_dto.dart';
+import 'package:dawarich/features/stats/data/data_transfer_objects/yearly_stats_dto.dart';
 
 class StatsDTO {
   int totalDistance;

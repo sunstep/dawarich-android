@@ -1,4 +1,4 @@
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_properties_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/point/upload/dawarich_point_properties_dto.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';
 
 extension PointPropertiesDtoToEntity on DawarichPointPropertiesDto {

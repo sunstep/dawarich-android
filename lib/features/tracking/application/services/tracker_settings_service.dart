@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:dawarich/core/domain/models/user.dart';
-import 'package:dawarich/features/tracking/data_contracts/interfaces/hardware_repository_interfaces.dart';
-import 'package:dawarich/features/tracking/data_contracts/interfaces/tracker_settings_repository.dart';
+import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/application/repositories/tracker_settings_repository.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';

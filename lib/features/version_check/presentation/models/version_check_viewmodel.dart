@@ -1,6 +1,6 @@
 
 
-import 'package:dawarich/features/version_check/application/version_check_service.dart';
+import 'package:dawarich/features/version_check/application/service/version_check_service.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 import 'package:pub_semver/pub_semver.dart';

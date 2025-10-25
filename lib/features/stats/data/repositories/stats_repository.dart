@@ -1,6 +1,6 @@
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/stats/data_contracts/data_transfer_objects/stats_dto.dart';
-import 'package:dawarich/features/stats/data_contracts/interfaces/stats_repository_interfaces.dart';
+import 'package:dawarich/features/stats/application/repositories/stats_repository_interfaces.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:option_result/option_result.dart';

@@ -5,7 +5,7 @@ import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
-import 'package:dawarich/features/version_check/application/version_check_service.dart';
+import 'package:dawarich/features/version_check/application/service/version_check_service.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';

@@ -2,7 +2,7 @@
 
 
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/settings/tracker_settings_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/settings/tracker_settings_dto.dart';
 import 'package:dawarich/features/tracking/application/repositories/tracker_settings_repository.dart';
 import 'package:drift/drift.dart';
 import 'package:option_result/option.dart';

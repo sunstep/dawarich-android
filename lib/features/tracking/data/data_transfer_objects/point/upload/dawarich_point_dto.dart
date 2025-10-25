@@ -1,5 +1,5 @@
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_geometry_dto.dart';
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/upload/dawarich_point_properties_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/point/upload/dawarich_point_geometry_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/point/upload/dawarich_point_properties_dto.dart';
 
 class DawarichPointDto {
   final String type;

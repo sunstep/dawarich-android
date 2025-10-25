@@ -1,7 +1,7 @@
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_geometry_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_properties_dto.dart';
 import 'package:drift/drift.dart';
 
 extension PointMapper on TypedResult {

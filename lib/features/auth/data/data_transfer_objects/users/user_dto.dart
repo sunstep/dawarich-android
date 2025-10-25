@@ -1,5 +1,5 @@
 
-import 'package:dawarich/features/auth/data_contracts/data_transfer_objects/users/user_settings_dto.dart';
+import 'package:dawarich/features/auth/data/data_transfer_objects/users/user_settings_dto.dart';
 
 final class UserDto {
   final int id; // local DB user id

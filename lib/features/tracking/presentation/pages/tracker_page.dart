@@ -9,6 +9,7 @@ import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
@@ -22,22 +23,19 @@ final class TrackerPage extends StatelessWidget {
     return ChangeNotifierProvider(
         create: (_) => getIt<TrackerPageViewModel>()..initialize(),
         builder: (context, child) => Consumer<TrackerPageViewModel>(
-            builder: (context, vm, child) => _TrackerPageContent()
-        )
-    );
+            builder: (context, vm, child) => _TrackerPageContent()));
   }
 }
 
 final class _TrackerPageContent extends StatefulWidget {
-
   @override
   State<_TrackerPageContent> createState() => _TrackerPageContentState();
 }
 
-final class _TrackerPageContentState extends State<_TrackerPageContent> with
-    WidgetsBindingObserver, RouteAware {
-
+final class _TrackerPageContentState extends State<_TrackerPageContent>
+    with WidgetsBindingObserver, RouteAware {
   StreamSubscription<String>? _consentPromptSub;
+
   _TrackerPageContentState();
 
   @override
@@ -106,6 +104,7 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
       });
     }
   }
+
   @override
   void didPushNext() {
     _consentPromptSub?.cancel();
@@ -113,7 +112,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
 
     Future.microtask(() {
       try {
-
         final BuildContext localContext = context;
 
         if (localContext.mounted) {
@@ -134,7 +132,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
 
     Future.microtask(() {
       try {
-
         final BuildContext localContext = context;
 
         if (localContext.mounted) {
@@ -142,7 +139,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
           viewModel.getLastPoint();
           viewModel.getPointInBatchCount();
         }
-
       } catch (error) {
         if (kDebugMode) {
           debugPrint("Error fetching last point on didPopNext: $error");
@@ -155,15 +151,13 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
   void didChangeAppLifecycleState(AppLifecycleState state) {
     Future.microtask(() {
       try {
-
         final BuildContext localContext = context;
 
         if (localContext.mounted) {
           final viewModel = localContext.read<TrackerPageViewModel>();
 
           if (state == AppLifecycleState.paused ||
-              state == AppLifecycleState.inactive) {
-          }
+              state == AppLifecycleState.inactive) {}
           if (state == AppLifecycleState.resumed) {
             viewModel.getLastPoint();
             viewModel.getPointInBatchCount();
@@ -177,9 +171,7 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
     });
   }
 
-
   Widget buildTrackerPage(BuildContext context, TrackerPageViewModel vm) {
-
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
       child: Scaffold(
@@ -197,7 +189,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent> with
 }
 
 class _TrackerBody extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     return const SingleChildScrollView(
@@ -334,9 +325,11 @@ class LastPointCard extends StatelessWidget {
                                 : Icon(Icons.add_location_alt, color: accent),
                             label: Text('Track Point',
                                 style: TextStyle(color: white)),
-                            onPressed: vm.isTracking ? null : () async {
-                              await handleManualPointRequest(context, vm);
-                            },
+                            onPressed: vm.isTracking
+                                ? null
+                                : () async {
+                                    await handleManualPointRequest(context, vm);
+                                  },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -350,7 +343,8 @@ class LastPointCard extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.view_list),
                             label: const Text('View Batch'),
-                            onPressed: () => context.router.root.push(const BatchExplorerRoute()),
+                            onPressed: () => context.router.root
+                                .push(const BatchExplorerRoute()),
                           ),
                         ),
                       ],
@@ -370,8 +364,8 @@ class LastPointCard extends StatelessWidget {
     );
   }
 
-  Future<void> handleManualPointRequest(BuildContext context, TrackerPageViewModel vm) async {
-
+  Future<void> handleManualPointRequest(
+      BuildContext context, TrackerPageViewModel vm) async {
     if (vm.isTrackingAutomatically) {
       await showDialog(
         context: context,
@@ -379,7 +373,7 @@ class LastPointCard extends StatelessWidget {
           title: const Text('Manual Tracking Disabled'),
           content: const Text(
             'Manual tracking is disabled while automatic tracking is active. '
-                'Please stop automatic tracking first if you want to manually add a point.',
+            'Please stop automatic tracking first if you want to manually add a point.',
           ),
           actions: [
             TextButton(
@@ -585,13 +579,54 @@ class _BasicSettingsSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text('Points per batch: ${vm.maxPointsPerBatch}'),
-        Slider(
-          value: vm.maxPointsPerBatch.toDouble(),
-          min: 50,
-          max: 1000,
-          divisions: 19,
-          label: '${vm.maxPointsPerBatch}',
-          onChanged: (v) => vm.setMaxPointsPerBatch(v.toInt()),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+              child: TextFormField(
+                key: const ValueKey('maxPointsPerBatchField'),
+                initialValue: vm.maxPointsPerBatch.toString(),
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.left,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  isDense: true,
+                  isCollapsed: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                  filled: false,
+                  hintText: '${vm.minBatch}–${vm.maxBatch}',
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.outline, width: 1),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary, width: 2),
+                  ),
+                ),
+                onChanged: (value) {
+                  final n = int.tryParse(value);
+                  if (n != null) {
+                    vm.setMaxPointsPerBatch(n.clamp(vm.minBatch, vm.maxBatch));
+                  }
+                },
+                onEditingComplete: () {
+                  vm.setMaxPointsPerBatch(
+                      vm.maxPointsPerBatch.clamp(vm.minBatch, vm.maxBatch));
+                  FocusScope.of(context).unfocus();
+                },
+                validator: (value) {
+                  final n = int.tryParse(value ?? '');
+                  if (n == null) return 'Enter a number';
+                  if (n < vm.minBatch || n > vm.maxBatch)
+                    return '${vm.minBatch}–${vm.maxBatch} only';
+                  return null;
+                },
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         Row(
@@ -607,13 +642,29 @@ class _BasicSettingsSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text('Tracking frequency: ${vm.trackingFrequency}s'),
-        Slider(
-          value: vm.trackingFrequency.toDouble(),
-          min: 5,
-          max: 60,
-          divisions: 11,
-          label: '${vm.trackingFrequency}s',
-          onChanged: (v) => vm.setTrackingFrequency(v.toInt()),
+        Row(
+          children: [
+            Expanded(
+              child: Slider(
+                value: vm.trackingFrequency.toDouble(),
+                min: 5,
+                max: 60,
+                divisions: 11,
+                label: '${vm.trackingFrequency}s',
+                onChanged: (v) => vm.setTrackingFrequency(v.toInt()),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 48,
+              child: Text(
+                '${vm.trackingFrequency}s',
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
         ),
       ],
     );

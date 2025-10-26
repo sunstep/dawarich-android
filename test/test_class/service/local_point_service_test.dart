@@ -1,8 +1,8 @@
-import 'package:dawarich/features/tracking/data_contracts/data_transfer_objects/point/last_point_dto.dart';
+import 'package:dawarich/features/tracking/data/data_transfer_objects/point/last_point_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_dto.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_geometry_dto.dart';
-import 'package:dawarich/core/point_data/data_contracts/data_transfer_objects/local/local_point_properties_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_geometry_dto.dart';
+import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_properties_dto.dart';
 import 'package:option_result/option_result.dart';
 import '../../mock/repository/local_point_repository_mock.dart';
 

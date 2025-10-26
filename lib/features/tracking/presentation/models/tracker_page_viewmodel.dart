@@ -28,6 +28,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
   int _batchPointCount = 0;
   int get batchPointCount => _batchPointCount;
 
+  final int minBatch = 1;
+  final int maxBatch = 1000;
+
   bool _hideLastPoint = false;
   bool get hideLastPoint => _hideLastPoint;
 

@@ -217,7 +217,7 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
           children: [
             TileLayer(
               urlTemplate:
-                  'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=NWn5VTZI9avXmOoeAT00',
+                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'app.dawarich.android',
               maxNativeZoom: 19,
             ),

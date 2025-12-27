@@ -1,2 +1,2 @@
-Beta 0.12.0
-* You can now input the max batch size.
+Beta 0.12.1
+* Fixed map tiles not showing due to invalid API key.

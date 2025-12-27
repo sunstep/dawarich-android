@@ -65,10 +65,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                     'proguard-rules.pro'
 
-            // ensure no debug flags slip in
             debuggable       false
             jniDebuggable    false
-            renderscriptDebuggable false
         }
     }
 }

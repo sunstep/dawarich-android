@@ -1,7 +1,7 @@
 
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/database/drift/extensions/mappers/user_mapper.dart';
-import 'package:dawarich/features/auth/data/data_transfer_objects/users/user_dto.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/auth/application/repositories/user_repository_interfaces.dart';
 import 'package:drift/drift.dart';
 import 'package:option_result/option_result.dart';
@@ -12,25 +12,25 @@ final class DriftUserRepository implements IUserRepository {
   DriftUserRepository(this._database);
 
   @override
-  Future<int> storeUser(UserDto userDto) async {
+  Future<int> storeUser(User user) async {
 
-    final String? dawarichHost = userDto.dawarichEndpoint;
-    final int? remoteId = userDto.remoteId;
+    final String? dawarichHost = user.dawarichHost;
+    final int? remoteId = user.remoteId;
 
     if (dawarichHost != null && remoteId != null) {
 
-      Option<UserDto> userResult =
+      Option<User> userResult =
           await getUserByRemoteId(dawarichHost, remoteId);
 
-      if (userResult case Some(value: UserDto user)) {
-        return user.id;
+      if (userResult case Some(value: User existingUser)) {
+        return existingUser.id;
       }
     } else {
-      Option<UserDto> userResult =
-          await getUserByEmail(dawarichHost, userDto.email);
+      Option<User> userResult =
+          await getUserByEmail(dawarichHost, user.email);
 
-      if (userResult case Some(value: UserDto user)) {
-        return user.id;
+      if (userResult case Some(value: User existingUser)) {
+        return existingUser.id;
       }
     }
 
@@ -39,43 +39,43 @@ final class DriftUserRepository implements IUserRepository {
       final userId = await _database.into(_database.userTable).insertOnConflictUpdate(
         UserTableCompanion(
           // if your PK is autoincrement, omit id; otherwise include it
-          id: userDto.id > 0 ? Value(userDto.id) : const Value.absent(),
-          dawarichId: Value(userDto.remoteId),
-          dawarichEndpoint: Value(userDto.dawarichEndpoint),
-          email: Value(userDto.email),
-          createdAt: Value(userDto.createdAt),
-          updatedAt: Value(userDto.updatedAt),
-          theme: Value(userDto.theme),
-          admin: Value(userDto.admin),
+          id: user.id > 0 ? Value(user.id) : const Value.absent(),
+          dawarichId: Value(user.remoteId),
+          dawarichEndpoint: Value(user.dawarichHost),
+          email: Value(user.email),
+          createdAt: Value(user.createdAt),
+          updatedAt: Value(user.updatedAt),
+          theme: Value(user.theme),
+          admin: Value(user.admin),
         ),
       );
 
       // 2) Upsert settings (if present)
-      final s = userDto.settings;
-      if (s != null) {
-        await _database
-            .into(_database.userSettingsTable)
-            .insertOnConflictUpdate(UserSettingsTableCompanion(
-          userId: Value(userId), // FK to user
-          distanceUnit: Value(s.maps?.distanceUnit),
-          fogOfWarMeters: Value(s.fogOfWarMeters),
-          metersBetweenRoutes: Value(s.metersBetweenRoutes),
-          preferredMapLayer: Value(s.preferredMapLayer),
-          speedColoredRoutes: Value(s.speedColoredRoutes),
-          pointsRenderingMode: Value(s.pointsRenderingMode),
-          minutesBetweenRoutes: Value(s.minutesBetweenRoutes),
-          timeThresholdMinutes: Value(s.timeThresholdMinutes),
-          mergeThresholdMinutes: Value(s.mergeThresholdMinutes),
-          liveMapEnabled: Value(s.liveMapEnabled),
-          routeOpacity: Value(s.routeOpacity),
-          immichUrl: Value(s.immichUrl),
-          photoprismUrl: Value(s.photoprismUrl),
-          visitsSuggestionsEnabled: Value(s.visitsSuggestionsEnabled),
-          // optional/nullables:
-          speedColorScale: const Value.absent(),   // map if you have a column
-          fogOfWarThreshold: const Value.absent(), // map if you have a column
-        ));
-      }
+      // final s = user.settings;
+      // if (s != null) {
+      //   await _database
+      //       .into(_database.userSettingsTable)
+      //       .insertOnConflictUpdate(UserSettingsTableCompanion(
+      //     userId: Value(userId), // FK to user
+      //     distanceUnit: Value(s.maps?.distanceUnit),
+      //     fogOfWarMeters: Value(s.fogOfWarMeters),
+      //     metersBetweenRoutes: Value(s.metersBetweenRoutes),
+      //     preferredMapLayer: Value(s.preferredMapLayer),
+      //     speedColoredRoutes: Value(s.speedColoredRoutes),
+      //     pointsRenderingMode: Value(s.pointsRenderingMode),
+      //     minutesBetweenRoutes: Value(s.minutesBetweenRoutes),
+      //     timeThresholdMinutes: Value(s.timeThresholdMinutes),
+      //     mergeThresholdMinutes: Value(s.mergeThresholdMinutes),
+      //     liveMapEnabled: Value(s.liveMapEnabled),
+      //     routeOpacity: Value(s.routeOpacity),
+      //     immichUrl: Value(s.immichUrl),
+      //     photoprismUrl: Value(s.photoprismUrl),
+      //     visitsSuggestionsEnabled: Value(s.visitsSuggestionsEnabled),
+      //     // optional/nullables:
+      //     speedColorScale: const Value.absent(),   // map if you have a column
+      //     fogOfWarThreshold: const Value.absent(), // map if you have a column
+      //   ));
+      // }
 
       return userId;
     });
@@ -83,7 +83,7 @@ final class DriftUserRepository implements IUserRepository {
 
 
   @override
-  Future<Option<UserDto>> getUserByRemoteId(
+  Future<Option<User>> getUserByRemoteId(
       String host, int remoteId) async {
     final userQuery = _database.select(_database.userTable)
       ..where((u) =>
@@ -93,13 +93,13 @@ final class DriftUserRepository implements IUserRepository {
     final UserTableData? userResult = await userQuery.getSingleOrNull();
 
     if (userResult != null) {
-      return Some(userResult.toDto());
+      return Some(userResult.toDomain());
     }
     return const None();
   }
 
   @override
-  Future<Option<UserDto>> getUserByEmail(String? host, String email) async {
+  Future<Option<User>> getUserByEmail(String? host, String email) async {
 
     final userQuery = (_database.select(_database.userTable)
       ..where((u) => u.email.equals(email) &
@@ -111,7 +111,7 @@ final class DriftUserRepository implements IUserRepository {
     final UserTableData? userResult = await userQuery.getSingleOrNull();
 
     if (userResult != null) {
-      return Some(userResult.toDto());
+      return Some(userResult.toDomain());
     }
 
     return const None();

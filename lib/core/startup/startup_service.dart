@@ -1,11 +1,12 @@
 import 'dart:async';
 
+import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
-import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
-import 'package:dawarich/features/version_check/application/service/version_check_service.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/was_launched_from_notification_usecase.dart';
+import 'package:dawarich/features/version_check/application/usecases/server_version_compatability_usecase.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
@@ -42,8 +43,9 @@ final class StartupService {
 
       sessionService.setUserId(refreshedSessionUser.id);
 
-      final VersionCheckService versionCheckService = getIt<VersionCheckService>();
-      final Result<(), String> isSupported = await versionCheckService.isServerVersionSupported();
+      final ServerVersionCompatabilityUseCase serverCompatabilityChecker =
+        getIt<ServerVersionCompatabilityUseCase>();
+      final Result<(), Failure> isSupported = await serverCompatabilityChecker();
 
       if (!isSupported.isOk()) {
 
@@ -55,9 +57,9 @@ final class StartupService {
         return;
       }
 
-      final TrackingNotificationService notificationService = getIt<TrackingNotificationService>();
+      final WasLaunchedFromNotificationUseCase notificationService = getIt<WasLaunchedFromNotificationUseCase>();
 
-      final bool launchedByNotification = await notificationService.wasLaunchedFromNotification();
+      final bool launchedByNotification = await notificationService();
 
       if (launchedByNotification) {
 

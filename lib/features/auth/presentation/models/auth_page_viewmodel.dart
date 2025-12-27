@@ -1,15 +1,25 @@
-import 'package:dawarich/features/auth/application/services/connect_service.dart';
+import 'package:dawarich/core/application/errors/failure.dart';
+import 'package:dawarich/features/auth/application/usecases/login_with_api_key_usecase.dart';
+import 'package:dawarich/features/auth/application/usecases/test_host_connection_usecase.dart';
 import 'package:dawarich/features/auth/domain/models/auth_qr_payload.dart';
-import 'package:dawarich/features/version_check/application/service/version_check_service.dart';
+import 'package:dawarich/features/version_check/application/usecases/get_server_version_usecase.dart';
+import 'package:dawarich/features/version_check/application/usecases/server_version_compatability_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 
 final class AuthPageViewModel extends ChangeNotifier {
 
-  final ConnectService _connectService;
-  final VersionCheckService _versionCheckService;
-  AuthPageViewModel(this._connectService, this._versionCheckService);
+  final ServerVersionCompatabilityUseCase _serverVersionCompatabilityUseCase;
+  final GetServerVersionUseCase _getServerVersionUseCase;
+  final TestHostConnectionUseCase _testHostConnectionUseCase;
+  final LoginWithApiKeyUseCase _loginWithApiKeyUseCase;
+  AuthPageViewModel(
+      this._serverVersionCompatabilityUseCase,
+      this._getServerVersionUseCase,
+      this._testHostConnectionUseCase,
+      this._loginWithApiKeyUseCase
+  );
 
   // final GlobalKey _emailController = TextEditingController();
   // final GlobalKey _passwordController = TextEditingController();
@@ -47,7 +57,7 @@ final class AuthPageViewModel extends ChangeNotifier {
     _setVerifyingHost(true);
     _setErrorMessage(null);
 
-    final bool result = await _connectService.testHost(host.trim());
+    final bool result = await _testHostConnectionUseCase(host.trim());
 
     _setVerifyingHost(false);
     if (result) {
@@ -70,7 +80,7 @@ final class AuthPageViewModel extends ChangeNotifier {
     _setLoggingIn(true);
     _setErrorMessage(null);
 
-    final bool isValid = await _connectService.loginApiKey(apiKey.trim());
+    final bool isValid = await _loginWithApiKeyUseCase(apiKey.trim());
     _setLoggingIn(false);
 
     if (isValid) {
@@ -101,13 +111,13 @@ final class AuthPageViewModel extends ChangeNotifier {
       setHost(payload.serverUrl);
       setApiKey(payload.apiKey);
 
-      final okHost  = await _connectService.testHost(payload.serverUrl);
+      final okHost  = await _testHostConnectionUseCase(payload.serverUrl);
       if (!okHost) {
         onShowError('Server unreachable or invalid.');
         return;
       }
 
-      final okLogin = await _connectService.loginApiKey(payload.apiKey);
+      final okLogin = await _loginWithApiKeyUseCase(payload.apiKey);
       if (!okLogin) {
         onShowError('Invalid API key.');
         return;
@@ -148,7 +158,7 @@ final class AuthPageViewModel extends ChangeNotifier {
   // }
 
   Future<bool> checkServerSupport() async {
-    final Result<(), String> supportResult = await _versionCheckService.isServerVersionSupported();
+    final Result<(), Failure> supportResult = await _serverVersionCompatabilityUseCase();
     return supportResult.isOk();
   }
 

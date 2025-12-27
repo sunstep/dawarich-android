@@ -1,13 +1,13 @@
+import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/domain/stats.dart';
-import 'package:dawarich/features/stats/application/services/stats_service.dart';
 import 'package:dawarich/features/stats/presentation/converters/stats_page_model_converter.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
 final class StatsPageViewModel extends ChangeNotifier {
-  final StatsService _statsService;
-  StatsPageViewModel(this._statsService);
+  final GetStatsUseCase _getStatsUseCase;
+  StatsPageViewModel(this._getStatsUseCase);
 
   bool _isLoading = true;
   StatsViewModel? _stats;
@@ -38,7 +38,7 @@ final class StatsPageViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchStats() async {
-    Option<Stats> result = await _statsService.getStats();
+    Option<Stats> result = await _getStatsUseCase();
 
     if (result case Some(value: final Stats stats)) {
       final StatsViewModel statsVm = stats.toViewModel();

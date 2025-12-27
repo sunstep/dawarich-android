@@ -1,12 +1,13 @@
+import 'package:dawarich/core/application/usecases/api/delete_point_usecase.dart';
+import 'package:dawarich/core/application/usecases/api/get_points_usecase.dart';
+import 'package:dawarich/core/application/usecases/api/get_total_pages_usecase.dart';
 import 'package:dawarich/core/domain/models/point/api/api_point.dart';
-import 'package:dawarich/core/application/services/api_point_service.dart';
 import 'package:dawarich/features/points/presentation/models/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointsPageViewModel with ChangeNotifier {
-  final ApiPointService _pointService;
 
   late DateTime _startDate;
   late DateTime _endDate;
@@ -24,7 +25,11 @@ final class PointsPageViewModel with ChangeNotifier {
 
   Set<String> _selectedItems = {};
 
-  PointsPageViewModel(this._pointService) {
+  final GetPointsUseCase _getPointsUseCase;
+  final DeletePointUseCase _deletePointUseCase;
+  final GetTotalPagesUseCase _getTotalPagesUseCase;
+
+  PointsPageViewModel(this._getPointsUseCase, this._deletePointUseCase, this._getTotalPagesUseCase) {
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
     _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);
@@ -141,13 +146,13 @@ final class PointsPageViewModel with ChangeNotifier {
     clearPoints();
 
     int amountOfPages =
-        await _pointService.getTotalPages(startDate, endDate, pointsPerPage);
+        await _getTotalPagesUseCase(startDate, endDate, pointsPerPage);
     setTotalPages(amountOfPages);
 
     setCurrentPage(1);
 
     Option<List<ApiPoint>> result =
-        await _pointService.getPoints(
+        await _getPointsUseCase(
             startDate: startDate,
             endDate:  endDate,
             perPage:  pointsPerPage
@@ -175,7 +180,7 @@ final class PointsPageViewModel with ChangeNotifier {
     final selectedItemsCopy = selectedItems.toList();
 
     for (String pointId in selectedItemsCopy) {
-      bool deleted = await _pointService.deletePoint(pointId);
+      bool deleted = await _deletePointUseCase(pointId);
 
       if (deleted) {
         _points.removeWhere((point) => point.id.toString() == pointId);

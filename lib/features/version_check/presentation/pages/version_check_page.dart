@@ -2,7 +2,7 @@ import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
-import 'package:dawarich/features/version_check/presentation/models/version_check_viewmodel.dart';
+import 'package:dawarich/features/version_check/presentation/viewmodel/version_check_viewmodel.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';

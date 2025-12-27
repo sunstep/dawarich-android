@@ -4,21 +4,37 @@ import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/point/point_pair.dart';
+import 'package:dawarich/features/timeline/application/helpers/timeline_points_processor.dart';
+import 'package:dawarich/features/timeline/application/usecases/get_current_location_usecase.dart';
+import 'package:dawarich/features/timeline/application/usecases/get_default_map_center_usecase.dart';
+import 'package:dawarich/features/timeline/application/usecases/get_last_point_of_date_usecase.dart';
+import 'package:dawarich/features/timeline/application/usecases/load_timeline_usecase.dart';
 import 'package:dawarich/features/timeline/domain/models/day_map_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 final class TimelineViewModel extends ChangeNotifier {
 
-  final MapService _mapService;
+  final LoadTimelineUseCase _loadTimelineUseCase;
+  final TimelinePointsProcessor _timelinePointsProcessor;
+  final GetLastPointOfDateUseCase _getLastPointOfDateUseCase;
+  final GetCurrentLocationUseCase _getCurrentLocationUseCase;
+  final GetDefaultMapCenterUseCase _getDefaultMapCenterUseCase;
+
   final LocalPointService _localPointService;
   AnimatedMapController? animatedMapController;
 
-  TimelineViewModel(this._mapService, this._localPointService);
+  TimelineViewModel(
+      this._loadTimelineUseCase,
+      this._timelinePointsProcessor,
+      this._getLastPointOfDateUseCase,
+      this._getCurrentLocationUseCase,
+      this._getDefaultMapCenterUseCase,
+      this._localPointService
+  );
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -178,7 +194,7 @@ final class TimelineViewModel extends ChangeNotifier {
 
     slim.sort((a, b) => a.timestamp!.compareTo(b.timestamp!));
 
-    final List<LatLng> local = _mapService.processPoints(slim);
+    final List<LatLng> local = _timelinePointsProcessor.processPoints(slim);
 
     setLocalPoints(local);
     _stitchLocalPoints();
@@ -213,12 +229,12 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> _resolveAndSetInitialLocation() async {
-    final center = await _mapService.getDefaultMapCenter();
+    final center = await _getDefaultMapCenterUseCase();
     setCurrentLocation(center);
   }
 
   Future<void> getAndSetPoints() async {
-    final DayMapData day = await _mapService.loadMap(selectedDate);
+    final DayMapData day = await _loadTimelineUseCase(selectedDate);
     setPoints(day.points);
     _rebuildLocalPoints(cutoffMs: day.lastTimestampMs);
 

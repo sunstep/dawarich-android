@@ -8,7 +8,7 @@ import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -22,46 +22,46 @@ Future<void> main() async {
   BindingBase.debugZoneErrorsAreFatal = true;
 
   runZonedGuarded(
-      () async {
-        WidgetsFlutterBinding.ensureInitialized();
-        await SqlcipherBootstrap.ensure();
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await SqlcipherBootstrap.ensure();
 
-        FlutterError.onError = (FlutterErrorDetails details) {
-          debugPrint('[FlutterError] ${details.exceptionAsString()}');
-          if (details.stack != null) debugPrint(details.stack!.toString());
-          Zone.current.handleUncaughtError(
-            details.exception,
-            details.stack ?? StackTrace.current,
-          );
-        };
+      FlutterError.onError = (FlutterErrorDetails details) {
+        debugPrint('[FlutterError] ${details.exceptionAsString()}');
+        if (details.stack != null) debugPrint(details.stack!.toString());
+        Zone.current.handleUncaughtError(
+          details.exception,
+          details.stack ?? StackTrace.current,
+        );
+      };
 
-        // Catch errors outside Flutter widget tree (platform layer)
-        PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-          debugPrint('[PlatformError] $error');
-          debugPrint(stack.toString());
-          return true;
-        };
+      // Catch errors outside Flutter widget tree (platform layer)
+      PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+        debugPrint('[PlatformError] $error');
+        debugPrint(stack.toString());
+        return true;
+      };
 
-        try {
-          await _dbHook();
-        } catch (e, st) {
-          debugPrint('[dbHook] $e\n$st');
+      try {
+        await _dbHook();
+      } catch (e, st) {
+        debugPrint('[dbHook] $e\n$st');
+      }
+
+      runApp(const Dawarich());
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+
+        if (kDebugMode) {
+          debugPrint('[BOOT] first frame');
         }
 
-        runApp(const Dawarich());
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-
-          if (kDebugMode) {
-            debugPrint('[BOOT] first frame');
-          }
-
-          unawaited(_boot());
-        });
-      }, (Object error, StackTrace stack) {
-        debugPrint('[ZonedError] $error');
-        debugPrint(stack.toString());
-      }
+        unawaited(_boot());
+      });
+    }, (Object error, StackTrace stack) {
+      debugPrint('[ZonedError] $error');
+      debugPrint(stack.toString());
+    }
   );
 
 }
@@ -85,7 +85,7 @@ Future<void> _boot() async {
   try {
     await DependencyInjection.injectDependencies();
     await getIt.allReady();
-    await getIt<TrackingNotificationService>().initialize();
+    await getIt<InitializeTrackerNotificationService>()();
     await StartupService.initializeApp();
     if (!await SQLiteClient.peekNeedsUpgrade()) {
       await BackgroundTrackingService.configureService();

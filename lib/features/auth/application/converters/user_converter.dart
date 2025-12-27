@@ -30,7 +30,8 @@ extension UserDtoDomainConverter on UserDto {
         createdAt: createdAt,
         updatedAt: updatedAt,
         theme: theme,
-        admin: admin
+        admin: admin,
+        // settings: settings
     );
 
 

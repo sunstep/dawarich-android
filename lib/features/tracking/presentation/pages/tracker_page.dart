@@ -620,8 +620,9 @@ class _BasicSettingsSection extends StatelessWidget {
                 validator: (value) {
                   final n = int.tryParse(value ?? '');
                   if (n == null) return 'Enter a number';
-                  if (n < vm.minBatch || n > vm.maxBatch)
+                  if (n < vm.minBatch || n > vm.maxBatch) {
                     return '${vm.minBatch}–${vm.maxBatch} only';
+                  }
                   return null;
                 },
               ),

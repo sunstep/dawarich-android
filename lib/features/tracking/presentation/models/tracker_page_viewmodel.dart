@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
-import 'package:dawarich/features/tracking/application/services/system_settings_service.dart';
-import 'package:dawarich/features/tracking/application/services/track_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
+import 'package:dawarich/features/tracking/application/usecases/track/end_track_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/track/get_active_track_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/track/start_track_usecase.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
@@ -173,12 +173,16 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   final LocalPointService _pointService;
   final TrackerSettingsService _trackerPreferencesService;
-  final TrackService _trackService;
+  final StartTrackUseCase _startTrackUseCase;
+  final EndTrackUseCase _endTrackUseCase;
+  final GetActiveTrackUseCase _getActiveTrackUseCase;
   final SystemSettingsService _systemSettingsService;
 
   TrackerPageViewModel(
       this._pointService,
-      this._trackService,
+      this._startTrackUseCase,
+      this._endTrackUseCase,
+      this._getActiveTrackUseCase,
       this._trackerPreferencesService,
       this._systemSettingsService);
 
@@ -225,7 +229,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> _getTrackRecordingStatus() async {
-    Option<Track> trackResult = await _trackService.getActiveTrack();
+    Option<Track> trackResult = await _getActiveTrackUseCase();
 
     if (trackResult case Some(value: Track track)) {
       TrackViewModel trackVm = track.toViewModel();
@@ -236,9 +240,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void toggleRecording() async {
     if (isRecording) {
-      _trackService.stopTracking();
+      _endTrackUseCase();
     } else {
-      Track track = await _trackService.startTracking();
+      Track track = await _startTrackUseCase();
       TrackViewModel trackVm = track.toViewModel();
       setCurrentTrack(trackVm);
     }

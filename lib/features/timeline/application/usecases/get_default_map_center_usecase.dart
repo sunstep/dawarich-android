@@ -1,0 +1,58 @@
+
+
+import 'package:country/country.dart';
+import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
+import 'package:device_region/device_region.dart';
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+
+final class GetDefaultMapCenterUseCase {
+
+  final IApiPointRepository _apiPointRepository;
+  GetDefaultMapCenterUseCase(this._apiPointRepository);
+
+  Future<LatLng> call() async {
+    // Try real GPS position first
+    if (await Geolocator.isLocationServiceEnabled()) {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission != LocationPermission.denied &&
+          permission != LocationPermission.deniedForever) {
+        try {
+          final current = await Geolocator.getCurrentPosition();
+          return LatLng(current.latitude, current.longitude);
+        } catch (_) {
+          final last = await Geolocator.getLastKnownPosition();
+          if (last != null) {
+            return LatLng(last.latitude, last.longitude);
+          }
+        }
+      }
+    }
+
+    // GPS failed → fallback to SIM/locale-based default
+    String? countryCode = await DeviceRegion.getSIMCountryCode();
+
+    if (countryCode == null) {
+      final dispatcher = WidgetsBinding.instance.platformDispatcher;
+      final Locale locale = dispatcher.locale;
+      countryCode = locale.countryCode ?? '';
+    }
+
+    return _centroidForIso(countryCode);
+  }
+
+
+  LatLng _centroidForIso(String iso) {
+    final c = Countries.values.firstWhere(
+          (e) => e.alpha2.toUpperCase() == iso.toUpperCase(),
+      orElse: () => Countries.values.first, // fallback country
+    );
+    final coord = c.geo.coordinate;
+    return LatLng(coord.latitude, coord.longitude);
+  }
+}

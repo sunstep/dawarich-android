@@ -105,18 +105,18 @@ Future<void> _boot() async {
 
 }
 
-class Dawarich extends StatelessWidget {
+class Dawarich extends ConsumerWidget {
 
   const Dawarich({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
         title: 'Dawarich',
         theme: LightTheme.primaryTheme,
         darkTheme: DarkTheme.primaryTheme,
         themeMode: ThemeMode.system,
-
+        routerConfig: appRouter.config(),
     );
   }
 }

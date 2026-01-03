@@ -1,7 +1,10 @@
 import 'dart:async';
 
-import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/clear_batch_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/delete_points_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/watch_current_batch_usecase.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
 import 'package:dawarich/features/batch/presentation/converters/local_point_converter.dart';
 import 'package:flutter/foundation.dart';
@@ -23,6 +26,18 @@ class UploadProgress {
 }
 
 final class BatchExplorerViewModel extends ChangeNotifier {
+
+  final WatchCurrentBatchUseCase _watchCurrentBatch;
+  final BatchUploadWorkflowUseCase _batchUploadWorkflow;
+  final ClearBatchUseCase _clearBatch;
+  final DeletePointsUseCase _deletePoints;
+
+  BatchExplorerViewModel(
+      this._watchCurrentBatch,
+      this._batchUploadWorkflow,
+      this._clearBatch,
+      this._deletePoints
+  );
 
   StreamSubscription<List<LocalPoint>>? _batchSubscription;
 
@@ -54,8 +69,6 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
-  final LocalPointService _localPointService;
-  BatchExplorerViewModel(this._localPointService);
 
   void _setBatch(List<LocalPointViewModel> batch) {
     _batch = batch;
@@ -104,7 +117,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
       return;
     }
 
-    final stream = await _localPointService.watchCurrentBatch();
+    final stream = await _watchCurrentBatch();
 
     _batchSubscription = stream.listen((batch) async {
       final batchVm = await compute(BatchExplorerViewModel._convertToViewModels, batch);
@@ -136,8 +149,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
         .map((point) => point.toDomain())
         .toList();
 
-    Result<(), String> uploadResult = await _localPointService
-        .prepareBatchUpload(localPoints, onChunkUploaded: (uploaded, total) {
+    Result<(), String> uploadResult = await _batchUploadWorkflow(localPoints, onChunkUploaded: (uploaded, total) {
       _progressController.add(UploadProgress(uploaded, total));
     });
 
@@ -153,13 +165,13 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   Future<void> deletePoints(List<LocalPointViewModel> points) async {
 
     List<int> pointIds = points.map((point) => point.id).toList();
-    await _localPointService.deletePoints(pointIds);
+    await _deletePoints(pointIds);
     batch.removeWhere((point) => pointIds.contains(point.id));
     notifyListeners();
   }
 
   Future<void> clearBatch() async {
-    await _localPointService.clearBatch();
+    await _clearBatch();
     batch.clear();
     notifyListeners();
   }

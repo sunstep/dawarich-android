@@ -16,7 +16,7 @@ final class GetLastPointUseCase {
   Future<Option<LastPoint>> call() async {
     final int userId = await _requireUserId();
 
-    Option<LastPointDto> pointResult =
+    Option<LastPoint> pointResult =
     await _localPointRepository.getLastPoint(userId);
 
     if (pointResult case Some(value: final LastPointDto lastPointDto)) {

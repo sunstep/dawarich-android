@@ -1,5 +1,9 @@
 import 'dart:async';
-import 'package:dawarich/core/application/services/local_point_service.dart';
+import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_cache_workflow.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
+import 'package:dawarich/features/tracking/application/usecases/settings/watch_tracker_settings_usecase.dart';
 import 'package:dawarich/features/tracking/data/repositories/reactive_periodic_ticker.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
@@ -16,12 +20,19 @@ final class PointAutomationService with ChangeNotifier {
   StreamSubscription<void>? _gpsSub;
   StreamSubscription<void>? _cacheSub;
 
-  final TrackerSettingsService _trackerPreferencesService;
-  final LocalPointService _localPointService;
-  final TrackingNotificationService _notificationService;
+  final WatchTrackerSettingsUseCase _watchTrackerSettings;
+  final CreatePointFromGpsWorkflow _createPointFromGps;
+  final CreatePointFromCacheWorkflow _createPointFromCache;
+  final GetBatchPointCountUseCase _getBatchPointCount;
+  final ShowTrackerNotificationUseCase _showTrackerNotification;
 
-  PointAutomationService(this._trackerPreferencesService,
-      this._localPointService, this._notificationService);
+  PointAutomationService(
+      this._watchTrackerSettings,
+      this._createPointFromGps,
+      this._createPointFromCache,
+      this._getBatchPointCount,
+      this._showTrackerNotification
+  );
 
   Future<void> startTracking() async {
 
@@ -37,14 +48,11 @@ final class PointAutomationService with ChangeNotifier {
 
       _isTracking = true;
 
-      final freq$ = (await _trackerPreferencesService.watchTrackingFrequencySetting())
-          .distinct()
-          .map((s) => Duration(seconds: (s > 0) ? s : 10))
-          .handleError((_) {})
-          .transform(StreamTransformer.fromBind((src) async* {
-        yield const Duration(seconds: 10);
-        yield* src.distinct();
-      }));
+      final freq$ = (await _watchTrackerSettings())
+          .map((s) {
+        final seconds = s.trackingFrequency;
+        return Duration(seconds: seconds > 0 ? seconds : 10);
+      }).distinct();
 
       _gpsTicker = ReactivePeriodicTicker(freq$);
       _cacheTicker = ReactivePeriodicTicker(Stream.value(const Duration(seconds: 5)));
@@ -109,7 +117,7 @@ final class PointAutomationService with ChangeNotifier {
     _writeBusy = true;
 
     try {
-      final result = await _localPointService.createPointFromGps();
+      final result = await _createPointFromGps();
 
       if (result case Ok(value: final LocalPoint point)) {
        await _notify();
@@ -140,7 +148,7 @@ final class PointAutomationService with ChangeNotifier {
     _writeBusy = true;
 
     try {
-      final res = await _localPointService.createPointFromCache();
+      final res = await _createPointFromCache();
       if (res is Ok<LocalPoint, String>) {
         _gpsTicker.snooze();
         await _notify();
@@ -156,10 +164,10 @@ final class PointAutomationService with ChangeNotifier {
 
   Future<void> _notify() async {
     try {
-      await _notificationService.showOrUpdate(
+      await _showTrackerNotification(
         title: 'Tracking location...',
         body: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
-            '${await _localPointService.getBatchPointsCount()} points in batch.',
+            '${await _getBatchPointCount()} points in batch.',
       );
     } catch (e, s) {
       debugPrint("[PointAutomation] Notify error: $e\n$s");

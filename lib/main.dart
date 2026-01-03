@@ -83,7 +83,7 @@ Future<void> _boot() async {
     debugPrint('Booting up...');
   }
   try {
-    await DependencyInjection.injectDependencies();
+    // await DependencyInjection.injectDependencies();
     await getIt.allReady();
     await getIt<InitializeTrackerNotificationService>()();
     await StartupService.initializeApp();

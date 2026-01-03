@@ -3,12 +3,12 @@ import 'package:dawarich/core/database/repositories/local_point_repository_inter
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:session_box/session_box.dart';
 
-final class WatchBatchPointCountUseCase {
+final class StreamBatchPointCountUseCase {
 
   final IPointLocalRepository _localPointRepository;
   final SessionBox<User> _userSession;
 
-  WatchBatchPointCountUseCase(this._localPointRepository, this._userSession);
+  StreamBatchPointCountUseCase(this._localPointRepository, this._userSession);
 
   Future<Stream<int>> call() async {
     final int userId = await _requireUserId();

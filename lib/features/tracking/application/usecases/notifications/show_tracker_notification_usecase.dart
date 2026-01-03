@@ -9,7 +9,7 @@ final class ShowTrackerNotificationUseCase {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
   FlutterLocalNotificationsPlugin();
 
-  Future<void> showOrUpdate({
+  Future<void> call({
     required String title,
     required String body,
     String? payload,

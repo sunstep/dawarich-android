@@ -3,33 +3,33 @@ import 'dart:async';
 
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_position_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
+import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/result.dart';
 
-final class CreatePointFromGpsUseCase {
+final class CreatePointFromGpsWorkflow {
 
-  final TrackerSettingsService _trackerPreferencesService;
+  final GetTrackerSettingsUseCase _getTrackerPreferences;
   final IHardwareRepository _hardwareInterfaces;
+  final CreatePointFromPositionUseCase _createPointFromPosition;
 
-  CreatePointFromGpsUseCase(this._hardwareInterfaces);
+  CreatePointFromGpsWorkflow(
+      this._getTrackerPreferences,
+      this._hardwareInterfaces,
+      this._createPointFromPosition
+  );
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
   Future<Result<LocalPoint, String>> call() async {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
-    final Future<bool> isTrackingAutomaticallyF = _trackerPreferencesService.getAutomaticTrackingSetting();
-    final Future<LocationAccuracy> accuracyF = _trackerPreferencesService.getLocationAccuracySetting();
-    final Future<int> currentTrackingFrequencyF = _trackerPreferencesService.getTrackingFrequencySetting();
 
-    final result = await Future.wait([
-      isTrackingAutomaticallyF,
-      accuracyF,
-      currentTrackingFrequencyF
-    ]);
-
-    final bool isTrackingAutomatically = result[0] as bool;
-    final LocationAccuracy accuracy = result[1] as LocationAccuracy;
-    final int currentTrackingFrequency = result[2] as int;
+    final TrackerSettings settings = await _getTrackerPreferences();
+    final bool isTrackingAutomatically = settings.automaticTracking;
+    final int currentTrackingFrequency = settings.trackingFrequency;
+    final LocationAccuracy accuracy = settings.locationAccuracy;
 
     final Duration autoAttemptTimeout = _clampDuration(
       Duration(seconds: currentTrackingFrequency),
@@ -75,7 +75,8 @@ final class CreatePointFromGpsUseCase {
       return Err("STALE_FIX: age=${age.inSeconds}s (max=${staleMax.inSeconds}s)");
     }
 
-    final Result<LocalPoint, String> pointResult = await createPointFromPosition(position, pointCreationTimestamp);
+    final Result<LocalPoint, String> pointResult =
+        await _createPointFromPosition(position, pointCreationTimestamp);
 
     if (pointResult case Err()) {
       return pointResult;
@@ -85,7 +86,6 @@ final class CreatePointFromGpsUseCase {
 
 
     final point = pointResult.unwrap();
-    await autoStoreAndUpload(point);
 
     return finalResult;
   }

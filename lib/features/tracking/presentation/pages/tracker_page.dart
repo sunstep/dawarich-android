@@ -6,7 +6,6 @@ import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:flutter/services.dart';
@@ -103,72 +102,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent>
         });
       });
     }
-  }
-
-  @override
-  void didPushNext() {
-    _consentPromptSub?.cancel();
-    _consentPromptSub = null;
-
-    Future.microtask(() {
-      try {
-        final BuildContext localContext = context;
-
-        if (localContext.mounted) {
-          localContext.read<TrackerPageViewModel>();
-        }
-      } catch (error) {
-        if (kDebugMode) {
-          debugPrint("Error persisting preferences on didPushNext: $error");
-        }
-      }
-    });
-  }
-
-  @override
-  void didPopNext() {
-    _consentPromptSub?.cancel();
-    _consentPromptSub = null;
-
-    Future.microtask(() {
-      try {
-        final BuildContext localContext = context;
-
-        if (localContext.mounted) {
-          final viewModel = localContext.read<TrackerPageViewModel>();
-          viewModel.getLastPoint();
-          viewModel.getPointInBatchCount();
-        }
-      } catch (error) {
-        if (kDebugMode) {
-          debugPrint("Error fetching last point on didPopNext: $error");
-        }
-      }
-    });
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    Future.microtask(() {
-      try {
-        final BuildContext localContext = context;
-
-        if (localContext.mounted) {
-          final viewModel = localContext.read<TrackerPageViewModel>();
-
-          if (state == AppLifecycleState.paused ||
-              state == AppLifecycleState.inactive) {}
-          if (state == AppLifecycleState.resumed) {
-            viewModel.getLastPoint();
-            viewModel.getPointInBatchCount();
-          }
-        }
-      } catch (error) {
-        if (kDebugMode) {
-          debugPrint("Error handling app lifecycle state change: $error");
-        }
-      }
-    });
   }
 
   Widget buildTrackerPage(BuildContext context, TrackerPageViewModel vm) {

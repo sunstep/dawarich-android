@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/point/point_pair.dart';
+import 'package:dawarich/features/batch/application/usecases/watch_current_batch_usecase.dart';
 import 'package:dawarich/features/timeline/application/helpers/timeline_points_processor.dart';
 import 'package:dawarich/features/timeline/application/usecases/get_current_location_usecase.dart';
 import 'package:dawarich/features/timeline/application/usecases/get_default_map_center_usecase.dart';
@@ -23,8 +23,8 @@ final class TimelineViewModel extends ChangeNotifier {
   final GetLastPointOfDateUseCase _getLastPointOfDateUseCase;
   final GetCurrentLocationUseCase _getCurrentLocationUseCase;
   final GetDefaultMapCenterUseCase _getDefaultMapCenterUseCase;
+  final WatchCurrentBatchUseCase _watchCurrentBatch;
 
-  final LocalPointService _localPointService;
   AnimatedMapController? animatedMapController;
 
   TimelineViewModel(
@@ -33,7 +33,7 @@ final class TimelineViewModel extends ChangeNotifier {
       this._getLastPointOfDateUseCase,
       this._getCurrentLocationUseCase,
       this._getDefaultMapCenterUseCase,
-      this._localPointService
+      this._watchCurrentBatch
   );
 
   bool _isLoading = true;
@@ -165,7 +165,7 @@ final class TimelineViewModel extends ChangeNotifier {
     _resolveAndSetInitialLocation();
     loadToday();
 
-    final batchStream = await _localPointService.watchCurrentBatch();
+    final batchStream = await _watchCurrentBatch();
 
     _localPointSubscription = batchStream.listen((points) {
 

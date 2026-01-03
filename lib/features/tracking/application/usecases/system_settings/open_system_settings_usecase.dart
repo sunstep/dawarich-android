@@ -9,7 +9,7 @@ final class OpenSystemSettingsUseCase {
 
   /// On Android: launch the “ignore battery optimizations” intent.
   /// On iOS: open the app’s system settings page.
-  Future<void> openSystemSettings() async {
+  Future<void> call() async {
     if (Platform.isAndroid) {
       final PackageInfo packageInfo = await PackageInfo.fromPlatform();
       final String packageName = packageInfo.packageName;

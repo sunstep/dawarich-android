@@ -2,7 +2,6 @@
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/user.dart';
-import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:session_box/session_box.dart';
 
 final class WatchCurrentBatchUseCase {
@@ -15,8 +14,7 @@ final class WatchCurrentBatchUseCase {
 
     final int userId = await _requireUserId();
 
-    return _localPointRepository.watchCurrentBatch(userId)
-        .map((dtos) => dtos.map((dto) => dto.toDomain()).toList());
+    return _localPointRepository.watchCurrentBatch(userId);
   }
 
   Future<int> _requireUserId() async {

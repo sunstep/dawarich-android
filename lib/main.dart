@@ -11,9 +11,7 @@ import 'package:dawarich/features/tracking/application/services/background_track
 import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-final RouteObserver<ModalRoute<void>> routeObserver =
-    RouteObserver<ModalRoute<void>>();
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final AppRouter appRouter = AppRouter();
 
@@ -48,7 +46,9 @@ Future<void> main() async {
         debugPrint('[dbHook] $e\n$st');
       }
 
-      runApp(const Dawarich());
+      runApp(ProviderScope(
+          child: const Dawarich()
+      ));
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
 
@@ -116,9 +116,7 @@ class Dawarich extends StatelessWidget {
         theme: LightTheme.primaryTheme,
         darkTheme: DarkTheme.primaryTheme,
         themeMode: ThemeMode.system,
-        routerConfig: appRouter.config(
-          navigatorObservers: () => [routeObserver],
-        ),
+
     );
   }
 }

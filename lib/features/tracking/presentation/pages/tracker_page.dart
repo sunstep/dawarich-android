@@ -32,23 +32,11 @@ final class _TrackerPageContent extends StatefulWidget {
 }
 
 final class _TrackerPageContentState extends State<_TrackerPageContent>
-    with WidgetsBindingObserver, RouteAware {
+    with WidgetsBindingObserver {
   StreamSubscription<String>? _consentPromptSub;
 
   _TrackerPageContentState();
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    routeObserver.unsubscribe(this);
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,10 +51,6 @@ final class _TrackerPageContentState extends State<_TrackerPageContent>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      final route = ModalRoute.of(context);
-      if (route != null) {
-        routeObserver.subscribe(this, route);
-      }
     });
 
     if (_consentPromptSub == null) {

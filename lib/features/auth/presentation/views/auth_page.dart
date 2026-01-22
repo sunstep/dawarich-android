@@ -1,30 +1,59 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';
+import 'package:dawarich/core/di/providers/auth_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/auth/presentation/viewmodels/auth_page_viewmodel.dart';
 import 'package:dawarich/features/auth/presentation/widgets/connect_steps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as provider;
 
 @RoutePage()
-final class AuthPage extends StatelessWidget {
+final class AuthPage extends ConsumerWidget {
   const AuthPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => getIt<AuthPageViewModel>(),
-      child: Container(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vmAsync = ref.watch(authPageViewModelProvider);
+    return vmAsync.when(
+      loading: () => Container(
         decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
         child: const Scaffold(
           backgroundColor: Colors.transparent,
-          body: Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              child: _AuthFormCard(),
-            ),
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (e, _) => Container(
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: Text(e.toString())),
+        ),
+      ),
+      data: (vm) => provider.ChangeNotifierProvider<AuthPageViewModel>.value(
+        value: vm,
+        child: _AuthScaffold(vm: vm),
+      ),
+    );
+  }
+}
+
+final class _AuthScaffold extends StatelessWidget {
+  final AuthPageViewModel vm;
+
+  const _AuthScaffold({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+            child: _AuthFormCard(vm: vm),
           ),
         ),
       ),
@@ -33,7 +62,9 @@ final class AuthPage extends StatelessWidget {
 }
 
 final class _AuthFormCard extends StatefulWidget {
-  const _AuthFormCard();
+  final AuthPageViewModel vm;
+
+  const _AuthFormCard({required this.vm});
 
   @override
   State<_AuthFormCard> createState() => _AuthFormCardState();
@@ -43,9 +74,31 @@ class _AuthFormCardState extends State<_AuthFormCard> {
   final _hostFormKey = GlobalKey<FormState>();
   final _apiFormKey = GlobalKey<FormState>();
 
+  AuthPageViewModel get vm => widget.vm;
+
+  @override
+  void initState() {
+    super.initState();
+
+    vm.addListener(_onVmChanged);
+  }
+
+  @override
+  void dispose() {
+    vm.removeListener(_onVmChanged);
+    super.dispose();
+  }
+
+  void _onVmChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
-    final AuthPageViewModel vm = context.watch<AuthPageViewModel>();
     return Card(
       elevation: 12,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -54,33 +107,25 @@ class _AuthFormCardState extends State<_AuthFormCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const _ConnectHeader(),
+            _ConnectHeader(vm: vm),
             const SizedBox(height: 24),
             Stepper(
               physics: const ClampingScrollPhysics(),
               currentStep: vm.currentStep,
               onStepContinue: () => _handleContinue(context, vm),
-              onStepCancel:
-                  vm.currentStep > 0 ? () => vm.goToPreviousStep() : null,
-              controlsBuilder: (ctx, details) =>
-                  _buildControls(ctx, details, vm),
+              onStepCancel: vm.currentStep > 0 ? () => vm.goToPreviousStep() : null,
+              controlsBuilder: (ctx, details) => _buildControls(ctx, details, vm),
               steps: [
                 Step(
                   title: const Text('Server'),
                   isActive: vm.currentStep >= 0,
-                  state: vm.currentStep > 0
-                      ? StepState.complete
-                      : StepState.indexed,
-                  content: ServerStepWidget(
-                    formKey: _hostFormKey,
-                  ),
+                  state: vm.currentStep > 0 ? StepState.complete : StepState.indexed,
+                  content: ServerStepWidget(formKey: _hostFormKey),
                 ),
                 Step(
                   title: const Text('Login'),
                   isActive: vm.currentStep >= 1,
-                  state: vm.currentStep > 1
-                      ? StepState.complete
-                      : StepState.indexed,
+                  state: vm.currentStep > 1 ? StepState.complete : StepState.indexed,
                   content: LoginStepWidget(formKey: _apiFormKey),
                 ),
               ],
@@ -91,9 +136,7 @@ class _AuthFormCardState extends State<_AuthFormCard> {
     );
   }
 
-  Future<void> _handleContinue(
-      BuildContext context, AuthPageViewModel vm) async {
-
+  Future<void> _handleContinue(BuildContext context, AuthPageViewModel vm) async {
     if (vm.currentStep == 0) {
       if (!(_hostFormKey.currentState?.validate() ?? false)) {
         return;
@@ -104,37 +147,38 @@ class _AuthFormCardState extends State<_AuthFormCard> {
       if (ok) {
         vm.goToNextStep();
       }
-    } else {
 
-      if (!(_apiFormKey.currentState?.validate() ?? false)) {
-        return;
+      return;
+    }
+
+    if (!(_apiFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final ok = await vm.tryLoginApiKey(vm.apiKeyController.text.trim());
+
+    if (!ok) {
+      return;
+    }
+
+    final bool isServerSupported = await vm.checkServerSupport();
+
+    if (kDebugMode || isServerSupported) {
+      if (context.mounted) {
+        context.router.root.replaceAll([const TimelineRoute()]);
       }
+      return;
+    }
 
-      final ok = await vm.tryLoginApiKey(vm.apiKeyController.text.trim());
-
-      if (ok) {
-
-        final bool isServerSupported = await vm.checkServerSupport();
-
-        if (kDebugMode || isServerSupported) {
-          if (context.mounted) {
-            context.router.root.replaceAll([const TimelineRoute()]);
-          }
-
-        } else if (context.mounted) {
-          context.router.root.replaceAll([const VersionCheckRoute()]);
-        }
-
-
-
-      }
+    if (context.mounted) {
+      context.router.root.replaceAll([const VersionCheckRoute()]);
     }
   }
 
-  Widget _buildControls(
-      BuildContext context, ControlsDetails d, AuthPageViewModel vm) {
+  Widget _buildControls(BuildContext context, ControlsDetails d, AuthPageViewModel vm) {
     final busy = vm.isVerifyingHost || vm.isLoggingIn;
     final isLast = vm.currentStep == 1;
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Row(
@@ -146,13 +190,13 @@ class _AuthFormCardState extends State<_AuthFormCard> {
             onPressed: busy ? null : d.onStepContinue,
             child: busy
                 ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Colors.white,
+              ),
+            )
                 : Text(isLast ? 'Sign in' : 'Next'),
           ),
         ],
@@ -162,10 +206,12 @@ class _AuthFormCardState extends State<_AuthFormCard> {
 }
 
 final class _ConnectHeader extends StatelessWidget {
-  const _ConnectHeader();
+  final AuthPageViewModel vm;
+
+  const _ConnectHeader({required this.vm});
+
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<AuthPageViewModel>();
     return Column(
       children: [
         AnimatedSwitcher(

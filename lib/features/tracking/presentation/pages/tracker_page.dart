@@ -1,122 +1,56 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/main.dart';
 import 'package:dawarich/core/routing/app_router.dart';
-import 'package:dawarich/core/theme/app_gradients.dart';
-import 'package:dawarich/shared/widgets/custom_appbar.dart';
-import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dawarich/core/di/providers/usecase_providers.dart';
 
 @RoutePage()
-final class TrackerPage extends StatelessWidget {
+final class TrackerPage extends ConsumerWidget {
   const TrackerPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (_) => getIt<TrackerPageViewModel>()..initialize(),
-        builder: (context, child) => Consumer<TrackerPageViewModel>(
-            builder: (context, vm, child) => _TrackerPageContent()));
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vmAsync = ref.watch(trackerPageViewModelProvider);
 
-final class _TrackerPageContent extends StatefulWidget {
-  @override
-  State<_TrackerPageContent> createState() => _TrackerPageContentState();
-}
-
-final class _TrackerPageContentState extends State<_TrackerPageContent>
-    with WidgetsBindingObserver {
-  StreamSubscription<String>? _consentPromptSub;
-
-  _TrackerPageContentState();
-
-
-  @override
-  Widget build(BuildContext context) {
-    final TrackerPageViewModel vm = context.read<TrackerPageViewModel>();
-    return buildTrackerPage(context, vm);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-    });
-
-    if (_consentPromptSub == null) {
-      Future.microtask(() {
-        if (!mounted) return;
-
-        final vm = context.read<TrackerPageViewModel>();
-        _consentPromptSub = vm.onConsentPrompt.listen((message) {
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (!context.mounted) return;
-
-            final result = await showDialog<bool>(
-              context: context,
-              barrierDismissible: true,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Dawarich Needs Permission'),
-                content: Text(message),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: const Text('No thanks'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-
-            vm.handleConsentResponse(result ?? false);
-          });
-        });
-      });
-    }
-  }
-
-  Widget buildTrackerPage(BuildContext context, TrackerPageViewModel vm) {
-    return Container(
-      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
+    return vmAsync.when(
+      loading: () => const Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: CustomAppbar(
-          title: 'Tracker',
-          titleFontSize: 32,
-          backgroundColor: Colors.transparent,
-        ),
-        drawer: CustomDrawer(),
-        body: SafeArea(child: _TrackerBody()),
+        body: Center(child: CircularProgressIndicator()),
       ),
+      error: (e, _) => Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(child: Text(e.toString())),
+      ),
+      data: (vm) {
+        return ChangeNotifierProvider.value(
+          value: vm,
+          child: _TrackerPageContentBody(),
+        );
+      },
     );
   }
 }
 
-class _TrackerBody extends StatelessWidget {
+/// Everything below expects to read the VM via provider's `context.watch`.
+/// This widget is the original tracker page content entry-point.
+final class _TrackerPageContentBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LastPointCard(),
-          SizedBox(height: 32),
-          _SettingsCard(),
-        ],
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Column(
+          children: const [
+            LastPointCard(),
+            _SettingsCard(),
+          ],
+        ),
       ),
     );
   }
@@ -307,49 +241,6 @@ class LastPointCard extends StatelessWidget {
   }
 }
 
-/// A little “info tile” with an icon + multi-line value.
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final List<String> valueLines;
-
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.valueLines,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.bodyMedium!;
-    final grey = Colors.grey[600]!;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: style.copyWith(color: grey)),
-              const SizedBox(height: 4),
-              // each line (Date / time broken out) is right-aligned so the numbers line up
-              ...valueLines.map((line) => Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      line,
-                      style: style.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  )),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _SettingsCard extends StatelessWidget {
   const _SettingsCard();

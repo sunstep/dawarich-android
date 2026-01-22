@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
@@ -82,12 +81,7 @@ final class CreatePointFromGpsWorkflow {
       return pointResult;
     }
 
-    Result<LocalPoint, String> finalResult = pointResult;
-
-
-    final point = pointResult.unwrap();
-
-    return finalResult;
+    return pointResult;
   }
 
   Duration _clampDuration(Duration v, Duration min, Duration max) {

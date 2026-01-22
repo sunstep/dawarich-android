@@ -15,10 +15,10 @@ import 'package:pub_semver/pub_semver.dart';
 /// - Network/parse errors: fail open (OK)
 /// - Rules can *block* (Err with message)
 /// - Rules can restrict server with `allowServer` range (Err with message)
-final class ServerVersionCompatabilityUseCase {
+final class ServerVersionCompatibilityUseCase {
 
   final IVersionRepository _versionRepository;
-  ServerVersionCompatabilityUseCase(this._versionRepository);
+  ServerVersionCompatibilityUseCase(this._versionRepository);
 
   Future<Result<(), Failure>> call() async {
 
@@ -147,17 +147,6 @@ final class ServerVersionCompatabilityUseCase {
     return const Ok(());
   }
 
-  Version? _tryParseVersion(String? raw) {
-    if (raw == null || raw.isEmpty) {
-      return null;
-    }
-    try {
-      return Version.parse(raw);
-    } catch (_) {
-      return null;
-    }
-  }
-
   VersionConstraint? _tryParseConstraint(String? raw) {
     if (raw == null || raw.trim().isEmpty) {
       return null;
@@ -169,16 +158,5 @@ final class ServerVersionCompatabilityUseCase {
     }
   }
 
-  Map<String, dynamic>? _tryDecodeMap(String jsonStr) {
-    try {
-      final dynamic decoded = jsonDecode(jsonStr);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
 }
+

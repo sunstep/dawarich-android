@@ -68,35 +68,13 @@ final class ApiPointRepository implements IApiPointRepository {
         return const Some(<ApiPointDTO>[]);
       }
 
-      final pageFutures = List<Future<List<ApiPointDTO>>>.generate(
-        totalPages,
-            (i) async {
-          final pageNumber = i + 1;
-          try {
-            final resp = await _apiClient.get<List<dynamic>>(
-              '/api/v1/points',
-              queryParameters: {
-                'start_at': startIso,
-                'end_at':   endIso,
-                'per_page': perPage,
-                'page':     pageNumber,
-                'order':    order == PointsOrder.ascending ? 'asc' : 'desc',
-              },
-            );
-
-            return resp.data!
-                .map((json) => ApiPointDTO(
-                json as Map<String, dynamic>))
-                .toList();
-          } catch (e, st) {
-            debugPrint('Error fetching points page $pageNumber: $e\n$st');
-            return <ApiPointDTO>[];
-          }
-        },
+      final allPoints = await _fetchAllFullPagesThrottled(
+        totalPages: totalPages,
+        startIso: startIso,
+        endIso: endIso,
+        perPage: perPage,
+        order: order,
       );
-
-      final pages = await Future.wait(pageFutures);
-      final allPoints = pages.expand((list) => list).toList();
 
       return Some(allPoints);
     } catch (e, st) {
@@ -194,6 +172,81 @@ final class ApiPointRepository implements IApiPointRepository {
         results.addAll(points);
       } catch (e, st) {
         debugPrint('⚠️ Failed page $pageNumber: $e\n$st');
+      }
+    }
+
+    while (queue.isNotEmpty || active.isNotEmpty) {
+      while (active.length < maxConcurrent && queue.isNotEmpty) {
+        final page = queue.removeAt(0);
+        final future = handlePage(page);
+        active.add(future);
+        future.whenComplete(() => active.remove(future));
+      }
+      if (active.isNotEmpty) {
+        await Future.any(active);
+      }
+    }
+
+    return results;
+  }
+
+  Future<List<ApiPointDTO>> _fetchAllFullPagesThrottled({
+    required int totalPages,
+    required String startIso,
+    required String endIso,
+    required int perPage,
+    PointsOrder order = PointsOrder.descending,
+    int maxConcurrent = 5,
+    Duration perPageTimeout = const Duration(seconds: 25),
+    int maxAttempts = 2,
+  }) async {
+    final results = <ApiPointDTO>[];
+    final queue = List<int>.generate(totalPages, (i) => i + 1);
+    final active = <Future<void>>[];
+
+    bool _isRetryable(Object e) {
+      if (e is DioException) {
+        return e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.connectionError;
+      }
+      return false;
+    }
+
+    Future<void> handlePage(int pageNumber) async {
+      for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          final resp = await _apiClient
+              .get<List<dynamic>>(
+            '/api/v1/points',
+            queryParameters: {
+              'start_at': startIso,
+              'end_at': endIso,
+              'per_page': perPage,
+              'page': pageNumber,
+              'order': order == PointsOrder.ascending ? 'asc' : 'desc',
+            },
+          )
+              .timeout(perPageTimeout);
+
+          final points = resp.data!
+              .map((json) => ApiPointDTO(json as Map<String, dynamic>))
+              .toList();
+          results.addAll(points);
+          return;
+        } catch (e, st) {
+          final retryable = _isRetryable(e);
+          final isLastAttempt = attempt >= maxAttempts;
+          debugPrint(
+            'Error fetching points page $pageNumber (attempt $attempt/$maxAttempts): $e\n$st',
+          );
+          if (!retryable || isLastAttempt) {
+            return;
+          }
+          // small backoff to avoid hammering the server
+          await Future<void>.delayed(Duration(milliseconds: 300 * attempt));
+        }
       }
     }
 

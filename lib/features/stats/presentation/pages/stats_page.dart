@@ -1,48 +1,77 @@
 import 'package:auto_route/annotations.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
-import 'package:provider/provider.dart';
+import 'package:dawarich/core/di/providers/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 
 @RoutePage()
-class StatsPage extends StatelessWidget {
+class StatsPage extends ConsumerStatefulWidget {
   const StatsPage({super.key});
 
   @override
+  ConsumerState<StatsPage> createState() => _StatsPageState();
+}
+
+class _StatsPageState extends ConsumerState<StatsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(statsPageViewModelProvider.future).then((vm) => vm.refreshStats());
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => getIt<StatsPageViewModel>()..refreshStats(),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: Theme.of(context).pageBackground,
-        ),
-        child: Scaffold(
+    final vmAsync = ref.watch(statsPageViewModelProvider);
+
+    return vmAsync.when(
+      loading: () => Container(
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: const Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: const CustomAppbar(
-            title: 'Stats',
-            titleFontSize: 32,
-            backgroundColor: Colors.transparent,
-          ),
-          drawer: CustomDrawer(),
-          body: SafeArea(
-            child: Consumer<StatsPageViewModel>(
-              builder: (ctx, vm, _) {
-                // Branch on loading
-                return vm.isLoading
-                    ? _buildFullSkeleton(ctx)
-                    : (vm.stats == null
-                    ? _buildEmptyState(ctx, vm)
-                    : _buildFullContent(ctx, vm));
-              },
-            ),
-          ),
+          body: Center(child: CircularProgressIndicator()),
         ),
       ),
+      error: (e, _) => Container(
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: Text(e.toString())),
+        ),
+      ),
+      data: (vm) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: Theme.of(context).pageBackground,
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: const CustomAppbar(
+              title: 'Stats',
+              titleFontSize: 32,
+              backgroundColor: Colors.transparent,
+            ),
+            drawer: CustomDrawer(),
+            body: SafeArea(
+              child: Builder(
+                builder: (ctx) {
+                  return vm.isLoading
+                      ? _buildFullSkeleton(ctx)
+                      : (vm.stats == null
+                      ? _buildEmptyState(ctx, vm)
+                      : _buildFullContent(ctx, vm));
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -5,7 +5,6 @@ import 'package:dawarich/features/tracking/application/usecases/point_creation/c
 import 'package:dawarich/features/tracking/application/usecases/settings/get_device_model_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/save_tracker_settings_usecase.dart';
-import 'package:dawarich/features/tracking/application/usecases/settings/watch_tracker_settings_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/stream_last_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/system_settings/check_system_settings_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/system_settings/open_system_settings_usecase.dart';
@@ -39,7 +38,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   final GetTrackerSettingsUseCase _getTrackerSettings;
   final SaveTrackerSettingsUseCase _saveTrackerSettings;
-  final WatchTrackerSettingsUseCase _watchTrackerSettings;
   final GetDeviceModelUseCase _getDeviceModel;
   StreamSubscription<TrackerSettings>? _settingsSub;
   final StreamLastPointUseCase _streamLastPoint;
@@ -54,7 +52,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
   TrackerPageViewModel(
       this._getTrackerSettings,
       this._saveTrackerSettings,
-      this._watchTrackerSettings,
       this._getDeviceModel,
       this._streamLastPoint,
       this._streamBatchPointCount,

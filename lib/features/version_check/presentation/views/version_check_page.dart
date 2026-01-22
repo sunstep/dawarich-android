@@ -1,34 +1,76 @@
 import 'package:auto_route/annotations.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/di/providers/version_check_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
-import 'package:dawarich/features/version_check/presentation/viewmodel/version_check_viewmodel.dart';
+import 'package:dawarich/features/version_check/presentation/viewmodels/version_check_viewmodel.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class VersionCheckPage extends StatelessWidget {
+final class VersionCheckPage extends ConsumerStatefulWidget {
 
   const VersionCheckPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => getIt<VersionCheckViewModel>()..initialize(),
-      builder: (ctx, child) => const _VersionCheckContent(),
-    );
-  }
-
+  ConsumerState<VersionCheckPage> createState() => _VersionCheckPageState();
 }
 
-class _VersionCheckContent extends StatelessWidget {
-  const _VersionCheckContent();
+final class _VersionCheckPageState extends ConsumerState<VersionCheckPage> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final vm = await ref.read(versionCheckViewModelProvider.future);
+      if (!mounted) return;
+      await vm.initialize();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<VersionCheckViewModel>();
+    final vmAsync = ref.watch(versionCheckViewModelProvider);
+
+    return vmAsync.when(
+      loading: () => Container(
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: const Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (e, _) => Container(
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: Text(e.toString())),
+        ),
+      ),
+      data: (vm) => _VersionCheckContent(
+        vm: vm,
+        onRetrySuccess: () {
+          appRouter.replaceAll([const TimelineRoute()]);
+        },
+      ),
+    );
+  }
+}
+
+final class _VersionCheckContent extends StatelessWidget {
+
+  final VersionCheckViewModel vm;
+  final VoidCallback onRetrySuccess;
+
+  const _VersionCheckContent({
+    required this.vm,
+    required this.onRetrySuccess,
+  });
+
+  @override
+  Widget build(BuildContext context) {
 
     return Container(
       decoration: BoxDecoration(

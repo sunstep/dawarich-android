@@ -297,8 +297,6 @@ final class SQLiteClient extends _$SQLiteClient {
     */
 
 
-  Completer<void>? _uiReady = Completer<void>();
-
   Future<void>? _openFuture;
 
   Future<void> ensureOpened() => _openFuture ??= _forceOpen();
@@ -360,19 +358,9 @@ final class SQLiteClient extends _$SQLiteClient {
     await customSelect('SELECT 1').get();
   }
 
-  void signalUiReadyForMigration() {
-
-    final c = _uiReady ??= Completer<void>();
-    if (!c.isCompleted){
-      c.complete();
-    }
-  }
-
-  Future<void> _waitForUi() => (_uiReady ??= Completer<void>()).future;
 
   void resetForRetry() {
     _openFuture = null;     // allow ensureOpened() to run again
-    _uiReady = null;       // re-block until UI signals again
   }
 
   static const int kSchemaVersion = 4;
@@ -457,8 +445,6 @@ final class SQLiteClient extends _$SQLiteClient {
       if (kDebugMode) {
         debugPrint('[Migration] Running from version $from to $to');
       }
-
-      await _waitForUi();
 
       if (_devFakeOnly) {
 

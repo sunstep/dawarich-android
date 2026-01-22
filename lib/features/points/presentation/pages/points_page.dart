@@ -1,25 +1,55 @@
 import 'package:auto_route/annotations.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
 import 'package:shimmer/shimmer.dart';
+import 'package:dawarich/core/di/providers/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-class PointsPage extends StatelessWidget {
-
+class PointsPage extends ConsumerStatefulWidget {
   const PointsPage({super.key});
 
   @override
+  ConsumerState<PointsPage> createState() => _PointsPageState();
+}
+
+class _PointsPageState extends ConsumerState<PointsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final vm = await ref.read(pointsPageViewModelProvider.future);
+      if (!mounted) return;
+      vm.initialize();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => getIt<PointsPageViewModel>()..initialize(),
-      builder: (ctx, child) => Consumer<PointsPageViewModel>(builder: (ctx, vm, child) {
-        return Container(
+    final vmAsync = ref.watch(pointsPageViewModelProvider);
+    return vmAsync.when(
+      loading: () => Container(
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: const Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (e, _) => Container(
+        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: Text(e.toString())),
+        ),
+      ),
+      data: (vm) => provider.ChangeNotifierProvider<PointsPageViewModel>.value(
+        value: vm,
+        child: Container(
           decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
           child: Scaffold(
             backgroundColor: Colors.transparent,
@@ -29,11 +59,10 @@ class PointsPage extends StatelessWidget {
               backgroundColor: Colors.transparent,
             ),
             drawer: CustomDrawer(),
-            body: SafeArea(child: _PointsBody()),
+            body: const SafeArea(child: _PointsBody()),
           ),
-        );
-      },
-      )
+        ),
+      ),
     );
   }
 }

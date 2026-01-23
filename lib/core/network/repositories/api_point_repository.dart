@@ -204,7 +204,7 @@ final class ApiPointRepository implements IApiPointRepository {
     final queue = List<int>.generate(totalPages, (i) => i + 1);
     final active = <Future<void>>[];
 
-    bool _isRetryable(Object e) {
+    bool isRetryable(Object e) {
       if (e is DioException) {
         return e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout ||
@@ -236,7 +236,7 @@ final class ApiPointRepository implements IApiPointRepository {
           results.addAll(points);
           return;
         } catch (e, st) {
-          final retryable = _isRetryable(e);
+          final retryable = isRetryable(e);
           final isLastAttempt = attempt >= maxAttempts;
           debugPrint(
             'Error fetching points page $pageNumber (attempt $attempt/$maxAttempts): $e\n$st',

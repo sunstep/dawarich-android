@@ -1,8 +1,6 @@
-
-
 import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/features/version_check/application/usecases/get_server_version_usecase.dart';
-import 'package:dawarich/features/version_check/application/usecases/server_version_compatability_usecase.dart';
+import 'package:dawarich/features/version_check/application/usecases/server_version_compatibility_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -10,10 +8,12 @@ import 'package:pub_semver/pub_semver.dart';
 final class VersionCheckViewModel extends ChangeNotifier {
 
 
-  final ServerVersionCompatabilityUseCase _serverVersionCompatabilityChecker;
+  final ServerVersionCompatibilityUseCase _serverVersionCompatabilityChecker;
   final GetServerVersionUseCase _serverVersionGetter;
 
   VersionCheckViewModel(this._serverVersionCompatabilityChecker, this._serverVersionGetter);
+
+  bool _didInitialize = false;
 
   bool _isLoading = true;
   bool _isSupported = false;
@@ -30,6 +30,13 @@ final class VersionCheckViewModel extends ChangeNotifier {
   String? get requiredVersion => _requiredVersion;
 
   Future<void> initialize() async {
+
+    if (_didInitialize) {
+      return;
+    }
+
+    _didInitialize = true;
+
     try {
       setIsLoading(true);
 
@@ -38,9 +45,9 @@ final class VersionCheckViewModel extends ChangeNotifier {
       _isSupported = serverSupportedResult.isOk();
 
       if (_isSupported) {
-        _errorMessage = null; // clear any old message
-      } else if (serverSupportedResult case Err(value: final String message)) {
-        setErrorMessage(message);
+        _errorMessage = null;
+      } else if (serverSupportedResult case Err(value: final Failure error)) {
+        setErrorMessage(error.message);
       }
 
       final Result<Version, Failure> serverVersion = await _serverVersionGetter();

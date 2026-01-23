@@ -2,23 +2,21 @@ import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/features/auth/application/usecases/login_with_api_key_usecase.dart';
 import 'package:dawarich/features/auth/application/usecases/test_host_connection_usecase.dart';
 import 'package:dawarich/features/auth/domain/models/auth_qr_payload.dart';
-import 'package:dawarich/features/version_check/application/usecases/get_server_version_usecase.dart';
-import 'package:dawarich/features/version_check/application/usecases/server_version_compatability_usecase.dart';
+import 'package:dawarich/features/version_check/application/usecases/server_version_compatibility_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 
 final class AuthPageViewModel extends ChangeNotifier {
 
-  final ServerVersionCompatabilityUseCase _serverVersionCompatabilityUseCase;
-  final GetServerVersionUseCase _getServerVersionUseCase;
+  final ServerVersionCompatibilityUseCase _serverVersionCompatabilityUseCase;
   final TestHostConnectionUseCase _testHostConnectionUseCase;
   final LoginWithApiKeyUseCase _loginWithApiKeyUseCase;
+
   AuthPageViewModel(
-      this._serverVersionCompatabilityUseCase,
-      this._getServerVersionUseCase,
-      this._testHostConnectionUseCase,
-      this._loginWithApiKeyUseCase
+    this._serverVersionCompatabilityUseCase,
+    this._testHostConnectionUseCase,
+    this._loginWithApiKeyUseCase,
   );
 
   // final GlobalKey _emailController = TextEditingController();

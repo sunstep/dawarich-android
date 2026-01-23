@@ -1,111 +1,162 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/constants/constants.dart';
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/features/migration/presentation/models/migration_viewmodel.dart';
+import 'package:dawarich/core/di/providers/migration_providers.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/migration/presentation/viewmodels/migration_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class MigrationPage extends StatefulWidget implements AutoRouteWrapper {
+final class MigrationPage extends ConsumerWidget {
   const MigrationPage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) {
-    return ChangeNotifierProvider<MigrationViewModel>(
-      create: (_) => MigrationViewModel(),
-      child: this,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vmAsync = ref.watch(migrationViewModelProvider);
+
+    return vmAsync.when(
+      loading: () => _ScaffoldShell(
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => _ScaffoldShell(
+        child: Center(child: Text(e.toString())),
+      ),
+      data: (vm) => _MigrationContent(vm: vm),
     );
   }
-
-  @override
-  State<MigrationPage> createState() => _MigrationPageState();
 }
 
-class _MigrationPageState extends State<MigrationPage> {
+final class _MigrationContent extends StatefulWidget {
+  final MigrationViewModel vm;
+
+  const _MigrationContent({required this.vm});
+
+  @override
+  State<_MigrationContent> createState() => _MigrationContentState();
+}
+
+final class _MigrationContentState extends State<_MigrationContent> {
+  bool _started = false;
+
+  MigrationViewModel get vm => widget.vm;
+
   @override
   void initState() {
     super.initState();
 
+    vm.addListener(_onVmChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(kMigrationDelay);
-      if (mounted) {
-        getIt<SQLiteClient>().signalUiReadyForMigration();
-        context.read<MigrationViewModel>().startMigration(context);
+      if (_started) {
+        return;
       }
+
+      _started = true;
+
+      await Future.delayed(kMigrationDelay);
+
+      if (!mounted) {
+        return;
+      }
+
+      await vm.startMigration(context);
     });
   }
 
   @override
+  void dispose() {
+    vm.removeListener(_onVmChanged);
+    super.dispose();
+  }
+
+  void _onVmChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final vm = context.watch<MigrationViewModel>();
     final theme = Theme.of(context);
 
+    return _ScaffoldShell(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              Icon(
+                Icons.sync,
+                size: 96,
+                color: theme.colorScheme.onSurface,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Updating Database',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Almost there—finalizing your update.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const Spacer(),
+              if (vm.error != null)
+                _ErrorCard(
+                  errorMessage: vm.error!,
+                  onRetry: () => vm.retryMigration(context),
+                )
+              else
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Please wait…',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ],
+                ),
+              const Spacer(flex: 2),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final class _ScaffoldShell extends StatelessWidget {
+  final Widget child;
+
+  const _ScaffoldShell({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Container(
         decoration: BoxDecoration(
-          gradient: theme.pageBackground,
+          gradient: Theme.of(context).pageBackground,
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-                Icon(
-                  Icons.sync,
-                  size: 96,
-                  color: theme.colorScheme.onSurface,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Updating Database',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Almost there—finalizing your update.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const Spacer(),
-                if (vm.error != null)
-                  _ErrorCard(
-                    errorMessage: vm.error!,
-                    onRetry: () => vm.retryMigration(context),
-                  )
-                else
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Please wait…',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.75),
-                        ),
-                      ),
-                    ],
-                  ),
-                const Spacer(flex: 2),
-              ],
-            ),
-          ),
-        ),
+        child: child,
       ),
     );
   }

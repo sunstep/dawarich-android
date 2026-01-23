@@ -9,7 +9,7 @@ import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
-final class PointAutomationService with ChangeNotifier {
+final class PointAutomationService {
 
   bool _isTracking = false;
   bool _writeBusy = false;
@@ -119,8 +119,8 @@ final class PointAutomationService with ChangeNotifier {
     try {
       final result = await _createPointFromGps();
 
-      if (result case Ok(value: final LocalPoint point)) {
-       await _notify();
+      if (result case Ok()) {
+        await _notify();
       } else if (result case Err(value: final err)) {
         debugPrint("[PointAutomation] Forced GPS point not created: $err");
       }

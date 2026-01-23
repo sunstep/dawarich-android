@@ -2,18 +2,14 @@ import 'dart:async';
 
 import 'package:dawarich/core/database/drift/database/crypto/sqlcipher_bootstrap.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/di/providers/core_providers.dart';
 import 'package:dawarich/core/startup/startup_service.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';
-import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
-import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-final RouteObserver<ModalRoute<void>> routeObserver =
-    RouteObserver<ModalRoute<void>>();
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final AppRouter appRouter = AppRouter();
 
@@ -48,7 +44,10 @@ Future<void> main() async {
         debugPrint('[dbHook] $e\n$st');
       }
 
-      runApp(const Dawarich());
+      // Use ONE container for both ProviderScope (widget tree) and startup boot.
+      final container = ProviderContainer();
+
+      runApp(UncontrolledProviderScope(container: container, child: const Dawarich()));
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
 
@@ -56,7 +55,7 @@ Future<void> main() async {
           debugPrint('[BOOT] first frame');
         }
 
-        unawaited(_boot());
+        unawaited(_boot(container));
       });
     }, (Object error, StackTrace stack) {
       debugPrint('[ZonedError] $error');
@@ -77,21 +76,23 @@ Future<void> _dbHook() async {
   }
 }
 
-Future<void> _boot() async {
+Future<void> _boot(ProviderContainer container) async {
 
   if (kDebugMode) {
     debugPrint('Booting up...');
   }
   try {
-    // await DependencyInjection.injectDependencies();
-    await getIt.allReady();
-    await getIt<InitializeTrackerNotificationService>()();
-    await StartupService.initializeApp();
-    if (!await SQLiteClient.peekNeedsUpgrade()) {
-      await BackgroundTrackingService.configureService();
-    } else if (kDebugMode) {
-      debugPrint('[Boot] Skipping tracker start due to pending DB upgrade');
-    }
+
+    await container.read(coreProvider.future);
+
+    // Startup boot should use the same container used by ProviderScope.
+    await StartupService.initializeAppFromContainer(container);
+
+    // if (!await SQLiteClient.peekNeedsUpgrade()) {
+    //   await BackgroundTrackingService.configureService();
+    // } else if (kDebugMode) {
+    //   debugPrint('[Boot] Skipping tracker start due to pending DB upgrade');
+    // }
   } catch (e, st) {
     if (kDebugMode) {
       debugPrint("Error during app bootstrap: $e\n$st");
@@ -105,20 +106,18 @@ Future<void> _boot() async {
 
 }
 
-class Dawarich extends StatelessWidget {
+class Dawarich extends ConsumerWidget {
 
   const Dawarich({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
         title: 'Dawarich',
         theme: LightTheme.primaryTheme,
         darkTheme: DarkTheme.primaryTheme,
         themeMode: ThemeMode.system,
-        routerConfig: appRouter.config(
-          navigatorObservers: () => [routeObserver],
-        ),
+        routerConfig: appRouter.config(),
     );
   }
 }

@@ -3,19 +3,16 @@
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_position_usecase.dart';
-import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 final class CreatePointFromCacheWorkflow {
 
-  final GetTrackerSettingsUseCase _getTrackerPreferences;
   final IHardwareRepository _hardwareInterfaces;
   final CreatePointFromPositionUseCase _createPointFromPosition;
 
   CreatePointFromCacheWorkflow(
-      this._getTrackerPreferences,
       this._hardwareInterfaces,
       this._createPointFromPosition
   );

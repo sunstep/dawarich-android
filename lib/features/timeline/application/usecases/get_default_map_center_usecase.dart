@@ -1,16 +1,11 @@
-
-
 import 'package:country/country.dart';
-import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:device_region/device_region.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 final class GetDefaultMapCenterUseCase {
-
-  final IApiPointRepository _apiPointRepository;
-  GetDefaultMapCenterUseCase(this._apiPointRepository);
+  GetDefaultMapCenterUseCase();
 
   Future<LatLng> call() async {
     // Try real GPS position first

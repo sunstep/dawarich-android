@@ -43,6 +43,16 @@ android {
     }
 
     signingConfigs {
+        debug {
+            // Keep debug signing stable across rebuilds/machines.
+            // This matches Flutter/Gradle defaults and ensures Android Keystore-backed
+            // data (e.g., flutter_secure_storage encryptedSharedPreferences) stays readable.
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            storeType     'pkcs12'
+        }
         release {
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
@@ -57,6 +67,9 @@ android {
             // attach the signing config
             signingConfig signingConfigs.release
 
+            // Make sure release label stays clean.
+            resValue "string", "app_name", "Dawarich"
+
             // optimizations
             minifyEnabled    true
             shrinkResources  true
@@ -67,6 +80,18 @@ android {
 
             debuggable       false
             jniDebuggable    false
+        }
+
+        debug {
+            // Install debug build alongside release.
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+
+            // Use stable debug signing. Helps prevent "lost" secure storage on reinstall.
+            signingConfig signingConfigs.debug
+
+            // Distinct launcher name.
+            resValue "string", "app_name", "Dawarich (Dev)"
         }
     }
 }

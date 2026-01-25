@@ -1,4 +1,5 @@
 import 'package:auto_route/annotations.dart';
+import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
@@ -7,7 +8,6 @@ import 'package:dawarich/features/points/presentation/models/points_page_viewmod
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:shimmer/shimmer.dart';
-import 'package:dawarich/core/di/providers/app_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()

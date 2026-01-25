@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
+import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
@@ -8,7 +9,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dawarich/core/di/providers/usecase_providers.dart';
 
 @RoutePage()
 final class TrackerPage extends ConsumerWidget {

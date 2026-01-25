@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:dawarich/core/database/drift/database/crypto/sqlcipher_bootstrap.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/di/providers/core_providers.dart';
-import 'package:dawarich/core/startup/startup_service.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';
@@ -49,14 +47,7 @@ Future<void> main() async {
 
       runApp(UncontrolledProviderScope(container: container, child: const Dawarich()));
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-
-        if (kDebugMode) {
-          debugPrint('[BOOT] first frame');
-        }
-
-        unawaited(_boot(container));
-      });
+      // Boot is now handled by SplashPage itself
     }, (Object error, StackTrace stack) {
       debugPrint('[ZonedError] $error');
       debugPrint(stack.toString());
@@ -76,35 +67,6 @@ Future<void> _dbHook() async {
   }
 }
 
-Future<void> _boot(ProviderContainer container) async {
-
-  if (kDebugMode) {
-    debugPrint('Booting up...');
-  }
-  try {
-
-    await container.read(coreProvider.future);
-
-    // Startup boot should use the same container used by ProviderScope.
-    await StartupService.initializeAppFromContainer(container);
-
-    // if (!await SQLiteClient.peekNeedsUpgrade()) {
-    //   await BackgroundTrackingService.configureService();
-    // } else if (kDebugMode) {
-    //   debugPrint('[Boot] Skipping tracker start due to pending DB upgrade');
-    // }
-  } catch (e, st) {
-    if (kDebugMode) {
-      debugPrint("Error during app bootstrap: $e\n$st");
-    }
-  }
-
-  if (kDebugMode) {
-    debugPrint('Boot completed.');
-  }
-
-
-}
 
 class Dawarich extends ConsumerWidget {
 

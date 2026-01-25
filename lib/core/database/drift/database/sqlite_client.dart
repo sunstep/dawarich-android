@@ -178,10 +178,18 @@ final class SQLiteClient extends _$SQLiteClient {
         debugPrint('[Drift] Found existing isolate, connecting to it.');
       }
 
-      final iso = DriftIsolate.fromConnectPort(existing);
-      final conn = await iso.connect();
-      _memo = iso;
-      return SQLiteClient(conn);
+      try {
+        final iso = DriftIsolate.fromConnectPort(existing);
+        // Short timeout: healthy isolate responds instantly, stale one never will
+        final conn = await iso.connect().timeout(const Duration(milliseconds: 500));
+        _memo = iso;
+        return SQLiteClient(conn);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[Drift] Failed to connect to existing isolate: $e. Creating new one.');
+        }
+        IsolateNameServer.removePortNameMapping(_driftPortName);
+      }
     }
 
     if (kDebugMode) {

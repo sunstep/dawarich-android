@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_device_model_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/save_tracker_settings_usecase.dart';
@@ -43,6 +44,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
   final StreamLastPointUseCase _streamLastPoint;
   final StreamBatchPointCountUseCase _streamBatchPointCount;
   final CreatePointFromGpsWorkflow _createPointFromGps;
+  final StorePointUseCase _storePoint;
   final StartTrackUseCase _startTrackUseCase;
   final EndTrackUseCase _endTrackUseCase;
   final GetActiveTrackUseCase _getActiveTrackUseCase;
@@ -56,6 +58,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
       this._streamLastPoint,
       this._streamBatchPointCount,
       this._createPointFromGps,
+      this._storePoint,
       this._startTrackUseCase,
       this._endTrackUseCase,
       this._getActiveTrackUseCase,
@@ -320,6 +323,16 @@ final class TrackerPageViewModel extends ChangeNotifier {
     Result<LocalPoint, String> pointResult = await _createPointFromGps();
 
     if (pointResult case Ok(value: LocalPoint pointEntity)) {
+      final storeResult = await _storePoint(pointEntity);
+
+      if (storeResult case Err(value: String storeError)) {
+        if (kDebugMode) {
+          debugPrint("[DEBUG] Failed to store point: $storeError");
+        }
+        setIsTracking(false);
+        return Err("Failed to store point: $storeError");
+      }
+
       LocalPointViewModel point = pointEntity.toViewModel();
 
       String timestamp = point.properties.timestamp;

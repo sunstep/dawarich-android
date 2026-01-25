@@ -11,6 +11,7 @@ import 'package:dawarich/features/timeline/domain/models/day_map_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -317,33 +318,37 @@ final class TimelineViewModel extends ChangeNotifier {
     await animatedMapController?.animatedZoomOut();
   }
 
-  void centerMap() {
-    final user = currentLocation;
-
-    if (user == null) {
-      return;
-    }
-
-    if (_lastCameraTarget != null && _sameTarget(_lastCameraTarget!, user)) {
-      return;
-    }
-
+  Future<void> centerMap() async {
     final controller = animatedMapController;
 
     if (!_mapReady || controller == null) {
-      _pendingCenter = user;
+      return;
+    }
+
+    LatLng? userLocation;
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      userLocation = LatLng(position.latitude, position.longitude);
+    } catch (_) {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        userLocation = LatLng(last.latitude, last.longitude);
+      }
+    }
+
+    if (userLocation == null) {
       return;
     }
 
     final double zoom = controller.mapController.camera.zoom;
 
     controller.animateTo(
-      dest: user,
+      dest: userLocation,
       zoom: zoom,
       curve: Curves.easeInOut,
       duration: const Duration(milliseconds: 500),
     );
 
-    _lastCameraTarget = user;
+    _lastCameraTarget = userLocation;
   }
 }

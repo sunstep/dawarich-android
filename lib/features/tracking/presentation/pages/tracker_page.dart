@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/core/shell/drawer/drawer.dart';
+import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:flutter/services.dart';
@@ -18,21 +21,45 @@ final class TrackerPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vmAsync = ref.watch(trackerPageViewModelProvider);
 
-    return vmAsync.when(
-      loading: () => const Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(child: CircularProgressIndicator()),
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: vmAsync.when(
+        loading: () => Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: const CustomAppbar(
+            title: 'Tracker',
+            titleFontSize: 32,
+            backgroundColor: Colors.transparent,
+          ),
+          drawer: CustomDrawer(),
+          body: const Center(child: CircularProgressIndicator()),
+        ),
+        error: (e, _) => Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: const CustomAppbar(
+            title: 'Tracker',
+            titleFontSize: 32,
+            backgroundColor: Colors.transparent,
+          ),
+          drawer: CustomDrawer(),
+          body: Center(child: Text(e.toString())),
+        ),
+        data: (vm) {
+          return ChangeNotifierProvider.value(
+            value: vm,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: const CustomAppbar(
+                title: 'Tracker',
+                titleFontSize: 32,
+                backgroundColor: Colors.transparent,
+              ),
+              drawer: CustomDrawer(),
+              body: _TrackerPageContentBody(),
+            ),
+          );
+        },
       ),
-      error: (e, _) => Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(child: Text(e.toString())),
-      ),
-      data: (vm) {
-        return ChangeNotifierProvider.value(
-          value: vm,
-          child: _TrackerPageContentBody(),
-        );
-      },
     );
   }
 }

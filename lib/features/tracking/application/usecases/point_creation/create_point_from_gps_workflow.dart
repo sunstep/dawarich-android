@@ -21,11 +21,11 @@ final class CreatePointFromGpsWorkflow {
   );
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
-  Future<Result<LocalPoint, String>> call() async {
+  Future<Result<LocalPoint, String>> call(int userId) async {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
 
-    final TrackerSettings settings = await _getTrackerPreferences();
+    final TrackerSettings settings = await _getTrackerPreferences(userId);
     final bool isTrackingAutomatically = settings.automaticTracking;
     final int currentTrackingFrequency = settings.trackingFrequency;
     final LocationAccuracy accuracy = settings.locationAccuracy;
@@ -75,7 +75,7 @@ final class CreatePointFromGpsWorkflow {
     }
 
     final Result<LocalPoint, String> pointResult =
-        await _createPointFromPosition(position, pointCreationTimestamp);
+        await _createPointFromPosition(position, pointCreationTimestamp, userId);
 
     if (pointResult case Err()) {
       return pointResult;

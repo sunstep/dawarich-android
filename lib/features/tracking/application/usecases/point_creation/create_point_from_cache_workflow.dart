@@ -18,7 +18,7 @@ final class CreatePointFromCacheWorkflow {
   );
 
   /// Creates a full point, position data is retrieved from cache.
-  Future<Result<LocalPoint, String>> call() async {
+  Future<Result<LocalPoint, String>> call(int userId) async {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
     final Option<Position> posResult =
@@ -37,7 +37,7 @@ final class CreatePointFromCacheWorkflow {
 
     final Position position = posResult.unwrap();
     final Result<LocalPoint, String> pointResult =
-    await _createPointFromPosition(position, pointCreationTimestamp);
+    await _createPointFromPosition(position, pointCreationTimestamp, userId);
 
     if (pointResult case Err(value: String error)) {
       return Err("[DEBUG] Cached point was rejected: $error");

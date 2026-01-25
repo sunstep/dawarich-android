@@ -1,10 +1,8 @@
-
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/domain/models/point/local/additional_point_data.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point_geometry.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point_properties.dart';
-import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/batch/application/usecases/point_validator.dart';
 import 'package:dawarich/features/tracking/application/converters/track_converter.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
@@ -14,7 +12,6 @@ import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
-import 'package:session_box/session_box.dart';
 
 final class CreatePointFromPositionUseCase {
 
@@ -22,14 +19,12 @@ final class CreatePointFromPositionUseCase {
   final IPointLocalRepository _localPointRepository;
   final ITrackRepository _trackRepository;
   final PointValidator _pointValidator;
-  final SessionBox<User> _userSession;
 
-  CreatePointFromPositionUseCase(this._hardwareRepository, this._localPointRepository, this._trackRepository, this._pointValidator, this._userSession);
+  CreatePointFromPositionUseCase(this._hardwareRepository, this._localPointRepository, this._trackRepository, this._pointValidator);
 
   /// Creates a full point using a position object.
   Future<Result<LocalPoint, String>> call(
-      Position position, DateTime timestamp) async {
-    final int userId = await _requireUserId();
+      Position position, DateTime timestamp, int userId) async {
 
     final AdditionalPointData additionalData =
     await _getAdditionalPointData(userId);
@@ -42,7 +37,7 @@ final class CreatePointFromPositionUseCase {
     );
 
     final Option<LastPoint> lastPoint = await _localPointRepository.getLastPoint(userId);
-    Result<(), String> validationResult = await _pointValidator.validatePoint(point, lastPoint);
+    Result<(), String> validationResult = await _pointValidator.validatePoint(point, lastPoint, userId);
 
     if (validationResult case Err(value: String validationError)) {
       return Err("Point validation did not pass: $validationError");
@@ -122,13 +117,5 @@ final class CreatePointFromPositionUseCase {
         batteryLevel: batteryLevel);
   }
 
-  Future<int> _requireUserId() async {
-    final int? userId = _userSession.getUserId();
-    if (userId == null) {
-      await _userSession.logout();
-      throw Exception('[ApiPointService] No user session found.');
-    }
-    return userId;
-  }
 
 }

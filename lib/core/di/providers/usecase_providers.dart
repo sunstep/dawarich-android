@@ -14,7 +14,6 @@ import 'package:dawarich/core/network/repositories/api_point_repository_interfac
 import 'package:dawarich/features/batch/application/usecases/watch_current_batch_usecase.dart';
 import 'package:dawarich/features/timeline/application/helpers/timeline_points_processor.dart';
 import 'package:dawarich/features/timeline/application/usecases/load_timeline_usecase.dart';
-import 'session_providers.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/repositories/i_track_repository.dart';
 import 'package:dawarich/features/tracking/application/repositories/tracker_settings_repository.dart';
@@ -101,15 +100,13 @@ final storePointUseCaseProvider = FutureProvider<StorePointUseCase>((ref) async 
 });
 
 final getTrackerSettingsUseCaseProvider = FutureProvider<GetTrackerSettingsUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(trackerSettingsRepositoryProvider.future);
-  return GetTrackerSettingsUseCase(repo, session);
+  return GetTrackerSettingsUseCase(repo);
 });
 
 final watchTrackerSettingsUseCaseProvider = FutureProvider<WatchTrackerSettingsUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(trackerSettingsRepositoryProvider.future);
-  return WatchTrackerSettingsUseCase(repo, session);
+  return WatchTrackerSettingsUseCase(repo);
 });
 
 final showTrackerNotificationUseCaseProvider = Provider<ShowTrackerNotificationUseCase>((ref) {
@@ -117,15 +114,13 @@ final showTrackerNotificationUseCaseProvider = Provider<ShowTrackerNotificationU
 });
 
 final getBatchPointCountUseCaseProvider = FutureProvider<GetBatchPointCountUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(pointLocalRepositoryProvider.future);
-  return GetBatchPointCountUseCase(repo, session);
+  return GetBatchPointCountUseCase(repo);
 });
 
 final getLastPointUseCaseProvider = FutureProvider<GetLastPointUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(pointLocalRepositoryProvider.future);
-  return GetLastPointUseCase(repo, session);
+  return GetLastPointUseCase(repo);
 });
 
 final pointValidatorProvider = FutureProvider<PointValidator>((ref) async {
@@ -134,14 +129,12 @@ final pointValidatorProvider = FutureProvider<PointValidator>((ref) async {
 });
 
 final createPointFromPositionUseCaseProvider = FutureProvider<CreatePointFromPositionUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final validator = await ref.watch(pointValidatorProvider.future);
   return CreatePointFromPositionUseCase(
     ref.watch(hardwareRepositoryProvider),
     await ref.watch(pointLocalRepositoryProvider.future),
     await ref.watch(trackRepositoryProvider.future),
     validator,
-    session,
   );
 });
 
@@ -192,8 +185,7 @@ final loadTimelineUseCaseProvider = FutureProvider<LoadTimelineUseCase>((ref) as
 
 final watchCurrentBatchUseCaseProvider = FutureProvider<WatchCurrentBatchUseCase>((ref) async {
   final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
-  final session = await ref.watch(sessionBoxProvider.future);
-  return WatchCurrentBatchUseCase(localRepo, session);
+  return WatchCurrentBatchUseCase(localRepo);
 });
 
 final getDeviceModelUseCaseProvider = Provider<GetDeviceModelUseCase>((ref) {
@@ -205,33 +197,28 @@ final saveTrackerSettingsUseCaseProvider = FutureProvider<SaveTrackerSettingsUse
 });
 
 final streamLastPointUseCaseProvider = FutureProvider<StreamLastPointUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(pointLocalRepositoryProvider.future);
-  return StreamLastPointUseCase(repo, session);
+  return StreamLastPointUseCase(repo);
 });
 
 final streamBatchPointCountUseCaseProvider = FutureProvider<StreamBatchPointCountUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(pointLocalRepositoryProvider.future);
-  return StreamBatchPointCountUseCase(repo, session);
+  return StreamBatchPointCountUseCase(repo);
 });
 
 final startTrackUseCaseProvider = FutureProvider<StartTrackUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(trackRepositoryProvider.future);
-  return StartTrackUseCase(repo, session);
+  return StartTrackUseCase(repo);
 });
 
 final endTrackUseCaseProvider = FutureProvider<EndTrackUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(trackRepositoryProvider.future);
-  return EndTrackUseCase(repo, session);
+  return EndTrackUseCase(repo);
 });
 
 final getActiveTrackUseCaseProvider = FutureProvider<GetActiveTrackUseCase>((ref) async {
-  final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(trackRepositoryProvider.future);
-  return GetActiveTrackUseCase(repo, session);
+  return GetActiveTrackUseCase(repo);
 });
 
 final checkSystemSettingsUseCaseProvider = Provider<CheckSystemSettingsUseCase>((ref) {

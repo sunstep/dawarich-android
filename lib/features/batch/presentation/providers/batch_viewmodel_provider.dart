@@ -11,16 +11,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final batchExplorerViewModelProvider =
     FutureProvider.autoDispose<BatchExplorerViewModel>((ref) async {
+  final user = ref.watch(authenticatedUserProvider);
+  if (user == null) {
+    throw StateError('BatchExplorerViewModel requires authenticated user');
+  }
+
   final IPointLocalRepository localRepo = await ref.watch(pointLocalRepositoryProvider.future);
   final IApiPointRepository apiRepo = await ref.watch(apiPointRepositoryProvider.future);
-  final session = await ref.watch(sessionBoxProvider.future);
 
-  final watchCurrentBatch = WatchCurrentBatchUseCase(localRepo, session);
-  final uploadWorkflow = BatchUploadWorkflowUseCase(apiRepo, localRepo, session);
-  final clearBatch = ClearBatchUseCase(localRepo, session);
-  final deletePoints = DeletePointsUseCase(localRepo, session);
+  final watchCurrentBatch = WatchCurrentBatchUseCase(localRepo);
+  final uploadWorkflow = BatchUploadWorkflowUseCase(apiRepo, localRepo);
+  final clearBatch = ClearBatchUseCase(localRepo);
+  final deletePoints = DeletePointsUseCase(localRepo);
 
   final vm = BatchExplorerViewModel(
+    user.id,
     watchCurrentBatch,
     uploadWorkflow,
     clearBatch,

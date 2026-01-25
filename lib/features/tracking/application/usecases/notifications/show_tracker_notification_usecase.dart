@@ -23,6 +23,7 @@ final class ShowTrackerNotificationUseCase {
       onlyAlertOnce: true,
       category: AndroidNotificationCategory.service,
       autoCancel: false,
+      icon: NotificationConstants.notificationIcon,
     );
     const details = NotificationDetails(android: android);
 

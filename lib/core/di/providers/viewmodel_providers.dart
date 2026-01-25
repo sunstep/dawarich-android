@@ -12,12 +12,10 @@ final timelineViewModelProvider = FutureProvider<TimelineViewModel>((ref) async 
     await ref.watch(watchCurrentBatchUseCaseProvider.future),
   );
 
-  await vm.initialize();
+  vm.initialize();
   ref.onDispose(vm.dispose);
   return vm;
 });
-
-// statsPageNotifierProvider is now defined in stats_page_viewmodel.dart
 
 final pointsPageViewModelProvider = FutureProvider<PointsPageViewModel>((ref) async {
   return PointsPageViewModel(

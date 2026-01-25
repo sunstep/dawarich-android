@@ -150,7 +150,7 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    await _resolveAndSetInitialLocation();
+    _resolveAndSetInitialLocation();
     await loadToday();
 
     try {

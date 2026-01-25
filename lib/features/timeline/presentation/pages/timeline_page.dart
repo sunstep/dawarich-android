@@ -39,7 +39,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
         vm.setAnimatedMapController(_animatedMapController);
         return ListenableBuilder(
           listenable: vm,
-          builder: (context, _) => _pageBase(context, vm),
+          builder: (context, _) {
+            if (vm.currentLocation == null) {
+              return _loadingScaffold(context, 'Preparing the map...');
+            }
+            return _pageBase(context, vm);
+          },
         );
       },
     );
@@ -108,16 +113,20 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
                     // Previous day button
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new),
-                      onPressed: () async {
-                        await mapModel.loadPreviousDay();
-                      },
+                      onPressed: mapModel.isLoading
+                          ? null
+                          : () async {
+                              await mapModel.loadPreviousDay();
+                            },
                     ),
                     Expanded(
                       child: Center(
                         child: TextButton(
-                          onPressed: () {
-                            _datePicker(context, mapModel);
-                          },
+                          onPressed: mapModel.isLoading
+                              ? null
+                              : () {
+                                  _datePicker(context, mapModel);
+                                },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                                 vertical: 10, horizontal: 16),
@@ -147,9 +156,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
                     if (!mapModel.isTodaySelected())
                       IconButton(
                         icon: const Icon(Icons.arrow_forward_ios),
-                        onPressed: () {
-                          mapModel.loadNextDay();
-                        },
+                        onPressed: mapModel.isLoading
+                            ? null
+                            : () {
+                                mapModel.loadNextDay();
+                              },
                       )
                     else
                       const SizedBox(width: 48),
@@ -226,9 +237,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
   }
 
   Widget _pageContent(TimelineViewModel mapModel) {
-    if (mapModel.currentLocation == null) {
-      return const TextLoadingIndicator(message: "Preparing the map...");
-    }
 
     return Stack(
       children: [

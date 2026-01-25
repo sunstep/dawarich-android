@@ -55,6 +55,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: "Timeline",
+          titleFontSize: 20,
+          backgroundColor: Colors.transparent,
+        ),
+        drawer: CustomDrawer(),
         body: Center(child: TextLoadingIndicator(message: message)),
       ),
     );
@@ -65,6 +71,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: "Timeline",
+          titleFontSize: 20,
+          backgroundColor: Colors.transparent,
+        ),
+        drawer: CustomDrawer(),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -340,10 +352,18 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
   }
 
   Widget _pageBase(BuildContext context, TimelineViewModel vm) {
-    return Scaffold(
-      appBar: const CustomAppbar(title: "Timeline", titleFontSize: 20),
-      body: _pageContent(vm),
-      drawer: CustomDrawer(),
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: "Timeline",
+          titleFontSize: 20,
+          backgroundColor: Colors.transparent,
+        ),
+        body: _pageContent(vm),
+        drawer: CustomDrawer(),
+      ),
     );
   }
 

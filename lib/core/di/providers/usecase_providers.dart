@@ -1,6 +1,9 @@
 import 'package:dawarich/core/application/usecases/api/delete_point_usecase.dart';
 import 'package:dawarich/core/application/usecases/api/get_points_usecase.dart';
 import 'package:dawarich/core/application/usecases/api/get_total_pages_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/check_batch_threshold_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
 import 'package:dawarich/features/stats/application/repositories/stats_repository_interfaces.dart';
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
@@ -157,6 +160,14 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final batchCount = await ref.watch(getBatchPointCountUseCaseProvider.future);
   final showNotif = ref.watch(showTrackerNotificationUseCaseProvider);
 
+  final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
+  final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
+  final getSettings = await ref.watch(getTrackerSettingsUseCaseProvider.future);
+
+  final checkThreshold = CheckBatchThresholdUseCase(getSettings, localRepo);
+  final getCurrentBatch = GetCurrentBatchUseCase(localRepo);
+  final batchUploadWorkflow = BatchUploadWorkflowUseCase(apiRepo, localRepo);
+
   return PointAutomationService(
     watchSettings,
     createGps,
@@ -164,6 +175,9 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
     storePoint,
     batchCount,
     showNotif,
+    checkThreshold,
+    getCurrentBatch,
+    batchUploadWorkflow,
   );
 });
 

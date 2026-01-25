@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/check_batch_threshold_usecase.dart';
+import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_cache_workflow.dart';
@@ -27,6 +30,9 @@ final class PointAutomationService {
   final StorePointUseCase _storePoint;
   final GetBatchPointCountUseCase _getBatchPointCount;
   final ShowTrackerNotificationUseCase _showTrackerNotification;
+  final CheckBatchThresholdUseCase _checkBatchThreshold;
+  final GetCurrentBatchUseCase _getCurrentBatch;
+  final BatchUploadWorkflowUseCase _batchUploadWorkflow;
 
   PointAutomationService(
       this._watchTrackerSettings,
@@ -34,7 +40,10 @@ final class PointAutomationService {
       this._createPointFromCache,
       this._storePoint,
       this._getBatchPointCount,
-      this._showTrackerNotification
+      this._showTrackerNotification,
+      this._checkBatchThreshold,
+      this._getCurrentBatch,
+      this._batchUploadWorkflow,
   );
 
   Future<void> startTracking(int userId) async {
@@ -131,6 +140,7 @@ final class PointAutomationService {
         final storeResult = await _storePoint(point);
         if (storeResult case Ok()) {
           await _notify(userId);
+          await _checkAndUploadBatch(userId);
         } else if (storeResult case Err(value: final err)) {
           debugPrint("[PointAutomation] Failed to store GPS point: $err");
         }
@@ -170,6 +180,7 @@ final class PointAutomationService {
         if (storeResult case Ok()) {
           _gpsTicker.snooze();
           await _notify(userId);
+          await _checkAndUploadBatch(userId);
         } else if (storeResult case Err(value: final err)) {
           debugPrint("[PointAutomation] Failed to store cached point: $err");
         }
@@ -180,6 +191,30 @@ final class PointAutomationService {
       }
     } finally {
       _writeBusy = false;
+    }
+  }
+
+  Future<void> _checkAndUploadBatch(int userId) async {
+    try {
+      final shouldUpload = await _checkBatchThreshold(userId);
+      if (shouldUpload) {
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Batch threshold reached, uploading...");
+        }
+        final batch = await _getCurrentBatch(userId);
+        if (batch.isNotEmpty) {
+          final result = await _batchUploadWorkflow(batch, userId);
+          if (result case Ok()) {
+            if (kDebugMode) {
+              debugPrint("[PointAutomation] Batch upload successful.");
+            }
+          } else if (result case Err(value: final err)) {
+            debugPrint("[PointAutomation] Batch upload failed: $err");
+          }
+        }
+      }
+    } catch (e, s) {
+      debugPrint("[PointAutomation] Error checking/uploading batch: $e\n$s");
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:auto_route/annotations.dart';
+import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
-import 'package:dawarich/core/di/providers/app_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
@@ -26,12 +26,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
   void initState() {
     super.initState();
     _animatedMapController = AnimatedMapController(vsync: this);
-
-    ref.listen<AsyncValue<TimelineViewModel>>(timelineViewModelProvider, (prev, next) {
-      next.whenData((vm) {
-        vm.setAnimatedMapController(_animatedMapController);
-      });
-    });
   }
 
   @override
@@ -41,7 +35,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
     return vmAsync.when(
       loading: () => _loadingScaffold(context, 'Preparing the map...'),
       error: (e, _) => _errorScaffold(context, e),
-      data: (vm) => _pageBase(context, vm),
+      data: (vm) {
+        vm.setAnimatedMapController(_animatedMapController);
+        return _pageBase(context, vm);
+      },
     );
   }
 

@@ -66,7 +66,58 @@ final class TrackerPage extends ConsumerWidget {
 
 /// Everything below expects to read the VM via provider's `context.watch`.
 /// This widget is the original tracker page content entry-point.
-final class _TrackerPageContentBody extends StatelessWidget {
+final class _TrackerPageContentBody extends StatefulWidget {
+  @override
+  State<_TrackerPageContentBody> createState() => _TrackerPageContentBodyState();
+}
+
+class _TrackerPageContentBodyState extends State<_TrackerPageContentBody> {
+  StreamSubscription<String>? _consentSub;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Subscribe to consent prompt stream (only once)
+    _consentSub ??= context.read<TrackerPageViewModel>().onConsentPrompt.listen((message) {
+      if (!mounted) return;
+      _showConsentDialog(message);
+    });
+  }
+
+  @override
+  void dispose() {
+    _consentSub?.cancel();
+    super.dispose();
+  }
+
+  void _showConsentDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.read<TrackerPageViewModel>().handleConsentResponse(false);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<TrackerPageViewModel>().handleConsentResponse(true);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(

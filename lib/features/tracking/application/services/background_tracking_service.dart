@@ -297,6 +297,8 @@ final class BackgroundTrackingService {
       return Err("Background location permission is required.");
     }
 
+    await installConfigurationOnce();
+
     final isRunning = await FlutterBackgroundService().isRunning();
     if (isRunning) {
       debugPrint('[BackgroundService] Already running — skipping start.');

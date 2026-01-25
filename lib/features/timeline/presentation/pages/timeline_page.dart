@@ -37,7 +37,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
       error: (e, _) => _errorScaffold(context, e),
       data: (vm) {
         vm.setAnimatedMapController(_animatedMapController);
-        return _pageBase(context, vm);
+        return ListenableBuilder(
+          listenable: vm,
+          builder: (context, _) => _pageBase(context, vm),
+        );
       },
     );
   }

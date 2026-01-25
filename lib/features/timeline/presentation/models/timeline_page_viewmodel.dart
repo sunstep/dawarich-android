@@ -150,15 +150,20 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    _resolveAndSetInitialLocation();
-    loadToday();
+    await _resolveAndSetInitialLocation();
+    await loadToday();
 
-    final batchStream = await _watchCurrentBatch();
-
-    _localPointSubscription = batchStream.listen((points) {
-      _lastLocalBatch = points;
-      _rebuildLocalPoints();
-    });
+    try {
+      final batchStream = await _watchCurrentBatch();
+      _localPointSubscription = batchStream.listen((points) {
+        _lastLocalBatch = points;
+        _rebuildLocalPoints();
+      });
+    } catch (e, s) {
+      if (kDebugMode) {
+        debugPrint("[TimelineViewModel] watchCurrentBatch failed: $e\n$s");
+      }
+    }
   }
 
   void _rebuildLocalPoints({int? cutoffMs}) {

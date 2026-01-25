@@ -26,6 +26,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
   void initState() {
     super.initState();
     _animatedMapController = AnimatedMapController(vsync: this);
+
+    ref.listen<AsyncValue<TimelineViewModel>>(timelineViewModelProvider, (prev, next) {
+      next.whenData((vm) {
+        vm.setAnimatedMapController(_animatedMapController);
+      });
+    });
   }
 
   @override
@@ -33,24 +39,34 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
     final vmAsync = ref.watch(timelineViewModelProvider);
 
     return vmAsync.when(
-      loading: () => Container(
-        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: const Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Center(child: TextLoadingIndicator(message: 'Preparing the map...')),
+      loading: () => _loadingScaffold(context, 'Preparing the map...'),
+      error: (e, _) => _errorScaffold(context, e),
+      data: (vm) => _pageBase(context, vm),
+    );
+  }
+
+  Widget _loadingScaffold(BuildContext context, String message) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(child: TextLoadingIndicator(message: message)),
+      ),
+    );
+  }
+
+  Widget _errorScaffold(BuildContext context, Object error) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(error.toString(), textAlign: TextAlign.center),
+          ),
         ),
       ),
-      error: (e, _) => Container(
-        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Center(child: Text(e.toString())),
-        ),
-      ),
-      data: (mapModel) {
-        mapModel.setAnimatedMapController(_animatedMapController);
-        return _pageBase(context);
-      },
     );
   }
 
@@ -315,12 +331,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProvider
     );
   }
 
-  Widget _pageBase(BuildContext context) {
-    final vmAsync = ref.watch(timelineViewModelProvider);
-    final TimelineViewModel viewModel = vmAsync.requireValue;
+  Widget _pageBase(BuildContext context, TimelineViewModel vm) {
     return Scaffold(
       appBar: const CustomAppbar(title: "Timeline", titleFontSize: 20),
-      body: _pageContent(viewModel),
+      body: _pageContent(vm),
       drawer: CustomDrawer(),
     );
   }

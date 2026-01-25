@@ -1,8 +1,8 @@
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/database/drift/extensions/mappers/point_mapper.dart';
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
-import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_dto.dart';
-import 'package:dawarich/features/tracking/data/data_transfer_objects/point/last_point_dto.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 import 'package:drift/drift.dart';
@@ -12,7 +12,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   DriftPointLocalRepository(this._database);
 
   @override
-  Future<int> storePoint(LocalPointDto point) async {
+  Future<int> storePoint(LocalPoint point) async {
     try {
 
       return await _database.transaction(() async {
@@ -61,7 +61,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<List<LocalPointDto>> getFullBatch(int userId) async {
+  Future<List<LocalPoint>> getFullBatch(int userId) async {
     try {
       final query = _database.select(_database.pointsTable).join([
         innerJoin(
@@ -77,8 +77,8 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
       ])
         ..where(_database.pointsTable.userId.equals(userId));
 
-      final List<LocalPointDto> batchPoints =
-          await query.map((row) => row.toPointDto(_database)).get();
+      final List<LocalPoint> batchPoints =
+          await query.map((row) => row.fromPointRow(_database)).get();
 
       return batchPoints;
     } catch (e) {
@@ -90,7 +90,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<List<LocalPointDto>> getCurrentBatch(int userId) async {
+  Future<List<LocalPoint>> getCurrentBatch(int userId) async {
     try {
       final query = _database.select(_database.pointsTable).join([
         innerJoin(
@@ -107,8 +107,8 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
         ..where(_database.pointsTable.isUploaded.equals(false) &
             _database.pointsTable.userId.equals(userId));
 
-      final List<LocalPointDto> batchPoints =
-          await query.map((row) => row.toPointDto(_database)).get();
+      final List<LocalPoint> batchPoints =
+          await query.map((row) => row.fromPointRow(_database)).get();
 
       return batchPoints;
     } catch (e) {
@@ -120,7 +120,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Stream<List<LocalPointDto>> watchCurrentBatch(int userId) {
+  Stream<List<LocalPoint>> watchCurrentBatch(int userId) {
 
     if (kDebugMode) {
       debugPrint("[DriftPointLocalRepository] Watching current batch for user $userId");
@@ -143,7 +143,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
         _database.pointsTable.userId.equals(userId));
 
       return query.watch().distinct().map(
-              (rows) => rows.map((r) => r.toPointDto(_database)).toList());
+              (rows) => rows.map((r) => r.fromPointRow(_database)).toList());
 
     } catch (e) {
       if (kDebugMode) {
@@ -156,7 +156,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Future<Option<LastPointDto>> getLastPoint(int userId) async {
+  Future<Option<LastPoint>> getLastPoint(int userId) async {
     try {
 
       final JoinedSelectStatement queryResult =
@@ -179,11 +179,11 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
         ..limit(1)
         ..where(_database.pointsTable.userId.equals(userId));
 
-      LocalPointDto? point =
-      await queryResult.map((row) => row.toPointDto(_database)).getSingleOrNull();
+      LocalPoint? point =
+      await queryResult.map((row) => row.fromPointRow(_database)).getSingleOrNull();
 
       if (point != null) {
-        return Some(LastPointDto(
+        return Some(LastPoint(
             longitude: point.geometry.longitude,
             latitude: point.geometry.latitude,
             timestamp: point.properties.timestamp));
@@ -200,7 +200,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
   }
 
   @override
-  Stream<Option<LastPointDto>> watchLastPoint(int userId) {
+  Stream<Option<LastPoint>> watchLastPoint(int userId) {
 
     if (kDebugMode) {
       debugPrint("[DriftPointLocalRepository] Watching last point for user $userId");
@@ -236,13 +236,13 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
         final geometry = row.readTable(_database.pointGeometryTable);
         final properties = row.readTable(_database.pointPropertiesTable);
 
-        final dto = LastPointDto(
+        final point = LastPoint(
           longitude: geometry.longitude,
           latitude: geometry.latitude,
           timestamp: properties.timestamp,
         );
 
-        return Some(dto);
+        return Some(point);
       });
     } catch (e) {
       if (kDebugMode) {

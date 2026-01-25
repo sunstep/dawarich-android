@@ -1,15 +1,15 @@
 
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/features/auth/data/data_transfer_objects/users/user_dto.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 
 extension DriftUserMapper on UserTableData {
 
-  /// Converts a [UserTableData] instance to a [UserDto].
-  UserDto toDto() {
-    return UserDto(
+  /// Converts a [UserTableData] instance to a [User].
+  User toDomain() {
+    return User(
       id: id,
       remoteId: dawarichId,
-      dawarichEndpoint: dawarichEndpoint,
+      dawarichHost: dawarichEndpoint,
       email: email,
       createdAt: createdAt,
       updatedAt: updatedAt,

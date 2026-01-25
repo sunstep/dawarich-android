@@ -1,205 +1,134 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/main.dart';
+import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
-import 'package:dawarich/core/shell/drawer/drawer.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class TrackerPage extends StatelessWidget {
+final class TrackerPage extends ConsumerWidget {
   const TrackerPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (_) => getIt<TrackerPageViewModel>()..initialize(),
-        builder: (context, child) => Consumer<TrackerPageViewModel>(
-            builder: (context, vm, child) => _TrackerPageContent()));
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vmAsync = ref.watch(trackerPageViewModelProvider);
 
-final class _TrackerPageContent extends StatefulWidget {
-  @override
-  State<_TrackerPageContent> createState() => _TrackerPageContentState();
-}
-
-final class _TrackerPageContentState extends State<_TrackerPageContent>
-    with WidgetsBindingObserver, RouteAware {
-  StreamSubscription<String>? _consentPromptSub;
-
-  _TrackerPageContentState();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    routeObserver.unsubscribe(this);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final TrackerPageViewModel vm = context.read<TrackerPageViewModel>();
-    return buildTrackerPage(context, vm);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      final route = ModalRoute.of(context);
-      if (route != null) {
-        routeObserver.subscribe(this, route);
-      }
-    });
-
-    if (_consentPromptSub == null) {
-      Future.microtask(() {
-        if (!mounted) return;
-
-        final vm = context.read<TrackerPageViewModel>();
-        _consentPromptSub = vm.onConsentPrompt.listen((message) {
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (!context.mounted) return;
-
-            final result = await showDialog<bool>(
-              context: context,
-              barrierDismissible: true,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Dawarich Needs Permission'),
-                content: Text(message),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: const Text('No thanks'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-
-            vm.handleConsentResponse(result ?? false);
-          });
-        });
-      });
-    }
-  }
-
-  @override
-  void didPushNext() {
-    _consentPromptSub?.cancel();
-    _consentPromptSub = null;
-
-    Future.microtask(() {
-      try {
-        final BuildContext localContext = context;
-
-        if (localContext.mounted) {
-          localContext.read<TrackerPageViewModel>();
-        }
-      } catch (error) {
-        if (kDebugMode) {
-          debugPrint("Error persisting preferences on didPushNext: $error");
-        }
-      }
-    });
-  }
-
-  @override
-  void didPopNext() {
-    _consentPromptSub?.cancel();
-    _consentPromptSub = null;
-
-    Future.microtask(() {
-      try {
-        final BuildContext localContext = context;
-
-        if (localContext.mounted) {
-          final viewModel = localContext.read<TrackerPageViewModel>();
-          viewModel.getLastPoint();
-          viewModel.getPointInBatchCount();
-        }
-      } catch (error) {
-        if (kDebugMode) {
-          debugPrint("Error fetching last point on didPopNext: $error");
-        }
-      }
-    });
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    Future.microtask(() {
-      try {
-        final BuildContext localContext = context;
-
-        if (localContext.mounted) {
-          final viewModel = localContext.read<TrackerPageViewModel>();
-
-          if (state == AppLifecycleState.paused ||
-              state == AppLifecycleState.inactive) {}
-          if (state == AppLifecycleState.resumed) {
-            viewModel.getLastPoint();
-            viewModel.getPointInBatchCount();
-          }
-        }
-      } catch (error) {
-        if (kDebugMode) {
-          debugPrint("Error handling app lifecycle state change: $error");
-        }
-      }
-    });
-  }
-
-  Widget buildTrackerPage(BuildContext context, TrackerPageViewModel vm) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: CustomAppbar(
-          title: 'Tracker',
-          titleFontSize: 32,
+      child: vmAsync.when(
+        loading: () => Scaffold(
           backgroundColor: Colors.transparent,
+          appBar: const CustomAppbar(
+            title: 'Tracker',
+            titleFontSize: 32,
+            backgroundColor: Colors.transparent,
+          ),
+          drawer: CustomDrawer(),
+          body: const Center(child: CircularProgressIndicator()),
         ),
-        drawer: CustomDrawer(),
-        body: SafeArea(child: _TrackerBody()),
+        error: (e, _) => Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: const CustomAppbar(
+            title: 'Tracker',
+            titleFontSize: 32,
+            backgroundColor: Colors.transparent,
+          ),
+          drawer: CustomDrawer(),
+          body: Center(child: Text(e.toString())),
+        ),
+        data: (vm) {
+          return ChangeNotifierProvider.value(
+            value: vm,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: const CustomAppbar(
+                title: 'Tracker',
+                titleFontSize: 32,
+                backgroundColor: Colors.transparent,
+              ),
+              drawer: CustomDrawer(),
+              body: _TrackerPageContentBody(),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class _TrackerBody extends StatelessWidget {
+/// Everything below expects to read the VM via provider's `context.watch`.
+/// This widget is the original tracker page content entry-point.
+final class _TrackerPageContentBody extends StatefulWidget {
+  @override
+  State<_TrackerPageContentBody> createState() => _TrackerPageContentBodyState();
+}
+
+class _TrackerPageContentBodyState extends State<_TrackerPageContentBody> {
+  StreamSubscription<String>? _consentSub;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Subscribe to consent prompt stream (only once)
+    _consentSub ??= context.read<TrackerPageViewModel>().onConsentPrompt.listen((message) {
+      if (!mounted) return;
+      _showConsentDialog(message);
+    });
+  }
+
+  @override
+  void dispose() {
+    _consentSub?.cancel();
+    super.dispose();
+  }
+
+  void _showConsentDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.read<TrackerPageViewModel>().handleConsentResponse(false);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<TrackerPageViewModel>().handleConsentResponse(true);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LastPointCard(),
-          SizedBox(height: 32),
-          _SettingsCard(),
-        ],
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Column(
+          children: const [
+            LastPointCard(),
+            _SettingsCard(),
+          ],
+        ),
       ),
     );
   }
@@ -390,49 +319,6 @@ class LastPointCard extends StatelessWidget {
   }
 }
 
-/// A little “info tile” with an icon + multi-line value.
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final List<String> valueLines;
-
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.valueLines,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.bodyMedium!;
-    final grey = Colors.grey[600]!;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: style.copyWith(color: grey)),
-              const SizedBox(height: 4),
-              // each line (Date / time broken out) is right-aligned so the numbers line up
-              ...valueLines.map((line) => Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      line,
-                      style: style.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  )),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _SettingsCard extends StatelessWidget {
   const _SettingsCard();
@@ -620,8 +506,9 @@ class _BasicSettingsSection extends StatelessWidget {
                 validator: (value) {
                   final n = int.tryParse(value ?? '');
                   if (n == null) return 'Enter a number';
-                  if (n < vm.minBatch || n > vm.maxBatch)
+                  if (n < vm.minBatch || n > vm.maxBatch) {
                     return '${vm.minBatch}–${vm.maxBatch} only';
+                  }
                   return null;
                 },
               ),

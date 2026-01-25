@@ -1,6 +1,0 @@
-
-final class PointUploadService {
-
-
-
-}

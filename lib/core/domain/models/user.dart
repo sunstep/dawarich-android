@@ -9,10 +9,12 @@ final class User {
   final DateTime? updatedAt;
   final String theme;
   final bool admin;
+  // final UserSettings settings;
 
   void addUserId(int userId) {
     id = userId;
   }
+
   User withDawarichEndpoint(String? endpoint) {
     return User(
       id: id,
@@ -23,18 +25,21 @@ final class User {
       updatedAt: updatedAt,
       theme: theme,
       admin: admin,
+      // settings: settings
     );
   }
 
-  User(
-      {required this.id,
+  User({
+        required this.id,
         this.remoteId,
         this.dawarichHost,
         required this.email,
         required this.createdAt,
         required this.updatedAt,
         required this.theme,
-        required this.admin});
+        required this.admin,
+        // required this.settings
+      });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
@@ -47,7 +52,9 @@ final class User {
             ? DateTime.parse(json["updated_at"])
             : null,
         theme: json["theme"],
-        admin: json["admin"]);
+        admin: json["admin"],
+        // settings: json["settings"]
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -60,6 +67,7 @@ final class User {
       "updated_at": updatedAt?.toIso8601String(),
       "theme": theme,
       "admin": admin,
+      // "settings": settings
     };
   }
 

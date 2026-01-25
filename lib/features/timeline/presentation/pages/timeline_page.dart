@@ -1,5 +1,5 @@
 import 'package:auto_route/annotations.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
@@ -9,37 +9,61 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class TimelinePage extends StatefulWidget {
+final class TimelinePage extends ConsumerStatefulWidget {
   const TimelinePage({super.key});
 
   @override
-  State<TimelinePage> createState() => _TimelinePageState();
+  ConsumerState<TimelinePage> createState() => _TimelinePageState();
 }
 
-class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMixin {
-
+class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProviderStateMixin {
   late final AnimatedMapController _animatedMapController;
-
 
   @override
   void initState() {
     super.initState();
-
     _animatedMapController = AnimatedMapController(vsync: this);
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => getIt<TimelineViewModel>()..initialize(),
-      builder: (ctx, child) => Consumer<TimelineViewModel>(
-          builder: (context, mapModel, child) {
-            mapModel.setAnimatedMapController(_animatedMapController);
-            return _pageBase(context);
-      })
+    final vmAsync = ref.watch(timelineViewModelProvider);
+
+    return vmAsync.when(
+      loading: () => _loadingScaffold(context, 'Preparing the map...'),
+      error: (e, _) => _errorScaffold(context, e),
+      data: (vm) {
+        vm.setAnimatedMapController(_animatedMapController);
+        return _pageBase(context, vm);
+      },
+    );
+  }
+
+  Widget _loadingScaffold(BuildContext context, String message) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(child: TextLoadingIndicator(message: message)),
+      ),
+    );
+  }
+
+  Widget _errorScaffold(BuildContext context, Object error) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(error.toString(), textAlign: TextAlign.center),
+          ),
+        ),
+      ),
     );
   }
 
@@ -304,11 +328,10 @@ class _TimelinePageState extends State<TimelinePage> with TickerProviderStateMix
     );
   }
 
-  Widget _pageBase(BuildContext context) {
-    TimelineViewModel viewModel = context.watch<TimelineViewModel>();
+  Widget _pageBase(BuildContext context, TimelineViewModel vm) {
     return Scaffold(
       appBar: const CustomAppbar(title: "Timeline", titleFontSize: 20),
-      body: _pageContent(viewModel),
+      body: _pageContent(vm),
       drawer: CustomDrawer(),
     );
   }

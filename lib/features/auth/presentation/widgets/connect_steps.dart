@@ -1,5 +1,5 @@
 import 'package:dawarich/core/routing/app_router.dart';
-import 'package:dawarich/features/auth/presentation/models/auth_page_viewmodel.dart';
+import 'package:dawarich/features/auth/presentation/viewmodels/auth_page_viewmodel.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

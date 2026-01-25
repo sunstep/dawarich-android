@@ -1,50 +1,47 @@
+import 'package:dawarich/core/di/providers/usecase_providers.dart';
+import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/domain/stats.dart';
-import 'package:dawarich/features/stats/application/services/stats_service.dart';
 import 'package:dawarich/features/stats/presentation/converters/stats_page_model_converter.dart';
 import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
 import 'package:flutter/foundation.dart';
-import 'package:option_result/option_result.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:option_result/option.dart';
 
-final class StatsPageViewModel extends ChangeNotifier {
-  final StatsService _statsService;
-  StatsPageViewModel(this._statsService);
+/// Provider for the stats page notifier
+final statsPageNotifierProvider = AsyncNotifierProvider<StatsPageNotifier, StatsViewModel?>(
+  StatsPageNotifier.new,
+);
 
-  bool _isLoading = true;
-  StatsViewModel? _stats;
-
-  bool get isLoading => _isLoading;
-  StatsViewModel? get stats => _stats;
-
-  void setIsLoading(bool trueOrFalse) {
-    _isLoading = trueOrFalse;
-    notifyListeners();
+/// AsyncNotifier that manages stats page state
+final class StatsPageNotifier extends AsyncNotifier<StatsViewModel?> {
+  @override
+  Future<StatsViewModel?> build() async {
+    final useCase = await ref.watch(getStatsUseCaseProvider.future);
+    return _fetchStats(useCase);
   }
 
-  void setStats(StatsViewModel stats) {
-    _stats = stats;
-    notifyListeners();
-  }
+  Future<StatsViewModel?> _fetchStats(GetStatsUseCase useCase) async {
+    try {
+      final Option<Stats> result = await useCase();
 
-  void clearStats() {
-    _stats = null;
-    notifyListeners();
-  }
+      if (result case Some(value: final Stats stats)) {
+        return stats.toViewModel();
+      }
 
-  Future<void> refreshStats() async {
-    setIsLoading(true);
-    clearStats();
-
-    await fetchStats();
-  }
-
-  Future<void> fetchStats() async {
-    Option<Stats> result = await _statsService.getStats();
-
-    if (result case Some(value: final Stats stats)) {
-      final StatsViewModel statsVm = stats.toViewModel();
-      setStats(statsVm);
+      return null;
+    } catch (e, s) {
+      if (kDebugMode) {
+        debugPrint('[StatsPageNotifier] fetchStats failed: $e\n$s');
+      }
+      rethrow;
     }
+  }
 
-    setIsLoading(false);
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final useCase = await ref.read(getStatsUseCaseProvider.future);
+      return _fetchStats(useCase);
+    });
   }
 }

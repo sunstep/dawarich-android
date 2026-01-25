@@ -178,10 +178,18 @@ final class SQLiteClient extends _$SQLiteClient {
         debugPrint('[Drift] Found existing isolate, connecting to it.');
       }
 
-      final iso = DriftIsolate.fromConnectPort(existing);
-      final conn = await iso.connect();
-      _memo = iso;
-      return SQLiteClient(conn);
+      try {
+        final iso = DriftIsolate.fromConnectPort(existing);
+        // Short timeout: healthy isolate responds instantly, stale one never will
+        final conn = await iso.connect().timeout(const Duration(milliseconds: 500));
+        _memo = iso;
+        return SQLiteClient(conn);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[Drift] Failed to connect to existing isolate: $e. Creating new one.');
+        }
+        IsolateNameServer.removePortNameMapping(_driftPortName);
+      }
     }
 
     if (kDebugMode) {
@@ -297,8 +305,6 @@ final class SQLiteClient extends _$SQLiteClient {
     */
 
 
-  Completer<void>? _uiReady = Completer<void>();
-
   Future<void>? _openFuture;
 
   Future<void> ensureOpened() => _openFuture ??= _forceOpen();
@@ -360,19 +366,9 @@ final class SQLiteClient extends _$SQLiteClient {
     await customSelect('SELECT 1').get();
   }
 
-  void signalUiReadyForMigration() {
-
-    final c = _uiReady ??= Completer<void>();
-    if (!c.isCompleted){
-      c.complete();
-    }
-  }
-
-  Future<void> _waitForUi() => (_uiReady ??= Completer<void>()).future;
 
   void resetForRetry() {
     _openFuture = null;     // allow ensureOpened() to run again
-    _uiReady = null;       // re-block until UI signals again
   }
 
   static const int kSchemaVersion = 4;
@@ -457,8 +453,6 @@ final class SQLiteClient extends _$SQLiteClient {
       if (kDebugMode) {
         debugPrint('[Migration] Running from version $from to $to');
       }
-
-      await _waitForUi();
 
       if (_devFakeOnly) {
 

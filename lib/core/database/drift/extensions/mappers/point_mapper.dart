@@ -1,25 +1,25 @@
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_dto.dart';
-import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_geometry_dto.dart';
-import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_properties_dto.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point_geometry.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point_properties.dart';
 import 'package:drift/drift.dart';
 
 extension PointMapper on TypedResult {
-  LocalPointDto toPointDto(SQLiteClient database) {
+  LocalPoint fromPointRow(SQLiteClient database) {
     final pointRow = readTable(database.pointsTable);
     final propertiesRow = readTable(database.pointPropertiesTable);
     final geometryRow = readTable(database.pointGeometryTable);
 
 
-    return LocalPointDto(
+    return LocalPoint(
         id: pointRow.id,
         type: pointRow.type,
-        geometry: LocalPointGeometryDto(
+        geometry: LocalPointGeometry(
           type: geometryRow.type,
           longitude: geometryRow.longitude,
           latitude: geometryRow.latitude
         ),
-        properties: LocalPointPropertiesDto(
+        properties: LocalPointProperties(
           batteryState: propertiesRow.batteryState,
           batteryLevel: propertiesRow.batteryLevel,
           wifi: propertiesRow.wifi,

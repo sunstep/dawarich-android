@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 final class TimelineViewModel extends ChangeNotifier {
+  final int userId;
   final LoadTimelineUseCase _loadTimelineUseCase;
   final TimelinePointsProcessor _timelinePointsProcessor;
   final GetDefaultMapCenterUseCase _getDefaultMapCenterUseCase;
@@ -24,6 +25,7 @@ final class TimelineViewModel extends ChangeNotifier {
   AnimatedMapController? animatedMapController;
 
   TimelineViewModel(
+    this.userId,
     this._loadTimelineUseCase,
     this._timelinePointsProcessor,
     this._getDefaultMapCenterUseCase,
@@ -155,7 +157,7 @@ final class TimelineViewModel extends ChangeNotifier {
     await loadToday();
 
     try {
-      final batchStream = await _watchCurrentBatch();
+      final batchStream = _watchCurrentBatch(userId);
       _localPointSubscription = batchStream.listen((points) {
         _lastLocalBatch = points;
         _rebuildLocalPoints();

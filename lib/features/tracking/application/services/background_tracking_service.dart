@@ -64,10 +64,9 @@ class BackgroundTrackingEntry {
     }
     session.setUserId(user.id);
 
-    // Respect user's automatic tracking preference.
     try {
       final getSettings = await container.read(getTrackerSettingsUseCaseProvider.future);
-      final settings = await getSettings();
+      final settings = await getSettings(user.id);
       if (!settings.automaticTracking) {
         if (kDebugMode) {
           debugPrint('[Background] Auto tracking OFF → shutting down.');
@@ -76,7 +75,6 @@ class BackgroundTrackingEntry {
         return;
       }
     } catch (e, s) {
-      // If settings can't be loaded, fail safe (don’t track) instead of silently tracking.
       if (kDebugMode) {
         debugPrint('[Background] Failed to load tracker settings ($e) → shutting down.\n$s');
       }
@@ -84,24 +82,25 @@ class BackgroundTrackingEntry {
       return;
     }
 
-    await _startBackgroundTracking(backgroundService, container);
+    await _startBackgroundTracking(backgroundService, container, user.id);
   }
 
   static Future<void> _startBackgroundTracking(
     ServiceInstance backgroundService,
     ProviderContainer container,
+    int userId,
   ) async {
     if (kDebugMode) {
       debugPrint('[Background] Starting background tracking...');
     }
 
     final automation = await container.read(pointAutomationServiceProvider.future);
-    await automation.startTracking();
+    await automation.startTracking(userId);
 
     try {
       final getLastPoint = await container.read(getLastPointUseCaseProvider.future);
       final getBatchCount = await container.read(getBatchPointCountUseCaseProvider.future);
-      await setInitialForegroundNotification(getLastPoint, getBatchCount, backgroundService);
+      await setInitialForegroundNotification(getLastPoint, getBatchCount, backgroundService, userId);
     } catch (_) {
       // ignore
     }
@@ -140,9 +139,10 @@ class BackgroundTrackingEntry {
     GetLastPointUseCase getLastPoint,
     GetBatchPointCountUseCase getBatchPointsCount,
     ServiceInstance backgroundService,
+    int userId,
   ) async {
-    final lastPointResult = await getLastPoint();
-    final batchPointCount = await getBatchPointsCount();
+    final lastPointResult = await getLastPoint(userId);
+    final batchPointCount = await getBatchPointsCount(userId);
 
     if (backgroundService is AndroidServiceInstance) {
       if (lastPointResult case Some(value: final lp)) {

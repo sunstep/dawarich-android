@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final AppRouter appRouter = AppRouter();
+late final AppRouter appRouter;
 
 Future<void> main() async {
 
@@ -42,12 +42,12 @@ Future<void> main() async {
         debugPrint('[dbHook] $e\n$st');
       }
 
-      // Use ONE container for both ProviderScope (widget tree) and startup boot.
       final container = ProviderContainer();
+
+      appRouter = AppRouter(container);
 
       runApp(UncontrolledProviderScope(container: container, child: const Dawarich()));
 
-      // Boot is now handled by SplashPage itself
     }, (Object error, StackTrace stack) {
       debugPrint('[ZonedError] $error');
       debugPrint(stack.toString());

@@ -1,31 +1,26 @@
-
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_batch.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
-import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/converters/point/dawarich/dawarich_point_batch_converter.dart';
 import 'package:dawarich/features/tracking/application/converters/point/local/local_point_converter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/result.dart';
-import 'package:session_box/session_box.dart';
 
 
 final class BatchUploadWorkflowUseCase {
 
   final IApiPointRepository _api;
   final IPointLocalRepository _localPointRepository;
-  final SessionBox<User> _userSession;
 
   BatchUploadWorkflowUseCase(
       this._api,
       this._localPointRepository,
-      this._userSession
   );
 
 
-  Future<Result<(), String>> call(List<LocalPoint> points, {
+  Future<Result<(), String>> call(List<LocalPoint> points, int userId, {
     void Function(int uploaded, int total)? onChunkUploaded,
   }) async {
 
@@ -57,7 +52,7 @@ final class BatchUploadWorkflowUseCase {
         failedChunks.addAll(chunk);
       } else {
         List<int> chunkIds = chunk.map((p) => p.id).toList();
-        await _deletePoints(chunkIds);
+        await _deletePoints(chunkIds, userId);
         uploaded += chunk.length;
         onChunkUploaded?.call(uploaded, dedupedLocalPoints.length);
       }
@@ -78,7 +73,7 @@ final class BatchUploadWorkflowUseCase {
 
         if (result case Err(value: final error)) {
           if (error.contains("already exists")) {
-            await _deletePoints([point.id]);
+            await _deletePoints([point.id], userId);
             uploadedCount++;
             onChunkUploaded?.call(uploadedCount, failedChunks.length);
             continue;
@@ -86,7 +81,7 @@ final class BatchUploadWorkflowUseCase {
 
           failedCount++;
         } else {
-          await _deletePoints([point.id]);
+          await _deletePoints([point.id], userId);
           uploadedCount++;
           onChunkUploaded?.call(uploadedCount, failedChunks.length);
         }
@@ -100,11 +95,8 @@ final class BatchUploadWorkflowUseCase {
     return const Ok(());
   }
 
-  Future<bool> _deletePoints(List<int> pointIds) async {
-    final int userId = await _requireUserId();
-
+  Future<bool> _deletePoints(List<int> pointIds, int userId) async {
     final result = await _localPointRepository.deletePoints(userId, pointIds);
-
     return result > 0;
   }
 
@@ -127,15 +119,5 @@ final class BatchUploadWorkflowUseCase {
     debugPrint('[Upload] Deduplicated from ${points.length} → ${deduped.length}');
     return deduped;
   }
-
-  Future<int> _requireUserId() async {
-    final int? userId = _userSession.getUserId();
-    if (userId == null) {
-      await _userSession.logout();
-      throw Exception('[ApiPointService] No user session found.');
-    }
-    return userId;
-  }
-
 
 }

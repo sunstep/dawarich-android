@@ -31,6 +31,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 final class TrackerPageViewModel extends ChangeNotifier {
 
+  final int userId;
+
   LastPointViewModel? _lastPoint;
   LastPointViewModel? get lastPoint => _lastPoint;
 
@@ -52,6 +54,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
   final OpenSystemSettingsUseCase _openSystemSettings;
 
   TrackerPageViewModel(
+      this.userId,
       this._getTrackerSettings,
       this._saveTrackerSettings,
       this._getDeviceModel,
@@ -216,7 +219,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
 
-    Stream<Option<LastPoint>> lastPointStream = await _streamLastPoint();
+    Stream<Option<LastPoint>> lastPointStream = _streamLastPoint(userId);
 
     _lastPointSub = lastPointStream.listen((option) {
 
@@ -233,7 +236,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
       }
     });
 
-    Stream<int> batchCountStream = await _streamBatchPointCount();
+    Stream<int> batchCountStream = _streamBatchPointCount(userId);
 
     _batchCountSub = batchCountStream.listen((count) {
       if (kDebugMode) {
@@ -243,7 +246,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
     });
 
     // Retrieve settings
-    TrackerSettings settings = await _getTrackerSettings();
+    TrackerSettings settings = await _getTrackerSettings(userId);
     _applySettings(settings);
     await _getTrackRecordingStatus();
 
@@ -268,7 +271,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
   }
 
   Future<void> _getTrackRecordingStatus() async {
-    Option<Track> trackResult = await _getActiveTrackUseCase();
+    Option<Track> trackResult = await _getActiveTrackUseCase(userId);
 
     if (trackResult case Some(value: Track track)) {
       TrackViewModel trackVm = track.toViewModel();
@@ -279,9 +282,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void toggleRecording() async {
     if (isRecording) {
-      _endTrackUseCase();
+      _endTrackUseCase(userId);
     } else {
-      Track track = await _startTrackUseCase();
+      Track track = await _startTrackUseCase(userId);
       TrackViewModel trackVm = track.toViewModel();
       setCurrentTrack(trackVm);
     }
@@ -320,7 +323,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
   Future<Result<(), String>> trackPoint() async {
     setIsTracking(true);
 
-    Result<LocalPoint, String> pointResult = await _createPointFromGps();
+    Result<LocalPoint, String> pointResult = await _createPointFromGps(userId);
 
     if (pointResult case Ok(value: LocalPoint pointEntity)) {
       final storeResult = await _storePoint(pointEntity);

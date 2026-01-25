@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
@@ -20,8 +19,9 @@ final class PointValidator {
   Future<Result<(), String>> validatePoint(
       LocalPoint point,
       Option<LastPoint> lastPointOpt,
+      int userId,
       ) async {
-    final Future<bool> accurateF = _isPointAccurateEnough(point);
+    final Future<bool> accurateF = _isPointAccurateEnough(point, userId);
 
     if (lastPointOpt case None()) {
       final bool isAccurate = await accurateF;
@@ -37,7 +37,7 @@ final class PointValidator {
 
     final Future<bool> newerF = _isPointNewerThanLastPoint(point, lastPoint);
     final Future<bool> distanceF =
-    _isPointDistanceGreaterThanPreference(point, lastPoint);
+    _isPointDistanceGreaterThanPreference(point, lastPoint, userId);
 
     final List<bool> results = await Future.wait<bool>([
       newerF,
@@ -94,9 +94,9 @@ final class PointValidator {
     return answer;
   }
 
-  Future<bool> _isPointDistanceGreaterThanPreference(LocalPoint point, LastPoint lastPoint) async {
+  Future<bool> _isPointDistanceGreaterThanPreference(LocalPoint point, LastPoint lastPoint, int userId) async {
     bool answer = true;
-    final TrackerSettings settings = await _getTrackerSettings();
+    final TrackerSettings settings = await _getTrackerSettings(userId);
     final int minimumDistance = settings.minimumPointDistance;
 
     double currentPointLongitude = point.geometry.longitude;
@@ -115,11 +115,11 @@ final class PointValidator {
     return answer;
   }
 
-  Future<bool> _isPointAccurateEnough(LocalPoint candidate) async {
+  Future<bool> _isPointAccurateEnough(LocalPoint candidate, int userId) async {
 
     bool answer = false;
 
-    final TrackerSettings settings = await _getTrackerSettings();
+    final TrackerSettings settings = await _getTrackerSettings(userId);
     final LocationAccuracy requiredAccuracy = settings.locationAccuracy;
 
     double requiredAccuracyMeters = _getAccuracyThreshold(requiredAccuracy);
@@ -140,32 +140,28 @@ final class PointValidator {
           return 100; // iOS Medium accuracy
         case LocationAccuracy.high:
           return 10; // iOS High accuracy
+        case LocationAccuracy.best:
         case LocationAccuracy.bestForNavigation:
-          return 0; // iOS Navigation-specific accuracy
-        case LocationAccuracy.reduced:
-          return 3000; // iOS Reduced accuracy
+          return 5; // iOS Navigation-specific accuracy
         default:
-          throw ArgumentError("Unsupported LocationAccuracy value: $accuracy");
+          return 100;
       }
-    } else if (Platform.isAndroid) {
+    } else {
       switch (accuracy) {
         case LocationAccuracy.lowest:
           return 500; // Android Passive accuracy
         case LocationAccuracy.low:
           return 500; // Android Low power accuracy
         case LocationAccuracy.medium:
-          return 500; // Android Balanced power accuracy
+          return 100; // Android Balanced power accuracy
         case LocationAccuracy.high:
           return 100; // Android High accuracy
         case LocationAccuracy.best:
-          return 100; // Android matches High accuracy
+        case LocationAccuracy.bestForNavigation:
+          return 50; // Android matches High accuracy
         default:
-          throw ArgumentError("Unsupported LocationAccuracy value: $accuracy");
+          return 100;
       }
-    } else {
-      // Default for unsupported platforms
-      throw UnsupportedError(
-          "Unsupported platform for LocationAccuracy handling.");
     }
   }
 

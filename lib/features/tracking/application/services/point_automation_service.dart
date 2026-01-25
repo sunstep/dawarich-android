@@ -13,6 +13,7 @@ final class PointAutomationService {
 
   bool _isTracking = false;
   bool _writeBusy = false;
+  int? _userId;
 
   late final ReactivePeriodicTicker _gpsTicker;
   late final ReactivePeriodicTicker _cacheTicker;
@@ -36,7 +37,7 @@ final class PointAutomationService {
       this._showTrackerNotification
   );
 
-  Future<void> startTracking() async {
+  Future<void> startTracking(int userId) async {
 
     if (kDebugMode) {
       debugPrint("[PointAutomation] Starting automatic tracking if not already started...");
@@ -49,8 +50,9 @@ final class PointAutomationService {
       }
 
       _isTracking = true;
+      _userId = userId;
 
-      final freq$ = (await _watchTrackerSettings())
+      final freq$ = _watchTrackerSettings(userId)
           .map((s) {
         final seconds = s.trackingFrequency;
         return Duration(seconds: seconds > 0 ? seconds : 10);
@@ -88,6 +90,7 @@ final class PointAutomationService {
       }
 
       _isTracking = false;
+      _userId = null;
 
       await _gpsSub?.cancel();
       _gpsSub = null;
@@ -104,6 +107,8 @@ final class PointAutomationService {
 
   /// Forces a new position fetch by calling localPointService.createNewPoint().
   Future<void> _gpsTimerHandler() async {
+    final userId = _userId;
+    if (userId == null) return;
 
     if (_writeBusy) {
       if (kDebugMode) {
@@ -119,13 +124,13 @@ final class PointAutomationService {
     _writeBusy = true;
 
     try {
-      final result = await _createPointFromGps();
+      final result = await _createPointFromGps(userId);
 
       if (result case Ok(value: final point)) {
         // Store the point in the database
         final storeResult = await _storePoint(point);
         if (storeResult case Ok()) {
-          await _notify();
+          await _notify(userId);
         } else if (storeResult case Err(value: final err)) {
           debugPrint("[PointAutomation] Failed to store GPS point: $err");
         }
@@ -141,6 +146,8 @@ final class PointAutomationService {
   }
 
   Future<void> _cacheTimerHandler() async {
+    final userId = _userId;
+    if (userId == null) return;
 
     if (_writeBusy) {
       if (kDebugMode) {
@@ -156,13 +163,13 @@ final class PointAutomationService {
     _writeBusy = true;
 
     try {
-      final res = await _createPointFromCache();
+      final res = await _createPointFromCache(userId);
       if (res case Ok(value: final point)) {
         // Store the point in the database
         final storeResult = await _storePoint(point);
         if (storeResult case Ok()) {
           _gpsTicker.snooze();
-          await _notify();
+          await _notify(userId);
         } else if (storeResult case Err(value: final err)) {
           debugPrint("[PointAutomation] Failed to store cached point: $err");
         }
@@ -176,16 +183,15 @@ final class PointAutomationService {
     }
   }
 
-  Future<void> _notify() async {
+  Future<void> _notify(int userId) async {
     try {
       await _showTrackerNotification(
         title: 'Tracking location...',
         body: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
-            '${await _getBatchPointCount()} points in batch.',
+            '${await _getBatchPointCount(userId)} points in batch.',
       );
     } catch (e, s) {
       debugPrint("[PointAutomation] Notify error: $e\n$s");
     }
   }
-
 }

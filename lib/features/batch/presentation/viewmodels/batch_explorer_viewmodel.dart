@@ -27,12 +27,14 @@ class UploadProgress {
 
 final class BatchExplorerViewModel extends ChangeNotifier {
 
+  final int userId;
   final WatchCurrentBatchUseCase _watchCurrentBatch;
   final BatchUploadWorkflowUseCase _batchUploadWorkflow;
   final ClearBatchUseCase _clearBatch;
   final DeletePointsUseCase _deletePoints;
 
   BatchExplorerViewModel(
+      this.userId,
       this._watchCurrentBatch,
       this._batchUploadWorkflow,
       this._clearBatch,
@@ -117,7 +119,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
       return;
     }
 
-    final stream = await _watchCurrentBatch();
+    final stream = _watchCurrentBatch(userId);
 
     _batchSubscription = stream.listen((batch) async {
       final batchVm = await compute(BatchExplorerViewModel._convertToViewModels, batch);
@@ -149,7 +151,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
         .map((point) => point.toDomain())
         .toList();
 
-    Result<(), String> uploadResult = await _batchUploadWorkflow(localPoints, onChunkUploaded: (uploaded, total) {
+    Result<(), String> uploadResult = await _batchUploadWorkflow(localPoints, userId, onChunkUploaded: (uploaded, total) {
       _progressController.add(UploadProgress(uploaded, total));
     });
 
@@ -165,13 +167,13 @@ final class BatchExplorerViewModel extends ChangeNotifier {
   Future<void> deletePoints(List<LocalPointViewModel> points) async {
 
     List<int> pointIds = points.map((point) => point.id).toList();
-    await _deletePoints(pointIds);
+    await _deletePoints(pointIds, userId);
     batch.removeWhere((point) => pointIds.contains(point.id));
     notifyListeners();
   }
 
   Future<void> clearBatch() async {
-    await _clearBatch();
+    await _clearBatch(userId);
     batch.clear();
     notifyListeners();
   }

@@ -27,3 +27,18 @@ final sessionBoxProvider = FutureProvider<SessionBox<User>>((ref) async {
 
   return box;
 });
+
+/// Holds the currently authenticated user.
+/// Set by AuthGuard when navigating to protected routes.
+/// In protected contexts, this is guaranteed to be non-null.
+final authenticatedUserProvider = NotifierProvider<AuthenticatedUserNotifier, User?>(() => AuthenticatedUserNotifier());
+
+class AuthenticatedUserNotifier extends Notifier<User?> {
+  @override
+  User? build() => null;
+
+  void setUser(User? user) {
+    state = user;
+  }
+}
+

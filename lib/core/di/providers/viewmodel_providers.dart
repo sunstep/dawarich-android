@@ -1,3 +1,4 @@
+import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
 import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
@@ -5,7 +6,13 @@ import 'package:dawarich/features/tracking/presentation/models/tracker_page_view
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final timelineViewModelProvider = FutureProvider<TimelineViewModel>((ref) async {
+  final user = ref.watch(authenticatedUserProvider);
+  if (user == null) {
+    throw StateError('TimelineViewModel requires authenticated user');
+  }
+
   final vm = TimelineViewModel(
+    user.id,
     await ref.watch(loadTimelineUseCaseProvider.future),
     ref.watch(timelinePointsProcessorProvider),
     ref.watch(getDefaultMapCenterUseCaseProvider),
@@ -26,7 +33,13 @@ final pointsPageViewModelProvider = FutureProvider<PointsPageViewModel>((ref) as
 });
 
 final trackerPageViewModelProvider = FutureProvider<TrackerPageViewModel>((ref) async {
+  final user = ref.watch(authenticatedUserProvider);
+  if (user == null) {
+    throw StateError('TrackerPageViewModel requires authenticated user');
+  }
+
   final vm = TrackerPageViewModel(
+    user.id,
     await ref.watch(getTrackerSettingsUseCaseProvider.future),
     await ref.watch(saveTrackerSettingsUseCaseProvider.future),
     ref.watch(getDeviceModelUseCaseProvider),
@@ -41,7 +54,7 @@ final trackerPageViewModelProvider = FutureProvider<TrackerPageViewModel>((ref) 
     ref.watch(openSystemSettingsUseCaseProvider),
   );
 
-  await vm.initialize();
+  vm.initialize();
   ref.onDispose(vm.dispose);
   return vm;
 });

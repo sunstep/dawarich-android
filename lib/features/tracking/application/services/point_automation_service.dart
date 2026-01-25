@@ -3,9 +3,9 @@ import 'package:dawarich/features/tracking/application/usecases/get_batch_point_
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_cache_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/watch_tracker_settings_usecase.dart';
 import 'package:dawarich/features/tracking/data/repositories/reactive_periodic_ticker.dart';
-import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
@@ -23,6 +23,7 @@ final class PointAutomationService {
   final WatchTrackerSettingsUseCase _watchTrackerSettings;
   final CreatePointFromGpsWorkflow _createPointFromGps;
   final CreatePointFromCacheWorkflow _createPointFromCache;
+  final StorePointUseCase _storePoint;
   final GetBatchPointCountUseCase _getBatchPointCount;
   final ShowTrackerNotificationUseCase _showTrackerNotification;
 
@@ -30,6 +31,7 @@ final class PointAutomationService {
       this._watchTrackerSettings,
       this._createPointFromGps,
       this._createPointFromCache,
+      this._storePoint,
       this._getBatchPointCount,
       this._showTrackerNotification
   );
@@ -119,8 +121,14 @@ final class PointAutomationService {
     try {
       final result = await _createPointFromGps();
 
-      if (result case Ok()) {
-        await _notify();
+      if (result case Ok(value: final point)) {
+        // Store the point in the database
+        final storeResult = await _storePoint(point);
+        if (storeResult case Ok()) {
+          await _notify();
+        } else if (storeResult case Err(value: final err)) {
+          debugPrint("[PointAutomation] Failed to store GPS point: $err");
+        }
       } else if (result case Err(value: final err)) {
         debugPrint("[PointAutomation] Forced GPS point not created: $err");
       }
@@ -142,16 +150,22 @@ final class PointAutomationService {
     }
 
     if (kDebugMode) {
-      debugPrint("[PointAutomation] Creating new GPS point...");
+      debugPrint("[PointAutomation] Creating new cached point...");
     }
 
     _writeBusy = true;
 
     try {
       final res = await _createPointFromCache();
-      if (res is Ok<LocalPoint, String>) {
-        _gpsTicker.snooze();
-        await _notify();
+      if (res case Ok(value: final point)) {
+        // Store the point in the database
+        final storeResult = await _storePoint(point);
+        if (storeResult case Ok()) {
+          _gpsTicker.snooze();
+          await _notify();
+        } else if (storeResult case Err(value: final err)) {
+          debugPrint("[PointAutomation] Failed to store cached point: $err");
+        }
       }
     } catch (_) {
       if (kDebugMode) {

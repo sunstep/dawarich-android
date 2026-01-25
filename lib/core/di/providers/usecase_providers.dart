@@ -160,6 +160,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final watchSettings = await ref.watch(watchTrackerSettingsUseCaseProvider.future);
   final createGps = await ref.watch(createPointFromGpsWorkflowProvider.future);
   final createCache = await ref.watch(createPointFromCacheWorkflowProvider.future);
+  final storePoint = await ref.watch(storePointUseCaseProvider.future);
   final batchCount = await ref.watch(getBatchPointCountUseCaseProvider.future);
   final showNotif = ref.watch(showTrackerNotificationUseCaseProvider);
 
@@ -167,6 +168,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
     watchSettings,
     createGps,
     createCache,
+    storePoint,
     batchCount,
     showNotif,
   );

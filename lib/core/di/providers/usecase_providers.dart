@@ -4,17 +4,13 @@ import 'package:dawarich/core/application/usecases/api/get_total_pages_usecase.d
 import 'package:dawarich/features/stats/application/repositories/stats_repository_interfaces.dart';
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
-import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'core_providers.dart';
 import 'package:dawarich/core/database/repositories/drift/drift_local_point_repository.dart';
 import 'package:dawarich/core/database/repositories/drift/drift_track_repository.dart';
 import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
-import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
-import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
 import 'package:dawarich/features/batch/application/usecases/watch_current_batch_usecase.dart';
 import 'package:dawarich/features/timeline/application/helpers/timeline_points_processor.dart';
 import 'package:dawarich/features/timeline/application/usecases/load_timeline_usecase.dart';
@@ -40,7 +36,6 @@ import 'package:dawarich/features/tracking/application/usecases/track/end_track_
 import 'package:dawarich/features/tracking/application/usecases/track/watch_batch_point_count_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/system_settings/check_system_settings_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/system_settings/open_system_settings_usecase.dart';
-import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:dawarich/features/tracking/data/repositories/hardware_repository.dart';
 import 'package:dawarich/features/tracking/data/repositories/drift_tracker_settings_repository.dart';
 import 'package:dawarich/features/batch/application/usecases/point_validator.dart';
@@ -193,33 +188,6 @@ final watchCurrentBatchUseCaseProvider = FutureProvider<WatchCurrentBatchUseCase
   return WatchCurrentBatchUseCase(localRepo, session);
 });
 
-// --- ViewModels ---
-final timelineViewModelProvider = FutureProvider<TimelineViewModel>((ref) async {
-  final vm = TimelineViewModel(
-    await ref.watch(loadTimelineUseCaseProvider.future),
-    ref.watch(timelinePointsProcessorProvider),
-    ref.watch(getDefaultMapCenterUseCaseProvider),
-    await ref.watch(watchCurrentBatchUseCaseProvider.future),
-  );
-
-  // Kick off initial load.
-  await vm.initialize();
-  ref.onDispose(vm.dispose);
-  return vm;
-});
-
-final statsPageViewModelProvider = FutureProvider<StatsPageViewModel>((ref) async {
-  return StatsPageViewModel(await ref.watch(getStatsUseCaseProvider.future));
-});
-
-final pointsPageViewModelProvider = FutureProvider<PointsPageViewModel>((ref) async {
-  return PointsPageViewModel(
-    await ref.watch(getPointsUseCaseProvider.future),
-    await ref.watch(deletePointUseCaseProvider.future),
-    await ref.watch(getTotalPagesUseCaseProvider.future),
-  );
-});
-
 final getDeviceModelUseCaseProvider = Provider<GetDeviceModelUseCase>((ref) {
   return GetDeviceModelUseCase(ref.watch(hardwareRepositoryProvider));
 });
@@ -264,24 +232,4 @@ final checkSystemSettingsUseCaseProvider = Provider<CheckSystemSettingsUseCase>(
 
 final openSystemSettingsUseCaseProvider = Provider<OpenSystemSettingsUseCase>((ref) {
   return OpenSystemSettingsUseCase();
-});
-
-final trackerPageViewModelProvider = FutureProvider<TrackerPageViewModel>((ref) async {
-  final vm = TrackerPageViewModel(
-    await ref.watch(getTrackerSettingsUseCaseProvider.future),
-    await ref.watch(saveTrackerSettingsUseCaseProvider.future),
-    ref.watch(getDeviceModelUseCaseProvider),
-    await ref.watch(streamLastPointUseCaseProvider.future),
-    await ref.watch(streamBatchPointCountUseCaseProvider.future),
-    await ref.watch(createPointFromGpsWorkflowProvider.future),
-    await ref.watch(startTrackUseCaseProvider.future),
-    await ref.watch(endTrackUseCaseProvider.future),
-    await ref.watch(getActiveTrackUseCaseProvider.future),
-    ref.watch(checkSystemSettingsUseCaseProvider),
-    ref.watch(openSystemSettingsUseCaseProvider),
-  );
-
-  await vm.initialize();
-  ref.onDispose(vm.dispose);
-  return vm;
 });

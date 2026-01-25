@@ -5,73 +5,89 @@ import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
-import 'package:dawarich/core/di/providers/app_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 
 @RoutePage()
-class StatsPage extends ConsumerStatefulWidget {
+class StatsPage extends ConsumerWidget {
   const StatsPage({super.key});
 
   @override
-  ConsumerState<StatsPage> createState() => _StatsPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(statsPageNotifierProvider);
 
-class _StatsPageState extends ConsumerState<StatsPage> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(statsPageViewModelProvider.future).then((vm) => vm.refreshStats());
-    });
+    return statsAsync.when(
+      loading: () => _buildLoadingScaffold(context),
+      error: (e, _) => _buildErrorScaffold(context, e, ref),
+      data: (stats) => _buildDataScaffold(context, stats, ref),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final vmAsync = ref.watch(statsPageViewModelProvider);
+  Widget _buildLoadingScaffold(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: 'Stats',
+          titleFontSize: 32,
+          backgroundColor: Colors.transparent,
+        ),
+        drawer: CustomDrawer(),
+        body: SafeArea(child: _buildFullSkeleton(context)),
+      ),
+    );
+  }
 
-    return vmAsync.when(
-      loading: () => Container(
-        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: const Scaffold(
+  Widget _buildErrorScaffold(BuildContext context, Object error, WidgetRef ref) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: 'Stats',
+          titleFontSize: 32,
           backgroundColor: Colors.transparent,
-          body: Center(child: CircularProgressIndicator()),
         ),
-      ),
-      error: (e, _) => Container(
-        decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Center(child: Text(e.toString())),
-        ),
-      ),
-      data: (vm) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: Theme.of(context).pageBackground,
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: const CustomAppbar(
-              title: 'Stats',
-              titleFontSize: 32,
-              backgroundColor: Colors.transparent,
-            ),
-            drawer: CustomDrawer(),
-            body: SafeArea(
-              child: Builder(
-                builder: (ctx) {
-                  return vm.isLoading
-                      ? _buildFullSkeleton(ctx)
-                      : (vm.stats == null
-                      ? _buildEmptyState(ctx, vm)
-                      : _buildFullContent(ctx, vm));
-                },
+        drawer: CustomDrawer(),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline,
+                  size: 48, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 16),
+              Text(error.toString(), textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataScaffold(BuildContext context, StatsViewModel? stats, WidgetRef ref) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: 'Stats',
+          titleFontSize: 32,
+          backgroundColor: Colors.transparent,
+        ),
+        drawer: CustomDrawer(),
+        body: SafeArea(
+          child: stats == null
+              ? _buildEmptyState(context, ref)
+              : _buildFullContent(context, stats, ref),
+        ),
+      ),
     );
   }
 
@@ -165,25 +181,25 @@ class _StatsPageState extends ConsumerState<StatsPage> {
     );
   }
 
-  Widget _buildFullContent(BuildContext context, StatsPageViewModel vm) {
+  Widget _buildFullContent(BuildContext context, StatsViewModel stats, WidgetRef ref) {
     return RefreshIndicator(
-      onRefresh: vm.refreshStats,
+      onRefresh: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildOverviewCard(context, vm),
+            _buildOverviewCard(context, ref),
             const SizedBox(height: 32),
-            _buildBreakdownGrid(context, vm),
+            _buildBreakdownGrid(context, stats),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOverviewCard(BuildContext context, StatsPageViewModel vm) {
+  Widget _buildOverviewCard(BuildContext context, WidgetRef ref) {
     return Card(
       elevation: 12,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -206,7 +222,7 @@ class _StatsPageState extends ConsumerState<StatsPage> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Refresh Stats'),
                 style: Theme.of(context).elevatedButtonTheme.style,
-                onPressed: vm.isLoading ? null : vm.refreshStats,
+                onPressed: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
               ),
             ),
           ],
@@ -215,9 +231,9 @@ class _StatsPageState extends ConsumerState<StatsPage> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, StatsPageViewModel vm) {
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
-      onRefresh: vm.refreshStats,
+      onRefresh: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -249,7 +265,7 @@ class _StatsPageState extends ConsumerState<StatsPage> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: vm.isLoading ? null : vm.refreshStats,
+                      onPressed: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Try again'),
                     ),
@@ -263,8 +279,7 @@ class _StatsPageState extends ConsumerState<StatsPage> {
     );
   }
 
-  Widget _buildBreakdownGrid(BuildContext context, StatsPageViewModel vm) {
-    final StatsViewModel stats = vm.stats!;
+  Widget _buildBreakdownGrid(BuildContext context, StatsViewModel stats) {
     final List<_StatTile> tiles = [
       _StatTile(
           label: 'Countries',
@@ -335,7 +350,6 @@ class _StatTile extends StatelessWidget {
               child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(height: 12),
-            // auto-scale large numbers
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,

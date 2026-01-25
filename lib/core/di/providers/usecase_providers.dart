@@ -25,6 +25,7 @@ import 'package:dawarich/features/tracking/application/usecases/notifications/sh
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_cache_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_position_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_device_model_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/save_tracker_settings_usecase.dart';
@@ -94,6 +95,11 @@ final getStatsUseCaseProvider = FutureProvider<GetStatsUseCase>((ref) async {
 });
 
 // --- Tracking usecases ---
+final storePointUseCaseProvider = FutureProvider<StorePointUseCase>((ref) async {
+  final repo = await ref.watch(pointLocalRepositoryProvider.future);
+  return StorePointUseCase(repo);
+});
+
 final getTrackerSettingsUseCaseProvider = FutureProvider<GetTrackerSettingsUseCase>((ref) async {
   final session = await ref.watch(sessionBoxProvider.future);
   final repo = await ref.watch(trackerSettingsRepositoryProvider.future);

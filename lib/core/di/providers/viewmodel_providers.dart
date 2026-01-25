@@ -35,6 +35,7 @@ final trackerPageViewModelProvider = FutureProvider<TrackerPageViewModel>((ref) 
     await ref.watch(streamLastPointUseCaseProvider.future),
     await ref.watch(streamBatchPointCountUseCaseProvider.future),
     await ref.watch(createPointFromGpsWorkflowProvider.future),
+    await ref.watch(storePointUseCaseProvider.future),
     await ref.watch(startTrackUseCaseProvider.future),
     await ref.watch(endTrackUseCaseProvider.future),
     await ref.watch(getActiveTrackUseCaseProvider.future),

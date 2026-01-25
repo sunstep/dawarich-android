@@ -14,6 +14,8 @@ final validateUserUseCaseProvider = FutureProvider<ValidateUserUseCase>((ref) as
 
 final sessionBoxProvider = FutureProvider<SessionBox<User>>((ref) async {
 
+  ref.keepAlive();
+
   final validateUser = await ref.watch(validateUserUseCaseProvider.future);
 
   final box = await SessionBox.create<User>(

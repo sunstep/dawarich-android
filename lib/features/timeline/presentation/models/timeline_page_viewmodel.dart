@@ -212,7 +212,6 @@ final class TimelineViewModel extends ChangeNotifier {
       debugPrint("[TimelineViewModel] Disposing...");
     }
 
-    animatedMapController?.dispose();
     _localPointSubscription?.cancel();
     super.dispose();
   }

@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class MigrationPage extends ConsumerWidget {
-  const MigrationPage({super.key});
+final class MigrationView extends ConsumerWidget {
+  const MigrationView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

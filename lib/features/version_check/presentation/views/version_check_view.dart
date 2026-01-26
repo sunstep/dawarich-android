@@ -9,15 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class VersionCheckPage extends ConsumerStatefulWidget {
+final class VersionCheckView extends ConsumerStatefulWidget {
 
-  const VersionCheckPage({super.key});
+  const VersionCheckView({super.key});
 
   @override
-  ConsumerState<VersionCheckPage> createState() => _VersionCheckPageState();
+  ConsumerState<VersionCheckView> createState() => _VersionCheckViewState();
 }
 
-final class _VersionCheckPageState extends ConsumerState<VersionCheckPage> {
+final class _VersionCheckViewState extends ConsumerState<VersionCheckView> {
 
   @override
   void initState() {

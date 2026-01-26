@@ -1,16 +1,16 @@
-import 'package:dawarich/features/stats/presentation/models/yearly_stats_viewmodel.dart';
+import 'package:dawarich/features/stats/presentation/models/yearly_stats_uimodel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 
-final class StatsViewModel {
+final class StatsUiModel {
   final int _totalDistance;
   final int _totalPoints;
   final int _totalReverseGeocodedPoints;
   final int _totalCountries;
   final int _totalCities;
-  List<YearlyStatsViewModel> yearlyStats;
+  List<YearlyStatsUiModel> yearlyStats;
 
-  StatsViewModel(
+  StatsUiModel(
       this._totalDistance,
       this._totalPoints,
       this._totalReverseGeocodedPoints,

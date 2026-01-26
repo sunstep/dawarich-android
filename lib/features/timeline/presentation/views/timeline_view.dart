@@ -12,14 +12,14 @@ import 'package:dawarich/features/timeline/presentation/models/timeline_page_vie
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class TimelinePage extends ConsumerStatefulWidget {
-  const TimelinePage({super.key});
+final class TimelineView extends ConsumerStatefulWidget {
+  const TimelineView({super.key});
 
   @override
-  ConsumerState<TimelinePage> createState() => _TimelinePageState();
+  ConsumerState<TimelineView> createState() => _TimelinePageState();
 }
 
-class _TimelinePageState extends ConsumerState<TimelinePage> with TickerProviderStateMixin {
+class _TimelinePageState extends ConsumerState<TimelineView> with TickerProviderStateMixin {
   late final AnimatedMapController _animatedMapController;
 
   @override

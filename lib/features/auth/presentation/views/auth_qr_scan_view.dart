@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 @RoutePage()
-class AuthQrScanPage extends StatefulWidget {
-  const AuthQrScanPage({super.key});
+class AuthQrScanView extends StatefulWidget {
+  const AuthQrScanView({super.key});
   @override
-  State<AuthQrScanPage> createState() => _AuthQrScanPageState();
+  State<AuthQrScanView> createState() => _AuthQrScanViewState();
 }
 
-class _AuthQrScanPageState extends State<AuthQrScanPage> {
+class _AuthQrScanViewState extends State<AuthQrScanView> {
   final _controller = MobileScannerController();
   bool _handled = false;
 

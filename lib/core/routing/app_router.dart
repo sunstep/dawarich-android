@@ -1,18 +1,19 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/routing/guards/auth_guard.dart';
 import 'package:dawarich/core/shell/splash.dart';
-import 'package:dawarich/features/migration/presentation/pages/migration_page.dart';
+import 'package:dawarich/features/auth/presentation/views/auth_qr_scan_view.dart';
+import 'package:dawarich/features/auth/presentation/views/auth_view.dart';
 import 'package:dawarich/features/batch/presentation/views/batch_explorer_view.dart';
-import 'package:dawarich/features/timeline/presentation/pages/timeline_page.dart';
-import 'package:dawarich/features/stats/presentation/pages/stats_page.dart';
-import 'package:dawarich/features/points/presentation/pages/points_page.dart';
-import 'package:dawarich/features/tracking/presentation/pages/tracker_page.dart';
-import 'package:dawarich/features/settings/presentation/pages/settings_page.dart';
+import 'package:dawarich/features/migration/presentation/views/migration_view.dart';
+import 'package:dawarich/features/points/presentation/views/points_view.dart';
+import 'package:dawarich/features/settings/presentation/views/settings_view.dart';
+import 'package:dawarich/features/stats/presentation/views/stats_view.dart';
+import 'package:dawarich/features/timeline/presentation/views/timeline_view.dart';
+import 'package:dawarich/features/tracking/presentation/views/tracker_view.dart';
+import 'package:dawarich/features/version_check/presentation/views/version_check_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/auth/presentation/views/auth_page.dart';
-import '../../features/auth/presentation/views/auth_qr_scan_page.dart';
-import '../../features/version_check/presentation/views/version_check_page.dart';
+
 
 part 'app_router.gr.dart';
 

@@ -1,10 +1,10 @@
 
 import 'package:dawarich/features/stats/domain/monthly_stats.dart';
-import 'package:dawarich/features/stats/presentation/models/monthly_stats_viewmodel.dart';
+import 'package:dawarich/features/stats/presentation/models/monthly_stats_uimodel.dart';
 
 extension MonthlyStatsToViewModelConverter on MonthlyStats {
-  MonthlyStatsViewModel toViewModel() {
-    return MonthlyStatsViewModel(
+  MonthlyStatsUiModel toUiModel() {
+    return MonthlyStatsUiModel(
       january: january,
       february: february,
       march: march,
@@ -21,7 +21,7 @@ extension MonthlyStatsToViewModelConverter on MonthlyStats {
   }
 }
 
-extension MonthlyStatsToDomainConverter on MonthlyStatsViewModel {
+extension MonthlyStatsToDomainConverter on MonthlyStatsUiModel {
   MonthlyStats toDomain() {
     return MonthlyStats(
       january: january,

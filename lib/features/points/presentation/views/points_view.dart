@@ -1,24 +1,24 @@
 import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/points/presentation/viewmodels/points_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
-import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-class PointsPage extends ConsumerStatefulWidget {
-  const PointsPage({super.key});
+class PointsView extends ConsumerStatefulWidget {
+  const PointsView({super.key});
 
   @override
-  ConsumerState<PointsPage> createState() => _PointsPageState();
+  ConsumerState<PointsView> createState() => _PointsViewState();
 }
 
-class _PointsPageState extends ConsumerState<PointsPage> {
+class _PointsViewState extends ConsumerState<PointsView> {
   @override
   void initState() {
     super.initState();
@@ -47,7 +47,7 @@ class _PointsPageState extends ConsumerState<PointsPage> {
           body: Center(child: Text(e.toString())),
         ),
       ),
-      data: (vm) => provider.ChangeNotifierProvider<PointsPageViewModel>.value(
+      data: (vm) => provider.ChangeNotifierProvider<PointsViewModel>.value(
         value: vm,
         child: Container(
           decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
@@ -71,7 +71,7 @@ class _PointsBody extends StatelessWidget {
   const _PointsBody();
 
   Future<void> _pickStart(BuildContext ctx) async {
-    final vm = ctx.read<PointsPageViewModel>();
+    final vm = ctx.read<PointsViewModel>();
     final picked = await showDatePicker(
       context: ctx,
       initialDate: vm.startDate,
@@ -85,7 +85,7 @@ class _PointsBody extends StatelessWidget {
   }
 
   Future<void> _pickEnd(BuildContext ctx) async {
-    final vm = ctx.read<PointsPageViewModel>();
+    final vm = ctx.read<PointsViewModel>();
     final picked = await showDatePicker(
       context: ctx,
       initialDate: vm.endDate,
@@ -100,7 +100,7 @@ class _PointsBody extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmDeletion(BuildContext c, PointsPageViewModel vm) async {
+  Future<void> _confirmDeletion(BuildContext c, PointsViewModel vm) async {
 
     final confirmed = await showDialog<bool>(
       context: c,
@@ -149,7 +149,7 @@ class _PointsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<PointsPageViewModel>();
+    final vm = context.watch<PointsViewModel>();
 
 
     // 3) Otherwise, real content:
@@ -322,7 +322,7 @@ class _FilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) {
-    final PointsPageViewModel vm = c.watch<PointsPageViewModel>();
+    final PointsViewModel vm = c.watch<PointsViewModel>();
 
     return Card(
       elevation: 12,
@@ -470,7 +470,7 @@ class _DateChip extends StatelessWidget {
 class _PointsList extends StatelessWidget {
   @override
   Widget build(BuildContext c) {
-    final vm = c.watch<PointsPageViewModel>();
+    final vm = c.watch<PointsViewModel>();
 
     if (vm.pagePoints.isEmpty) {
       return const _EmptyPointsState();

@@ -10,8 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as provider;
 
 @RoutePage()
-final class AuthPage extends ConsumerWidget {
-  const AuthPage({super.key});
+final class AuthView extends ConsumerWidget {
+  const AuthView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -1,6 +1,6 @@
 import 'package:dawarich/features/stats/domain/monthly_stats.dart';
 
-class MonthlyStatsViewModel {
+class MonthlyStatsUiModel {
   int january;
   int february;
   int march;
@@ -14,7 +14,7 @@ class MonthlyStatsViewModel {
   int november;
   int december;
 
-  MonthlyStatsViewModel({
+  MonthlyStatsUiModel({
     required this.january,
     required this.february,
     required this.march,
@@ -29,8 +29,8 @@ class MonthlyStatsViewModel {
     required this.november
   });
 
-  factory MonthlyStatsViewModel.fromDomain(MonthlyStats entity) {
-    return MonthlyStatsViewModel(
+  factory MonthlyStatsUiModel.fromDomain(MonthlyStats entity) {
+    return MonthlyStatsUiModel(
         january: entity.january,
         february: entity.february,
         march: entity.march,

@@ -4,9 +4,9 @@ import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 
 @RoutePage()
-class SettingsPage extends StatelessWidget {
+class SettingsView extends StatelessWidget {
 
-  const SettingsPage({super.key});
+  const SettingsView({super.key});
 
   @override
   build(BuildContext context) {

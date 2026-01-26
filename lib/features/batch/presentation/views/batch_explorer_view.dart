@@ -11,8 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dawarich/features/batch/presentation/providers/batch_viewmodel_provider.dart';
 
 @RoutePage()
-final class BatchExplorerPage extends ConsumerWidget {
-  const BatchExplorerPage({super.key});
+final class BatchExplorerView extends ConsumerWidget {
+  const BatchExplorerView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

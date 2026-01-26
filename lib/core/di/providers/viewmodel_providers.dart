@@ -1,6 +1,6 @@
 import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
-import 'package:dawarich/features/points/presentation/models/points_page_viewmodel.dart';
+import 'package:dawarich/features/points/presentation/viewmodels/points_viewmodel.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,8 +24,8 @@ final timelineViewModelProvider = FutureProvider<TimelineViewModel>((ref) async 
   return vm;
 });
 
-final pointsPageViewModelProvider = FutureProvider<PointsPageViewModel>((ref) async {
-  return PointsPageViewModel(
+final pointsPageViewModelProvider = FutureProvider<PointsViewModel>((ref) async {
+  return PointsViewModel(
     await ref.watch(getPointsUseCaseProvider.future),
     await ref.watch(deletePointUseCaseProvider.future),
     await ref.watch(getTotalPagesUseCaseProvider.future),

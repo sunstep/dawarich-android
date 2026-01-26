@@ -14,8 +14,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-final class TrackerPage extends ConsumerWidget {
-  const TrackerPage({super.key});
+final class TrackerView extends ConsumerWidget {
+  const TrackerView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,7 +55,7 @@ final class TrackerPage extends ConsumerWidget {
                 backgroundColor: Colors.transparent,
               ),
               drawer: CustomDrawer(),
-              body: _TrackerPageContentBody(),
+              body: _TrackerViewContentBody(),
             ),
           );
         },
@@ -66,12 +66,12 @@ final class TrackerPage extends ConsumerWidget {
 
 /// Everything below expects to read the VM via provider's `context.watch`.
 /// This widget is the original tracker page content entry-point.
-final class _TrackerPageContentBody extends StatefulWidget {
+final class _TrackerViewContentBody extends StatefulWidget {
   @override
-  State<_TrackerPageContentBody> createState() => _TrackerPageContentBodyState();
+  State<_TrackerViewContentBody> createState() => _TrackerViewContentBodyState();
 }
 
-class _TrackerPageContentBodyState extends State<_TrackerPageContentBody> {
+class _TrackerViewContentBodyState extends State<_TrackerViewContentBody> {
   StreamSubscription<String>? _consentSub;
 
   @override

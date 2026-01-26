@@ -1,7 +1,7 @@
 import 'package:auto_route/annotations.dart';
-import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
-import 'package:dawarich/features/stats/presentation/models/stats_page_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/stats/presentation/models/stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
@@ -9,12 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 
 @RoutePage()
-class StatsPage extends ConsumerWidget {
-  const StatsPage({super.key});
+class StatsView extends ConsumerWidget {
+  const StatsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(statsPageNotifierProvider);
+    final statsAsync = ref.watch(statsViewmodelProvider);
 
     return statsAsync.when(
       loading: () => _buildLoadingScaffold(context),
@@ -60,7 +60,7 @@ class StatsPage extends ConsumerWidget {
               Text(error.toString(), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
+                onPressed: () => ref.read(statsViewmodelProvider.notifier).refresh(),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
               ),
@@ -71,7 +71,7 @@ class StatsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildDataScaffold(BuildContext context, StatsViewModel? stats, WidgetRef ref) {
+  Widget _buildDataScaffold(BuildContext context, StatsUiModel? stats, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
       child: Scaffold(
@@ -181,9 +181,9 @@ class StatsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildFullContent(BuildContext context, StatsViewModel stats, WidgetRef ref) {
+  Widget _buildFullContent(BuildContext context, StatsUiModel stats, WidgetRef ref) {
     return RefreshIndicator(
-      onRefresh: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
+      onRefresh: () => ref.read(statsViewmodelProvider.notifier).refresh(),
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -222,7 +222,7 @@ class StatsPage extends ConsumerWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Refresh Stats'),
                 style: Theme.of(context).elevatedButtonTheme.style,
-                onPressed: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
+                onPressed: () => ref.read(statsViewmodelProvider.notifier).refresh(),
               ),
             ),
           ],
@@ -233,7 +233,7 @@ class StatsPage extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
-      onRefresh: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
+      onRefresh: () => ref.read(statsViewmodelProvider.notifier).refresh(),
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -265,7 +265,7 @@ class StatsPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: () => ref.read(statsPageNotifierProvider.notifier).refresh(),
+                      onPressed: () => ref.read(statsViewmodelProvider.notifier).refresh(),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Try again'),
                     ),
@@ -279,7 +279,7 @@ class StatsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildBreakdownGrid(BuildContext context, StatsViewModel stats) {
+  Widget _buildBreakdownGrid(BuildContext context, StatsUiModel stats) {
     final List<_StatTile> tiles = [
       _StatTile(
           label: 'Countries',

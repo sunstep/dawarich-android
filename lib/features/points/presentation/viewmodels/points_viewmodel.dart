@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
-final class PointsPageViewModel with ChangeNotifier {
+final class PointsViewModel with ChangeNotifier {
 
   late DateTime _startDate;
   late DateTime _endDate;
@@ -29,7 +29,7 @@ final class PointsPageViewModel with ChangeNotifier {
   final DeletePointUseCase _deletePointUseCase;
   final GetTotalPagesUseCase _getTotalPagesUseCase;
 
-  PointsPageViewModel(this._getPointsUseCase, this._deletePointUseCase, this._getTotalPagesUseCase) {
+  PointsViewModel(this._getPointsUseCase, this._deletePointUseCase, this._getTotalPagesUseCase) {
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
     _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);

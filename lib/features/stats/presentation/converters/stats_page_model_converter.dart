@@ -2,22 +2,22 @@
 
 import 'package:dawarich/features/stats/domain/stats.dart';
 import 'package:dawarich/features/stats/presentation/converters/yearly_stats_converter.dart';
-import 'package:dawarich/features/stats/presentation/models/stats_viewmodel.dart';
+import 'package:dawarich/features/stats/presentation/models/stats_uimodel.dart';
 
 extension StatsPageDomainToViewModelConverter on Stats {
-  StatsViewModel toViewModel() {
-    return StatsViewModel(
+  StatsUiModel toUiModel() {
+    return StatsUiModel(
       totalDistance,
       totalPoints,
       totalReverseGeocodedPoints,
       totalCountries,
       totalCities,
-      yearlyStats.map((yearlyStats) => yearlyStats.toViewModel()).toList(),
+      yearlyStats.map((yearlyStats) => yearlyStats.toUiModel()).toList(),
     );
   }
 }
 
-extension StatsPageViewModelToDomainConverter on StatsViewModel {
+extension StatsPageViewModelToDomainConverter on StatsUiModel {
   Stats toDomain() {
     return Stats(
       totalDistance: totalDistanceValue,

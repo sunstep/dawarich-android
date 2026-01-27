@@ -6,6 +6,7 @@ import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/version_check_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,8 @@ final class StartupService {
     if (kDebugMode) {
       debugPrint('[StartupService] Initializing app...');
     }
+
+    await InitializeTrackerNotificationService().call();
 
     final willUpgrade = await SQLiteClient.peekNeedsUpgrade();
     if (willUpgrade) {
@@ -55,8 +58,18 @@ final class StartupService {
         return;
       }
 
-      // Notification launch detection is not wired yet in Riverpod.
-      // Default to timeline until this is implemented.
+      final pendingRoute = InitializeTrackerNotificationService.pendingNotificationRoute;
+      if (pendingRoute != null) {
+        if (kDebugMode) {
+          debugPrint('[StartupService] Navigating to pending notification route: $pendingRoute');
+        }
+        InitializeTrackerNotificationService.clearPendingRoute();
+
+        final route = AppRouter.routeFromPath(pendingRoute);
+        appRouter.replaceAll([route]);
+        return;
+      }
+
       if (kDebugMode) {
         debugPrint('[StartupService] Navigating to timeline screen...');
       }

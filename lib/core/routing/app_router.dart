@@ -45,4 +45,27 @@ final class AppRouter extends RootStackRouter {
     AutoRoute(page: SettingsRoute.page, path: '/settings', guards: [_authGuard]),
   ];
 
+  /// Convert a path string to a PageRouteInfo.
+  /// Returns TimelineRoute as default if path is not recognized.
+  static PageRouteInfo routeFromPath(String path) {
+    switch (path) {
+      case '/tracker':
+        return const TrackerRoute();
+      case '/timeline':
+        return const TimelineRoute();
+      case '/stats':
+        return const StatsRoute();
+      case '/points':
+        return const PointsRoute();
+      case '/settings':
+        return const SettingsRoute();
+      case '/batchExplorer':
+        return const BatchExplorerRoute();
+      case '/auth':
+        return const AuthRoute();
+      default:
+        return const TimelineRoute();
+    }
+  }
+
 }

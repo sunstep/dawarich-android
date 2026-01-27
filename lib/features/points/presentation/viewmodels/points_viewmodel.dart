@@ -2,12 +2,13 @@ import 'package:dawarich/core/application/usecases/api/delete_point_usecase.dart
 import 'package:dawarich/core/application/usecases/api/get_points_usecase.dart';
 import 'package:dawarich/core/application/usecases/api/get_total_pages_usecase.dart';
 import 'package:dawarich/core/domain/models/point/api/api_point.dart';
+import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/points/presentation/models/api_point_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 
-final class PointsViewModel with ChangeNotifier {
+final class PointsViewModel with ChangeNotifier, SafeChangeNotifier {
 
   late DateTime _startDate;
   late DateTime _endDate;
@@ -68,72 +69,72 @@ final class PointsViewModel with ChangeNotifier {
 
   void setStartDate(DateTime date) {
     _startDate = date;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setEndDate(DateTime date) {
     _endDate = date;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setLoading(bool trueOrFalse) {
     _isLoading = trueOrFalse;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void toggleDisplayFilters() {
     _displayFilters = !_displayFilters;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setSelectAll(bool trueOrFalse) {
     _selectAll = trueOrFalse;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setSortByNew(bool trueOrFalse) {
     _sortByNew = trueOrFalse;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void toggleShowUnGeocoded(bool value) {
     _showUnGeocoded = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setCurrentPage(int number) {
     _currentPage = number;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setTotalPages(int number) {
     _totalPages = number;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setPoints(List<ApiPointViewModel> list) {
     _points = list;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void selectPoint(String pointId) {
     _selectedItems.add(pointId);
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setSelectedItems(Set<String> points) {
     _selectedItems = points;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void clearSelectedItems() {
     _selectedItems.clear();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void clearPoints() {
     _points.clear();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> initialize() async {
@@ -235,7 +236,7 @@ final class PointsViewModel with ChangeNotifier {
         selectedItems.remove(p.id.toString());
       }
     }
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void toggleSelection(int index, bool? value) {
@@ -253,7 +254,7 @@ final class PointsViewModel with ChangeNotifier {
   void toggleSort() {
     _sortByNew = !_sortByNew;
     sortPoints();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void sortPoints() {
@@ -263,7 +264,7 @@ final class PointsViewModel with ChangeNotifier {
       return _sortByNew ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
     });
 
-    notifyListeners();
+    safeNotifyListeners();
 
   }
 

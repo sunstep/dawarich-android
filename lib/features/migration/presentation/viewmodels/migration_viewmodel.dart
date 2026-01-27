@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/providers/core_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
+import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,7 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:session_box/session_box.dart';
 
-final class MigrationViewModel extends ChangeNotifier {
+final class MigrationViewModel extends ChangeNotifier with SafeChangeNotifier {
 
   bool _isMigrating = false;
   String? _error;
@@ -100,11 +101,11 @@ final class MigrationViewModel extends ChangeNotifier {
 
   void _setMigrating(bool v) {
     _isMigrating = v;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _setError(String? msg) {
     _error = msg;
-    notifyListeners();
+    safeNotifyListeners();
   }
 }

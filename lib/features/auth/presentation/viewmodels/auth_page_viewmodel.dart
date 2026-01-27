@@ -1,4 +1,5 @@
 import 'package:dawarich/core/application/errors/failure.dart';
+import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/auth/application/usecases/login_with_api_key_usecase.dart';
 import 'package:dawarich/features/auth/application/usecases/test_host_connection_usecase.dart';
 import 'package:dawarich/features/auth/domain/models/auth_qr_payload.dart';
@@ -7,7 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 
-final class AuthPageViewModel extends ChangeNotifier {
+final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
 
   final ServerVersionCompatibilityUseCase _serverVersionCompatabilityUseCase;
   final TestHostConnectionUseCase _testHostConnectionUseCase;
@@ -162,83 +163,83 @@ final class AuthPageViewModel extends ChangeNotifier {
 
   void goToNextStep() {
     _currentStep++;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void goToPreviousStep() {
     _currentStep--;
     clearErrorMessage();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setCurrentStep(int step) {
     _currentStep = step;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   // Toggle API key vs credential login
   void setApiKeyPreference(bool useApiKey) {
     _apiKeyPreferred = useApiKey;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setHost(String host) {
     _hostController.text = host;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setApiKey(String apiKey) {
     _apiKeyController.text = apiKey;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   // Toggle visibility of password
   void setPasswordVisibility(bool visible) {
     _passwordVisible = visible;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   // Toggle visibility of API key
   void setApiKeyVisibility(bool visible) {
     _apiKeyVisible = visible;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   /// Manually set a one-time snack message.
   void setSnackbarMessage(String message) {
     _snackbarMessage = message;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   /// Clears currently queued snack message.
   void clearSnackbarMessage() {
     _snackbarMessage = null;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void clearErrorMessage() {
     _errorMessage = null;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   // Private setters with notification
   void _setVerifyingHost(bool value) {
     _isVerifyingHost = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _setLoggingIn(bool value) {
     _isLoggingIn = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _setHostVerified(bool value) {
     _hostVerified = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _setErrorMessage(String? message) {
     _errorMessage = message;
-    notifyListeners();
+    safeNotifyListeners();
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
@@ -29,7 +30,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-final class TrackerPageViewModel extends ChangeNotifier {
+final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier {
 
   final int userId;
 
@@ -84,14 +85,9 @@ final class TrackerPageViewModel extends ChangeNotifier {
   TrackViewModel? _currentTrack;
   TrackViewModel? get currentTrack => _currentTrack;
 
-  bool _isDisposed = false;
-
   void setCurrentTrack(TrackViewModel track) {
     _currentTrack = track;
-
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   bool _isRecording = false;
@@ -99,7 +95,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setIsRecording(bool trueOrFalse) {
     _isRecording = trueOrFalse;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   int _trackPointCount = 0;
@@ -107,10 +103,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setTrackPointCount(int count) {
     _trackPointCount = count;
-
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   // Duration _recordDuration = Duration();
@@ -138,10 +131,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setCurrentPage(int index) {
     _currentPage = index;
-
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   void nextPage() {
@@ -150,10 +140,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
     } else {
       _currentPage = 0;
     }
-
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   String get pageTitle {
@@ -264,10 +251,10 @@ final class TrackerPageViewModel extends ChangeNotifier {
     _minimumPointDistance = s.minimumPointDistance;
     _deviceId = s.deviceId;
 
-    if (!_isDisposed) {
+    if (!isDisposed) {
       deviceIdController.text = s.deviceId;
-      notifyListeners();
     }
+    safeNotifyListeners();
   }
 
   Future<void> _getTrackRecordingStatus() async {
@@ -294,30 +281,22 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setLastPoint(LastPointViewModel? point) {
     _lastPoint = point;
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   void setHideLastPoint(bool trueOrFalse) {
     _hideLastPoint = trueOrFalse;
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   void setBatchPointCount(int value) {
     _batchPointCount = value;
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   void setIsRetrievingSettings(bool trueOrFalse) {
     _isRetrievingSettings = trueOrFalse;
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   Future<Result<(), String>> trackPoint() async {
@@ -363,9 +342,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setIsTracking(bool trueOrFalse) {
     _isTracking = trueOrFalse;
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   Future<void> setMaxPointsPerBatch(int? amount) async {
@@ -435,9 +412,7 @@ final class TrackerPageViewModel extends ChangeNotifier {
 
   void setIsUpdatingTracking(bool trueOrFalse) {
     _isUpdatingTracking = trueOrFalse;
-    if (!_isDisposed) {
-      notifyListeners();
-    }
+    safeNotifyListeners();
   }
 
   Future<Result<(), String>> toggleAutomaticTracking(bool enable) async {
@@ -621,7 +596,6 @@ final class TrackerPageViewModel extends ChangeNotifier {
       debugPrint("[TrackerPageViewModel] Disposing viewmodel...");
     }
 
-    _isDisposed = true;
     _settingsSub?.cancel();
     _lastPointSub?.cancel();
     _batchCountSub?.cancel();

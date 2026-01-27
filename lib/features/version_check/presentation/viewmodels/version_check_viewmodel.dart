@@ -1,11 +1,12 @@
 import 'package:dawarich/core/application/errors/failure.dart';
+import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/version_check/application/usecases/get_server_version_usecase.dart';
 import 'package:dawarich/features/version_check/application/usecases/server_version_compatibility_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-final class VersionCheckViewModel extends ChangeNotifier {
+final class VersionCheckViewModel extends ChangeNotifier with SafeChangeNotifier {
 
 
   final ServerVersionCompatibilityUseCase _serverVersionCompatabilityChecker;
@@ -62,22 +63,22 @@ final class VersionCheckViewModel extends ChangeNotifier {
 
   void setIsLoading(bool value) {
     _isLoading = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setErrorMessage(String? message) {
     _errorMessage = message;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setServerVersion(Version version) {
     _serverVersion = version.toString();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setRequiredVersion(Version version) {
     _requiredVersion = version.toString();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<bool> retry() async {

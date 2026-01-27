@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
+import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/clear_batch_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/delete_points_usecase.dart';
@@ -25,7 +26,7 @@ class UploadProgress {
   bool get isMeaningful => total > 0;
 }
 
-final class BatchExplorerViewModel extends ChangeNotifier {
+final class BatchExplorerViewModel extends ChangeNotifier with SafeChangeNotifier {
 
   final int userId;
   final WatchCurrentBatchUseCase _watchCurrentBatch;
@@ -74,23 +75,23 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
   void _setBatch(List<LocalPointViewModel> batch) {
     _batch = batch;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setIsUploading(bool trueOrFalse) {
     _isUploading = trueOrFalse;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _setIsLoadingPoints(bool trueOrFalse) {
     _isLoadingPoints = trueOrFalse;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void toggleSortOrder() {
     _newestFirst = !_newestFirst;
     _sortBatch();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _sortBatch() {
@@ -106,7 +107,7 @@ final class BatchExplorerViewModel extends ChangeNotifier {
 
   void setInitialized(bool value) {
     _hasInitialized = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> initialize() async {
@@ -169,13 +170,13 @@ final class BatchExplorerViewModel extends ChangeNotifier {
     List<int> pointIds = points.map((point) => point.id).toList();
     await _deletePoints(pointIds, userId);
     batch.removeWhere((point) => pointIds.contains(point.id));
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> clearBatch() async {
     await _clearBatch(userId);
     batch.clear();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   @override

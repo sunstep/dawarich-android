@@ -30,6 +30,9 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
 
+    - name: Generate Drift code
+      run: dart run build_runner build --delete-conflicting-outputs
+
     - name: Generate schema files (if not committed)
       run: |
         if [ ! -d "drift_schemas" ]; then

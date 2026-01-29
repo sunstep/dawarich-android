@@ -1,147 +1,147 @@
 import 'dart:async';
-import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/constants/notification.dart';
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
-import 'package:dawarich/core/domain/models/user.dart';
-import 'package:dawarich/features/tracking/application/services/point_automation/point_automation_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracker_settings_service.dart';
-import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:session_box/session_box.dart';
+import 'package:dawarich/core/di/providers/core_providers.dart';
+import 'package:dawarich/core/di/providers/session_providers.dart';
+import 'package:dawarich/core/di/providers/usecase_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-@pragma('vm:entry-point')
-void backgroundTrackingEntry(ServiceInstance backgroundService) {
+import 'background_tracking_entrypoint.dart';
+import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/get_last_point_usecase.dart';
 
-  if (kDebugMode) {
-    debugPrint('[Background] Entry point reached');
-  }
 
-  WidgetsFlutterBinding.ensureInitialized();
-
-  BackgroundTrackingEntry._registerListeners(backgroundService);
-  backgroundService.invoke('ready');
-
-  unawaited(() async {
-    try {
-      await BackgroundTrackingEntry.checkBackgroundTracking(backgroundService);
-    } catch (e, s) {
-      debugPrint('[Background] Fatal in checkBackgroundTracking: $e\n$s');
-      await BackgroundTrackingEntry._shutdown(backgroundService, 'fatal error');
-    }
-  }());
-}
 
 class BackgroundTrackingEntry {
+  static ProviderContainer? _container;
+
+  static Future<ProviderContainer> _ensureContainer() async {
+    final existing = _container;
+    if (existing != null) return existing;
+
+    final container = ProviderContainer();
+    // Ensure core deps are ready in background isolate.
+    await container.read(coreProvider.future);
+    _container = container;
+    return container;
+  }
 
   static Future<void> checkBackgroundTracking(ServiceInstance backgroundService) async {
-
     if (kDebugMode) {
       debugPrint('[Background] Injecting background thread dependencies...');
     }
 
-    if (await SQLiteClient.peekNeedsUpgrade()) {
-      if (kDebugMode) {
-        debugPrint('[TrackerSvc] Upgrade pending; not touching DB.');
-      }
-      // Optionally stop the foreground service if it restarted:
-      await _shutdown(backgroundService, "DB upgrade pending, stopping service.");
-      return;
-    }
+    // No migration coordination needed - migrations happen silently in foreground
+    final container = await _ensureContainer();
 
-    await DependencyInjection.injectBackgroundDependencies(backgroundService);
-    await backgroundGetIt.allReady();
-
-    final session = backgroundGetIt<SessionBox<User>>();
+    // Ensure session is loaded and valid.
+    final session = await container.read(sessionBoxProvider.future);
     final user = await session.refreshSession();
-
     if (user == null) {
-      debugPrint("[Background] No user in session — exiting.");
-      await _shutdown(backgroundService, "No user session");
+      if (kDebugMode) debugPrint('[Background] No user in session — exiting.');
+      await shutdown(backgroundService, 'No user session');
       return;
     }
-
     session.setUserId(user.id);
 
-    final settingsSvc = backgroundGetIt<TrackerSettingsService>();
-    final shouldTrack = await settingsSvc.getAutomaticTrackingSetting();
-
-
-    if (shouldTrack) {
-      await _startBackgroundTracking(backgroundService);
+    try {
+      final getSettings = await container.read(getTrackerSettingsUseCaseProvider.future);
+      final settings = await getSettings(user.id);
+      if (!settings.automaticTracking) {
+        if (kDebugMode) {
+          debugPrint('[Background] Auto tracking OFF → shutting down.');
+        }
+        await shutdown(backgroundService, 'Auto tracking OFF');
+        return;
+      }
+    } catch (e, s) {
+      if (kDebugMode) {
+        debugPrint('[Background] Failed to load tracker settings ($e) → shutting down.\n$s');
+      }
+      await shutdown(backgroundService, 'Settings load failed');
       return;
     }
-    await _shutdown(backgroundService, "Auto tracking OFF");
 
-
+    await _startBackgroundTracking(backgroundService, container, user.id);
   }
 
-  static Future<void> _startBackgroundTracking(ServiceInstance backgroundService) async {
-
-    if (kDebugMode) {
-      debugPrint('[Background] Auto tracking ON - Starting background tracking...');
-    }
-
-    // Ensure notification plugin initialized in background isolate.
-    await backgroundGetIt<TrackingNotificationService>().initialize();
-
-    final localPointService = backgroundGetIt<LocalPointService>();
-    await _setInitialForegroundNotification(localPointService, backgroundService);
-
-    await backgroundGetIt<PointAutomationService>().startTracking();
-  }
-
-  static Future<void> _setInitialForegroundNotification(
-    LocalPointService svc,
+  static Future<void> _startBackgroundTracking(
     ServiceInstance backgroundService,
+    ProviderContainer container,
+    int userId,
   ) async {
-    final lastPointResult = await svc.getLastPoint();
-    final batchPointCount = await svc.getBatchPointsCount();
+    if (kDebugMode) {
+      debugPrint('[Background] Starting background tracking...');
+    }
 
-    if (backgroundService is AndroidServiceInstance) {
-      if (lastPointResult case Some(value: final lp)) {
-        await backgroundService.setForegroundNotificationInfo(
-          title: "Dawarich Tracking",
-          content: "Last updated at: ${lp.timestamp.toLocal()}, $batchPointCount points in batch.",
-        );
-      } else {
-        await backgroundService.setForegroundNotificationInfo(
-          title: "Dawarich Tracking",
-          content: "Tracking in the background, no points recorded yet.",
-        );
-      }
+    final automation = await container.read(pointAutomationServiceProvider.future);
+    await automation.startTracking(userId);
+
+    try {
+      final getLastPoint = await container.read(getLastPointUseCaseProvider.future);
+      final getBatchCount = await container.read(getBatchPointCountUseCaseProvider.future);
+      await setInitialForegroundNotification(getLastPoint, getBatchCount, backgroundService, userId);
+    } catch (_) {
+      // ignore
     }
   }
 
-  static void _registerListeners(ServiceInstance backgroundService) {
-    // Simplified single listener with safe stop.
+  static void registerListeners(ServiceInstance backgroundService) {
     backgroundService.on('stopService').listen((event) async {
       final requestId = event?['requestId'];
       try {
-        if (backgroundGetIt.isRegistered<PointAutomationService>()) {
-          await backgroundGetIt<PointAutomationService>().stopTracking();
+        final container = _container;
+        if (container != null) {
+          final automation = await container.read(pointAutomationServiceProvider.future);
+          await automation.stopTracking();
         }
       } catch (e, s) {
-        debugPrint("[Background] Error stopping tracking: $e\n$s");
+        debugPrint('[Background] Error stopping tracking: $e\n$s');
       } finally {
         backgroundService.invoke('stopped', {'requestId': requestId});
-        await _shutdown(backgroundService, "stopService event");
+        await shutdown(backgroundService, 'stopService event');
       }
     });
   }
 
-  static Future<void> _shutdown(ServiceInstance svc, String reason) async {
+  static Future<void> shutdown(ServiceInstance svc, String reason) async {
     if (kDebugMode) {
       debugPrint('[Background] Shutting down: $reason');
     }
-    await DependencyInjection.disposeBackgroundDependencies();
+    try {
+      _container?.dispose();
+    } catch (_) {}
+    _container = null;
     svc.stopSelf();
+  }
+
+  static Future<void> setInitialForegroundNotification(
+    GetLastPointUseCase getLastPoint,
+    GetBatchPointCountUseCase getBatchPointsCount,
+    ServiceInstance backgroundService,
+    int userId,
+  ) async {
+    final lastPointResult = await getLastPoint(userId);
+    final batchPointCount = await getBatchPointsCount(userId);
+
+    if (backgroundService is AndroidServiceInstance) {
+      if (lastPointResult case Some(value: final lp)) {
+        await backgroundService.setForegroundNotificationInfo(
+          title: 'Dawarich Tracking',
+          content: 'Last updated at: ${lp.timestamp.toLocal()}, $batchPointCount points in batch.',
+        );
+      } else {
+        await backgroundService.setForegroundNotificationInfo(
+          title: 'Dawarich Tracking',
+          content: 'Tracking in the background, no points recorded yet.',
+        );
+      }
+    }
   }
 
 }
@@ -152,6 +152,7 @@ final class BackgroundTrackingService {
   static bool _configured = false;
   static Completer<void>? _starting;
   static bool _isStopping = false;
+
 
   static Future<void> ensureNotificationChannelExists() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -197,9 +198,8 @@ final class BackgroundTrackingService {
   }
 
 
-  /// Start (if needed) and push runtime config to the service.
-  /// - Skips when a DB upgrade is pending, unless `force: true`
-  /// - Safe/idempotent across concurrent callers
+  /// Start (if needed) and configure the background service.
+  /// Safe/idempotent across concurrent callers
   static Future<void> configureService({bool force = false}) async {
     // coalesce concurrent calls
     if (_starting != null) {
@@ -209,12 +209,6 @@ final class BackgroundTrackingService {
     _starting = Completer<void>();
 
     try {
-      if (!force && await SQLiteClient.peekNeedsUpgrade()) {
-        if (kDebugMode) debugPrint('[Tracker] Upgrade pending → skipping start');
-        _starting!.complete();
-        return;
-      }
-
       await installConfigurationOnce();
 
       final service = FlutterBackgroundService();
@@ -229,6 +223,7 @@ final class BackgroundTrackingService {
         await ready.future.timeout(const Duration(seconds: 5), onTimeout: () {});
         await sub.cancel();
       }
+
 
       _starting!.complete();
     } catch (e, s) {
@@ -254,6 +249,8 @@ final class BackgroundTrackingService {
     if (!locEnabled || !hasBgPermission) {
       return Err("Background location permission is required.");
     }
+
+    await installConfigurationOnce();
 
     final isRunning = await FlutterBackgroundService().isRunning();
     if (isRunning) {

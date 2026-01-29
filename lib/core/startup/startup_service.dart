@@ -1,80 +1,66 @@
 import 'dart:async';
 
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/di/dependency_injection.dart';
+import 'package:dawarich/core/application/errors/failure.dart';
+import 'package:dawarich/core/di/providers/session_providers.dart';
+import 'package:dawarich/core/di/providers/version_check_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
-import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
-import 'package:dawarich/features/version_check/application/service/version_check_service.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:option_result/option_result.dart';
 import 'package:session_box/session_box.dart';
 
 final class StartupService {
-  static Future<void> initializeApp() async {
-
+  static Future<void> initializeAppFromContainer(ProviderContainer container) async {
     if (kDebugMode) {
       debugPrint('[StartupService] Initializing app...');
     }
 
-    final willUpgrade = await SQLiteClient.peekNeedsUpgrade();
+    await InitializeTrackerNotificationService().call();
 
-    if (willUpgrade) {
-
-      if (kDebugMode) {
-        debugPrint('[StartupService] Migration needed, navigating to migration screen...');
-      }
-
-      appRouter.replaceAll([const MigrationRoute()]);
-      return;
-    }
-
-    // Get the session box and verify if the logged in user is still in the database
-    final SessionBox<User> sessionService = getIt<SessionBox<User>>();
+    final SessionBox<User> sessionService =
+        await container.read(sessionBoxProvider.future);
     final User? refreshedSessionUser = await sessionService.refreshSession();
 
     if (refreshedSessionUser != null) {
-
       if (kDebugMode) {
         debugPrint('[StartupService] User session found!');
       }
 
       sessionService.setUserId(refreshedSessionUser.id);
 
-      final VersionCheckService versionCheckService = getIt<VersionCheckService>();
-      final Result<(), String> isSupported = await versionCheckService.isServerVersionSupported();
+      final serverCompatabilityChecker =
+          await container.read(serverVersionCompatibilityUseCase.future);
+      final Result<(), Failure> isSupported = await serverCompatabilityChecker();
 
       if (!isSupported.isOk()) {
-
         if (kDebugMode) {
           debugPrint('[StartupService] Server version not supported, navigating to version check screen...');
         }
-
         appRouter.replaceAll([const VersionCheckRoute()]);
         return;
       }
 
-      final TrackingNotificationService notificationService = getIt<TrackingNotificationService>();
-
-      final bool launchedByNotification = await notificationService.wasLaunchedFromNotification();
-
-      if (launchedByNotification) {
-
+      final pendingRoute = InitializeTrackerNotificationService.pendingNotificationRoute;
+      if (pendingRoute != null) {
         if (kDebugMode) {
-          debugPrint('[StartupService] App launched from tracking notification, navigating to tracker screen...');
+          debugPrint('[StartupService] Navigating to pending notification route: $pendingRoute');
         }
-        appRouter.replaceAll([const TrackerRoute()]);
-      } else {
+        InitializeTrackerNotificationService.clearPendingRoute();
 
-        if (kDebugMode) {
-          debugPrint('[StartupService] Navigating to timeline screen...');
-        }
-        appRouter.replaceAll([const TimelineRoute()]);
+        final route = AppRouter.routeFromPath(pendingRoute);
+        appRouter.replaceAll([route]);
+        return;
       }
 
+      if (kDebugMode) {
+        debugPrint('[StartupService] Navigating to timeline screen...');
+      }
+      appRouter.replaceAll([const TimelineRoute()]);
+      return;
     } else {
-
       if (kDebugMode) {
         debugPrint('[StartupService] No user session found, navigating to auth screen...');
       }
@@ -82,6 +68,4 @@ final class StartupService {
       appRouter.replaceAll([const AuthRoute()]);
     }
   }
-
-
 }

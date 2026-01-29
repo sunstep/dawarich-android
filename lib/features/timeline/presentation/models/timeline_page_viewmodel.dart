@@ -1,24 +1,37 @@
 import 'dart:async';
 
-import 'package:dawarich/core/application/services/local_point_service.dart';
 import 'package:dawarich/core/domain/models/point/api/slim_api_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/point/point_pair.dart';
+import 'package:dawarich/core/presentation/safe_change_notifier.dart';
+import 'package:dawarich/features/batch/application/usecases/watch_current_batch_usecase.dart';
+import 'package:dawarich/features/timeline/application/helpers/timeline_points_processor.dart';
+import 'package:dawarich/features/timeline/application/usecases/get_default_map_center_usecase.dart';
+import 'package:dawarich/features/timeline/application/usecases/load_timeline_usecase.dart';
 import 'package:dawarich/features/timeline/domain/models/day_map_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/features/timeline/application/services/timeline_service.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
-final class TimelineViewModel extends ChangeNotifier {
+final class TimelineViewModel extends ChangeNotifier with SafeChangeNotifier {
+  final int userId;
+  final LoadTimelineUseCase _loadTimelineUseCase;
+  final TimelinePointsProcessor _timelinePointsProcessor;
+  final GetDefaultMapCenterUseCase _getDefaultMapCenterUseCase;
+  final WatchCurrentBatchUseCase _watchCurrentBatch;
 
-  final MapService _mapService;
-  final LocalPointService _localPointService;
   AnimatedMapController? animatedMapController;
 
-  TimelineViewModel(this._mapService, this._localPointService);
+  TimelineViewModel(
+    this.userId,
+    this._loadTimelineUseCase,
+    this._timelinePointsProcessor,
+    this._getDefaultMapCenterUseCase,
+    this._watchCurrentBatch,
+  );
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -45,49 +58,49 @@ final class TimelineViewModel extends ChangeNotifier {
   List<LatLng> _localPoints = [];
   List<LatLng> get localPoints => _localPoints;
 
-
   void setIsLoading(bool value) {
     _isLoading = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setCurrentLocation(LatLng currentLocation) {
     _currentLocation = currentLocation;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setSelectedDate(DateTime selectedDate) {
     _selectedDate = selectedDate;
-    notifyListeners();
+    safeNotifyListeners();
     _rebuildLocalPoints();
   }
 
   void setPoints(List<LatLng> points) {
     _points = points;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void addPoints(List<LatLng> points) {
     _points.addAll(points);
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setLocalPoints(List<LatLng> points) {
     _localPoints = points;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void addLocalPoints(List<LatLng> points) {
     _localPoints.addAll(points);
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void clearPoints() {
     _points.clear();
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void markMapReady() {
+    if (isDisposed) return;
     _mapReady = true;
 
     final pending = _pendingCenter;
@@ -98,6 +111,7 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   void setAnimatedMapController(AnimatedMapController controller) {
+    if (isDisposed) return;
 
     final bool wasNull = animatedMapController == null;
     animatedMapController ??= controller;
@@ -116,10 +130,11 @@ final class TimelineViewModel extends ChangeNotifier {
 
   bool _sameTarget(LatLng a, LatLng b) =>
       (a.latitude - b.latitude).abs() < _epsilon &&
-          (a.longitude - b.longitude).abs() < _epsilon;
-
+      (a.longitude - b.longitude).abs() < _epsilon;
 
   void _animateTo(LatLng dest) {
+    // Don't animate if disposed
+    if (isDisposed) return;
 
     if (_lastCameraTarget != null && _sameTarget(_lastCameraTarget!, dest)) {
       return;
@@ -145,24 +160,30 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-
     _resolveAndSetInitialLocation();
-    loadToday();
+    await loadToday();
 
-    final batchStream = await _localPointService.watchCurrentBatch();
+    if (isDisposed) return;
 
-    _localPointSubscription = batchStream.listen((points) {
-
-      _lastLocalBatch = points;
-      _rebuildLocalPoints();
-    });
+    try {
+      final batchStream = _watchCurrentBatch(userId);
+      _localPointSubscription = batchStream.listen((points) {
+        if (isDisposed) return;
+        _lastLocalBatch = points;
+        _rebuildLocalPoints();
+      });
+    } catch (e, s) {
+      if (kDebugMode) {
+        debugPrint("[TimelineViewModel] watchCurrentBatch failed: $e\n$s");
+      }
+    }
   }
 
   void _rebuildLocalPoints({int? cutoffMs}) {
     final d = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
 
     final slim = _lastLocalBatch.where((p) {
-      final ts = p.properties.timestamp;
+      final ts = p.properties.recordTimestamp;
       final day = DateTime(ts.year, ts.month, ts.day);
       if (day != d) return false;
 
@@ -173,19 +194,18 @@ final class TimelineViewModel extends ChangeNotifier {
     }).map((p) => SlimApiPoint(
       latitude:  p.geometry.latitude.toString(),
       longitude: p.geometry.longitude.toString(),
-      timestamp: p.properties.timestamp.millisecondsSinceEpoch ~/ 1000,
+      timestamp: p.properties.recordTimestamp.millisecondsSinceEpoch ~/ 1000,
     )).toList();
 
     slim.sort((a, b) => a.timestamp!.compareTo(b.timestamp!));
 
-    final List<LatLng> local = _mapService.processPoints(slim);
+    final List<LatLng> local = _timelinePointsProcessor.processPoints(slim);
 
     setLocalPoints(local);
     _stitchLocalPoints();
   }
 
   void _stitchLocalPoints() {
-
     if (_points.isNotEmpty && _localPoints.isNotEmpty) {
       final firstLocalPoint = _localPoints.first;
       final lastApiPoint = _points.last;
@@ -197,28 +217,28 @@ final class TimelineViewModel extends ChangeNotifier {
         _localPoints.insert(0, lastApiPoint);
       }
     }
-
   }
 
   @override
   void dispose() {
-
     if (kDebugMode) {
       debugPrint("[TimelineViewModel] Disposing...");
     }
 
-    animatedMapController?.dispose();
     _localPointSubscription?.cancel();
     super.dispose();
   }
 
   Future<void> _resolveAndSetInitialLocation() async {
-    final center = await _mapService.getDefaultMapCenter();
+    final center = await _getDefaultMapCenterUseCase.call();
+    if (isDisposed) return;
     setCurrentLocation(center);
   }
 
   Future<void> getAndSetPoints() async {
-    final DayMapData day = await _mapService.loadMap(selectedDate);
+    final DayMapData day = await _loadTimelineUseCase(selectedDate);
+    if (isDisposed) return;
+
     setPoints(day.points);
     _rebuildLocalPoints(cutoffMs: day.lastTimestampMs);
 
@@ -228,6 +248,7 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> loadPreviousDay() async {
+    if (isDisposed) return;
     try {
       setIsLoading(true);
       clearPoints();
@@ -238,26 +259,24 @@ final class TimelineViewModel extends ChangeNotifier {
 
       await getAndSetPoints();
     } finally {
-      setIsLoading(false);
+      if (!isDisposed) setIsLoading(false);
     }
-
   }
 
   Future<void> loadToday() async {
+    if (isDisposed) return;
     try {
       setIsLoading(true);
       clearPoints();
 
       await getAndSetPoints();
-
     } finally {
-      setIsLoading(false);
+      if (!isDisposed) setIsLoading(false);
     }
-
   }
 
   Future<void> loadNextDay() async {
-
+    if (isDisposed) return;
     try {
       setIsLoading(true);
       clearPoints();
@@ -266,15 +285,13 @@ final class TimelineViewModel extends ChangeNotifier {
       setSelectedDate(DateTime(nextDay.year, nextDay.month, nextDay.day));
 
       await getAndSetPoints();
-
     } finally {
-      setIsLoading(false);
+      if (!isDisposed) setIsLoading(false);
     }
-
   }
 
   Future<void> processNewDate(DateTime pickedDate) async {
-
+    if (isDisposed) return;
     if (pickedDate == selectedDate) {
       return;
     }
@@ -287,9 +304,8 @@ final class TimelineViewModel extends ChangeNotifier {
 
       await getAndSetPoints();
     } finally {
-      setIsLoading(false);
+      if (!isDisposed) setIsLoading(false);
     }
-
   }
 
   bool isTodaySelected() {
@@ -314,41 +330,48 @@ final class TimelineViewModel extends ChangeNotifier {
   }
 
   Future<void> zoomIn() async {
+    if (isDisposed) return;
     await animatedMapController?.animatedZoomIn();
   }
 
   Future<void> zoomOut() async {
+    if (isDisposed) return;
     await animatedMapController?.animatedZoomOut();
   }
 
-  void centerMap() {
-
-    final user = currentLocation;
-
-    if (user == null) {
-      return;
-    }
-
-    if (_lastCameraTarget != null && _sameTarget(_lastCameraTarget!, user)) {
-      return;
-    }
+  Future<void> centerMap() async {
+    if (isDisposed) return;
 
     final controller = animatedMapController;
 
     if (!_mapReady || controller == null) {
-      _pendingCenter = user;
+      return;
+    }
+
+    LatLng? userLocation;
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      userLocation = LatLng(position.latitude, position.longitude);
+    } catch (_) {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        userLocation = LatLng(last.latitude, last.longitude);
+      }
+    }
+
+    if (isDisposed || userLocation == null) {
       return;
     }
 
     final double zoom = controller.mapController.camera.zoom;
 
     controller.animateTo(
-      dest: user,
+      dest: userLocation,
       zoom: zoom,
       curve: Curves.easeInOut,
       duration: const Duration(milliseconds: 500),
     );
 
-    _lastCameraTarget = user;
+    _lastCameraTarget = userLocation;
   }
 }

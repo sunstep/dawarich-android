@@ -1,2 +1,5 @@
-Beta 0.12.1
-* Fixed map tiles not showing due to invalid API key.
+Beta 0.13.0
+* This release is the aftermath of a big refactor. Please report any issues you encounter, in Discord.
+* DB migrations are from now on silent, the migration page caused too many issues.
+* This release contains a DB migration, so lets hope there are no issues.
+* You will notice that the splash page has a loading icon now.

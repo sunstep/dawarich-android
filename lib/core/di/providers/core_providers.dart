@@ -5,14 +5,12 @@ import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/core/network/interceptors/auth_interceptor.dart';
 import 'package:dawarich/core/network/interceptors/error_interceptor.dart';
 import 'package:dawarich/core/shell/drawer/i_api_config_logout.dart';
-import 'package:dawarich/features/tracking/application/services/db_gate.dart';
 import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
 import 'package:dawarich/features/tracking/data/sources/device_data_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final coreProvider = FutureProvider<void>((ref) async {
-
   await ref.watch(apiConfigManagerProvider.future);
   await ref.watch(sqliteClientProvider.future);
   await ref.watch(dioClientProvider.future);
@@ -59,26 +57,16 @@ final sqliteClientProvider = FutureProvider<SQLiteClient>((ref) async {
     debugPrint('[RP - Core] loading SQLiteClient...');
   }
 
-  // If an upgrade is pending, keep the DB closed until the migration flow
-  // explicitly signals readiness.
-  if (await SQLiteClient.peekNeedsUpgrade()) {
-    if (kDebugMode) {
-      debugPrint('[RP - Core] Upgrade pending → waiting for db gate before opening DB');
-    }
-    await ref.read(dbGateProvider).waitUntilOpen();
-  }
-
-  final c = await SQLiteClient.connectSharedIsolate();
+  final client = await SQLiteClient.connectSharedIsolate();
 
   if (kDebugMode) {
     debugPrint('[RP - Core] SQLiteClient loaded.');
   }
 
-  ref.onDispose(() {
-    c.close();
-  });
+  // Note: We don't dispose the client here because the underlying isolate
+  // is shared across the app. Closing it would break other clients.
 
-  return c;
+  return client;
 });
 
 final deviceDataClientProvider = Provider<DeviceDataClient>((ref) {
@@ -89,10 +77,3 @@ final connectivityDataClientProvider = Provider<ConnectivityDataClient>((ref) {
   return ConnectivityDataClient();
 });
 
-/// Shared gate to coordinate DB access between the foreground app and background service.
-///
-/// When a schema upgrade is detected, the app should keep this gate closed until
-/// the migration UI flow has completed (`BackgroundTrackingService.markDbReady`).
-final dbGateProvider = Provider<DbGate>((ref) {
-  return DbGate(initiallyOpen: false);
-});

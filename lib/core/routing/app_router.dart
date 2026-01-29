@@ -1,10 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/routing/guards/auth_guard.dart';
-import 'package:dawarich/core/shell/splash.dart';
+import 'package:dawarich/core/shell/splash_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_qr_scan_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_view.dart';
 import 'package:dawarich/features/batch/presentation/views/batch_explorer_view.dart';
-import 'package:dawarich/features/migration/presentation/views/migration_view.dart';
 import 'package:dawarich/features/points/presentation/views/points_view.dart';
 import 'package:dawarich/features/settings/presentation/views/settings_view.dart';
 import 'package:dawarich/features/stats/presentation/views/stats_view.dart';
@@ -17,7 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'app_router.gr.dart';
 
-@AutoRouterConfig()
+@AutoRouterConfig(replaceInRouteName: 'Page|Screen|View,Route')
 final class AppRouter extends RootStackRouter {
 
   final ProviderContainer container;
@@ -31,7 +30,6 @@ final class AppRouter extends RootStackRouter {
   List<AutoRoute> get routes => [
     // Public routes (no auth required)
     AutoRoute(page: SplashRoute.page, initial: true),
-    AutoRoute(page: MigrationRoute.page, path: '/migration'),
     AutoRoute(page: AuthRoute.page, path: '/auth'),
     AutoRoute(page: AuthQrScanRoute.page, path: '/qrScan'),
     AutoRoute(page: VersionCheckRoute.page, path: '/versionCheck'),

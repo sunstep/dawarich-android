@@ -5,6 +5,7 @@ class LocalPointPropertiesViewModel {
   final double batteryLevel;
   final String wifi;
   final String timestamp;
+  final String providerTimestamp;
   String get formattedTimestamp {
     return DateFormat('dd MMM yyyy HH:mm:ss')
         .format(DateTime.parse(timestamp).toLocal());
@@ -25,6 +26,7 @@ class LocalPointPropertiesViewModel {
     required this.batteryLevel,
     required this.wifi,
     required this.timestamp,
+    required this.providerTimestamp,
     required this.horizontalAccuracy,
     required this.verticalAccuracy,
     required this.altitude,

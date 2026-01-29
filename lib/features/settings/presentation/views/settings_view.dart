@@ -12,12 +12,25 @@ class SettingsView extends StatelessWidget {
   build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppbar(title: "Settings", titleFontSize: 40),
-      body: _pageContent(),
+      body: _pageContent(context),
       drawer: CustomDrawer(),
     );
   }
 
-  Widget _pageContent() {
-    return Container();
+  Widget _pageContent(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const Text(
+            'Settings',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

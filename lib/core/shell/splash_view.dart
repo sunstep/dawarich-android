@@ -11,23 +11,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @RoutePage()
-class SplashPage extends ConsumerStatefulWidget {
-  const SplashPage({super.key});
+class SplashView extends ConsumerStatefulWidget {
+  const SplashView({super.key});
 
   @override
-  ConsumerState<SplashPage> createState() => _SplashPageState();
+  ConsumerState<SplashView> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends ConsumerState<SplashPage> {
+class _SplashPageState extends ConsumerState<SplashView> {
   bool _hasStartedBoot = false;
   bool _hasRetriedAfterTimeout = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startBoot();
-    });
+    if (kDebugMode) {
+      debugPrint('[SplashPage] initState called');
+    }
+    _startBoot();
   }
 
   Future<void> _startBoot() async {
@@ -39,9 +40,12 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     }
 
     try {
-      // Add timeout to prevent hanging forever on boot failure
+      if (kDebugMode) {
+        debugPrint('[SplashPage] Reading coreProvider...');
+      }
+
       await ref.read(coreProvider.future).timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 10),
         onTimeout: () {
           if (kDebugMode) {
             debugPrint('[SplashPage] Core provider timed out');
@@ -52,7 +56,10 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
       if (!mounted) return;
 
-      // Get the container from the ProviderScope
+      if (kDebugMode) {
+        debugPrint('[SplashPage] coreProvider initialized successfully');
+      }
+
       final container = ProviderScope.containerOf(context);
       await StartupService.initializeAppFromContainer(container);
 
@@ -60,19 +67,15 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         debugPrint('[SplashPage] Boot completed.');
       }
     } on TimeoutException {
-      // On hot restart, SQLite isolate may be stale. Invalidate and retry once.
       if (!_hasRetriedAfterTimeout) {
         _hasRetriedAfterTimeout = true;
         if (kDebugMode) {
           debugPrint('[SplashPage] Timeout - invalidating providers and retrying...');
         }
 
-        // Invalidate core providers to force recreation
         ref.invalidate(coreProvider);
-
-        // Reset flag and retry
         _hasStartedBoot = false;
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 1000));
         await _startBoot();
         return;
       }
@@ -80,13 +83,16 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       if (kDebugMode) {
         debugPrint('[SplashPage] Second timeout - navigating to auth');
       }
-      appRouter.replaceAll([const AuthRoute()]);
+      if (mounted) {
+        appRouter.replaceAll([const AuthRoute()]);
+      }
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[SplashPage] Error during boot: $e\n$st');
       }
-      // On boot failure, navigate to auth so user isn't stuck on splash
-      appRouter.replaceAll([const AuthRoute()]);
+      if (mounted) {
+        appRouter.replaceAll([const AuthRoute()]);
+      }
     }
   }
 

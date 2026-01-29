@@ -1,26 +1,5 @@
-import 'package:dawarich/core/point_data/data/data_transfer_objects/local/local_point_properties_dto.dart';
 import 'package:dawarich/core/domain/models/point/dawarich/dawarich_point_properties.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point_properties.dart';
-
-extension LocalPointPropertiesToDto on LocalPointProperties {
-  LocalPointPropertiesDto toDto() {
-    return LocalPointPropertiesDto(
-      batteryState: batteryState,
-      batteryLevel: batteryLevel,
-      wifi: wifi,
-      timestamp: timestamp,
-      horizontalAccuracy: horizontalAccuracy,
-      verticalAccuracy: verticalAccuracy,
-      altitude: altitude,
-      speed: speed,
-      speedAccuracy: speedAccuracy,
-      course: course,
-      courseAccuracy: courseAccuracy,
-      trackId: trackId,
-      deviceId: deviceId,
-    );
-  }
-}
 
 extension LocalPointPropertiesToApi on LocalPointProperties {
   DawarichPointProperties toApi() {
@@ -28,7 +7,7 @@ extension LocalPointPropertiesToApi on LocalPointProperties {
         batteryState: batteryState,
         batteryLevel: batteryLevel,
         wifi: wifi,
-        timestamp: timestamp,
+        timestamp: recordTimestamp,
         horizontalAccuracy: horizontalAccuracy,
         verticalAccuracy: verticalAccuracy,
         altitude: altitude,
@@ -37,25 +16,5 @@ extension LocalPointPropertiesToApi on LocalPointProperties {
         course: course,
         courseAccuracy: courseAccuracy,
         deviceId: deviceId);
-  }
-}
-
-extension LocalPointPropertiesDtoToEntity on LocalPointPropertiesDto {
-  LocalPointProperties toDomain() {
-    return LocalPointProperties(
-      batteryState: batteryState,
-      batteryLevel: batteryLevel,
-      wifi: wifi,
-      timestamp: timestamp,
-      horizontalAccuracy: horizontalAccuracy,
-      verticalAccuracy: verticalAccuracy,
-      altitude: altitude,
-      speed: speed,
-      speedAccuracy: speedAccuracy,
-      course: course,
-      courseAccuracy: courseAccuracy,
-      trackId: trackId,
-      deviceId: deviceId,
-    );
   }
 }

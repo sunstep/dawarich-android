@@ -183,7 +183,7 @@ final class TimelineViewModel extends ChangeNotifier with SafeChangeNotifier {
     final d = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
 
     final slim = _lastLocalBatch.where((p) {
-      final ts = p.properties.timestamp;
+      final ts = p.properties.recordTimestamp;
       final day = DateTime(ts.year, ts.month, ts.day);
       if (day != d) return false;
 
@@ -194,7 +194,7 @@ final class TimelineViewModel extends ChangeNotifier with SafeChangeNotifier {
     }).map((p) => SlimApiPoint(
       latitude:  p.geometry.latitude.toString(),
       longitude: p.geometry.longitude.toString(),
-      timestamp: p.properties.timestamp.millisecondsSinceEpoch ~/ 1000,
+      timestamp: p.properties.recordTimestamp.millisecondsSinceEpoch ~/ 1000,
     )).toList();
 
     slim.sort((a, b) => a.timestamp!.compareTo(b.timestamp!));

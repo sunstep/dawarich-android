@@ -53,9 +53,15 @@ final class ServerVersionCompatibilityUseCase {
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final Version appVersion = Version.parse(packageInfo.version);
 
-    final Map<String, dynamic> map = jsonDecode(rulesJson) as Map<
-        String,
-        dynamic>;
+    final Map<String, dynamic>? map = _tryDecodeMap(rulesJson);
+
+    if (map == null) {
+      if (kDebugMode) {
+        debugPrint('[VersionCheck] compat.json parse failed, failing open');
+      }
+      return const Ok(());
+    }
+
     final List<dynamic> rulesList = (map['rules'] as List?) ?? const [];
     final Map<String, dynamic> defaultRule = (map['default'] as Map<
         String,
@@ -145,6 +151,18 @@ final class ServerVersionCompatibilityUseCase {
     }
 
     return const Ok(());
+  }
+
+  Map<String, dynamic>? _tryDecodeMap(String raw) {
+    try {
+      final Object? decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   VersionConstraint? _tryParseConstraint(String? raw) {

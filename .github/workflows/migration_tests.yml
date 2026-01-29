@@ -1,0 +1,50 @@
+name: Migration Tests
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'lib/core/database/drift/**'
+      - 'test/core/database/drift/**'
+      - 'drift_schemas/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'lib/core/database/drift/**'
+      - 'test/core/database/drift/**'
+      - 'drift_schemas/**'
+
+jobs:
+  test-migrations:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.38.x'
+        channel: 'stable'
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Generate schema files (if not committed)
+      run: |
+        if [ ! -d "drift_schemas" ]; then
+          echo "Generating schema files..."
+          dart run drift_dev schema dump lib/core/database/drift/database/sqlite_client.dart drift_schemas/
+        else
+          echo "Schema files already exist"
+        fi
+
+    - name: Run migration tests
+      run: flutter test test/core/database/drift/schema_verification_test.dart
+
+    - name: Upload test results
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: test/failures/

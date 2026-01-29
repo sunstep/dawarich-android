@@ -29,7 +29,8 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
             batteryState: Value(point.properties.batteryState),
             batteryLevel: Value(point.properties.batteryLevel),
             wifi: Value(point.properties.wifi),
-            timestamp: Value(point.properties.timestamp),
+            recordTimestamp: Value(point.properties.recordTimestamp),
+            providerTimestamp: Value(point.properties.providerTimestamp),
             horizontalAccuracy: Value(point.properties.horizontalAccuracy),
             verticalAccuracy: Value(point.properties.verticalAccuracy),
             altitude: Value(point.properties.altitude),
@@ -186,7 +187,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
         return Some(LastPoint(
             longitude: point.geometry.longitude,
             latitude: point.geometry.latitude,
-            timestamp: point.properties.timestamp));
+            timestamp: point.properties.recordTimestamp));
       }
 
       return const None();
@@ -239,7 +240,7 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
         final point = LastPoint(
           longitude: geometry.longitude,
           latitude: geometry.latitude,
-          timestamp: properties.timestamp,
+          timestamp: properties.recordTimestamp,
         );
 
         return Some(point);

@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'package:dawarich/core/constants/notification.dart';
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/features/tracking/application/services/db_gate.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -33,25 +31,12 @@ class BackgroundTrackingEntry {
     return container;
   }
 
-  static Future<void> checkBackgroundTracking(ServiceInstance backgroundService, DbGate gate) async {
+  static Future<void> checkBackgroundTracking(ServiceInstance backgroundService) async {
     if (kDebugMode) {
       debugPrint('[Background] Injecting background thread dependencies...');
     }
 
-    final needsUpgrade = await SQLiteClient.peekNeedsUpgrade();
-
-    if (needsUpgrade) {
-      if (kDebugMode) {
-        debugPrint('[Background] Upgrade pending → waiting for db_gate_open (not touching Drift).');
-      }
-      await gate.waitUntilOpen();
-      if (kDebugMode) {
-        debugPrint('[Background] Gate opened → continuing startup.');
-      }
-    } else {
-      gate.open();
-    }
-
+    // No migration coordination needed - migrations happen silently in foreground
     final container = await _ensureContainer();
 
     // Ensure session is loaded and valid.
@@ -168,28 +153,6 @@ final class BackgroundTrackingService {
   static Completer<void>? _starting;
   static bool _isStopping = false;
 
-  static bool _bgReady = false;
-  static bool _dbReady = false;
-
-  static Future<void> markDbReady() async {
-    _dbReady = true;
-    await _tryOpenGate();
-  }
-
-  static Future<void> _tryOpenGate() async {
-    final service = FlutterBackgroundService();
-    final isRunning = await service.isRunning();
-
-    if (isRunning) {
-      _bgReady = true;
-    }
-
-    if (!_bgReady || !_dbReady) {
-      return;
-    }
-
-    service.invoke('db_gate_open');
-  }
 
   static Future<void> ensureNotificationChannelExists() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -235,9 +198,8 @@ final class BackgroundTrackingService {
   }
 
 
-  /// Start (if needed) and push runtime config to the service.
-  /// - Skips when a DB upgrade is pending, unless `force: true`
-  /// - Safe/idempotent across concurrent callers
+  /// Start (if needed) and configure the background service.
+  /// Safe/idempotent across concurrent callers
   static Future<void> configureService({bool force = false}) async {
     // coalesce concurrent calls
     if (_starting != null) {
@@ -247,12 +209,6 @@ final class BackgroundTrackingService {
     _starting = Completer<void>();
 
     try {
-      if (!force && await SQLiteClient.peekNeedsUpgrade()) {
-        if (kDebugMode) debugPrint('[Tracker] Upgrade pending → skipping start');
-        _starting!.complete();
-        return;
-      }
-
       await installConfigurationOnce();
 
       final service = FlutterBackgroundService();
@@ -268,9 +224,6 @@ final class BackgroundTrackingService {
         await sub.cancel();
       }
 
-      _bgReady = true;
-
-      await _tryOpenGate();
 
       _starting!.complete();
     } catch (e, s) {

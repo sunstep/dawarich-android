@@ -47,7 +47,7 @@ final class CreatePointFromPositionUseCase {
   }
 
   LocalPoint _constructPoint(
-      Position position, AdditionalPointData additionalData, int userId, DateTime timestamp) {
+      Position position, AdditionalPointData additionalData, int userId, DateTime recordTimestamp) {
     final geometry = LocalPointGeometry(
         type: "Point",
         longitude: position.longitude,
@@ -58,7 +58,8 @@ final class CreatePointFromPositionUseCase {
       batteryState: additionalData.batteryState,
       batteryLevel: additionalData.batteryLevel,
       wifi: additionalData.wifi,
-      timestamp: timestamp,
+      recordTimestamp: recordTimestamp,
+      providerTimestamp: position.timestamp,
       horizontalAccuracy: position.accuracy,
       verticalAccuracy: position.altitudeAccuracy,
       altitude: position.altitude,

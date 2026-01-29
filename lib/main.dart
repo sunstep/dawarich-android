@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:dawarich/core/database/drift/database/crypto/sqlcipher_bootstrap.dart';
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 late final AppRouter appRouter;
 
 Future<void> main() async {
@@ -36,10 +34,8 @@ Future<void> main() async {
         return true;
       };
 
-      try {
-        await _dbHook();
-      } catch (e, st) {
-        debugPrint('[dbHook] $e\n$st');
+      if (kDebugMode) {
+        debugPrint('[App] Initialization completed successfully');
       }
 
       final container = ProviderContainer();
@@ -56,16 +52,6 @@ Future<void> main() async {
 
 }
 
-Future<void> _dbHook() async {
-
-  final int schemaVersion = SQLiteClient.kSchemaVersion;
-
-  if (!kReleaseMode && const bool.fromEnvironment('DEV_FORCE_UPGRADE', defaultValue: false)) {
-    final int target = schemaVersion - 1;
-
-    await SQLiteClient.setUserVersion(target);
-  }
-}
 
 
 class Dawarich extends ConsumerWidget {

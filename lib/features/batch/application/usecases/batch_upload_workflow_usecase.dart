@@ -103,7 +103,7 @@ final class BatchUploadWorkflowUseCase {
   Future<List<LocalPoint>> _deduplicateLocalPoints(
       List<LocalPoint> points) async {
     final sorted = List<LocalPoint>.from(points)
-      ..sort((a, b) => a.properties.timestamp.compareTo(b.properties.timestamp));
+      ..sort((a, b) => a.properties.recordTimestamp.compareTo(b.properties.recordTimestamp));
 
     final seen = <String>{};
     final deduped = <LocalPoint>[];

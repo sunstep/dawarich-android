@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dawarich/core/application/errors/failure.dart';
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/version_check_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
@@ -20,20 +19,6 @@ final class StartupService {
     }
 
     await InitializeTrackerNotificationService().call();
-
-    final willUpgrade = await SQLiteClient.peekNeedsUpgrade();
-    if (willUpgrade) {
-      if (kDebugMode) {
-        debugPrint('[StartupService] Migration needed, navigating to migration screen...');
-      }
-      // Keep DB gate closed until MigrationViewModel marks DB ready.
-      appRouter.replaceAll([const MigrationRoute()]);
-      return;
-    }
-
-    // No migration needed -> allow DB to open.
-    // NOTE: The DB gate lives in the widget-tree ProviderScope container.
-    // Do not open it from this boot container.
 
     final SessionBox<User> sessionService =
         await container.read(sessionBoxProvider.future);

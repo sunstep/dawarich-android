@@ -86,7 +86,7 @@ final class PointValidator {
     // For now we keep this method in place, since it does no harm and
     // preserves validation structure.
 
-    DateTime candidateTime = point.properties.timestamp;
+    DateTime candidateTime = point.properties.recordTimestamp;
     DateTime lastTime = lastPoint.timestamp;
 
     final bool answer = candidateTime.isAfter(lastTime);

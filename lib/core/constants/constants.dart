@@ -1,2 +1,2 @@
 
-const Duration kMigrationDelay = Duration(milliseconds: 50);
+// App constants

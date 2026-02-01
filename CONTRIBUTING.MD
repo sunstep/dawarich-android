@@ -1,0 +1,1 @@
+More about contributing comes later. I can already tell: I currently do not allow people to contribute as this project is complex enough and without explaining architectural choices it can easily lead to too many inconsistencies in the code.

@@ -99,12 +99,20 @@ final class ServerVersionCompatibilityUseCase {
         final bool isAllowed =
             clientConstraint != null && clientConstraint.allows(appVersion);
 
+        if (kDebugMode) {
+          debugPrint('[VersionCheck] Rule $i: client="$clientRangeStr", appVersion=$appVersion, matches=$isAllowed');
+        }
+
         if (isAllowed) {
           matchedRule = item;
         }
       }
 
       i = i + 1;
+    }
+
+    if (kDebugMode && matchedRule == null) {
+      debugPrint('[VersionCheck] No rule matched, using default rule');
     }
 
     final Map<String, dynamic> rule = matchedRule ?? defaultRule;
@@ -168,14 +176,34 @@ final class ServerVersionCompatibilityUseCase {
 
   Map<String, dynamic>? _tryDecodeMap(String raw) {
     try {
-      final Object? decoded = jsonDecode(raw);
+      // Remove trailing commas which are invalid in standard JSON
+      // but might be present in hand-edited files
+      final sanitized = _removeTrailingCommas(raw);
+      final Object? decoded = jsonDecode(sanitized);
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
+      if (kDebugMode) {
+        debugPrint('[VersionCheck] Decoded JSON is not a Map: ${decoded.runtimeType}');
+      }
       return null;
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[VersionCheck] JSON decode error: $e');
+        debugPrint('[VersionCheck] Raw content (first 200 chars): ${raw.length > 200 ? raw.substring(0, 200) : raw}');
+      }
       return null;
     }
+  }
+
+  /// Removes trailing commas from JSON strings.
+  /// Handles cases like: [1, 2, 3,] or {"a": 1,}
+  String _removeTrailingCommas(String json) {
+    // Remove trailing commas before ] or }
+    return json.replaceAllMapped(
+      RegExp(r',(\s*[}\]])'),
+      (match) => match.group(1)!,
+    );
   }
 
   VersionConstraint? _tryParseConstraint(String? raw) {
@@ -183,7 +211,8 @@ final class ServerVersionCompatibilityUseCase {
       return null;
     }
     try {
-      return VersionConstraint.parse(raw);
+      final trimmed = raw.trim();
+      return VersionConstraint.parse(trimmed);
     } catch (_) {
       return null;
     }

@@ -28,6 +28,15 @@
                 tools:replace="android:exported,android:stopWithTask,android:foregroundServiceType"
         />
 
+        <!-- Receiver to restart background tracking after app update -->
+        <receiver
+            android:name=".AppUpdateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/constants/notification.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -36,18 +37,50 @@ class BackgroundTrackingEntry {
       debugPrint('[Background] Injecting background thread dependencies...');
     }
 
-    // No migration coordination needed - migrations happen silently in foreground
-    final container = await _ensureContainer();
+    // Retry container initialization in case of race condition with foreground
+    // (e.g., DB locked during migration, session validation fails)
+    User? user;
+    ProviderContainer? container;
 
-    // Ensure session is loaded and valid.
-    final session = await container.read(sessionBoxProvider.future);
-    final user = await session.refreshSession();
-    if (user == null) {
-      if (kDebugMode) debugPrint('[Background] No user in session — exiting.');
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        // Dispose old container and create fresh one on retry
+        if (attempt > 1) {
+          if (kDebugMode) {
+            debugPrint('[Background] Retry attempt $attempt/3 - recreating container...');
+          }
+          _container?.dispose();
+          _container = null;
+          await Future.delayed(const Duration(seconds: 2));
+        }
+
+        container = await _ensureContainer();
+        final session = await container.read(sessionBoxProvider.future);
+        user = await session.refreshSession();
+
+        if (user != null) {
+          session.setUserId(user.id);
+          break;
+        }
+
+        if (kDebugMode) {
+          debugPrint('[Background] No user in session (attempt $attempt/3)');
+        }
+      } catch (e, s) {
+        if (kDebugMode) {
+          debugPrint('[Background] Error during initialization (attempt $attempt/3): $e\n$s');
+        }
+        // Dispose container on error to ensure clean retry
+        _container?.dispose();
+        _container = null;
+      }
+    }
+
+    if (user == null || container == null) {
+      if (kDebugMode) debugPrint('[Background] No user in session after retries — exiting.');
       await shutdown(backgroundService, 'No user session');
       return;
     }
-    session.setUserId(user.id);
 
     try {
       final getSettings = await container.read(getTrackerSettingsUseCaseProvider.future);

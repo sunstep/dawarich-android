@@ -29,8 +29,6 @@ If you would like to create a bug report or report issues with the app, you can 
 If you have ideas in mind for this app, you can also submit it at the issues page of this repository, if you suggest something, be as descriptive as possible, so it is clear for me what you are asking for exactly. Please note that I already have a lot of plans in mind, and I am aware that there is a lot that needs to be implemented to align this app with Dawarich's feature set, but there is only so much I can implement in so little time.
 If you have inquiries you can also submit an issue or you can simply chat with me in the official Dawarich Discord server, in the community-solutions channel. That is most likely the quickest way to get your answer. My Discord username is 'thesunstep'.
 
-# Contributions
-More about contributing comes later. I can already tell: I currently do not allow people to contribute as this project is complex enough and without explaining architectural choices it can easily lead to too many inconsistencies in the code.
 
 
 

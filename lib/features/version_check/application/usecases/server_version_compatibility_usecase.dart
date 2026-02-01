@@ -11,7 +11,8 @@ import 'package:pub_semver/pub_semver.dart';
 
 
 /// Use case: decide if the app may proceed given server version + compat rules.
-/// - Debug builds: always OK (skip check)
+/// - Debug builds: run check but allow bypass on failure (logs errors)
+/// - Release builds: enforce check (block on failure)
 /// - Network/parse errors: fail open (OK)
 /// - Rules can *block* (Err with message)
 /// - Rules can restrict server with `allowServer` range (Err with message)
@@ -21,10 +22,22 @@ final class ServerVersionCompatibilityUseCase {
   ServerVersionCompatibilityUseCase(this._versionRepository);
 
   Future<Result<(), Failure>> call() async {
+    final result = await _performCheck();
 
-    if (kDebugMode) {
-      return const Ok(()); // Skip version check in debug mode
+    // In debug mode, log failures but allow bypass
+    if (kDebugMode && result.isErr()) {
+      final failure = result.unwrapErr();
+      debugPrint('[VersionCheck] ⚠️ Check failed but bypassing in debug mode:');
+      debugPrint('[VersionCheck]   Code: ${failure.code}');
+      debugPrint('[VersionCheck]   Message: ${failure.message}');
+      return const Ok(());
     }
+
+    return result;
+  }
+
+  /// Performs the actual version compatibility check.
+  Future<Result<(), Failure>> _performCheck() async {
 
     final Result<String, Failure> versionResult = await _versionRepository.getServerVersion();
     if (versionResult.isErr()) {
@@ -86,12 +99,20 @@ final class ServerVersionCompatibilityUseCase {
         final bool isAllowed =
             clientConstraint != null && clientConstraint.allows(appVersion);
 
+        if (kDebugMode) {
+          debugPrint('[VersionCheck] Rule $i: client="$clientRangeStr", appVersion=$appVersion, matches=$isAllowed');
+        }
+
         if (isAllowed) {
           matchedRule = item;
         }
       }
 
       i = i + 1;
+    }
+
+    if (kDebugMode && matchedRule == null) {
+      debugPrint('[VersionCheck] No rule matched, using default rule');
     }
 
     final Map<String, dynamic> rule = matchedRule ?? defaultRule;
@@ -155,14 +176,34 @@ final class ServerVersionCompatibilityUseCase {
 
   Map<String, dynamic>? _tryDecodeMap(String raw) {
     try {
-      final Object? decoded = jsonDecode(raw);
+      // Remove trailing commas which are invalid in standard JSON
+      // but might be present in hand-edited files
+      final sanitized = _removeTrailingCommas(raw);
+      final Object? decoded = jsonDecode(sanitized);
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
+      if (kDebugMode) {
+        debugPrint('[VersionCheck] Decoded JSON is not a Map: ${decoded.runtimeType}');
+      }
       return null;
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[VersionCheck] JSON decode error: $e');
+        debugPrint('[VersionCheck] Raw content (first 200 chars): ${raw.length > 200 ? raw.substring(0, 200) : raw}');
+      }
       return null;
     }
+  }
+
+  /// Removes trailing commas from JSON strings.
+  /// Handles cases like: [1, 2, 3,] or {"a": 1,}
+  String _removeTrailingCommas(String json) {
+    // Remove trailing commas before ] or }
+    return json.replaceAllMapped(
+      RegExp(r',(\s*[}\]])'),
+      (match) => match.group(1)!,
+    );
   }
 
   VersionConstraint? _tryParseConstraint(String? raw) {
@@ -170,7 +211,8 @@ final class ServerVersionCompatibilityUseCase {
       return null;
     }
     try {
-      return VersionConstraint.parse(raw);
+      final trimmed = raw.trim();
+      return VersionConstraint.parse(trimmed);
     } catch (_) {
       return null;
     }

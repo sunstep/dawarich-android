@@ -3,6 +3,8 @@
 The first open source Dawarich mobile client written in Dart/ Flutter by Sunstep.
 
 # Screenshots
+<img width="1024" height="914" alt="mockup_combined" src="https://github.com/user-attachments/assets/5a825d1a-a956-4186-a073-993e0b7ca93d" />
+
 
 # Features summarized
 * Simply connect to your Dawarich instance using your host and API key or using QR code

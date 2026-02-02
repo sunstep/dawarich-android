@@ -1,17 +1,22 @@
 @echo off
-REM Script to generate Drift schema files for migration testing (Windows)
-REM These files are used by drift_dev to verify migrations work correctly
+setlocal enabledelayedexpansion
 
-echo Generating Drift schema files...
+echo Running Drift migration tooling...
 
-dart run drift_dev schema dump lib/core/database/drift/database/sqlite_client.dart drift_schemas/
-
-if %ERRORLEVEL% EQU 0 (
-    echo ✅ Schema files generated successfully in drift_schemas/
-    echo.
-    echo Generated files:
-    dir drift_schemas\
-) else (
-    echo ❌ Failed to generate schema files
-    exit /b 1
+dart run drift_dev make-migrations
+if %ERRORLEVEL% NEQ 0 (
+  echo ❌ drift_dev make-migrations failed
+  exit /b 1
 )
+
+echo ✅ Migrations generated / updated.
+
+echo Running generated migration tests...
+dart test test/drift/app/generated
+if %ERRORLEVEL% NEQ 0 (
+  echo ❌ Migration tests failed
+  exit /b 1
+)
+
+echo ✅ Migration tests passed.
+exit /b 0

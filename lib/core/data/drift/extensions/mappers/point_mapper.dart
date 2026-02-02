@@ -1,4 +1,4 @@
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point_geometry.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point_properties.dart';

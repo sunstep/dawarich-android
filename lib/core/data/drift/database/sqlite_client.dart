@@ -3,15 +3,15 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:dawarich/core/database/drift/database/crypto/db_key_provider.dart';
-import 'package:dawarich/core/database/drift/database/crypto/sqlcipher_bootstrap.dart';
-import 'package:dawarich/core/database/drift/entities/point/point_geometry_table.dart';
-import 'package:dawarich/core/database/drift/entities/point/point_properties_table.dart';
-import 'package:dawarich/core/database/drift/entities/point/points_table.dart';
-import 'package:dawarich/core/database/drift/entities/settings/tracker_settings_table.dart';
-import 'package:dawarich/core/database/drift/entities/track/track_table.dart';
-import 'package:dawarich/core/database/drift/entities/user/user_settings_table.dart';
-import 'package:dawarich/core/database/drift/entities/user/user_table.dart';
+import 'package:dawarich/core/data/drift/database/crypto/db_key_provider.dart';
+import 'package:dawarich/core/data/drift/database/crypto/sqlcipher_bootstrap.dart';
+import 'package:dawarich/core/data/drift/entities/point/point_geometry_table.dart';
+import 'package:dawarich/core/data/drift/entities/point/point_properties_table.dart';
+import 'package:dawarich/core/data/drift/entities/point/points_table.dart';
+import 'package:dawarich/core/data/drift/entities/settings/tracker_settings_table.dart';
+import 'package:dawarich/core/data/drift/entities/track/track_table.dart';
+import 'package:dawarich/core/data/drift/entities/user/user_settings_table.dart';
+import 'package:dawarich/core/data/drift/entities/user/user_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
 import 'package:drift/native.dart';
@@ -204,51 +204,23 @@ final class SQLiteClient extends _$SQLiteClient {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (final m) async {
-      if (kDebugMode) debugPrint("[Drift] onCreate triggered");
+
+      if (kDebugMode) {
+        debugPrint("[Drift] Creating new database...");
+      }
+
       await m.createAll();
     },
-    onUpgrade: (final m, final from, final to) async {
+    // onUpgrade: no migrations for now. As the app is releasing we want a clean baseline, examples of migrations will appear when we actually do them,
+    beforeOpen: (details) async {
+
       if (kDebugMode) {
-        debugPrint('[Migration] Running from version $from to $to');
+        debugPrint('[Drift] Database opening at schema version: ${details.versionNow}');
       }
 
-      await transaction(() async {
-        if (from < 5 && to >= 5) {
-          final hasOldColumn = await customSelect(
-            "SELECT name FROM pragma_table_info('point_properties_table') WHERE name = 'timestamp'"
-          ).get();
-
-          if (hasOldColumn.isNotEmpty) {
-            if (kDebugMode) {
-              debugPrint('[Migration] Renaming timestamp to record_timestamp');
-            }
-            await customStatement('ALTER TABLE point_properties_table RENAME COLUMN timestamp TO record_timestamp;');
-          }
-
-          final hasProviderColumn = await customSelect(
-            "SELECT name FROM pragma_table_info('point_properties_table') WHERE name = 'provider_timestamp'"
-          ).get();
-
-          if (hasProviderColumn.isEmpty) {
-            if (kDebugMode) {
-              debugPrint('[Migration] Adding provider_timestamp column');
-            }
-            // Add column with default value first, then update
-            await customStatement('ALTER TABLE point_properties_table ADD COLUMN provider_timestamp INTEGER NOT NULL DEFAULT 0;');
-            await customStatement(r'''
-              UPDATE point_properties_table
-              SET provider_timestamp = record_timestamp
-            ''');
-          }
-        }
-      });
-    },
-    beforeOpen: (details) async {
       await customStatement('PRAGMA journal_mode = WAL;');
 
-      if (kDebugMode) {
-        debugPrint('[Drift] Database opened at schema version: ${details.versionNow}');
-      }
+      // Do whatever you like here if needed, this will always run before the db opens.
     },
   );
 

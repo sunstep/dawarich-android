@@ -1,4 +1,4 @@
-import 'package:dawarich/core/database/drift/entities/user/user_table.dart';
+import 'package:dawarich/core/data/drift/entities/user/user_table.dart';
 import 'package:drift/drift.dart';
 
 class UserSettingsTable extends Table {

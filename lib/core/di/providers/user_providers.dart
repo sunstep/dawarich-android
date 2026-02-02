@@ -1,6 +1,6 @@
 
 
-import 'package:dawarich/core/database/repositories/drift/drift_user_repository.dart';
+import 'package:dawarich/core/data/repositories/drift/drift_user_repository.dart';
 import 'package:dawarich/features/auth/application/repositories/user_repository_interfaces.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

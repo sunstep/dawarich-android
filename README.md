@@ -1,6 +1,6 @@
 # Dawarich Mobile for Android
 
-A Dawarich mobile client written in Dart/ Flutter by Sunstep.
+The first open source Dawarich mobile client written in Dart/ Flutter by Sunstep.
 
 # Screenshots
 

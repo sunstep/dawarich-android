@@ -1,7 +1,7 @@
 
 
 
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/repositories/tracker_settings_repository.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';

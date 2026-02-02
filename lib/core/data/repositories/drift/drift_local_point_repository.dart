@@ -1,6 +1,6 @@
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
-import 'package:dawarich/core/database/drift/extensions/mappers/point_mapper.dart';
-import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/data/drift/extensions/mappers/point_mapper.dart';
+import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:flutter/foundation.dart';

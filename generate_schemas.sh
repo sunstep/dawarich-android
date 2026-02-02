@@ -1,19 +1,20 @@
 #!/bin/bash
+set -euo pipefail
 
-# Script to generate Drift schema files for migration testing
-# These files are used by drift_dev to verify migrations work correctly
+echo "Running Drift migration tooling..."
 
-echo "Generating Drift schema files..."
+# 1) Generate schema snapshots + steps + tests
+dart run drift_dev make-migrations
+echo "✅ Migrations generated / updated."
 
-# Generate schema files
-dart run drift_dev schema dump lib/core/database/drift/database/sqlite_client.dart drift_schemas/
+# 2) Run only generated migration tests
+echo "Running generated migration tests..."
+dart test test/drift/app/generated
+echo "✅ Migration tests passed."
 
-if [ $? -eq 0 ]; then
-    echo "✅ Schema files generated successfully in drift_schemas/"
-    echo ""
-    echo "Generated files:"
-    ls -lh drift_schemas/
-else
-    echo "❌ Failed to generate schema files"
-    exit 1
+# Optional: print generated schema files (nice for CI logs)
+if [ -d "drift_schemas" ]; then
+  echo ""
+  echo "Generated schema files:"
+  ls -lh drift_schemas/
 fi

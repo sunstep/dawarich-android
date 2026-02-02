@@ -1,6 +1,6 @@
 import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
-import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/clear_batch_usecase.dart';

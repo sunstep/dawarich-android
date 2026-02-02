@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:dawarich/core/database/drift/database/crypto/sqlcipher_bootstrap.dart';
+import 'package:dawarich/core/data/drift/database/crypto/sqlcipher_bootstrap.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';

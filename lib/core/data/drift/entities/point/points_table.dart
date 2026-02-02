@@ -1,5 +1,5 @@
-import 'package:dawarich/core/database/drift/entities/point/point_geometry_table.dart';
-import 'package:dawarich/core/database/drift/entities/point/point_properties_table.dart';
+import 'package:dawarich/core/data/drift/entities/point/point_geometry_table.dart';
+import 'package:dawarich/core/data/drift/entities/point/point_properties_table.dart';
 import 'package:drift/drift.dart';
 
 class PointsTable extends Table {

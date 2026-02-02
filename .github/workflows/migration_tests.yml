@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main, dev ]
     paths:
-      - 'lib/core/database/drift/**'
+      - '../../lib/core/data/drift/**'
       - 'test/core/database/drift/**'
       - 'drift_schemas/**'
   pull_request:
     branches: [ main, dev ]
     paths:
-      - 'lib/core/database/drift/**'
+      - '../../lib/core/data/drift/**'
       - 'test/core/database/drift/**'
       - 'drift_schemas/**'
 

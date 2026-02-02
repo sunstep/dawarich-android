@@ -1,4 +1,4 @@
-import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:option_result/option.dart';
 

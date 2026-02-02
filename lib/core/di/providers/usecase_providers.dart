@@ -9,9 +9,9 @@ import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.d
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core_providers.dart';
-import 'package:dawarich/core/database/repositories/drift/drift_local_point_repository.dart';
-import 'package:dawarich/core/database/repositories/drift/drift_track_repository.dart';
-import 'package:dawarich/core/database/repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/data/repositories/drift/drift_local_point_repository.dart';
+import 'package:dawarich/core/data/repositories/drift/drift_track_repository.dart';
+import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository.dart';
 import 'package:dawarich/core/network/repositories/api_point_repository_interfaces.dart';
 import 'package:dawarich/features/batch/application/usecases/watch_current_batch_usecase.dart';

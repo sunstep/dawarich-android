@@ -1,4 +1,4 @@
-import 'package:dawarich/core/database/drift/database/sqlite_client.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/network/configs/api_config_manager.dart';
 import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dawarich/core/network/dio_client.dart';

@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          databases:
+            app: lib/core/database/drift/database/sqlite_client.dart
+
+          # Where drift stores schema snapshots
+          schema_dir: drift_schemas
+
+          # Where drift writes migration tests
+          test_dir: test/drift

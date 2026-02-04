@@ -1,9 +1,11 @@
-package app.dawarich.android
+package app.dawarich.client.sunstep.android
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import id.flutter.flutter_background_service.BackgroundService
 
 /**
@@ -17,6 +19,7 @@ class AppUpdateReceiver : BroadcastReceiver() {
         private const val TAG = "AppUpdateReceiver"
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
             Log.d(TAG, "App updated, attempting to restart background service...")

@@ -1,4 +1,4 @@
-package app.dawarich.client.sunstep.android
+package com.sunstep.dawarich
 
 import android.os.PowerManager
 import io.flutter.embedding.android.FlutterActivity
@@ -7,7 +7,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
-    private val _channel = "app.dawarich.client.sunstep.android/system_settings"
+    private val _channel = "com.sunstep.dawarich/system_settings"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

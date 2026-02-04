@@ -1,4 +1,4 @@
-package app.dawarich.client.sunstep.android
+package com.sunstep.dawarich
 
 import android.content.BroadcastReceiver
 import android.content.Context

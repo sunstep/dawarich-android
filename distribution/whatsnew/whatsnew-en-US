@@ -1,2 +1,2 @@
-Beta 0.13.2
-* App should automatically continue tracking after an update, without having to start the app manually.
+Beta 0.14.0
+* Changed the package name to reduce confusion between the official domain and this app.

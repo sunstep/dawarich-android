@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 final class CheckSystemSettingsUseCase {
-
-  static const MethodChannel _channel = MethodChannel('com.sunstep.dawarich/system_settings');
+  static const MethodChannel _channel =
+      MethodChannel('com.sunstep.dawarich/system_settings');
 
   /// On Android: returns `true` if battery optimization is still enabled.
   /// On iOS: returns `true` if “Always” location permission is denied.
@@ -17,11 +17,20 @@ final class CheckSystemSettingsUseCase {
     try {
       if (Platform.isAndroid) {
         final bool enabled =
-            await _channel.invokeMethod<bool>('isBatteryOptimizationEnabled') ?? false;
+            await _channel.invokeMethod<bool>('isBatteryOptimizationEnabled') ??
+                false;
         return enabled;
       } else if (Platform.isIOS) {
-        final status = await Permission.locationAlways.status;
-        return !status.isGranted;
+        try {
+          final status = await Permission.locationAlways.status;
+          return !status.isGranted;
+        } catch (e) {
+          // iOS permission check crash workaround
+          if (kDebugMode) {
+            debugPrint('[CheckSystemSettingsUseCase] iOS permission error: $e');
+          }
+          return false;
+        }
       }
 
       return false;
@@ -32,10 +41,16 @@ final class CheckSystemSettingsUseCase {
       return false;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        debugPrint('[CheckSystemSettingsUseCase] PlatformException: ${e.code} ${e.message}');
+        debugPrint(
+            '[CheckSystemSettingsUseCase] PlatformException: ${e.code} ${e.message}');
+      }
+      return false;
+    } catch (e) {
+      // Catch any other errors
+      if (kDebugMode) {
+        debugPrint('[CheckSystemSettingsUseCase] Unexpected error: $e');
       }
       return false;
     }
   }
-
 }

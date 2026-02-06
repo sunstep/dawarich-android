@@ -1,13 +1,11 @@
-
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 final class InitializeTrackerNotificationService {
-
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
-  FlutterLocalNotificationsPlugin();
+      FlutterLocalNotificationsPlugin();
 
   static bool _initialized = false;
 
@@ -20,24 +18,31 @@ final class InitializeTrackerNotificationService {
     if (_initialized) return;
     _initialized = true;
 
-    const androidSettings = AndroidInitializationSettings('ic_bg_service_small');
+    const androidSettings =
+        AndroidInitializationSettings('ic_bg_service_small');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
 
     const InitializationSettings initializationSettings =
-    InitializationSettings(
+        InitializationSettings(
       android: androidSettings,
+      iOS: iosSettings,
     );
 
-    await _notificationsPlugin.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: _onNotificationTapped
-    );
+    await _notificationsPlugin.initialize(initializationSettings,
+        onDidReceiveNotificationResponse: _onNotificationTapped);
 
-    final launchDetails = await _notificationsPlugin.getNotificationAppLaunchDetails();
+    final launchDetails =
+        await _notificationsPlugin.getNotificationAppLaunchDetails();
     if (launchDetails?.didNotificationLaunchApp == true) {
       final payload = launchDetails?.notificationResponse?.payload;
       if (payload != null) {
         if (kDebugMode) {
-          debugPrint('[NotificationService] App launched from notification with payload: $payload');
+          debugPrint(
+              '[NotificationService] App launched from notification with payload: $payload');
         }
         pendingNotificationRoute = payload;
       }
@@ -48,7 +53,8 @@ final class InitializeTrackerNotificationService {
     final String? payload = response.payload;
     if (payload != null) {
       if (kDebugMode) {
-        debugPrint('[NotificationService] Notification tapped with payload: $payload');
+        debugPrint(
+            '[NotificationService] Notification tapped with payload: $payload');
       }
       final route = AppRouter.routeFromPath(payload);
       appRouter.push(route);
@@ -59,5 +65,4 @@ final class InitializeTrackerNotificationService {
   static void clearPendingRoute() {
     pendingNotificationRoute = null;
   }
-
 }

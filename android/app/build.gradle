@@ -105,6 +105,8 @@ android {
         foss {
             dimension "distribution"
             buildConfigField "String", "FLAVOR_DISTRIBUTION", '"foss"'
+
+            proguardFiles 'proguard-foss-rules.pro'
         }
     }
 

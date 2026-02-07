@@ -20,7 +20,12 @@ final class CreatePointFromPositionUseCase {
   final ITrackRepository _trackRepository;
   final PointValidator _pointValidator;
 
-  CreatePointFromPositionUseCase(this._hardwareRepository, this._localPointRepository, this._trackRepository, this._pointValidator);
+  CreatePointFromPositionUseCase(
+      this._hardwareRepository,
+      this._localPointRepository,
+      this._trackRepository,
+      this._pointValidator
+  );
 
   /// Creates a full point using a position object.
   Future<Result<LocalPoint, String>> call(

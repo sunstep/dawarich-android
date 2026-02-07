@@ -1,7 +1,7 @@
 
 
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
-import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_position_usecase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,11 +9,11 @@ import 'package:option_result/option_result.dart';
 
 final class CreatePointFromCacheWorkflow {
 
-  final IHardwareRepository _hardwareInterfaces;
+  final ILocationProvider _locationProvider;
   final CreatePointFromPositionUseCase _createPointFromPosition;
 
   CreatePointFromCacheWorkflow(
-      this._hardwareInterfaces,
+      this._locationProvider,
       this._createPointFromPosition
   );
 
@@ -22,7 +22,7 @@ final class CreatePointFromCacheWorkflow {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
     final Option<Position> posResult =
-    await _hardwareInterfaces.getCachedPosition();
+    await _locationProvider.getCachedPosition();
 
     if (posResult case None()) {
       if (kDebugMode) {

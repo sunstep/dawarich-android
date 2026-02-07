@@ -14,6 +14,7 @@ import 'package:dawarich/features/tracking/application/usecases/track/end_track_
 import 'package:dawarich/features/tracking/application/usecases/track/get_active_track_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/track/start_track_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/track/watch_batch_point_count_usecase.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
@@ -26,7 +27,6 @@ import 'package:dawarich/features/tracking/presentation/models/track_viewmodel.d
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/features/tracking/presentation/models/last_point_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -190,9 +190,9 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   int _trackingFrequency = 10; // in seconds
   int get trackingFrequency => _trackingFrequency;
 
-  LocationAccuracy _locationAccuracy =
-      Platform.isAndroid ? LocationAccuracy.high : LocationAccuracy.best;
-  LocationAccuracy get locationAccuracy => _locationAccuracy;
+  LocationPrecision _locationAccuracy =
+      Platform.isAndroid ? LocationPrecision.high : LocationPrecision.best;
+  LocationPrecision get locationAccuracy => _locationAccuracy;
 
   int _minimumPointDistance = 0;
   int get minimumPointDistance => _minimumPointDistance;
@@ -247,7 +247,7 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     _isTrackingAutomatically = s.automaticTracking;
     _maxPointsPerBatch = s.pointsPerBatch;
     _trackingFrequency = s.trackingFrequency;
-    _locationAccuracy = s.locationAccuracy;
+    _locationAccuracy = s.locationPrecision;
     _minimumPointDistance = s.minimumPointDistance;
     _deviceId = s.deviceId;
 
@@ -510,7 +510,7 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     await _saveTrackerSettings(updated);
   }
 
-  Future<void> setLocationAccuracy(LocationAccuracy accuracy) async {
+  Future<void> setLocationAccuracy(LocationPrecision accuracy) async {
 
     final TrackerSettings? copy = _trackerSettings;
 
@@ -518,7 +518,7 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
       return;
     }
 
-    final updated = copy.copyWith(locationAccuracy: accuracy);
+    final updated = copy.copyWith(locationPrecision: accuracy);
     _applySettings(updated);
     await _saveTrackerSettings(updated);
   }
@@ -567,23 +567,17 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   List<Map<String, dynamic>> get accuracyOptions {
     if (Platform.isIOS) {
       return [
-        {"label": "Reduced", "value": LocationAccuracy.reduced},
-        {"label": "Lowest", "value": LocationAccuracy.lowest},
-        {"label": "Low", "value": LocationAccuracy.low},
-        {"label": "Medium", "value": LocationAccuracy.medium},
-        {"label": "High", "value": LocationAccuracy.high},
-        {"label": "Best", "value": LocationAccuracy.best},
-        {
-          "label": "Best for Navigation",
-          "value": LocationAccuracy.bestForNavigation
-        },
+        {"label": "Low Power", "value": LocationPrecision.lowPower},
+        {"label": "Balanced", "value": LocationPrecision.balanced},
+        {"label": "High", "value": LocationPrecision.high},
+        {"label": "Best", "value": LocationPrecision.best},
       ];
     } else if (Platform.isAndroid) {
       return [
-        {"label": "Lowest", "value": LocationAccuracy.lowest},
-        {"label": "Low", "value": LocationAccuracy.low},
-        {"label": "Medium", "value": LocationAccuracy.medium},
-        {"label": "High", "value": LocationAccuracy.high},
+        {"label": "Low Power", "value": LocationPrecision.lowPower},
+        {"label": "Balanced", "value": LocationPrecision.balanced},
+        {"label": "High", "value": LocationPrecision.high},
+        {"label": "Best", "value": LocationPrecision.best},
       ];
     }
     return [];

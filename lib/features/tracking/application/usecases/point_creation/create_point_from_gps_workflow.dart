@@ -4,9 +4,10 @@ import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
+import 'package:dawarich/features/tracking/domain/models/location_request.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/result.dart';
 
 final class CreatePointFromGpsWorkflow {
@@ -29,7 +30,7 @@ final class CreatePointFromGpsWorkflow {
     final TrackerSettings settings = await _getTrackerPreferences(userId);
     final bool isTrackingAutomatically = settings.automaticTracking;
     final int currentTrackingFrequency = settings.trackingFrequency;
-    final LocationAccuracy accuracy = settings.locationAccuracy;
+    final LocationPrecision accuracy = settings.locationPrecision;
 
     final Duration autoAttemptTimeout = _clampDuration(
       Duration(seconds: currentTrackingFrequency),
@@ -52,8 +53,15 @@ final class CreatePointFromGpsWorkflow {
     Result<LocationFix, String> posResult;
 
     try {
+
+      final LocationRequest request = LocationRequest(
+        precision: accuracy,
+        distanceFilterMeters: 0,
+        timeLimit: attemptTimeout,
+      );
+
       posResult = await _locationProvider
-          .getCurrent(accuracy)
+          .getCurrent(request)
           .timeout(attemptTimeout);
     } on TimeoutException {
       return Err("NO_FIX_TIMEOUT");

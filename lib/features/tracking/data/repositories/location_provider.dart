@@ -1,6 +1,8 @@
 
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
+import 'package:dawarich/features/tracking/domain/models/location_request.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option.dart';
 import 'package:option_result/result.dart';
@@ -8,14 +10,10 @@ import 'package:option_result/result.dart';
 final class LocationProvider implements ILocationProvider {
 
   @override
-  Future<Result<LocationFix, String>> getCurrent(LocationAccuracy accuracy) async {
+  Future<Result<LocationFix, String>> getCurrent(LocationRequest request) async {
     try {
       final Position position = await Geolocator.getCurrentPosition(
-        locationSettings: LocationSettings(
-          accuracy: accuracy,
-          distanceFilter: 0,
-          timeLimit: const Duration(seconds: 10),
-        ),
+        locationSettings: _toLocationSettings(request),
       );
 
       return Ok(_toFix(position));
@@ -46,6 +44,27 @@ final class LocationProvider implements ILocationProvider {
   @override
   Future<bool> isLocationServiceEnabled() async {
     return Geolocator.isLocationServiceEnabled();
+  }
+
+  LocationSettings _toLocationSettings(LocationRequest request) {
+    return LocationSettings(
+      accuracy: _toGeolocatorAccuracy(request.precision),
+      distanceFilter: request.distanceFilterMeters ?? 0,
+      timeLimit: request.timeLimit,
+    );
+  }
+
+  LocationAccuracy _toGeolocatorAccuracy(LocationPrecision precision) {
+    switch (precision) {
+      case LocationPrecision.best:
+        return LocationAccuracy.best;
+      case LocationPrecision.high:
+        return LocationAccuracy.high;
+      case LocationPrecision.balanced:
+        return LocationAccuracy.medium;
+      case LocationPrecision.lowPower:
+        return LocationAccuracy.low;
+    }
   }
 
   LocationFix _toFix(Position p) {

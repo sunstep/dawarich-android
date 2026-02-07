@@ -1,12 +1,9 @@
-
-
-
 import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/repositories/tracker_settings_repository.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
 import 'package:drift/drift.dart';
-import 'package:geolocator/geolocator.dart';
 
 final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository {
 
@@ -30,7 +27,7 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
       userId: userId,
       automaticTracking: false,
       trackingFrequency: 10,
-      locationAccuracy: LocationAccuracy.high,
+      locationPrecision: LocationPrecision.high,
       minimumPointDistance: 0,
       pointsPerBatch: 50,
       deviceId: deviceId,
@@ -62,7 +59,7 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
       userId: userId,
       automaticTracking: false,
       trackingFrequency: 10,
-      locationAccuracy: LocationAccuracy.high,
+      locationPrecision: LocationPrecision.high,
       minimumPointDistance: 0,
       pointsPerBatch: 50,
       deviceId: defaultDeviceId,
@@ -91,7 +88,9 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
     userId: r.userId,
     automaticTracking: r.automaticTracking ?? defaults.automaticTracking,
     trackingFrequency: r.trackingFrequency ?? defaults.trackingFrequency,
-    locationAccuracy:  r.locationAccuracy != null ? LocationAccuracy.values[r.locationAccuracy!] : defaults.locationAccuracy,
+    locationPrecision: r.locationAccuracy != null
+        ? LocationPrecision.fromCode(r.locationAccuracy!)
+        : defaults.locationPrecision,
     minimumPointDistance: r.minimumPointDistance ?? defaults.minimumPointDistance,
     pointsPerBatch: r.pointsPerBatch ?? defaults.pointsPerBatch,
     deviceId: r.deviceId ?? defaults.deviceId,
@@ -102,7 +101,7 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
         userId: Value(s.userId),
         automaticTracking: Value(s.automaticTracking),
         trackingFrequency: Value(s.trackingFrequency),
-        locationAccuracy: Value(s.locationAccuracy.index),
+        locationAccuracy: Value(s.locationPrecision.code),
         minimumPointDistance: Value(s.minimumPointDistance),
         pointsPerBatch: Value(s.pointsPerBatch),
         deviceId: Value(s.deviceId),

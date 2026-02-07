@@ -4,6 +4,7 @@ import 'package:dawarich/features/tracking/application/repositories/tracker_sett
 import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository {
 
@@ -42,13 +43,21 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
 
   @override
   Future<void> set({required TrackerSettings settings}) async {
-
+    if (kDebugMode) {
+      debugPrint("[TrackerSettingsRepo] Saving settings: freq=${settings.trackingFrequency}s, precision=${settings.locationPrecision}");
+    }
     final companion = _toCompanion((settings));
     await _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(companion);
+    if (kDebugMode) {
+      debugPrint("[TrackerSettingsRepo] Settings saved successfully");
+    }
   }
 
   @override
   Stream<TrackerSettings> watch({required int userId}) async * {
+    if (kDebugMode) {
+      debugPrint("[TrackerSettingsRepo] Setting up watch for userId: $userId");
+    }
 
     final q = (_db.select(_db.trackerSettingsTable)
       ..where((t) => t.userId.equals(userId)));
@@ -66,11 +75,21 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
     );
 
     yield * q.watchSingleOrNull().map((row) {
+      if (kDebugMode) {
+        debugPrint("[TrackerSettingsRepo] Watch received DB update, row: ${row?.trackingFrequency}s");
+      }
 
       if (row == null) {
+        if (kDebugMode) {
+          debugPrint("[TrackerSettingsRepo] Watch emitting defaults (no row)");
+        }
         return defaults;
       }
-      return _fromRow(row, defaults: defaults);
+      final settings = _fromRow(row, defaults: defaults);
+      if (kDebugMode) {
+        debugPrint("[TrackerSettingsRepo] Watch emitting: freq=${settings.trackingFrequency}s, precision=${settings.locationPrecision}");
+      }
+      return settings;
     });
 
   }

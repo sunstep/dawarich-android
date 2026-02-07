@@ -139,11 +139,13 @@ final pointValidatorProvider = FutureProvider<PointValidator>((ref) async {
 
 final createPointFromPositionUseCaseProvider = FutureProvider<CreatePointUseCase>((ref) async {
   final validator = await ref.watch(pointValidatorProvider.future);
+  final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
   return CreatePointUseCase(
     ref.watch(hardwareRepositoryProvider),
     await ref.watch(pointLocalRepositoryProvider.future),
     await ref.watch(trackRepositoryProvider.future),
     validator,
+    apiRepo,
   );
 });
 

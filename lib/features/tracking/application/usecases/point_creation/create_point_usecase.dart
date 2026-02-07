@@ -1,5 +1,4 @@
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
-import 'package:dawarich/core/domain/models/point/local/additional_point_data.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point_geometry.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point_properties.dart';
@@ -8,30 +7,37 @@ import 'package:dawarich/features/tracking/application/converters/track_converte
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/repositories/i_track_repository.dart';
 import 'package:dawarich/features/tracking/data/data_transfer_objects/track_dto.dart';
+import 'package:dawarich/features/tracking/domain/enum/battery_state.dart';
+import 'package:dawarich/features/tracking/domain/enum/tracking_mode.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
+import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
+import 'package:dawarich/features/tracking/domain/models/point_context.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
-final class CreatePointFromPositionUseCase {
+final class CreatePointUseCase {
 
   final IHardwareRepository _hardwareRepository;
   final IPointLocalRepository _localPointRepository;
   final ITrackRepository _trackRepository;
   final PointValidator _pointValidator;
 
-  CreatePointFromPositionUseCase(this._hardwareRepository, this._localPointRepository, this._trackRepository, this._pointValidator);
+  CreatePointUseCase(
+      this._hardwareRepository,
+      this._localPointRepository,
+      this._trackRepository,
+      this._pointValidator
+  );
 
   /// Creates a full point using a position object.
   Future<Result<LocalPoint, String>> call(
-      Position position, DateTime timestamp, int userId) async {
+      LocationFix position, DateTime timestamp, int userId) async {
 
-    final AdditionalPointData additionalData =
-    await _getAdditionalPointData(userId);
+    final PointContext context = await _getPointContext(userId);
 
     LocalPoint point = _constructPoint(
       position,
-      additionalData,
+      context,
       userId,
       timestamp,
     );
@@ -47,28 +53,28 @@ final class CreatePointFromPositionUseCase {
   }
 
   LocalPoint _constructPoint(
-      Position position, AdditionalPointData additionalData, int userId, DateTime recordTimestamp) {
+      LocationFix fix, PointContext context, int userId, DateTime recordTimestamp) {
     final geometry = LocalPointGeometry(
         type: "Point",
-        longitude: position.longitude,
-        latitude: position.latitude
+        longitude: fix.longitude,
+        latitude: fix.latitude
     );
 
     final properties = LocalPointProperties(
-      batteryState: additionalData.batteryState,
-      batteryLevel: additionalData.batteryLevel,
-      wifi: additionalData.wifi,
+      batteryState: _batteryStateToString(context.batteryState),
+      batteryLevel: context.batteryLevel,
+      wifi: context.wifi ?? '',
       recordTimestamp: recordTimestamp,
-      providerTimestamp: position.timestamp,
-      horizontalAccuracy: position.accuracy,
-      verticalAccuracy: position.altitudeAccuracy,
-      altitude: position.altitude,
-      speed: position.speed,
-      speedAccuracy: position.speedAccuracy,
-      course: position.heading,
-      courseAccuracy: position.headingAccuracy,
-      trackId: additionalData.trackId,
-      deviceId: additionalData.deviceId,
+      providerTimestamp: fix.timestampUtc,
+      horizontalAccuracy: fix.hAccuracyMeters,
+      verticalAccuracy: fix.altitudeAccuracyMeters,
+      altitude: fix.altitudeMeters,
+      speed: fix.speedMps,
+      speedAccuracy: fix.speedAccuracyMps,
+      course: fix.headingDegrees,
+      courseAccuracy: fix.headingAccuracyDegrees,
+      trackId: context.trackId,
+      deviceId: context.deviceId,
     );
 
     return LocalPoint(
@@ -80,13 +86,23 @@ final class CreatePointFromPositionUseCase {
         isUploaded: false);
   }
 
-  Future<AdditionalPointData> _getAdditionalPointData(int userId) async {
+  String _batteryStateToString(BatteryState state) {
+    return switch (state) {
+      BatteryState.charging => 'charging',
+      BatteryState.discharging => 'discharging',
+      BatteryState.full => 'full',
+      BatteryState.connectedNotCharging => 'connected_not_charging',
+      BatteryState.unknown => 'unknown',
+    };
+  }
 
-    final Future<String> wifiF = _hardwareRepository.getWiFiStatus();
-    final Future<String> batteryStateF = _hardwareRepository.getBatteryState();
+  Future<PointContext> _getPointContext(int userId) async {
+
+    final Future<String?> wifiF = _hardwareRepository.getWiFiStatus();
+    final Future<BatteryState> batteryStateF = _hardwareRepository.getBatteryState();
     final Future<double> batteryLevelF = _hardwareRepository.getBatteryLevel();
     final Future<String> deviceIdF = _hardwareRepository.getDeviceModel();
-    final Future<Option<TrackDto>> trackerIdResultF =
+    final Future<Option<TrackDto>> trackResultF =
     _trackRepository.getActiveTrack(userId);
 
     final futureResults = await Future.wait([
@@ -94,28 +110,29 @@ final class CreatePointFromPositionUseCase {
       batteryStateF,
       batteryLevelF,
       deviceIdF,
-      trackerIdResultF,
+      trackResultF,
     ]);
 
-    final String wifi = futureResults[0] as String;
-    final String batteryState = futureResults[1] as String;
+    final String? wifi = futureResults[0] as String?;
+    final BatteryState batteryState = futureResults[1] as BatteryState;
     final double batteryLevel = futureResults[2] as double;
     final String deviceId = futureResults[3] as String;
-    final Option<TrackDto> trackerIdResult = futureResults[4] as Option<TrackDto>;
+    final Option<TrackDto> trackResult = futureResults[4] as Option<TrackDto>;
 
     String? trackId;
-
-    if (trackerIdResult case Some(value: TrackDto trackDto)) {
+    if (trackResult case Some(value: TrackDto trackDto)) {
       Track track = trackDto.toEntity();
       trackId = track.trackId;
     }
 
-    return AdditionalPointData(
-        deviceId: deviceId,
-        trackId: trackId,
-        wifi: wifi,
-        batteryState: batteryState,
-        batteryLevel: batteryLevel);
+    return PointContext(
+      deviceId: deviceId,
+      trackId: trackId,
+      wifi: wifi,
+      batteryState: batteryState,
+      batteryLevel: batteryLevel,
+      trackingMode: TrackingMode.manual, // TODO: Pass tracking mode from caller
+    );
   }
 
 

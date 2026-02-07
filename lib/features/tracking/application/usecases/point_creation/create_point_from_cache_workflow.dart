@@ -1,19 +1,19 @@
 
 
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
-import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
-import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_position_usecase.dart';
+import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_usecase.dart';
+import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 
 final class CreatePointFromCacheWorkflow {
 
-  final IHardwareRepository _hardwareInterfaces;
-  final CreatePointFromPositionUseCase _createPointFromPosition;
+  final ILocationProvider _locationProvider;
+  final CreatePointUseCase _createPointFromPosition;
 
   CreatePointFromCacheWorkflow(
-      this._hardwareInterfaces,
+      this._locationProvider,
       this._createPointFromPosition
   );
 
@@ -21,8 +21,8 @@ final class CreatePointFromCacheWorkflow {
   Future<Result<LocalPoint, String>> call(int userId) async {
 
     final DateTime pointCreationTimestamp = DateTime.now().toUtc();
-    final Option<Position> posResult =
-    await _hardwareInterfaces.getCachedPosition();
+    final Option<LocationFix> posResult =
+      await _locationProvider.getLastKnown();
 
     if (posResult case None()) {
       if (kDebugMode) {
@@ -35,9 +35,9 @@ final class CreatePointFromCacheWorkflow {
       debugPrint("[DEBUG] Cached position found, creating point from it.");
     }
 
-    final Position position = posResult.unwrap();
+    final LocationFix fix = posResult.unwrap();
     final Result<LocalPoint, String> pointResult =
-    await _createPointFromPosition(position, pointCreationTimestamp, userId);
+    await _createPointFromPosition(fix, pointCreationTimestamp, userId);
 
     if (pointResult case Err(value: String error)) {
       return Err("[DEBUG] Cached point was rejected: $error");

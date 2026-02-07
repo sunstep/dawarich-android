@@ -21,7 +21,7 @@ final class WatchTrackerSettingsUseCase {
   static bool _equals(TrackerSettings a, TrackerSettings b) {
     return a.automaticTracking == b.automaticTracking &&
         a.trackingFrequency == b.trackingFrequency &&
-        a.locationAccuracy == b.locationAccuracy &&
+        a.locationPrecision == b.locationPrecision &&
         a.minimumPointDistance == b.minimumPointDistance &&
         a.pointsPerBatch == b.pointsPerBatch &&
         a.deviceId == b.deviceId;

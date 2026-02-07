@@ -1,6 +1,7 @@
 import 'package:dawarich/core/application/usecases/api/delete_point_usecase.dart';
 import 'package:dawarich/core/application/usecases/api/get_points_usecase.dart';
 import 'package:dawarich/core/application/usecases/api/get_total_pages_usecase.dart';
+import 'package:dawarich/core/di/providers/flavor_providers.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/check_batch_threshold_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
@@ -10,6 +11,7 @@ import 'package:dawarich/features/stats/data/repositories/stats_repository.dart'
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_usecase.dart';
 import 'package:dawarich/features/tracking/data/repositories/location_provider.dart';
+import 'package:dawarich/features/tracking/data/repositories/location_provider_aosp.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core_providers.dart';
 import 'package:dawarich/core/data/repositories/drift/drift_local_point_repository.dart';
@@ -70,7 +72,12 @@ final hardwareRepositoryProvider = Provider<IHardwareRepository>((ref) {
   );
 });
 
-final locationProviderProvider = Provider<ILocationProvider>((ref) {
+final locationProviderProvider = FutureProvider<ILocationProvider>((ref) async {
+  final flavor = await ref.watch(distributionFlavorProvider.future);
+
+  if (flavor == DistributionFlavor.foss) {
+    return AospLocationProvider();
+  }
   return LocationProvider();
 });
 
@@ -152,12 +159,14 @@ final createPointFromPositionUseCaseProvider = FutureProvider<CreatePointUseCase
 final createPointFromGpsWorkflowProvider = FutureProvider<CreatePointFromGpsWorkflow>((ref) async {
   final prefs = await ref.watch(getTrackerSettingsUseCaseProvider.future);
   final createFromPos = await ref.watch(createPointFromPositionUseCaseProvider.future);
-  return CreatePointFromGpsWorkflow(prefs, ref.watch(locationProviderProvider), createFromPos);
+  final locationProvider = await ref.watch(locationProviderProvider.future);
+  return CreatePointFromGpsWorkflow(prefs, locationProvider, createFromPos);
 });
 
 final createPointFromCacheWorkflowProvider = FutureProvider<CreatePointFromCacheWorkflow>((ref) async {
   final createFromPos = await ref.watch(createPointFromPositionUseCaseProvider.future);
-  return CreatePointFromCacheWorkflow(ref.watch(locationProviderProvider), createFromPos);
+  final locationProvider = await ref.watch(locationProviderProvider.future);
+  return CreatePointFromCacheWorkflow(locationProvider, createFromPos);
 });
 
 final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((ref) async {

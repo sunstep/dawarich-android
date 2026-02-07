@@ -1,4 +1,6 @@
 
+import 'dart:io';
+
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
 import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
@@ -7,10 +9,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option.dart';
 import 'package:option_result/result.dart';
 
-/// Location provider using geolocator package.
-/// Automatically uses Google Fused Location Provider when available (GMS build),
-/// or falls back to Android Location Manager (FOSS build with GMS excluded).
-final class LocationProvider implements ILocationProvider {
+/// AOSP-only location provider that bypasses Google Play Services.
+/// Used for F-Droid builds and other FOSS distributions.
+final class AospLocationProvider implements ILocationProvider {
 
   @override
   Future<Result<LocationFix, String>> getCurrent(LocationRequest request) async {
@@ -28,7 +29,7 @@ final class LocationProvider implements ILocationProvider {
   @override
   Future<Option<LocationFix>> getLastKnown() async {
     try {
-      Position? position = await Geolocator.getLastKnownPosition();
+      final Position? position = await Geolocator.getLastKnownPosition();
 
       if (position == null) {
         return const None();
@@ -46,6 +47,16 @@ final class LocationProvider implements ILocationProvider {
   }
 
   LocationSettings _toLocationSettings(LocationRequest request) {
+    if (Platform.isAndroid) {
+      return AndroidSettings(
+        accuracy: _toGeolocatorAccuracy(request.precision),
+        distanceFilter: request.distanceFilterMeters ?? 0,
+        timeLimit: request.timeLimit,
+        forceLocationManager: true,
+      );
+    }
+
+    // iOS and other platforms use standard settings
     return LocationSettings(
       accuracy: _toGeolocatorAccuracy(request.precision),
       distanceFilter: request.distanceFilterMeters ?? 0,
@@ -81,9 +92,12 @@ final class LocationProvider implements ILocationProvider {
       speedAccuracyMps: p.speedAccuracy,
       headingAccuracyDegrees: p.headingAccuracy,
 
-      provider: p.isMocked ? 'mock' : null,
+      provider: p.isMocked ? 'mock' : 'aosp',
       isMocked: p.isMocked,
     );
   }
 
 }
+
+
+

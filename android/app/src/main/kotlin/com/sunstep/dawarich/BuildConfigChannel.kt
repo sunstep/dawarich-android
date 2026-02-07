@@ -1,0 +1,20 @@
+package com.sunstep.dawarich
+
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
+
+
+object BuildConfigChannel {
+
+    private const val CHANNEL = "com.sunstep.dawarich/build_config"
+
+    fun register(engine: FlutterEngine) {
+        MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getFlavor" -> result.success(BuildConfig.FLAVOR_DISTRIBUTION)
+                    else -> result.notImplemented()
+                }
+            }
+    }
+}

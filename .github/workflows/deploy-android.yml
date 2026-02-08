@@ -1,0 +1,195 @@
+name: Build & Deploy Android (gms + foss)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "pubspec.yaml"
+      - "lib/**"
+      - "android/**"
+      - "tools/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Play track to deploy to"
+        required: true
+        default: "closed"
+        type: choice
+        options: [ closed, production ]
+      status:
+        description: "Play release status"
+        required: true
+        default: "draft"
+        type: choice
+        options: [ draft, inProgress, completed ]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_CHANNEL: stable
+      FLUTTER_VERSION: "3.35.5"
+      JAVA_VERSION: "21"
+
+    outputs:
+      app_version: ${{ steps.ver.outputs.app_version }}
+      build_number: ${{ steps.ver.outputs.build_number }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Setup Java (Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Gradle wrapper validation
+        uses: gradle/actions/wrapper-validation@v3
+
+      - name: Write android/local.properties (sdk.dir + flutter.sdk)
+        shell: bash
+        run: |
+          set -e
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          FLUTTER_SDK="${FLUTTER_HOME:-$(dirname "$(dirname "$(readlink -f "$(which flutter)")")")}"
+          {
+            echo "sdk.dir=${SDK_DIR}"
+            echo "flutter.sdk=${FLUTTER_SDK}"
+          } > android/local.properties
+
+      - name: Use preinstalled NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          NDK_DIR="${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-${ANDROID_NDK:-${ANDROID_NDK_LATEST_HOME:-}}}}"
+          if [ -z "${NDK_DIR}" ]; then
+            NDK_DIR=$(ls -d "${SDK_DIR}/ndk/"* 2>/dev/null | sort -V | tail -1 || true)
+          fi
+          [ -n "${NDK_DIR}" ] && [ -d "${NDK_DIR}" ] || { echo "::error::No preinstalled NDK found"; exit 1; }
+          NDK_VER="$(basename "$NDK_DIR")"
+          GP=android/gradle.properties
+          touch "${GP}"
+          if grep -q '^android\.ndkVersion=' "${GP}"; then
+            sed -i "s/^android\.ndkVersion=.*/android.ndkVersion=${NDK_VER}/" "${GP}"
+          else
+            printf '\nandroid.ndkVersion=%s\n' "${NDK_VER}" >> "${GP}"
+          fi
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Configure Gradle performance flags (safe)
+        run: |
+          sed -i '/^org\.gradle\.configuration-cache/d' android/gradle.properties || true
+          cat >> android/gradle.properties <<'EOF'
+          org.gradle.caching=true
+          org.gradle.parallel=true
+          org.gradle.daemon=true
+          org.gradle.configuration-cache=false
+          EOF
+
+      # --- dependency gate
+      - name: FOSS proprietary dependency check (release classpath)
+        shell: bash
+        run: |
+            chmod +x tools/check_proprietary_deps.sh
+            tools/check_proprietary_deps.sh fossReleaseRuntimeClasspath
+
+      # --- Signing for release builds
+      - name: Decode keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/dawarich-upload.jks
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties <<'EOF'
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=../dawarich-upload.jks
+          EOF
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build GMS AAB (release)
+        run: flutter build appbundle --release --flavor gms
+
+      - name: Build FOSS APK (release)
+        run: flutter build apk --release --flavor foss
+
+      - name: Read pubspec version
+        id: ver
+        shell: bash
+        run: |
+          VLINE=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
+          APP_VERSION="${VLINE%%+*}"
+          BUILD_NUMBER="${VLINE##*+}"
+          echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          AAB=$(ls build/app/outputs/bundle/gmsRelease/*.aab | head -1)
+          cp "$AAB" "dist/dawarich-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}-gms.aab"
+          cp "build/app/outputs/flutter-apk/app-foss-release.apk" \
+             "dist/dawarich-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}-foss.apk"
+          ls -la dist
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}
+          path: dist/*
+          retention-days: 14
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
+          path: dist
+
+      - name: Ensure whatsnew directory exists
+        run: mkdir -p distribution/whatsnew
+
+      - name: Upload to Play (GMS only)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ secrets.PACKAGE_NAME_GMS }}
+          releaseName: ${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
+          releaseFiles: dist/*-gms.aab
+          whatsNewDirectory: distribution/whatsnew
+          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'closed' }}
+          status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || 'draft' }}

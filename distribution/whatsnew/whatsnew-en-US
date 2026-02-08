@@ -1,4 +1,7 @@
 Full and more detailed release notes always available at the GitHub repository!
 
-v0.15.0
-* New Android package name to clearly separate this app as an independent/community client. 
+v0.16.0
+* This release introduces a second build flavor, which fully excludes proprietary libraries.
+* Fixed tracking to respect frequency setting changes.
+* Fixed not being able to connect with http/ ip only hosts.
+* Replaced the QR scanner with a FOSS alternative.

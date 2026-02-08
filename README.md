@@ -11,11 +11,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sunstep/dawarich-android/releases"><strong>Releases</strong></a> ·
-  <a href="https://github.com/sunstep/dawarich-android/issues"><strong>Issues</strong></a> ·
-</p>
-
-<p align="center">
   <a href="https://github.com/sunstep/dawarich-android/releases">
     <img src="https://img.shields.io/github/v/release/sunstep/dawarich-android?style=for-the-badge&label=release&logo=github" />
   </a>
@@ -44,7 +39,18 @@
 </p>
 
 <p align="center">
-<img width="1024" height="914" alt="mockup_combined" src="https://github.com/user-attachments/assets/5a825d1a-a956-4186-a073-993e0b7ca93d" />
+  <img src="https://github.com/user-attachments/assets/5a825d1a-a956-4186-a073-993e0b7ca93d"
+       alt="Dawarich Android app mockup"
+       width="900" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/sunstep/dawarich-android/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Latest%20APK-2ea44f?style=for-the-badge&logo=github" />
+  </a>
+  <a href="https://github.com/sunstep/dawarich-android/releases">
+    <img src="https://img.shields.io/github/v/release/sunstep/dawarich-android?style=for-the-badge&label=Releases&logo=github" />
+  </a>
 </p>
 
 # Features summarized
@@ -69,7 +75,7 @@ This is an **unofficial community client** and is not affiliated with the Dawari
 
 
 
-## Star History
+## Stats
 
 <a href="https://www.star-history.com/#sunstep/dawarich-android&Date">
  <picture>
@@ -77,4 +83,7 @@ This is an **unofficial community client** and is not affiliated with the Dawari
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=sunstep/dawarich-android&type=Date" />
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=sunstep/dawarich-android&type=Date" />
  </picture>
+  
 </a>
+
+![Alt](https://repobeats.axiom.co/api/embed/865774172fe6d2c5e992c1e1af707996a403a60b.svg "Repobeats analytics image")

@@ -14,9 +14,9 @@ on:
       track:
         description: "Play track to deploy to"
         required: true
-        default: "closed"
+        default: "alpha"
         type: choice
-        options: [ closed, production ]
+        options: [ alpha, production ]
       status:
         description: "Play release status"
         required: true
@@ -191,5 +191,5 @@ jobs:
           releaseName: ${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
           releaseFiles: dist/*-gms.aab
           whatsNewDirectory: distribution/whatsnew
-          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'closed' }}
+          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'alpha' }}
           status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || 'draft' }}

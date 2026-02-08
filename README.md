@@ -35,7 +35,7 @@
 </p>
 
 <p align="center">
-  <em>Unofficial community client — not affiliated with the Dawarich maintainer.</em>
+  <em>⚠️ Unofficial community client: not affiliated with the Dawarich maintainer ⚠️ </em>
 </p>
 
 <p align="center">

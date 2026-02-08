@@ -12,7 +12,7 @@ object BuildConfigChannel {
         MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "getFlavor" -> result.success(BuildConfig.FLAVOR_DISTRIBUTION)
+                    "getFlavor" -> result.success(BuildConfig.FLAVOR)
                     else -> result.notImplemented()
                 }
             }

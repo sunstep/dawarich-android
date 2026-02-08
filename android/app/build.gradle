@@ -95,18 +95,20 @@ android {
         }
     }
 
-    flavorDimensions = ["distribution"]
+    flavorDimensions += "distribution"
 
     productFlavors {
         gms {
             dimension "distribution"
-            buildConfigField "String", "FLAVOR_DISTRIBUTION", '"gms"'
+
+            versionNameSuffix "-gms"
         }
         foss {
             dimension "distribution"
-            buildConfigField "String", "FLAVOR_DISTRIBUTION", '"foss"'
 
             proguardFiles 'proguard-foss-rules.pro'
+            applicationIdSuffix ".foss"
+            versionNameSuffix "-foss"
         }
     }
 

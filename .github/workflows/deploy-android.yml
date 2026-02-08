@@ -169,6 +169,7 @@ jobs:
           retention-days: 14
 
   upload:
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'release:')
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -192,4 +193,4 @@ jobs:
           releaseFiles: dist/*-gms.aab
           whatsNewDirectory: distribution/whatsnew
           track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'alpha' }}
-          status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || 'draft' }}
+          status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || 'completed' }}

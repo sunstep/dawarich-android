@@ -109,6 +109,9 @@ jobs:
           org.gradle.configuration-cache=false
           EOF
 
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
       # --- dependency gate
       - name: FOSS proprietary dependency check (release classpath)
         shell: bash
@@ -130,9 +133,6 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=../dawarich-upload.jks
           EOF
-
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
 
       - name: Build GMS AAB (release)
         run: flutter build appbundle --release --flavor gms

@@ -14,9 +14,9 @@ on:
       track:
         description: "Play track to deploy to"
         required: true
-        default: "closed"
+        default: "alpha"
         type: choice
-        options: [ closed, production ]
+        options: [ alpha, production ]
       status:
         description: "Play release status"
         required: true
@@ -109,6 +109,9 @@ jobs:
           org.gradle.configuration-cache=false
           EOF
 
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
       # --- dependency gate
       - name: FOSS proprietary dependency check (release classpath)
         shell: bash
@@ -130,9 +133,6 @@ jobs:
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=../dawarich-upload.jks
           EOF
-
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
 
       - name: Build GMS AAB (release)
         run: flutter build appbundle --release --flavor gms
@@ -191,5 +191,5 @@ jobs:
           releaseName: ${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
           releaseFiles: dist/*-gms.aab
           whatsNewDirectory: distribution/whatsnew
-          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'closed' }}
+          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'alpha' }}
           status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || 'draft' }}

@@ -12,8 +12,15 @@ dependencies {
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
+def hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+} else {
+    println("[WARN] keystore.properties not found. Falling back to default debug signing for non-release tasks.")
+}
 android {
     namespace = "com.sunstep.dawarich"
     compileSdk = 36
@@ -43,29 +50,32 @@ android {
     }
 
     signingConfigs {
-        debug {
-            // Keep debug signing stable across rebuilds/machines.
-            // This matches Flutter/Gradle defaults and ensures Android Keystore-backed
-            // data (e.g., flutter_secure_storage encryptedSharedPreferences) stays readable.
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-            storeType     'pkcs12'
-        }
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-            storeType     'pkcs12'
+        if (hasKeystore) {
+            debug {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                storeType 'pkcs12'
+            }
+            release {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                storeType 'pkcs12'
+            }
         }
     }
 
     buildTypes {
         release {
-            // attach the signing config
-            signingConfig signingConfigs.release
+
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
 
             // Make sure release label stays clean.
             resValue "string", "app_name", "Dawarich"
@@ -88,7 +98,9 @@ android {
             versionNameSuffix "-debug"
 
             // Use stable debug signing. Helps prevent "lost" secure storage on reinstall.
-            signingConfig signingConfigs.debug
+            if (hasKeystore) {
+                signingConfig signingConfigs.debug
+            }
 
             // Distinct launcher name.
             resValue "string", "app_name", "Dawarich (Dev)"

@@ -1,6 +1,8 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 final class ReactivePeriodicTicker {
 
   final Stream<Duration> _period$;
@@ -22,7 +24,11 @@ final class ReactivePeriodicTicker {
     _running = true;
 
     _periodSub = _period$.listen((d) {
-      _current = d > Duration.zero ? d : const Duration(seconds: 1);
+      final newDuration = d > Duration.zero ? d : const Duration(seconds: 1);
+      if (kDebugMode) {
+        debugPrint("[ReactivePeriodicTicker] Period changed: ${_current.inSeconds}s -> ${newDuration.inSeconds}s");
+      }
+      _current = newDuration;
       _restartTimer();
     });
 
@@ -40,7 +46,13 @@ final class ReactivePeriodicTicker {
   void _restartTimer() {
     _timer?.cancel();
     if (!_running) return;
+    if (kDebugMode) {
+      debugPrint("[ReactivePeriodicTicker] Starting new timer with period: ${_current.inSeconds}s");
+    }
     _timer = Timer.periodic(_current, (_) {
+      if (kDebugMode) {
+        debugPrint("[ReactivePeriodicTicker] Timer tick fired (period: ${_current.inSeconds}s)");
+      }
       if (!_ticks.isClosed) _ticks.add(null);
     });
   }

@@ -94,8 +94,35 @@ android {
             resValue "string", "app_name", "Dawarich (Dev)"
         }
     }
+
+    flavorDimensions += "distribution"
+
+    productFlavors {
+        gms {
+            dimension "distribution"
+
+            versionNameSuffix "-gms"
+        }
+        foss {
+            dimension "distribution"
+
+            proguardFiles 'proguard-foss-rules.pro'
+            applicationIdSuffix ".foss"
+            versionNameSuffix "-foss"
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+// Exclude Google Play Services from FOSS builds
+configurations.matching { it.name.toLowerCase().contains("foss") }.configureEach {
+    exclude group: "com.google.android.gms"
 }
 
 flutter {
     source = "../.."
 }
+

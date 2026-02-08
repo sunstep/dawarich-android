@@ -1,11 +1,11 @@
 
-import 'package:geolocator/geolocator.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 
 final class TrackerSettings {
   final int userId;
   final bool automaticTracking;
   final int trackingFrequency;
-  final LocationAccuracy locationAccuracy;
+  final LocationPrecision locationPrecision;
   final int minimumPointDistance;
   final int pointsPerBatch;
   final String deviceId;
@@ -14,7 +14,7 @@ final class TrackerSettings {
     required this.userId,
     required this.automaticTracking,
     required this.trackingFrequency,
-    required this.locationAccuracy,
+    required this.locationPrecision,
     required this.minimumPointDistance,
     required this.pointsPerBatch,
     required this.deviceId,
@@ -23,7 +23,7 @@ final class TrackerSettings {
   TrackerSettings copyWith({
     bool? automaticTracking,
     int? trackingFrequency,
-    LocationAccuracy? locationAccuracy,
+    LocationPrecision? locationPrecision,
     int? minimumPointDistance,
     int? pointsPerBatch,
     String? deviceId
@@ -32,7 +32,7 @@ final class TrackerSettings {
       userId: userId,
       automaticTracking: automaticTracking ?? this.automaticTracking,
       trackingFrequency: trackingFrequency ?? this.trackingFrequency,
-      locationAccuracy: locationAccuracy ?? this.locationAccuracy,
+      locationPrecision: locationPrecision ?? this.locationPrecision,
       minimumPointDistance: minimumPointDistance ?? this.minimumPointDistance,
       pointsPerBatch: pointsPerBatch ?? this.pointsPerBatch,
       deviceId: deviceId ?? this.deviceId

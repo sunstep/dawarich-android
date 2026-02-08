@@ -18,11 +18,8 @@ final class PointAutomationService {
   bool _writeBusy = false;
   int? _userId;
 
-  late final ReactivePeriodicTicker _gpsTicker;
-  late final ReactivePeriodicTicker _cacheTicker;
-
-  StreamSubscription<void>? _gpsSub;
-  StreamSubscription<void>? _cacheSub;
+  late final ReactivePeriodicTicker _ticker;
+  StreamSubscription<void>? _tickerSub;
 
   final WatchTrackerSettingsUseCase _watchTrackerSettings;
   final CreatePointFromGpsWorkflow _createPointFromGps;
@@ -64,22 +61,17 @@ final class PointAutomationService {
       final freq$ = _watchTrackerSettings(userId)
           .map((s) {
         final seconds = s.trackingFrequency;
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Settings changed, frequency: ${seconds}s");
+        }
         return Duration(seconds: seconds > 0 ? seconds : 10);
       }).distinct();
 
-      _gpsTicker = ReactivePeriodicTicker(freq$);
-      _cacheTicker = ReactivePeriodicTicker(Stream.value(const Duration(seconds: 5)));
+      _ticker = ReactivePeriodicTicker(freq$);
+      _ticker.start(immediate: true);
 
-      _gpsTicker.start(immediate: true);
-      _cacheTicker.start();
-
-      _gpsSub = _gpsTicker.ticks.listen((_) async {
-        await _gpsTimerHandler();
-      });
-
-      _cacheSub = _cacheTicker.ticks.listen((_) async {
-
-        await _cacheTimerHandler();
+      _tickerSub = _ticker.ticks.listen((_) async {
+        await _tickHandler();
       });
 
     }
@@ -101,94 +93,70 @@ final class PointAutomationService {
       _isTracking = false;
       _userId = null;
 
-      await _gpsSub?.cancel();
-      _gpsSub = null;
+      await _tickerSub?.cancel();
+      _tickerSub = null;
 
-      await _cacheSub?.cancel();
-      _cacheSub = null;
-
-      await _gpsTicker.stop();
-      await _cacheTicker.stop();
+      await _ticker.stop();
       debugPrint("[PointAutomation] Tracking stopped");
     }
 
   }
 
-  /// Forces a new position fetch by calling localPointService.createNewPoint().
-  Future<void> _gpsTimerHandler() async {
+  /// Unified tick handler - tries cache first, falls back to GPS if needed.
+  Future<void> _tickHandler() async {
     final userId = _userId;
     if (userId == null) return;
 
     if (_writeBusy) {
       if (kDebugMode) {
-        debugPrint("[PointAutomation] Skipping GPS point creation, write busy.");
+        debugPrint("[PointAutomation] Skipping tick, write busy.");
       }
       return;
-    }
-
-    if (kDebugMode) {
-      debugPrint("[PointAutomation] Creating new GPS point...");
     }
 
     _writeBusy = true;
 
     try {
-      final result = await _createPointFromGps(userId);
+      // Try cache first (cheaper operation)
+      final cacheResult = await _createPointFromCache(userId);
 
-      if (result case Ok(value: final point)) {
-        // Store the point in the database
+      if (cacheResult case Ok(value: final point)) {
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Created point from cache");
+        }
         final storeResult = await _storePoint(point);
         if (storeResult case Ok()) {
+          await _notify(userId);
+          await _checkAndUploadBatch(userId);
+          return; // Success, no need to try GPS
+        } else if (storeResult case Err(value: final err)) {
+          debugPrint("[PointAutomation] Failed to store cached point: $err");
+        }
+      }
+
+      // Cache failed or no cached data, try GPS
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Cache unavailable, fetching fresh GPS...");
+      }
+
+      final gpsResult = await _createPointFromGps(userId);
+
+      if (gpsResult case Ok(value: final point)) {
+        final storeResult = await _storePoint(point);
+        if (storeResult case Ok()) {
+          if (kDebugMode) {
+            debugPrint("[PointAutomation] Created point from GPS");
+          }
           await _notify(userId);
           await _checkAndUploadBatch(userId);
         } else if (storeResult case Err(value: final err)) {
           debugPrint("[PointAutomation] Failed to store GPS point: $err");
         }
-      } else if (result case Err(value: final err)) {
-        debugPrint("[PointAutomation] Forced GPS point not created: $err");
+      } else if (gpsResult case Err(value: final err)) {
+        debugPrint("[PointAutomation] GPS point not created: $err");
       }
     } catch (e, s) {
-      debugPrint("[PointAutomation] Error creating new GPS point: $e\n$s");
-    } finally {
-      _writeBusy = false;
-    }
-
-  }
-
-  Future<void> _cacheTimerHandler() async {
-    final userId = _userId;
-    if (userId == null) return;
-
-    if (_writeBusy) {
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Skipping cached point creation, write busy.");
-      }
-      return;
-    }
-
-    if (kDebugMode) {
-      debugPrint("[PointAutomation] Creating new cached point...");
-    }
-
-    _writeBusy = true;
-
-    try {
-      final res = await _createPointFromCache(userId);
-      if (res case Ok(value: final point)) {
-        // Store the point in the database
-        final storeResult = await _storePoint(point);
-        if (storeResult case Ok()) {
-          _gpsTicker.snooze();
-          await _notify(userId);
-          await _checkAndUploadBatch(userId);
-        } else if (storeResult case Err(value: final err)) {
-          debugPrint("[PointAutomation] Failed to store cached point: $err");
-        }
-      }
-    } catch (_) {
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Error creating new cached point.");
-      }
+      debugPrint("[PointAutomation] Error in tick handler: $e\n$s");
     } finally {
       _writeBusy = false;
     }

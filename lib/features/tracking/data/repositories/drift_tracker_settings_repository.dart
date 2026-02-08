@@ -1,12 +1,10 @@
-
-
-
 import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/repositories/tracker_settings_repository.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
 import 'package:drift/drift.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
 
 final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository {
 
@@ -30,7 +28,7 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
       userId: userId,
       automaticTracking: false,
       trackingFrequency: 10,
-      locationAccuracy: LocationAccuracy.high,
+      locationPrecision: LocationPrecision.high,
       minimumPointDistance: 0,
       pointsPerBatch: 50,
       deviceId: deviceId,
@@ -45,13 +43,21 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
 
   @override
   Future<void> set({required TrackerSettings settings}) async {
-
+    if (kDebugMode) {
+      debugPrint("[TrackerSettingsRepo] Saving settings: freq=${settings.trackingFrequency}s, precision=${settings.locationPrecision}");
+    }
     final companion = _toCompanion((settings));
     await _db.into(_db.trackerSettingsTable).insertOnConflictUpdate(companion);
+    if (kDebugMode) {
+      debugPrint("[TrackerSettingsRepo] Settings saved successfully");
+    }
   }
 
   @override
   Stream<TrackerSettings> watch({required int userId}) async * {
+    if (kDebugMode) {
+      debugPrint("[TrackerSettingsRepo] Setting up watch for userId: $userId");
+    }
 
     final q = (_db.select(_db.trackerSettingsTable)
       ..where((t) => t.userId.equals(userId)));
@@ -62,18 +68,28 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
       userId: userId,
       automaticTracking: false,
       trackingFrequency: 10,
-      locationAccuracy: LocationAccuracy.high,
+      locationPrecision: LocationPrecision.high,
       minimumPointDistance: 0,
       pointsPerBatch: 50,
       deviceId: defaultDeviceId,
     );
 
     yield * q.watchSingleOrNull().map((row) {
+      if (kDebugMode) {
+        debugPrint("[TrackerSettingsRepo] Watch received DB update, row: ${row?.trackingFrequency}s");
+      }
 
       if (row == null) {
+        if (kDebugMode) {
+          debugPrint("[TrackerSettingsRepo] Watch emitting defaults (no row)");
+        }
         return defaults;
       }
-      return _fromRow(row, defaults: defaults);
+      final settings = _fromRow(row, defaults: defaults);
+      if (kDebugMode) {
+        debugPrint("[TrackerSettingsRepo] Watch emitting: freq=${settings.trackingFrequency}s, precision=${settings.locationPrecision}");
+      }
+      return settings;
     });
 
   }
@@ -91,7 +107,9 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
     userId: r.userId,
     automaticTracking: r.automaticTracking ?? defaults.automaticTracking,
     trackingFrequency: r.trackingFrequency ?? defaults.trackingFrequency,
-    locationAccuracy:  r.locationAccuracy != null ? LocationAccuracy.values[r.locationAccuracy!] : defaults.locationAccuracy,
+    locationPrecision: r.locationAccuracy != null
+        ? LocationPrecision.fromCode(r.locationAccuracy!)
+        : defaults.locationPrecision,
     minimumPointDistance: r.minimumPointDistance ?? defaults.minimumPointDistance,
     pointsPerBatch: r.pointsPerBatch ?? defaults.pointsPerBatch,
     deviceId: r.deviceId ?? defaults.deviceId,
@@ -102,7 +120,7 @@ final class DriftTrackerSettingsRepository implements ITrackerSettingsRepository
         userId: Value(s.userId),
         automaticTracking: Value(s.automaticTracking),
         trackingFrequency: Value(s.trackingFrequency),
-        locationAccuracy: Value(s.locationAccuracy.index),
+        locationAccuracy: Value(s.locationPrecision.code),
         minimumPointDistance: Value(s.minimumPointDistance),
         pointsPerBatch: Value(s.pointsPerBatch),
         deviceId: Value(s.deviceId),

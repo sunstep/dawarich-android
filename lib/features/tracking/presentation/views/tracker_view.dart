@@ -4,11 +4,11 @@ import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -579,12 +579,12 @@ class _AdvancedSettingsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        DropdownButton<LocationAccuracy>(
+        DropdownButton<LocationPrecision>(
           value: vm.locationAccuracy,
           onChanged: (v) => v != null ? vm.setLocationAccuracy(v) : null,
           items: vm.accuracyOptions.map((opt) {
             return DropdownMenuItem(
-              value: opt['value'] as LocationAccuracy,
+              value: opt['value'] as LocationPrecision,
               child: Text(opt['label'] as String),
             );
           }).toList(),

@@ -1,0 +1,4 @@
+Full and more detailed release notes are always available at the GitHub repository!
+
+v0.16.1 - foss
+* Also exclude non-free libraries from dependencies, and not just from this app.

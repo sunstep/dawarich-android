@@ -129,9 +129,22 @@ android {
     }
 }
 
-// Exclude Google Play Services from FOSS builds
+// Exclude Google Play Services from FOSS builds only
+// This applies to the app module
 configurations.matching { it.name.toLowerCase().contains("foss") }.configureEach {
     exclude group: "com.google.android.gms"
+}
+
+// Apply GMS exclusion to ALL subprojects (including Flutter plugins) but ONLY for FOSS configurations
+rootProject.subprojects { subproject ->
+    subproject.afterEvaluate {
+        subproject.configurations.configureEach { config ->
+            def configName = config.name.toLowerCase()
+            if (configName.startsWith("foss") || configName.contains("foss")) {
+                config.exclude group: "com.google.android.gms"
+            }
+        }
+    }
 }
 
 flutter {

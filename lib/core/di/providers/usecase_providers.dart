@@ -31,6 +31,7 @@ import 'package:dawarich/features/tracking/application/usecases/get_last_point_u
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_cache_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_location_stream_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_device_model_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
@@ -169,10 +170,15 @@ final createPointFromCacheWorkflowProvider = FutureProvider<CreatePointFromCache
   return CreatePointFromCacheWorkflow(locationProvider, createFromPos);
 });
 
+final createPointFromLocationStreamWorkflowProvider = FutureProvider<CreatePointFromLocationStreamWorkflow>((ref) async {
+  final getSettings = await ref.watch(getTrackerSettingsUseCaseProvider.future);
+  final locationProvider = await ref.watch(locationProviderProvider.future);
+  final createFromPos = await ref.watch(createPointFromPositionUseCaseProvider.future);
+  return CreatePointFromLocationStreamWorkflow(getSettings, locationProvider, createFromPos);
+});
+
 final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((ref) async {
-  final watchSettings = await ref.watch(watchTrackerSettingsUseCaseProvider.future);
-  final createGps = await ref.watch(createPointFromGpsWorkflowProvider.future);
-  final createCache = await ref.watch(createPointFromCacheWorkflowProvider.future);
+  final createStream = await ref.watch(createPointFromLocationStreamWorkflowProvider.future);
   final storePoint = await ref.watch(storePointUseCaseProvider.future);
   final batchCount = await ref.watch(getBatchPointCountUseCaseProvider.future);
   final showNotif = ref.watch(showTrackerNotificationUseCaseProvider);
@@ -186,9 +192,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final batchUploadWorkflow = BatchUploadWorkflowUseCase(apiRepo, localRepo);
 
   return PointAutomationService(
-    watchSettings,
-    createGps,
-    createCache,
+    createStream,
     storePoint,
     batchCount,
     showNotif,

@@ -1,4 +1,6 @@
 
+import 'dart:io';
+
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
 import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
@@ -45,7 +47,25 @@ final class LocationProvider implements ILocationProvider {
     return Geolocator.isLocationServiceEnabled();
   }
 
+  @override
+  Stream<LocationFix> getLocationStream(LocationRequest request) {
+    final Stream<Position> positionStream = Geolocator.getPositionStream(
+      locationSettings: _toLocationSettings(request),
+    );
+
+    return positionStream.map(_toFix);
+  }
+
   LocationSettings _toLocationSettings(LocationRequest request) {
+    if (Platform.isAndroid) {
+      return AndroidSettings(
+        accuracy: _toGeolocatorAccuracy(request.precision),
+        distanceFilter: request.distanceFilterMeters ?? 0,
+        timeLimit: request.timeLimit,
+        intervalDuration: request.intervalDuration ?? const Duration(seconds: 10),
+      );
+    }
+
     return LocationSettings(
       accuracy: _toGeolocatorAccuracy(request.precision),
       distanceFilter: request.distanceFilterMeters ?? 0,

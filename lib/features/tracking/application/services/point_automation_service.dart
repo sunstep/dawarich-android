@@ -4,26 +4,17 @@ import 'package:dawarich/features/batch/application/usecases/check_batch_thresho
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
-import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_cache_workflow.dart';
-import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_location_stream_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
-import 'package:dawarich/features/tracking/application/usecases/settings/watch_tracker_settings_usecase.dart';
-import 'package:dawarich/features/tracking/data/repositories/reactive_periodic_ticker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
 final class PointAutomationService {
-
   bool _isTracking = false;
   bool _writeBusy = false;
-  int? _userId;
+  StreamSubscription<Result<dynamic, String>>? _locationStreamSub;
 
-  late final ReactivePeriodicTicker _ticker;
-  StreamSubscription<void>? _tickerSub;
-
-  final WatchTrackerSettingsUseCase _watchTrackerSettings;
-  final CreatePointFromGpsWorkflow _createPointFromGps;
-  final CreatePointFromCacheWorkflow _createPointFromCache;
+  final CreatePointFromLocationStreamWorkflow _createPointFromLocationStream;
   final StorePointUseCase _storePoint;
   final GetBatchPointCountUseCase _getBatchPointCount;
   final ShowTrackerNotificationUseCase _showTrackerNotification;
@@ -32,84 +23,64 @@ final class PointAutomationService {
   final BatchUploadWorkflowUseCase _batchUploadWorkflow;
 
   PointAutomationService(
-      this._watchTrackerSettings,
-      this._createPointFromGps,
-      this._createPointFromCache,
-      this._storePoint,
-      this._getBatchPointCount,
-      this._showTrackerNotification,
-      this._checkBatchThreshold,
-      this._getCurrentBatch,
-      this._batchUploadWorkflow,
+    this._createPointFromLocationStream,
+    this._storePoint,
+    this._getBatchPointCount,
+    this._showTrackerNotification,
+    this._checkBatchThreshold,
+    this._getCurrentBatch,
+    this._batchUploadWorkflow,
   );
 
   Future<void> startTracking(int userId) async {
+    if (_isTracking) return;
 
     if (kDebugMode) {
-      debugPrint("[PointAutomation] Starting automatic tracking if not already started...");
+      debugPrint("[PointAutomation] Starting automatic tracking with location stream...");
     }
 
-    if (!_isTracking) {
+    _isTracking = true;
 
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Starting automatic tracking...");
-      }
+    // Use location stream for automatic tracking - more battery efficient
+    // than polling because the OS can optimize location updates
+    final pointStream = _createPointFromLocationStream.getPointStream(userId);
 
-      _isTracking = true;
-      _userId = userId;
-
-      final freq$ = _watchTrackerSettings(userId)
-          .map((s) {
-        final seconds = s.trackingFrequency;
+    _locationStreamSub = pointStream.listen(
+      (result) async {
+        await _handleLocationUpdate(result, userId);
+      },
+      onError: (error, stackTrace) {
         if (kDebugMode) {
-          debugPrint("[PointAutomation] Settings changed, frequency: ${seconds}s");
+          debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
         }
-        return Duration(seconds: seconds > 0 ? seconds : 10);
-      }).distinct();
-
-      _ticker = ReactivePeriodicTicker(freq$);
-      _ticker.start(immediate: true);
-
-      _tickerSub = _ticker.ticks.listen((_) async {
-        await _tickHandler();
-      });
-
-    }
+      },
+      onDone: () {
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Location stream completed");
+        }
+      },
+      cancelOnError: false, // Continue listening even if there's an error
+    );
   }
 
   /// Stop everything if user logs out, or toggles the preference off.
   Future<void> stopTracking() async {
+    if (!_isTracking) return;
 
     if (kDebugMode) {
-      debugPrint("[PointAutomation] Stopping automatic tracking if active...");
+      debugPrint("[PointAutomation] Stopping automatic tracking...");
     }
 
-    if (_isTracking) {
-
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Stopping automatic tracking...");
-      }
-
-      _isTracking = false;
-      _userId = null;
-
-      await _tickerSub?.cancel();
-      _tickerSub = null;
-
-      await _ticker.stop();
-      debugPrint("[PointAutomation] Tracking stopped");
-    }
-
+    _isTracking = false;
+    await _locationStreamSub?.cancel();
+    _locationStreamSub = null;
   }
 
-  /// Unified tick handler - tries cache first, falls back to GPS if needed.
-  Future<void> _tickHandler() async {
-    final userId = _userId;
-    if (userId == null) return;
-
+  /// Handles location updates from the stream
+  Future<void> _handleLocationUpdate(Result<dynamic, String> result, int userId) async {
     if (_writeBusy) {
       if (kDebugMode) {
-        debugPrint("[PointAutomation] Skipping tick, write busy.");
+        debugPrint("[PointAutomation] Skipping location update, write busy.");
       }
       return;
     }
@@ -117,46 +88,24 @@ final class PointAutomationService {
     _writeBusy = true;
 
     try {
-      // Try cache first (cheaper operation)
-      final cacheResult = await _createPointFromCache(userId);
-
-      if (cacheResult case Ok(value: final point)) {
+      if (result case Ok(value: final point)) {
         if (kDebugMode) {
-          debugPrint("[PointAutomation] Created point from cache");
+          debugPrint("[PointAutomation] Storing point from location stream");
         }
+
         final storeResult = await _storePoint(point);
+
         if (storeResult case Ok()) {
           await _notify(userId);
           await _checkAndUploadBatch(userId);
-          return; // Success, no need to try GPS
         } else if (storeResult case Err(value: final err)) {
-          debugPrint("[PointAutomation] Failed to store cached point: $err");
+          debugPrint("[PointAutomation] Failed to store point: $err");
         }
-      }
-
-      // Cache failed or no cached data, try GPS
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Cache unavailable, fetching fresh GPS...");
-      }
-
-      final gpsResult = await _createPointFromGps(userId);
-
-      if (gpsResult case Ok(value: final point)) {
-        final storeResult = await _storePoint(point);
-        if (storeResult case Ok()) {
-          if (kDebugMode) {
-            debugPrint("[PointAutomation] Created point from GPS");
-          }
-          await _notify(userId);
-          await _checkAndUploadBatch(userId);
-        } else if (storeResult case Err(value: final err)) {
-          debugPrint("[PointAutomation] Failed to store GPS point: $err");
-        }
-      } else if (gpsResult case Err(value: final err)) {
-        debugPrint("[PointAutomation] GPS point not created: $err");
+      } else if (result case Err(value: final err)) {
+        debugPrint("[PointAutomation] Point creation error: $err");
       }
     } catch (e, s) {
-      debugPrint("[PointAutomation] Error in tick handler: $e\n$s");
+      debugPrint("[PointAutomation] Error handling location update: $e\n$s");
     } finally {
       _writeBusy = false;
     }

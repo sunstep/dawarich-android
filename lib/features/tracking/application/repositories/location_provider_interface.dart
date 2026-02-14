@@ -12,4 +12,9 @@ abstract class ILocationProvider {
 
   /// Checks if location services are enabled on the device.
   Future<bool> isLocationServiceEnabled();
+
+  /// Returns a stream of location fixes based on the request settings.
+  /// The stream emits whenever the device receives a new location update
+  /// from the OS.
+  Stream<LocationFix> getLocationStream(LocationRequest request);
 }

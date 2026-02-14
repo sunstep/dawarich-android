@@ -46,6 +46,15 @@ final class AospLocationProvider implements ILocationProvider {
     return Geolocator.isLocationServiceEnabled();
   }
 
+  @override
+  Stream<LocationFix> getLocationStream(LocationRequest request) {
+    final Stream<Position> positionStream = Geolocator.getPositionStream(
+      locationSettings: _toLocationSettings(request),
+    );
+
+    return positionStream.map(_toFix);
+  }
+
   LocationSettings _toLocationSettings(LocationRequest request) {
     if (Platform.isAndroid) {
       return AndroidSettings(
@@ -53,6 +62,7 @@ final class AospLocationProvider implements ILocationProvider {
         distanceFilter: request.distanceFilterMeters ?? 0,
         timeLimit: request.timeLimit,
         forceLocationManager: true,
+        intervalDuration: request.intervalDuration ?? const Duration(seconds: 10),
       );
     }
 

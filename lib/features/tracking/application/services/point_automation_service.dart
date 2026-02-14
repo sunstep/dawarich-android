@@ -12,6 +12,7 @@ import 'package:option_result/option_result.dart';
 final class PointAutomationService {
   bool _isTracking = false;
   bool _writeBusy = false;
+  int? _currentUserId;
   StreamSubscription<Result<dynamic, String>>? _locationStreamSub;
 
   final CreatePointFromLocationStreamWorkflow _createPointFromLocationStream;
@@ -32,6 +33,9 @@ final class PointAutomationService {
     this._batchUploadWorkflow,
   );
 
+  /// Whether automatic tracking is currently active
+  bool get isTracking => _isTracking;
+
   Future<void> startTracking(int userId) async {
     if (_isTracking) return;
 
@@ -40,6 +44,7 @@ final class PointAutomationService {
     }
 
     _isTracking = true;
+    _currentUserId = userId;
 
     // Use location stream for automatic tracking - more battery efficient
     // than polling because the OS can optimize location updates
@@ -72,8 +77,23 @@ final class PointAutomationService {
     }
 
     _isTracking = false;
+    _currentUserId = null;
     await _locationStreamSub?.cancel();
     _locationStreamSub = null;
+  }
+
+  /// Restart tracking to apply new settings (e.g., frequency change)
+  Future<void> restartTracking() async {
+    if (!_isTracking || _currentUserId == null) return;
+
+    final userId = _currentUserId!;
+
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Restarting tracking to apply new settings...");
+    }
+
+    await stopTracking();
+    await startTracking(userId);
   }
 
   /// Handles location updates from the stream

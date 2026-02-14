@@ -140,6 +140,24 @@ class BackgroundTrackingEntry {
         await shutdown(backgroundService, 'stopService event');
       }
     });
+
+    backgroundService.on('restartTracking').listen((event) async {
+      final requestId = event?['requestId'];
+      try {
+        final container = _container;
+        if (container != null) {
+          final automation = await container.read(pointAutomationServiceProvider.future);
+          await automation.restartTracking();
+          if (kDebugMode) {
+            debugPrint('[Background] Tracking restarted successfully');
+          }
+        }
+      } catch (e, s) {
+        debugPrint('[Background] Error restarting tracking: $e\n$s');
+      } finally {
+        backgroundService.invoke('trackingRestarted', {'requestId': requestId});
+      }
+    });
   }
 
   static Future<void> shutdown(ServiceInstance svc, String reason) async {
@@ -337,6 +355,44 @@ final class BackgroundTrackingService {
     } finally {
       await sub.cancel();
       _isStopping = false;
+    }
+  }
+
+  /// Restart tracking to apply new settings (e.g., frequency change)
+  static Future<void> restartTracking() async {
+    final service = FlutterBackgroundService();
+
+    final isRunning = await service.isRunning();
+    if (!isRunning) {
+      debugPrint('[BackgroundService] Restart skipped: service not running');
+      return;
+    }
+
+    final requestId = DateTime.now().millisecondsSinceEpoch.toString();
+    final restartCompleter = Completer<void>();
+
+    final sub = service.on('trackingRestarted').listen((event) {
+      final eventId = event?['requestId'];
+      if (eventId == requestId) {
+        debugPrint('[BackgroundService] Restart confirmed for requestId $requestId.');
+        restartCompleter.complete();
+      }
+    });
+
+    debugPrint('[BackgroundService] Sending restartTracking request with ID $requestId...');
+    service.invoke('restartTracking', {'requestId': requestId});
+
+    try {
+      await restartCompleter.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('[BackgroundService] Restart confirmation timed out for requestId $requestId.');
+        },
+      );
+    } catch (_) {
+      debugPrint('[BackgroundService] Restart confirmation failed or timed out.');
+    } finally {
+      await sub.cancel();
     }
   }
 

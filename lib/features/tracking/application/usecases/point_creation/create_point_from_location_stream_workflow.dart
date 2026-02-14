@@ -80,7 +80,17 @@ final class CreatePointFromLocationStreamWorkflow {
         }
       }
 
-      Timer.periodic(Duration(seconds: trackingFrequencySeconds), (timer) async {
+      // Determine the timer duration - ASAP mode uses 500ms, otherwise use user setting
+      final timerDuration = trackingFrequencySeconds == 0
+          ? const Duration(milliseconds: 500)
+          : Duration(seconds: trackingFrequencySeconds);
+
+      if (kDebugMode) {
+        debugPrint('[LocationStream] Starting timer with duration: $timerDuration');
+      }
+
+      // Use timer for precise frequency control (works for both ASAP and normal modes)
+      Timer.periodic(timerDuration, (timer) async {
         if (controller.isClosed) {
           timer.cancel();
           return;

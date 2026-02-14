@@ -508,6 +508,11 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     final updated = copy.copyWith(trackingFrequency: seconds);
     _applySettings(updated);
     await _saveTrackerSettings(updated);
+
+    // Restart tracking if currently active to apply the new frequency
+    if (_isTrackingAutomatically) {
+      await BackgroundTrackingService.restartTracking();
+    }
   }
 
   Future<void> setLocationAccuracy(LocationPrecision accuracy) async {

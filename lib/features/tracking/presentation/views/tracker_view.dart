@@ -405,11 +405,45 @@ class _RecordingSection extends StatelessWidget {
   }
 }
 
-class _BasicSettingsSection extends StatelessWidget {
+class _BasicSettingsSection extends StatefulWidget {
+  @override
+  State<_BasicSettingsSection> createState() => _BasicSettingsSectionState();
+}
+
+class _BasicSettingsSectionState extends State<_BasicSettingsSection> {
+  late TextEditingController _frequencyController;
+  bool _frequencyInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _frequencyController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _frequencyController.dispose();
+    super.dispose();
+  }
+
+  void _applyFrequency(TrackerPageViewModel vm) {
+    final parsed = int.tryParse(_frequencyController.text);
+    if (parsed != null && parsed >= 0) {
+      vm.setTrackingFrequency(parsed);
+      _frequencyController.text = parsed.toString();
+    }
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<TrackerPageViewModel>();
     final theme = Theme.of(context);
+
+    if (!_frequencyInitialized) {
+      _frequencyController.text = vm.trackingFrequency.toString();
+      _frequencyInitialized = true;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,33 +562,42 @@ class _BasicSettingsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        Text('Tracking frequency: ${vm.trackingFrequency}s'),
-        Row(
-          children: [
-            Expanded(
-              child: Slider(
-                value: vm.trackingFrequency.toDouble(),
-                min: 5,
-                max: 60,
-                divisions: 11,
-                label: '${vm.trackingFrequency}s',
-                onChanged: (v) => vm.setTrackingFrequency(v.toInt()),
+        Text('Tracking frequency: ${_formatFrequency(vm.trackingFrequency)}'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+          child: TextField(
+            controller: _frequencyController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              isDense: true,
+              isCollapsed: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+              filled: false,
+              hintText: '0 = as soon as possible',
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline, width: 1),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 2),
               ),
             ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 48,
-              child: Text(
-                '${vm.trackingFrequency}s',
-                textAlign: TextAlign.right,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          ],
+            onSubmitted: (_) => _applyFrequency(vm),
+            onEditingComplete: () => _applyFrequency(vm),
+          ),
         ),
       ],
     );
+  }
+
+  String _formatFrequency(int seconds) {
+    if (seconds == 0) {
+      return 'ASAP';
+    }
+    return '${seconds}s';
   }
 }
 

@@ -82,22 +82,31 @@ final class CreatePointFromLocationStreamWorkflow {
     }
 
     LocationFix? lastRecordedFix;
+    bool isFirstPoint = true;
 
     try {
-      // Get initial position
-      final initialResult = await _locationProvider.getCurrent(request);
-      if (initialResult case Ok(value: final fix)) {
-        lastRecordedFix = fix;
-        final timestamp = DateTime.now().toUtc();
-        final pointResult = await _createPointFromLocationFix(fix, timestamp, userId);
-        if (pointResult case Ok(value: final point)) {
-          yield Ok(point);
-        }
-      }
-
+      // Listen to location stream, first emission becomes the initial point
       final locationStream = _locationProvider.getLocationStream(request);
 
       await for (final fix in locationStream) {
+        if (isFirstPoint) {
+          isFirstPoint = false;
+          lastRecordedFix = fix;
+
+          if (kDebugMode) {
+            debugPrint('[LocationStream] Auto: Recording initial location');
+          }
+
+          final timestamp = DateTime.now().toUtc();
+          final pointResult = await _createPointFromLocationFix(fix, timestamp, userId);
+
+          if (pointResult case Ok(value: final point)) {
+            yield Ok(point);
+          }
+          continue;
+        }
+
+        // Subsequent points are filtered
         if (_shouldRecordPoint(lastRecordedFix, fix)) {
           if (kDebugMode) {
             debugPrint('[LocationStream] Auto: Recording new location');

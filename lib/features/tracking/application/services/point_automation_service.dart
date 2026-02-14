@@ -6,6 +6,8 @@ import 'package:dawarich/features/tracking/application/usecases/get_batch_point_
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_location_stream_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/settings/watch_tracker_settings_usecase.dart';
+import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
@@ -14,6 +16,8 @@ final class PointAutomationService {
   bool _writeBusy = false;
   int? _currentUserId;
   StreamSubscription<Result<dynamic, String>>? _locationStreamSub;
+  StreamSubscription<TrackerSettings>? _settingsWatchSub;
+  TrackerSettings? _currentSettings;
 
   final CreatePointFromLocationStreamWorkflow _createPointFromLocationStream;
   final StorePointUseCase _storePoint;
@@ -22,6 +26,7 @@ final class PointAutomationService {
   final CheckBatchThresholdUseCase _checkBatchThreshold;
   final GetCurrentBatchUseCase _getCurrentBatch;
   final BatchUploadWorkflowUseCase _batchUploadWorkflow;
+  final WatchTrackerSettingsUseCase _watchTrackerSettings;
 
   PointAutomationService(
     this._createPointFromLocationStream,
@@ -31,6 +36,7 @@ final class PointAutomationService {
     this._checkBatchThreshold,
     this._getCurrentBatch,
     this._batchUploadWorkflow,
+    this._watchTrackerSettings,
   );
 
   /// Whether automatic tracking is currently active
@@ -46,8 +52,45 @@ final class PointAutomationService {
     _isTracking = true;
     _currentUserId = userId;
 
-    // Use location stream for automatic tracking - more battery efficient
-    // than polling because the OS can optimize location updates
+    _startSettingsWatch(userId);
+
+    _startLocationStream(userId);
+  }
+
+  void _startSettingsWatch(int userId) {
+    _settingsWatchSub?.cancel();
+
+    if (kDebugMode) {
+      debugPrint("[PointAutomation] Starting settings watch for userId: $userId");
+    }
+
+    _settingsWatchSub = _watchTrackerSettings(userId).listen(
+      (settings) async {
+        if (_currentSettings != null && _settingsRequireRestart(_currentSettings!, settings)) {
+          if (kDebugMode) {
+            debugPrint("[PointAutomation] Settings changed (${_currentSettings!.trackingFrequency}s -> ${settings.trackingFrequency}s), restarting location stream...");
+          }
+          _currentSettings = settings;
+          await _restartLocationStream(userId);
+        } else {
+          _currentSettings = settings;
+        }
+      },
+      onError: (e) {
+        debugPrint("[PointAutomation] Settings watch error: $e");
+      },
+    );
+  }
+
+  bool _settingsRequireRestart(TrackerSettings old, TrackerSettings current) {
+    return old.trackingFrequency != current.trackingFrequency ||
+           old.locationPrecision != current.locationPrecision ||
+           old.minimumPointDistance != current.minimumPointDistance;
+  }
+
+  void _startLocationStream(int userId) {
+    _locationStreamSub?.cancel();
+
     final pointStream = _createPointFromLocationStream.getPointStream(userId);
 
     _locationStreamSub = pointStream.listen(
@@ -55,17 +98,39 @@ final class PointAutomationService {
         await _handleLocationUpdate(result, userId);
       },
       onError: (error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
-        }
+        debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
       },
       onDone: () {
         if (kDebugMode) {
           debugPrint("[PointAutomation] Location stream completed");
         }
       },
-      cancelOnError: false, // Continue listening even if there's an error
+      cancelOnError: false,
     );
+  }
+
+  Future<void> _restartLocationStream(int userId) async {
+    try {
+      // Grab reference to old subscription and immediately null it out
+      final oldSub = _locationStreamSub;
+      _locationStreamSub = null;
+
+      // Fire and forget the cancel - don't wait for it at all
+      if (oldSub != null) {
+        unawaited(oldSub.cancel().catchError((e) {
+          debugPrint("[PointAutomation] Cancel error (ignored): $e");
+        }));
+      }
+
+      // Start new location stream immediately
+      _startLocationStream(userId);
+
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Location stream restarted");
+      }
+    } catch (e, s) {
+      debugPrint("[PointAutomation] ERROR in _restartLocationStream: $e\n$s");
+    }
   }
 
   /// Stop everything if user logs out, or toggles the preference off.
@@ -78,6 +143,9 @@ final class PointAutomationService {
 
     _isTracking = false;
     _currentUserId = null;
+    _currentSettings = null;
+    await _settingsWatchSub?.cancel();
+    _settingsWatchSub = null;
     await _locationStreamSub?.cancel();
     _locationStreamSub = null;
   }

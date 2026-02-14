@@ -182,6 +182,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final storePoint = await ref.watch(storePointUseCaseProvider.future);
   final batchCount = await ref.watch(getBatchPointCountUseCaseProvider.future);
   final showNotif = ref.watch(showTrackerNotificationUseCaseProvider);
+  final watchSettings = await ref.watch(watchTrackerSettingsUseCaseProvider.future);
 
   final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
   final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
@@ -199,6 +200,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
     checkThreshold,
     getCurrentBatch,
     batchUploadWorkflow,
+    watchSettings,
   );
 });
 

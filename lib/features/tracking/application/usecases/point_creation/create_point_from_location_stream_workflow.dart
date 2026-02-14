@@ -33,14 +33,15 @@ final class CreatePointFromLocationStreamWorkflow {
     final TrackerSettings settings = await _getTrackerSettings(userId);
     final LocationPrecision precision = settings.locationPrecision;
     final int trackingFrequencySeconds = settings.trackingFrequency;
+    final int minimumDistance = settings.minimumPointDistance;
     final bool isAutoMode = trackingFrequencySeconds == 0;
 
     if (kDebugMode) {
-      debugPrint('[LocationStream] Settings: precision=$precision, frequency=${trackingFrequencySeconds}s, autoMode=$isAutoMode');
+      debugPrint('[LocationStream] Settings: precision=$precision, frequency=${trackingFrequencySeconds}s, minDistance=${minimumDistance}m, autoMode=$isAutoMode');
     }
 
     if (isAutoMode) {
-      yield* _getAutoModePointStream(userId, precision);
+      yield* _getAutoModePointStream(userId, precision, minimumDistance);
     } else {
       yield* _getTimerPointStream(userId, precision, trackingFrequencySeconds);
     }
@@ -51,18 +52,23 @@ final class CreatePointFromLocationStreamWorkflow {
   }
 
   /// Auto mode: track when the device has moved a meaningful distance.
-  /// Event-driven - OS notifies us when location changes significantly.
+  /// Uses user's minimum distance if set, otherwise derives from precision setting.
   Stream<Result<LocalPoint, String>> _getAutoModePointStream(
     int userId,
     LocationPrecision precision,
+    int minimumDistance,
   ) async* {
-    // Distance filter based on precision - higher precision = smaller filter
-    final int distanceFilter = switch (precision) {
-      LocationPrecision.best => 3,       // 3 meters for best precision
-      LocationPrecision.high => 5,       // 5 meters for high precision
-      LocationPrecision.balanced => 10,  // 10 meters for balanced
-      LocationPrecision.lowPower => 25,  // 25 meters for low power
-    };
+    // Hybrid approach:
+    // - If user set a minimum distance, use that (they know what's meaningful to them)
+    // - Otherwise, derive from precision (reflects user's tracking mindset)
+    final int distanceFilter = minimumDistance > 0
+        ? minimumDistance
+        : switch (precision) {
+            LocationPrecision.best => 3,       // Wants detailed tracking
+            LocationPrecision.high => 5,
+            LocationPrecision.balanced => 10,
+            LocationPrecision.lowPower => 25,  // Okay with less detail
+          };
 
     final request = LocationRequest(
       precision: precision,

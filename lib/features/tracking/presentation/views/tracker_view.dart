@@ -575,7 +575,7 @@ class _BasicSettingsSectionState extends State<_BasicSettingsSection> {
               isCollapsed: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 4),
               filled: false,
-              hintText: '0 = as soon as possible',
+              hintText: '0 = auto',
               enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(
                     color: Theme.of(context).colorScheme.outline, width: 1),
@@ -595,7 +595,7 @@ class _BasicSettingsSectionState extends State<_BasicSettingsSection> {
 
   String _formatFrequency(int seconds) {
     if (seconds == 0) {
-      return 'ASAP';
+      return 'Auto';
     }
     return '${seconds}s';
   }

@@ -488,6 +488,46 @@ class _BasicSettingsSectionState extends State<_BasicSettingsSection> {
         const SizedBox(height: 24),
         Row(
           children: [
+            const Icon(Icons.timer, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Frequency',
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text('Tracking frequency: ${_formatFrequency(vm.trackingFrequency)}'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+          child: TextField(
+            controller: _frequencyController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              isDense: true,
+              isCollapsed: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+              filled: false,
+              hintText: '0 = auto',
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline, width: 1),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 2),
+              ),
+            ),
+            onSubmitted: (_) => _applyFrequency(vm),
+            onEditingComplete: () => _applyFrequency(vm),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
             const Icon(Icons.layers, size: 20),
             const SizedBox(width: 8),
             Text(
@@ -549,46 +589,6 @@ class _BasicSettingsSectionState extends State<_BasicSettingsSection> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            const Icon(Icons.timer, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Frequency',
-              style: theme.textTheme.bodyLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text('Tracking frequency: ${_formatFrequency(vm.trackingFrequency)}'),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-          child: TextField(
-            controller: _frequencyController,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              isDense: true,
-              isCollapsed: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 4),
-              filled: false,
-              hintText: '0 = auto',
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.outline, width: 1),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.primary, width: 2),
-              ),
-            ),
-            onSubmitted: (_) => _applyFrequency(vm),
-            onEditingComplete: () => _applyFrequency(vm),
-          ),
-        ),
       ],
     );
   }
@@ -601,11 +601,57 @@ class _BasicSettingsSectionState extends State<_BasicSettingsSection> {
   }
 }
 
-class _AdvancedSettingsSection extends StatelessWidget {
+class _AdvancedSettingsSection extends StatefulWidget {
+  @override
+  State<_AdvancedSettingsSection> createState() => _AdvancedSettingsSectionState();
+}
+
+class _AdvancedSettingsSectionState extends State<_AdvancedSettingsSection> {
+  late TextEditingController _distanceController;
+  late TextEditingController _deviceIdController;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _distanceController = TextEditingController();
+    _deviceIdController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _distanceController.dispose();
+    _deviceIdController.dispose();
+    super.dispose();
+  }
+
+  void _applyDistance(TrackerPageViewModel vm) {
+    final parsed = int.tryParse(_distanceController.text);
+    if (parsed != null && parsed >= 0) {
+      vm.setMinimumPointDistance(parsed);
+      _distanceController.text = parsed.toString();
+    }
+    FocusScope.of(context).unfocus();
+  }
+
+  void _applyDeviceId(TrackerPageViewModel vm) {
+    final text = _deviceIdController.text.trim();
+    if (text.isNotEmpty) {
+      vm.setDeviceId(text);
+    }
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<TrackerPageViewModel>();
     final theme = Theme.of(context);
+
+    if (!_initialized) {
+      _distanceController.text = vm.minimumPointDistance.toString();
+      _deviceIdController.text = vm.deviceId;
+      _initialized = true;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,13 +692,31 @@ class _AdvancedSettingsSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text('Minimum distance (m): ${vm.minimumPointDistance}'),
-        Slider(
-          value: vm.minimumPointDistance.toDouble(),
-          min: 0,
-          max: 100,
-          divisions: 100,
-          label: '${vm.minimumPointDistance}m',
-          onChanged: (v) => vm.setMinimumPointDistance(v.toInt()),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+          child: TextField(
+            controller: _distanceController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              isDense: true,
+              isCollapsed: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+              filled: false,
+              hintText: '0 = auto decides',
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline, width: 1),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 2),
+              ),
+            ),
+            onSubmitted: (_) => _applyDistance(vm),
+            onEditingComplete: () => _applyDistance(vm),
+          ),
         ),
         const SizedBox(height: 24),
         Row(
@@ -667,16 +731,45 @@ class _AdvancedSettingsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: vm.deviceIdController,
-          decoration: InputDecoration(
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: vm.resetDeviceId,
-              tooltip: 'Reset ID',
-            ),
+        Text('Current: ${vm.deviceId}'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _deviceIdController,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    isCollapsed: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                    filled: false,
+                    hintText: 'Device identifier',
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.outline, width: 1),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary, width: 2),
+                    ),
+                  ),
+                  onSubmitted: (_) => _applyDeviceId(vm),
+                  onEditingComplete: () => _applyDeviceId(vm),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () async {
+                  await vm.resetDeviceId();
+                  _deviceIdController.text = vm.deviceId;
+                },
+                tooltip: 'Reset to default',
+              ),
+            ],
           ),
-          onChanged: vm.setDeviceId,
         ),
       ],
     );

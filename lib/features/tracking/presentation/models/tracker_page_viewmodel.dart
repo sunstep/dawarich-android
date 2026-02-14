@@ -26,7 +26,6 @@ import 'package:dawarich/features/batch/presentation/models/local_point_viewmode
 import 'package:dawarich/features/tracking/presentation/models/track_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/features/tracking/presentation/models/last_point_viewmodel.dart';
-import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -200,7 +199,6 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   String _deviceId = "";
   String get deviceId => _deviceId;
 
-  final TextEditingController deviceIdController = TextEditingController();
 
 
 
@@ -251,9 +249,6 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     _minimumPointDistance = s.minimumPointDistance;
     _deviceId = s.deviceId;
 
-    if (!isDisposed) {
-      deviceIdController.text = s.deviceId;
-    }
     safeNotifyListeners();
   }
 
@@ -594,7 +589,6 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     _lastPointSub?.cancel();
     _batchCountSub?.cancel();
     _consentPromptController.close();
-    deviceIdController.dispose();
     super.dispose();
   }
 }

@@ -18,6 +18,11 @@ final class PointAutomationService {
   StreamSubscription<Result<dynamic, String>>? _locationStreamSub;
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
   TrackerSettings? _currentSettings;
+  Timer? _notificationRefreshTimer;
+  DateTime? _lastPointTime;
+
+  /// Interval for refreshing the notification to keep service alive
+  static const _notificationRefreshInterval = Duration(seconds: 5);
 
   final CreatePointFromLocationStreamWorkflow _createPointFromLocationStream;
   final StorePointUseCase _storePoint;
@@ -51,10 +56,48 @@ final class PointAutomationService {
 
     _isTracking = true;
     _currentUserId = userId;
+    _lastPointTime = null;
+
+    await _refreshNotification(userId);
+
+    _startNotificationRefreshTimer(userId);
 
     _startSettingsWatch(userId);
 
     _startLocationStream(userId);
+  }
+
+  /// Starts a timer that refreshes the notification periodically.
+  /// This keeps the foreground service alive even if dismissed by the user.
+  void _startNotificationRefreshTimer(int userId) {
+    _notificationRefreshTimer?.cancel();
+    _notificationRefreshTimer = Timer.periodic(
+      _notificationRefreshInterval,
+      (_) => _refreshNotification(userId),
+    );
+  }
+
+  /// Refreshes the notification with current status
+  Future<void> _refreshNotification(int userId) async {
+    try {
+      final batchCount = await _getBatchPointCount(userId);
+
+      String body;
+      if (_lastPointTime != null) {
+        final lastTime = _lastPointTime!.toLocal();
+        final lastTimeStr = '${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}:${lastTime.second.toString().padLeft(2, '0')}';
+        body = 'Last point: $lastTimeStr • $batchCount in batch';
+      } else {
+        body = 'Waiting for location... • $batchCount in batch';
+      }
+
+      await _showTrackerNotification(
+        title: 'Tracking active',
+        body: body,
+      );
+    } catch (e, s) {
+      debugPrint("[PointAutomation] Notification refresh error: $e\n$s");
+    }
   }
 
   void _startSettingsWatch(int userId) {
@@ -111,18 +154,15 @@ final class PointAutomationService {
 
   Future<void> _restartLocationStream(int userId) async {
     try {
-      // Grab reference to old subscription and immediately null it out
       final oldSub = _locationStreamSub;
       _locationStreamSub = null;
 
-      // Fire and forget the cancel - don't wait for it at all
       if (oldSub != null) {
         unawaited(oldSub.cancel().catchError((e) {
           debugPrint("[PointAutomation] Cancel error (ignored): $e");
         }));
       }
 
-      // Start new location stream immediately
       _startLocationStream(userId);
 
       if (kDebugMode) {
@@ -144,6 +184,9 @@ final class PointAutomationService {
     _isTracking = false;
     _currentUserId = null;
     _currentSettings = null;
+    _lastPointTime = null;
+    _notificationRefreshTimer?.cancel();
+    _notificationRefreshTimer = null;
     await _settingsWatchSub?.cancel();
     _settingsWatchSub = null;
     await _locationStreamSub?.cancel();
@@ -184,7 +227,7 @@ final class PointAutomationService {
         final storeResult = await _storePoint(point);
 
         if (storeResult case Ok()) {
-          await _notify(userId);
+          _lastPointTime = DateTime.now();
           await _checkAndUploadBatch(userId);
         } else if (storeResult case Err(value: final err)) {
           debugPrint("[PointAutomation] Failed to store point: $err");
@@ -220,18 +263,6 @@ final class PointAutomationService {
       }
     } catch (e, s) {
       debugPrint("[PointAutomation] Error checking/uploading batch: $e\n$s");
-    }
-  }
-
-  Future<void> _notify(int userId) async {
-    try {
-      await _showTrackerNotification(
-        title: 'Tracking location...',
-        body: 'Last updated at ${DateTime.now().toLocal().toIso8601String()}, '
-            '${await _getBatchPointCount(userId)} points in batch.',
-      );
-    } catch (e, s) {
-      debugPrint("[PointAutomation] Notify error: $e\n$s");
     }
   }
 }

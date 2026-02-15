@@ -36,6 +36,20 @@ jobs:
           else
             echo "ref=${{ github.ref }}" >> "$GITHUB_OUTPUT"
           fi
+      - name: Resolve release metadata
+        id: rel
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
@@ -154,8 +168,8 @@ jobs:
       - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          target_commitish: ${{ github.sha }}
+          tag_name: ${{ steps.rel.outputs.tag }}
+          target_commitish: ${{ steps.rel.outputs.sha }}
           files: dist/*
           generate_release_notes: false
           fail_on_unmatched_files: true

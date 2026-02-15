@@ -26,7 +26,6 @@ import 'package:dawarich/features/batch/presentation/models/local_point_viewmode
 import 'package:dawarich/features/tracking/presentation/models/track_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/features/tracking/presentation/models/last_point_viewmodel.dart';
-import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -176,6 +175,7 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   bool _isUpdatingTracking = false;
   bool get isTrackingAutomatically => _isTrackingAutomatically;
   bool get isUpdatingTracking => _isUpdatingTracking;
+  bool get showDotPulseLoading => _isUpdatingTracking;
 
   final _consentPromptController = StreamController<String>.broadcast();
   Stream<String> get onConsentPrompt => _consentPromptController.stream;
@@ -200,7 +200,6 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   String _deviceId = "";
   String get deviceId => _deviceId;
 
-  final TextEditingController deviceIdController = TextEditingController();
 
 
 
@@ -251,9 +250,6 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     _minimumPointDistance = s.minimumPointDistance;
     _deviceId = s.deviceId;
 
-    if (!isDisposed) {
-      deviceIdController.text = s.deviceId;
-    }
     safeNotifyListeners();
   }
 
@@ -420,8 +416,8 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     if (_isUpdatingTracking) {
       return Err("Tracking update already in progress.");
     }
-
     setIsUpdatingTracking(true);
+    await Future.delayed(const Duration(milliseconds: 500));
     setAutomaticTracking(enable);
 
     if (enable) {
@@ -594,7 +590,6 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     _lastPointSub?.cancel();
     _batchCountSub?.cancel();
     _consentPromptController.close();
-    deviceIdController.dispose();
     super.dispose();
   }
 }

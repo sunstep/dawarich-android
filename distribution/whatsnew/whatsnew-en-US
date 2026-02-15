@@ -1,7 +1,12 @@
 Full and more detailed release notes always available at the GitHub repository!
 
-v0.16.0
-* This release introduces a second build flavor, which fully excludes proprietary libraries.
-* Fixed tracking to respect frequency setting changes.
-* Fixed not being able to connect with http/ ip only hosts.
-* Replaced the QR scanner with a FOSS alternative.
+v0.17.0
+This release features tracking behavior, UI and UX improvements
+
+* Added a tracker auto mode that is not based on time but distance
+* Changed tracking logic, for more reliable tracking
+* Notification always re-sent for reliable tracking at low frequency
+* Made notification text more compact to be more readable
+* Redone the UI/ UX of the tracker page, to fix UX issues.
+
+Read the full changelog at GitHub

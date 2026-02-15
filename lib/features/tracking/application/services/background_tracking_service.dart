@@ -140,6 +140,22 @@ class BackgroundTrackingEntry {
         await shutdown(backgroundService, 'stopService event');
       }
     });
+
+    backgroundService.on('restartTracking').listen((event) async {
+      debugPrint('[Background] *** restartTracking event received ***');
+      try {
+        final container = _container;
+        if (container != null) {
+          final automation = await container.read(pointAutomationServiceProvider.future);
+          await automation.restartTracking();
+          debugPrint('[Background] Tracking restarted successfully');
+        } else {
+          debugPrint('[Background] Container is null, cannot restart tracking');
+        }
+      } catch (e, s) {
+        debugPrint('[Background] Error restarting tracking: $e\n$s');
+      }
+    });
   }
 
   static Future<void> shutdown(ServiceInstance svc, String reason) async {
@@ -338,6 +354,21 @@ final class BackgroundTrackingService {
       await sub.cancel();
       _isStopping = false;
     }
+  }
+
+  /// Restart tracking to apply new settings (e.g., frequency change)
+  /// Sends event to background isolate to restart the tracking logic.
+  static Future<void> restartTracking() async {
+    final service = FlutterBackgroundService();
+
+    final isRunning = await service.isRunning();
+    if (!isRunning) {
+      debugPrint('[BackgroundService] Restart skipped: service not running');
+      return;
+    }
+
+    debugPrint('[BackgroundService] Sending restartTracking event to background isolate...');
+    service.invoke('restartTracking', {});
   }
 
 }

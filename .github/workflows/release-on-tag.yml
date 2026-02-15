@@ -51,18 +51,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Run build_runner
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: FOSS proprietary dependency check
-        shell: bash
-        run: |
-          chmod +x tools/check_proprietary_deps.sh
-          tools/check_proprietary_deps.sh fossReleaseRuntimeClasspath
-
       # --- Signing (needed for release APK/AAB)
       - name: Decode keystore
         env:
@@ -78,14 +66,7 @@ jobs:
           storeFile=../dawarich-upload.jks
           EOF
 
-      - name: Build APKs (release)
-        shell: bash
-        run: |
-          set -euo pipefail
-          flutter build apk --release --flavor gms
-          flutter build apk --release --flavor foss
-
-      - name: Read pubspec version
+      - name: Read pubspec version (from default pubspec.yaml)
         id: ver
         shell: bash
         run: |
@@ -95,6 +76,46 @@ jobs:
           echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
 
+      # -------------------- GMS build (default pubspec.yaml) --------------------
+      - name: Pub get (GMS)
+        run: flutter pub get
+
+      - name: Run build_runner (GMS)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build APK (GMS)
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build apk --release --flavor gms
+
+      # -------------------- Switch to FOSS pubspec --------------------
+      - name: Switch pubspec to FOSS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp pubspec_foss.yaml pubspec.yaml
+          cp pubspec_foss.lock pubspec.lock
+
+      - name: Pub get (FOSS)
+        run: flutter pub get
+
+      - name: Run build_runner (FOSS)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: FOSS proprietary dependency check
+        shell: bash
+        run: |
+          chmod +x tools/check_proprietary_deps.sh
+          tools/check_proprietary_deps.sh fossReleaseRuntimeClasspath
+
+      - name: Build APK (FOSS)
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build apk --release --flavor foss
+
+      # -------------------- Collect artifacts --------------------
       - name: Collect artifacts
         shell: bash
         run: |

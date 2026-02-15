@@ -175,6 +175,7 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   bool _isUpdatingTracking = false;
   bool get isTrackingAutomatically => _isTrackingAutomatically;
   bool get isUpdatingTracking => _isUpdatingTracking;
+  bool get showDotPulseLoading => _isUpdatingTracking;
 
   final _consentPromptController = StreamController<String>.broadcast();
   Stream<String> get onConsentPrompt => _consentPromptController.stream;
@@ -415,8 +416,8 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     if (_isUpdatingTracking) {
       return Err("Tracking update already in progress.");
     }
-
     setIsUpdatingTracking(true);
+    await Future.delayed(const Duration(milliseconds: 500));
     setAutomaticTracking(enable);
 
     if (enable) {

@@ -442,58 +442,72 @@ class _TrackingHeroPage extends StatelessWidget {
     final vm = context.watch<TrackerPageViewModel>();
     final theme = Theme.of(context);
     final isActive = vm.isTrackingAutomatically;
+    final isLoading = vm.isUpdatingTracking;
 
     return InkWell(
-      onTap: () async {
-        final result = await vm.toggleAutomaticTracking(!isActive);
-        if (!context.mounted) return;
-        if (result case Err(value: final message)) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text("Tracking Setup Failed"),
-              content: Text(message),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("OK"),
-                ),
-              ],
-            ),
-          );
-        }
-      },
+      onTap: isLoading
+          ? null
+          : () async {
+              final result = await vm.toggleAutomaticTracking(!isActive);
+              if (!context.mounted) return;
+              if (result case Err(value: final message)) {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("Tracking Setup Failed"),
+                    content: Text(message),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text("OK"),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Status icon with glow effect when active
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isActive
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.surfaceContainerHighest,
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                isActive ? Icons.location_on : Icons.location_off,
-                size: 40,
-                color: isActive
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    isActive ? Icons.location_on : Icons.location_off,
+                    size: 40,
+                    color: isActive
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (isLoading)
+                  const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+              ],
             ),
             const SizedBox(height: 20),
             // Status text
@@ -895,15 +909,6 @@ class _AdvancedPageState extends State<_AdvancedPage> {
     _distanceController.dispose();
     _deviceIdController.dispose();
     super.dispose();
-  }
-
-  void _applyDistance(TrackerPageViewModel vm) {
-    final parsed = int.tryParse(_distanceController.text);
-    if (parsed != null && parsed >= 0) {
-      vm.setMinimumPointDistance(parsed);
-      _distanceController.text = parsed.toString();
-    }
-    FocusScope.of(context).unfocus();
   }
 
   void _applyDeviceId(TrackerPageViewModel vm) {

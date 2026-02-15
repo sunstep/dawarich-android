@@ -138,7 +138,9 @@ final class CreatePointFromLocationStreamWorkflow {
 
   /// Check if we should record this point (new location or periodic stationary update).
   bool _shouldRecordPoint(LocationFix? last, LocationFix current, int minDistMeters) {
-    if (last == null) return true;
+    if (last == null) {
+      return true;
+    }
 
     final dist = Geolocator.distanceBetween(last.latitude, last.longitude, current.latitude, current.longitude);
     if (dist >= minDistMeters) {

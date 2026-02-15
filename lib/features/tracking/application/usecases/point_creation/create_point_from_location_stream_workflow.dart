@@ -8,6 +8,7 @@ import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
 import 'package:dawarich/features/tracking/domain/models/location_request.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:option_result/result.dart';
 
 /// Workflow for creating points using either:
@@ -64,10 +65,10 @@ final class CreatePointFromLocationStreamWorkflow {
     final int distanceFilter = minimumDistance > 0
         ? minimumDistance
         : switch (precision) {
-            LocationPrecision.best => 3,       // Wants detailed tracking
+            LocationPrecision.best => 5,
             LocationPrecision.high => 5,
             LocationPrecision.balanced => 10,
-            LocationPrecision.lowPower => 25,  // Okay with less detail
+            LocationPrecision.lowPower => 25,
           };
 
     final request = LocationRequest(
@@ -107,7 +108,7 @@ final class CreatePointFromLocationStreamWorkflow {
         }
 
         // Subsequent points are filtered
-        if (_shouldRecordPoint(lastRecordedFix, fix)) {
+        if (_shouldRecordPoint(lastRecordedFix, fix, distanceFilter)) {
           if (kDebugMode) {
             debugPrint('[LocationStream] Auto: Recording new location');
           }
@@ -136,15 +137,16 @@ final class CreatePointFromLocationStreamWorkflow {
   }
 
   /// Check if we should record this point (new location or periodic stationary update).
-  bool _shouldRecordPoint(LocationFix? last, LocationFix current) {
-    if (last == null) return true;
-
-    // Different coordinates = new location worth recording
-    if (last.latitude != current.latitude || last.longitude != current.longitude) {
+  bool _shouldRecordPoint(LocationFix? last, LocationFix current, int minDistMeters) {
+    if (last == null) {
       return true;
     }
 
-    // Same coordinates but >60s elapsed = stationary confirmation point
+    final dist = Geolocator.distanceBetween(last.latitude, last.longitude, current.latitude, current.longitude);
+    if (dist >= minDistMeters) {
+      return true;
+    }
+
     final timeDiff = current.timestampUtc.difference(last.timestampUtc).inSeconds;
     return timeDiff > 60;
   }

@@ -94,8 +94,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp pubspec_foss.yaml pubspec.yaml
-          cp pubspec_foss.lock pubspec.lock
+          cp pubspec-foss.yaml pubspec.yaml
+          cp pubspec-foss.lock pubspec.lock
 
       - name: Pub get (FOSS)
         run: flutter pub get

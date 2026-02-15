@@ -391,6 +391,7 @@ class _SettingsCardState extends State<_SettingsCard> {
               children: const [
                 _TrackingHeroPage(),
                 _FrequencyPage(),
+                _MinimumPointDistancePage(),
                 _BatchingPage(),
                 _AdvancedPage(),
                 _TrackRecordingPage(),
@@ -516,30 +517,6 @@ class _TrackingHeroPage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            // Toggle switch with custom track colors
-            Switch(
-              value: isActive,
-              onChanged: (enabled) async {
-                final result = await vm.toggleAutomaticTracking(enabled);
-                if (!context.mounted) return;
-                if (result case Err(value: final message)) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Tracking Setup Failed"),
-                      content: Text(message),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text("OK"),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: 4),
             // Swipe hint
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -552,7 +529,7 @@ class _TrackingHeroPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Icon(
-                  Icons.chevron_right,
+                  Icons.arrow_circle_left_rounded,
                   size: 16,
                   color: theme.colorScheme.outline,
                 ),
@@ -672,7 +649,126 @@ class _FrequencyPageState extends State<_FrequencyPage> {
   }
 }
 
-/// Page 3: Batching settings
+/// Page 3: Minimum Point Distance
+class _MinimumPointDistancePage extends StatefulWidget {
+  const _MinimumPointDistancePage();
+
+  @override
+  State<_MinimumPointDistancePage> createState() => _MinimumPointDistancePageState();
+}
+
+class _MinimumPointDistancePageState extends State<_MinimumPointDistancePage> {
+  late TextEditingController _minPointDistController;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _minPointDistController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _minPointDistController.dispose();
+    super.dispose();
+  }
+
+  void _applyMinimumPointDistance(TrackerPageViewModel vm) {
+    final parsed = int.tryParse(_minPointDistController.text);
+    if (parsed != null && parsed >= 0) {
+      vm.setMinimumPointDistance(parsed);
+      _minPointDistController.text = parsed.toString();
+    }
+    FocusScope.of(context).unfocus();
+  }
+
+  String _formatMinimumPointDistance(int distance) {
+    return '${distance}m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<TrackerPageViewModel>();
+    final theme = Theme.of(context);
+
+    if (!_initialized) {
+      _minPointDistController.text = vm.minimumPointDistance.toString();
+      _initialized = true;
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.social_distance,
+                      size: 48,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Minimum Point Distance',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Current: ${_formatMinimumPointDistance(vm.minimumPointDistance)}',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Minimum distance between recorded points, also affects frequency when set to auto',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: 200,
+                      child: TextField(
+                        controller: _minPointDistController,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        textInputAction: TextInputAction.done,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: InputDecoration(
+                          labelText: 'Meters',
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onSubmitted: (_) => _applyMinimumPointDistance(vm),
+                        onEditingComplete: () => _applyMinimumPointDistance(vm),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Page 4: Batching settings
 class _BatchingPage extends StatefulWidget {
   const _BatchingPage();
 
@@ -870,33 +966,6 @@ class _AdvancedPageState extends State<_AdvancedPage> {
             ),
           ),
           const SizedBox(height: 12),
-          // Distance
-          Row(
-            children: [
-              const Icon(Icons.social_distance, size: 18),
-              const SizedBox(width: 8),
-              Text('Min Distance (m)', style: theme.textTheme.bodyMedium),
-            ],
-          ),
-          const SizedBox(height: 4),
-          TextField(
-            controller: _distanceController,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: '0 = auto',
-              contentPadding: const EdgeInsets.symmetric(
-                  vertical: 10, horizontal: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onSubmitted: (_) => _applyDistance(vm),
-            onEditingComplete: () => _applyDistance(vm),
-          ),
-          const SizedBox(height: 12),
           // Device ID
           Row(
             children: [
@@ -950,77 +1019,60 @@ class _TrackRecordingPage extends StatelessWidget {
     final vm = context.watch<TrackerPageViewModel>();
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            vm.isRecording ? Icons.fiber_manual_record : Icons.radio_button_unchecked,
-            size: 48,
-            color: vm.isRecording
-                ? theme.colorScheme.error
-                : theme.colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Track Recording',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: vm.toggleRecording,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              vm.isRecording ? Icons.fiber_manual_record : Icons.radio_button_unchecked,
+              size: 48,
+              color: vm.isRecording
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.primary,
             ),
-          ),
-          const SizedBox(height: 8),
-          if (vm.isRecording)
+            const SizedBox(height: 16),
             Text(
-              'Track: ${vm.currentTrack?.trackId ?? 'Unknown'}',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            )
-          else
-            Text(
-              'Group points into a named track',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Experimental',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              'Track Recording',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: 200,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: vm.isRecording
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.primary,
-                foregroundColor: theme.colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+            const SizedBox(height: 8),
+            if (vm.isRecording)
+              Text(
+                'Track: ${vm.currentTrack?.trackId ?? 'Unknown'}',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              )
+            else
+              Text(
+                'Gives an additional ID to points to group them together. Tap to start a new track.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
               ),
-              icon: Icon(
-                vm.isRecording ? Icons.stop : Icons.fiber_manual_record,
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
               ),
-              label: Text(vm.isRecording ? 'Stop' : 'Start Recording'),
-              onPressed: vm.toggleRecording,
+              child: Text(
+                'Experimental',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      )
     );
   }
 }

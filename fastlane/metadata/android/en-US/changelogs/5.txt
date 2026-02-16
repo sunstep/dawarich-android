@@ -1,6 +1,6 @@
 Full and more detailed release notes are always available at the GitHub repository!
 
-v0.17.0
+v0.17.1
 This release features tracking behavior, UI and UX improvements
 
 * Added a tracker auto mode not based on time but distance

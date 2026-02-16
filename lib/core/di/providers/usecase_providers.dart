@@ -8,6 +8,10 @@ import 'package:dawarich/features/stats/application/repositories/stats_repositor
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/cancel_tracker_notification_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/was_launched_from_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_usecase.dart';
 import 'package:dawarich/features/tracking/data/repositories/location_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,10 +127,35 @@ final watchTrackerSettingsUseCaseProvider = FutureProvider<WatchTrackerSettingsU
   return WatchTrackerSettingsUseCase(repo);
 });
 
-final showTrackerNotificationUseCaseProvider = Provider<ShowTrackerNotificationUseCase>((ref) {
-  return ShowTrackerNotificationUseCase();
+final trackerNotificationServiceProvider = Provider<TrackerNotificationService>((ref) {
+  return TrackerNotificationService();
 });
 
+final initializeTrackerNotificationServiceUseCaseProvider =
+Provider<InitializeTrackerNotificationServiceUseCase>((ref) {
+  return InitializeTrackerNotificationServiceUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
+
+
+final showTrackerNotificationUseCaseProvider = Provider<ShowTrackerNotificationUseCase>((ref) {
+  return ShowTrackerNotificationUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
+
+final cancelTrackerNotificationUseCaseProvider = Provider<CancelTrackerNotificationUseCase>((ref) {
+  return CancelTrackerNotificationUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
+
+final wasLaunchedFromNotificationUseCaseProvider = Provider<WasLaunchedFromNotificationUseCase>((ref) {
+  return WasLaunchedFromNotificationUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
 final getBatchPointCountUseCaseProvider = FutureProvider<GetBatchPointCountUseCase>((ref) async {
   final repo = await ref.watch(pointLocalRepositoryProvider.future);
   return GetBatchPointCountUseCase(repo);

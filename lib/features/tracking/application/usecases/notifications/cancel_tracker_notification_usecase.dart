@@ -1,14 +1,10 @@
-
-import 'package:dawarich/core/constants/notification.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 
 /// Hide the tracking notification (e.g., when stopping tracking).
 final class CancelTrackerNotificationUseCase {
+  final TrackerNotificationService _service;
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
-  FlutterLocalNotificationsPlugin();
+  CancelTrackerNotificationUseCase(this._service);
 
-  Future<void> call() => _notificationsPlugin.cancel(NotificationConstants.notificationId);
-
-
+  Future<void> call() => _service.cancelTracker();
 }

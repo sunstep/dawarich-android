@@ -70,7 +70,12 @@ It was immediately clear that a dedicated mobile client unlocks the full experie
 
 This is an **unofficial community client** and is not affiliated with the Dawarich maintainer.
 
+## License
 
+Copyright (c) 2026 Sunstep
+
+This project is licensed under the GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later).
+See the [LICENSE](LICENSE) file for details.
 
 
 ## Stats

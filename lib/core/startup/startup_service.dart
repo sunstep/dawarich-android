@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/core/di/providers/session_providers.dart';
+import 'package:dawarich/core/di/providers/usecase_providers.dart';
 import 'package:dawarich/core/di/providers/version_check_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
@@ -18,7 +19,8 @@ final class StartupService {
       debugPrint('[StartupService] Initializing app...');
     }
 
-    await InitializeTrackerNotificationService().call();
+    final initNotif = container.read(initializeTrackerNotificationServiceUseCaseProvider);
+    await initNotif();
 
     final SessionBox<User> sessionService =
         await container.read(sessionBoxProvider.future);
@@ -43,12 +45,12 @@ final class StartupService {
         return;
       }
 
-      final pendingRoute = InitializeTrackerNotificationService.pendingNotificationRoute;
+      final pendingRoute = InitializeTrackerNotificationServiceUseCase.pendingNotificationRoute;
       if (pendingRoute != null) {
         if (kDebugMode) {
           debugPrint('[StartupService] Navigating to pending notification route: $pendingRoute');
         }
-        InitializeTrackerNotificationService.clearPendingRoute();
+        InitializeTrackerNotificationServiceUseCase.clearPendingRoute();
 
         final route = AppRouter.routeFromPath(pendingRoute);
         appRouter.replaceAll([route]);

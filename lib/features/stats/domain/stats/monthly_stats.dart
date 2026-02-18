@@ -1,4 +1,4 @@
-import 'package:dawarich/features/stats/data/data_transfer_objects/monthly_stats_dto.dart';
+import 'package:dawarich/features/stats/data/data_transfer_objects/stats/monthly_stats_dto.dart';
 
 class MonthlyStats {
   int january;

@@ -1,5 +1,5 @@
 import 'package:dawarich/core/network/dio_client.dart';
-import 'package:dawarich/features/stats/data/data_transfer_objects/stats_dto.dart';
+import 'package:dawarich/features/stats/data/data_transfer_objects/stats/stats_dto.dart';
 import 'package:dawarich/features/stats/application/repositories/stats_repository_interfaces.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';

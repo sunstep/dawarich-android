@@ -11,8 +11,7 @@ import 'package:dawarich/features/stats/presentation/providers/stats_period_brea
 import 'package:dawarich/features/stats/presentation/providers/stats_period_provider.dart';
 import 'package:dawarich/features/stats/presentation/sheets/distance_breakdown_sheet.dart';
 import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
-import 'package:dawarich/features/stats/presentation/widgets/monthly_distance_card.dart';
-import 'package:dawarich/features/stats/presentation/widgets/stats_year_picker_row.dart';
+import 'package:dawarich/features/stats/presentation/widgets/period_row.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
@@ -242,15 +241,11 @@ class StatsView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildOverviewCard(context, ref),
-            const SizedBox(height: 16),
-
-            StatsYearPickerRow(
+            _buildOverviewCard(
+              context,
+              ref,
               availableYears: years,
               selectedYear: selectedYear,
-              onChanged: (v) {
-                ref.read(selectedStatsYearProvider.notifier).setYear(v);
-              },
             ),
 
             const SizedBox(height: 24),
@@ -268,24 +263,41 @@ class StatsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildOverviewCard(BuildContext context, WidgetRef ref) {
+  Widget _buildOverviewCard(
+      BuildContext context,
+      WidgetRef ref, {
+        required List<int> availableYears,
+        required int? selectedYear,
+      }) {
     return Card(
       elevation: 12,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
               child: Text(
                 'Your Journey',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 16),
+
+            // Period row
+            PeriodRow(
+              availableYears: availableYears,
+              selectedYear: selectedYear,
+              onChanged: (v) {
+                ref.read(selectedStatsYearProvider.notifier).setYear(v);
+              },
+            ),
+
+            const SizedBox(height: 16),
+
             Center(
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),

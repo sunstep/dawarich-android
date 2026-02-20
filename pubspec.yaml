@@ -48,6 +48,7 @@ dependencies:
   permission_handler: ^12.0.1
   provider: ^6.1.5+1
   pub_semver: ^2.2.0
+  session_box: ^1.0.5
   shared_preferences: ^2.5.4
   shimmer: ^3.0.0
   sqlcipher_flutter_libs: ^0.6.8
@@ -57,7 +58,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
-  auto_route_generator: ^10.5.0
+  auto_route_generator: ^10.4.0
   build_runner: ^2.11.1
   drift_dev: ^2.31.0
   flutter_launcher_icons: ^0.14.4

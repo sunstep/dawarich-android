@@ -37,12 +37,11 @@ StatsPeriodSnapshot resolveStatsForYear({
   final YearlyStatsUiModel? yearModel = _findYear(stats, selectedYear);
 
   if (yearModel == null) {
-    // Fallback to all time if year isn't present for any reason.
     return StatsPeriodSnapshot(
       selectedYear: null,
       totalDistance: stats.totalDistanceValue,
       totalCountries: stats.totalCountriesValue,
-      totalCities: stats.totalCountriesValue,
+      totalCities: stats.totalCitiesValue,
       monthlyDistance: null,
     );
   }

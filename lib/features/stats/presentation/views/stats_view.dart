@@ -1,5 +1,6 @@
 import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/application/errors/failure.dart';
+import 'package:dawarich/core/feature_flags/feature_flags.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/stats/presentation/models/countries/visited_countries_uimodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
@@ -19,8 +20,15 @@ class StatsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+    final flags = ref.watch(featureFlagsProvider);
+
     final statsAsync = ref.watch(statsViewmodelProvider);
-    final countriesAsync = ref.watch(countriesViewmodelProvider);
+
+    final AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync =
+    flags.visitedPlacesStatsEnabled
+        ? ref.watch(countriesViewmodelProvider)
+        : const AsyncData<Result<VisitedCountriesUiModel?, Failure>>(Ok(null));
 
     return statsAsync.when(
       loading: () => _buildLoadingScaffold(context),
@@ -305,20 +313,23 @@ class StatsView extends ConsumerWidget {
       StatsUiModel stats,
       WidgetRef ref,
       ) {
+    final flags = ref.watch(featureFlagsProvider);
+    final bool canShowCountries = flags.visitedPlacesStatsEnabled;
+
     final List<_StatTile> tiles = [
       _StatTile(
         label: 'Countries',
         value: stats.totalCountries(context),
         icon: Icons.public,
         color: Colors.purple,
-        onTap: () => _openCountriesSheet(context, ref),
+        onTap: canShowCountries ? () => _openCountriesSheet(context, ref) : null,
       ),
       _StatTile(
         label: 'Cities',
         value: stats.totalCities(context),
         icon: Icons.location_city,
         color: Colors.green,
-        onTap: () => _openCitiesSheet(context, ref),
+        onTap: () => canShowCountries ? () => _openCitiesSheet(context, ref) : null,
       ),
       _StatTile(
         label: 'Points',

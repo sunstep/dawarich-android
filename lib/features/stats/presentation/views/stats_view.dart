@@ -4,6 +4,7 @@ import 'package:dawarich/core/feature_flags/feature_flags.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/stats/presentation/helpers/stats_period_snapshot.dart';
 import 'package:dawarich/features/stats/presentation/models/countries/visited_countries_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/monthly_stats_uimodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
 import 'package:dawarich/features/stats/presentation/providers/derived/all_time_monthly_distance_provider.dart';
 import 'package:dawarich/features/stats/presentation/providers/stats_period_provider.dart';
@@ -257,22 +258,8 @@ class StatsView extends ConsumerWidget {
               stats,
               ref,
               snapshot: snapshot,
+              allTimeMonthly: allTimeMonthly,
             ),
-
-            if (snapshot.isYearMode && snapshot.monthlyDistance != null) ...[
-              const SizedBox(height: 24),
-              MonthlyDistanceCard(
-                year: snapshot.selectedYear!,
-                monthly: snapshot.monthlyDistance!,
-              ),
-            ],
-
-            if (!snapshot.isYearMode && allTimeMonthly != null) ...[
-              const SizedBox(height: 24),
-              MonthlyDistanceCard(
-                monthly: allTimeMonthly,
-              ),
-            ],
           ],
         ),
       ),
@@ -364,6 +351,7 @@ class StatsView extends ConsumerWidget {
       StatsUiModel stats,
       WidgetRef ref, {
         required StatsPeriodSnapshot snapshot,
+        required MonthlyStatsUiModel? allTimeMonthly,
       }) {
     final flags = ref.watch(featureFlagsProvider);
     final bool canShowCountries = flags.visitedPlacesStatsEnabled;
@@ -374,6 +362,13 @@ class StatsView extends ConsumerWidget {
     final String countriesValue = nf.format(snapshot.totalCountries);
     final String citiesValue = nf.format(snapshot.totalCities);
     final String distanceValue = nf.format(snapshot.totalDistance);
+
+    final MonthlyStatsUiModel? monthlyForSheet =
+    snapshot.isYearMode ? snapshot.monthlyDistance : allTimeMonthly;
+
+    final int? yearForSheet = snapshot.isYearMode ? snapshot.selectedYear : null;
+
+    final bool canShowMonthly = monthlyForSheet != null;
 
     final List<_StatTile> tiles = [
       _StatTile(
@@ -407,6 +402,14 @@ class StatsView extends ConsumerWidget {
         value: '$distanceValue km',
         icon: Icons.directions_walk,
         color: Colors.blue,
+        onTap: canShowMonthly
+            ? () {
+          _openMonthlyDistanceSheet(
+            context,
+            monthly: monthlyForSheet,
+            year: yearForSheet,
+          );
+        } : null,
       ),
     ];
 
@@ -421,6 +424,79 @@ class StatsView extends ConsumerWidget {
       ),
       itemCount: tiles.length,
       itemBuilder: (_, i) => tiles[i],
+    );
+  }
+
+  void _openMonthlyDistanceSheet(
+      BuildContext context, {
+        required MonthlyStatsUiModel monthly,
+        int? year,
+      }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.72,
+          minChildSize: 0.40,
+          maxChildSize: 0.92,
+          builder: (_, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                gradient: Theme.of(context).pageBackground,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+              ),
+              child: SingleChildScrollView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Monthly distance',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Your existing UI
+                    MonthlyDistanceCard(
+                      monthly: monthly,
+                      year: year,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -543,7 +619,8 @@ class StatsView extends ConsumerWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  final String label, value;
+  final String label;
+  final String value;
   final IconData icon;
   final Color color;
   final VoidCallback? onTap;
@@ -558,45 +635,78 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 12,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final bool isTappable = onTap != null;
+    final theme = Theme.of(context);
+
+    final card = Card(
+      elevation: isTappable ? 14 : 12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: isTappable
+            ? BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.28),
+        )
+            : BorderSide.none,
+      ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                backgroundColor: color.withValues(alpha: 0.2),
-                radius: 24,
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(color: color, fontWeight: FontWeight.bold),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withValues(alpha: 0.2),
+              radius: 24,
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isTappable) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ),
       ),
+    );
+
+    if (!isTappable) {
+      return card;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      child: card,
     );
   }
 }

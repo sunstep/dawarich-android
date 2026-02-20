@@ -10,9 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  auto_mappr: ^2.14.0
+  auto_mappr_annotation: ^2.3.0
   android_intent_plus: ^6.0.0
-  auto_route: ^10.1.2
+  auto_route: ^11.1.0
   battery_plus: ^7.0.0
   connectivity_plus: ^7.0.0
   country: ^6.0.3

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:option_result/option_result.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../viewmodels/countries_viewmodel.dart';
@@ -44,6 +45,30 @@ class StatsView extends ConsumerWidget {
     );
   }
 
+  Widget _buildDataScaffold(
+      BuildContext context,
+      StatsUiModel? stats,
+      WidgetRef ref,
+      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync,) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: 'Stats',
+          titleFontSize: 32,
+          backgroundColor: Colors.transparent,
+        ),
+        drawer: CustomDrawer(),
+        body: SafeArea(
+          child: stats == null
+              ? _buildEmptyState(context, ref)
+              : _buildFullContent(context, stats, ref, countriesAsync),
+        ),
+      ),
+    );
+  }
+
   Widget _buildErrorScaffold(BuildContext context, Object error, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
@@ -71,30 +96,6 @@ class StatsView extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDataScaffold(
-      BuildContext context,
-      StatsUiModel? stats,
-      WidgetRef ref,
-      AsyncValue<VisitedCountriesUiModel?> countriesAsync,) {
-    return Container(
-      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: 'Stats',
-          titleFontSize: 32,
-          backgroundColor: Colors.transparent,
-        ),
-        drawer: CustomDrawer(),
-        body: SafeArea(
-          child: stats == null
-              ? _buildEmptyState(context, ref)
-              : _buildFullContent(context, stats, ref, countriesAsync),
         ),
       ),
     );
@@ -201,7 +202,7 @@ class StatsView extends ConsumerWidget {
       BuildContext context,
       StatsUiModel stats,
       WidgetRef ref,
-      AsyncValue<VisitedCountriesUiModel?> countriesAsync) {
+      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync) {
     return RefreshIndicator(
       onRefresh: () async => await _refreshAll(ref),
       child: SingleChildScrollView(
@@ -599,15 +600,26 @@ class _StatsDetailsSheet extends ConsumerWidget {
                     error: e,
                     onRetry: onRetry,
                   ),
-                  data: (data) {
-                    if (data == null) {
-                      return Center(child: Text(emptyText));
+                  data: (result) {
+                    if (result case Ok(value: final VisitedCountriesUiModel? data)) {
+                      if (data == null) {
+                        return Center(child: Text(emptyText));
+                      }
+
+                      return PrimaryScrollController(
+                        controller: controller,
+                        child: buildList(data),
+                      );
                     }
 
-                    return PrimaryScrollController(
-                      controller: controller,
-                      child: buildList(data),
-                    );
+                    if (result case Err(value: final Failure failure)) {
+                      return _StatsDetailsError(
+                        error: failure,
+                        onRetry: onRetry,
+                      );
+                    }
+
+                    return Center(child: Text(emptyText));
                   },
                 ),
               ),
@@ -650,7 +662,7 @@ class _StatsDetailsError extends StatelessWidget {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () async {
-                  await onRetry!(); // ✅ actually runs, awaited
+                  await onRetry!();
                 },
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),

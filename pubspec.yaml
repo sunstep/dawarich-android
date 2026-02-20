@@ -10,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  auto_mappr: ^2.14.0
+  auto_mappr_annotation: ^2.3.0
   android_intent_plus: ^6.0.0
   auto_route: ^11.1.0
   battery_plus: ^7.0.0
@@ -57,7 +58,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
-  auto_route_generator: ^10.5.0
+  auto_route_generator: ^10.4.0
   build_runner: ^2.11.1
   drift_dev: ^2.31.0
   flutter_launcher_icons: ^0.14.4

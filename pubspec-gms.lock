@@ -57,6 +57,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+  auto_mappr:
+    dependency: "direct main"
+    description:
+      name: auto_mappr
+      sha256: "07bd0dfedb7098a0f61b4610cea8005dedd0aa822d93548cd9682e9914cea828"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.14.0"
+  auto_mappr_annotation:
+    dependency: "direct main"
+    description:
+      name: auto_mappr_annotation
+      sha256: "6b004ddabca19094c78bfdbd5185893cf3e70c5f11148878274238328bdb258e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.0"
   auto_route:
     dependency: "direct main"
     description:
@@ -997,10 +1013,10 @@ packages:
     dependency: transitive
     description:
       name: lean_builder
-      sha256: "6af3cfbf34400eb14b89fe20111e5981e7083362f00ea10b9ed2a6e833250d76"
+      sha256: "4f3d70c34c52cc5034e8cc6f53d35aa3a32fb373b78fb4c29cf45cd1dcf06942"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.6"
+    version: "0.1.5"
   lints:
     dependency: transitive
     description:
@@ -1682,10 +1698,10 @@ packages:
     dependency: transitive
     description:
       name: watcher
-      sha256: "592ab6e2892f67760543fb712ff0177f4ec76c031f02f5b4ff8d3fc5eb9fb61a"
+      sha256: "1398c9f081a753f9226febe8900fce8f7d0a67163334e1c94a2438339d79d635"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.4"
+    version: "1.2.1"
   web:
     dependency: transitive
     description:

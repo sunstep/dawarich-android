@@ -329,7 +329,7 @@ class StatsView extends ConsumerWidget {
         value: stats.totalCities(context),
         icon: Icons.location_city,
         color: Colors.green,
-        onTap: () => canShowCountries ? () => _openCitiesSheet(context, ref) : null,
+        onTap: canShowCountries ? () => _openCitiesSheet(context, ref) : null,
       ),
       _StatTile(
         label: 'Points',

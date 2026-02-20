@@ -1,4 +1,4 @@
-import 'package:dawarich/features/stats/presentation/models/yearly_stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/yearly_stats_uimodel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 

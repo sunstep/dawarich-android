@@ -57,6 +57,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+  auto_mappr:
+    dependency: "direct main"
+    description:
+      name: auto_mappr
+      sha256: "07bd0dfedb7098a0f61b4610cea8005dedd0aa822d93548cd9682e9914cea828"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.14.0"
+  auto_mappr_annotation:
+    dependency: "direct main"
+    description:
+      name: auto_mappr_annotation
+      sha256: "6b004ddabca19094c78bfdbd5185893cf3e70c5f11148878274238328bdb258e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.0"
   auto_route:
     dependency: "direct main"
     description:

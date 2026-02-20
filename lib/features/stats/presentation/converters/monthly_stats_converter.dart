@@ -1,6 +1,6 @@
 
-import 'package:dawarich/features/stats/domain/monthly_stats.dart';
-import 'package:dawarich/features/stats/presentation/models/monthly_stats_uimodel.dart';
+import 'package:dawarich/features/stats/domain/stats/monthly_stats.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/monthly_stats_uimodel.dart';
 
 extension MonthlyStatsToViewModelConverter on MonthlyStats {
   MonthlyStatsUiModel toUiModel() {

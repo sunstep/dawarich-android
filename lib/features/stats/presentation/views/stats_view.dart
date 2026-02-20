@@ -1,12 +1,18 @@
 import 'package:auto_route/annotations.dart';
+import 'package:dawarich/core/application/errors/failure.dart';
+import 'package:dawarich/core/feature_flags/feature_flags.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
-import 'package:dawarich/features/stats/presentation/models/stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/models/countries/visited_countries_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
 import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:option_result/option_result.dart';
 import 'package:shimmer/shimmer.dart';
+
+import '../viewmodels/countries_viewmodel.dart';
 
 @RoutePage()
 class StatsView extends ConsumerWidget {
@@ -14,12 +20,20 @@ class StatsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+    final flags = ref.watch(featureFlagsProvider);
+
     final statsAsync = ref.watch(statsViewmodelProvider);
+
+    final AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync =
+    flags.visitedPlacesStatsEnabled
+        ? ref.watch(countriesViewmodelProvider)
+        : const AsyncData<Result<VisitedCountriesUiModel?, Failure>>(Ok(null));
 
     return statsAsync.when(
       loading: () => _buildLoadingScaffold(context),
       error: (e, _) => _buildErrorScaffold(context, e, ref),
-      data: (stats) => _buildDataScaffold(context, stats, ref),
+      data: (stats) => _buildDataScaffold(context, stats, ref, countriesAsync),
     );
   }
 
@@ -35,6 +49,30 @@ class StatsView extends ConsumerWidget {
         ),
         drawer: CustomDrawer(),
         body: SafeArea(child: _buildFullSkeleton(context)),
+      ),
+    );
+  }
+
+  Widget _buildDataScaffold(
+      BuildContext context,
+      StatsUiModel? stats,
+      WidgetRef ref,
+      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync,) {
+    return Container(
+      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: const CustomAppbar(
+          title: 'Stats',
+          titleFontSize: 32,
+          backgroundColor: Colors.transparent,
+        ),
+        drawer: CustomDrawer(),
+        body: SafeArea(
+          child: stats == null
+              ? _buildEmptyState(context, ref)
+              : _buildFullContent(context, stats, ref, countriesAsync),
+        ),
       ),
     );
   }
@@ -66,26 +104,6 @@ class StatsView extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDataScaffold(BuildContext context, StatsUiModel? stats, WidgetRef ref) {
-    return Container(
-      decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: 'Stats',
-          titleFontSize: 32,
-          backgroundColor: Colors.transparent,
-        ),
-        drawer: CustomDrawer(),
-        body: SafeArea(
-          child: stats == null
-              ? _buildEmptyState(context, ref)
-              : _buildFullContent(context, stats, ref),
         ),
       ),
     );
@@ -181,9 +199,20 @@ class StatsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildFullContent(BuildContext context, StatsUiModel stats, WidgetRef ref) {
+  Future<void> _refreshAll(WidgetRef ref) async {
+    await Future.wait([
+      ref.read(statsViewmodelProvider.notifier).refresh(),
+      ref.read(countriesViewmodelProvider.notifier).refresh(),
+    ]);
+  }
+
+  Widget _buildFullContent(
+      BuildContext context,
+      StatsUiModel stats,
+      WidgetRef ref,
+      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync) {
     return RefreshIndicator(
-      onRefresh: () => ref.read(statsViewmodelProvider.notifier).refresh(),
+      onRefresh: () async => await _refreshAll(ref),
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -192,7 +221,7 @@ class StatsView extends ConsumerWidget {
           children: [
             _buildOverviewCard(context, ref),
             const SizedBox(height: 32),
-            _buildBreakdownGrid(context, stats),
+            _buildBreakdownGrid(context, stats, ref),
           ],
         ),
       ),
@@ -222,7 +251,7 @@ class StatsView extends ConsumerWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Refresh Stats'),
                 style: Theme.of(context).elevatedButtonTheme.style,
-                onPressed: () => ref.read(statsViewmodelProvider.notifier).refresh(),
+                onPressed: () async => await _refreshAll(ref),
               ),
             ),
           ],
@@ -265,7 +294,7 @@ class StatsView extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: () => ref.read(statsViewmodelProvider.notifier).refresh(),
+                      onPressed: () => _refreshAll(ref),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Try again'),
                     ),
@@ -279,33 +308,47 @@ class StatsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildBreakdownGrid(BuildContext context, StatsUiModel stats) {
+  Widget _buildBreakdownGrid(
+      BuildContext context,
+      StatsUiModel stats,
+      WidgetRef ref,
+      ) {
+    final flags = ref.watch(featureFlagsProvider);
+    final bool canShowCountries = flags.visitedPlacesStatsEnabled;
+
     final List<_StatTile> tiles = [
       _StatTile(
-          label: 'Countries',
-          value: stats.totalCountries(context),
-          icon: Icons.public,
-          color: Colors.purple),
+        label: 'Countries',
+        value: stats.totalCountries(context),
+        icon: Icons.public,
+        color: Colors.purple,
+        onTap: canShowCountries ? () => _openCountriesSheet(context, ref) : null,
+      ),
       _StatTile(
-          label: 'Cities',
-          value: stats.totalCities(context),
-          icon: Icons.location_city,
-          color: Colors.green),
+        label: 'Cities',
+        value: stats.totalCities(context),
+        icon: Icons.location_city,
+        color: Colors.green,
+        onTap: () => canShowCountries ? () => _openCitiesSheet(context, ref) : null,
+      ),
       _StatTile(
-          label: 'Points',
-          value: stats.totalPoints(context),
-          icon: Icons.place,
-          color: Colors.pink),
+        label: 'Points',
+        value: stats.totalPoints(context),
+        icon: Icons.place,
+        color: Colors.pink,
+      ),
       _StatTile(
-          label: 'Geo-coded',
-          value: stats.totalReverseGeocodedPoints(context),
-          icon: Icons.map,
-          color: Colors.orange),
+        label: 'Geo-coded',
+        value: stats.totalReverseGeocodedPoints(context),
+        icon: Icons.map,
+        color: Colors.orange,
+      ),
       _StatTile(
-          label: 'Distance',
-          value: '${stats.totalDistance(context)} km',
-          icon: Icons.directions_walk,
-          color: Colors.blue),
+        label: 'Distance',
+        value: '${stats.totalDistance(context)} km',
+        icon: Icons.directions_walk,
+        color: Colors.blue,
+      ),
     ];
 
     return GridView.builder(
@@ -321,17 +364,137 @@ class StatsView extends ConsumerWidget {
       itemBuilder: (_, i) => tiles[i],
     );
   }
+
+  void _openCitiesSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _StatsDetailsSheet(
+        title: 'Cities',
+        emptyText: 'No city stats available yet.',
+        onRetry: () async {
+          await ref.read(countriesViewmodelProvider.notifier).refresh();
+        },
+        buildList: (data) {
+          final items = data.citiesFlat;
+
+          if (items.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'No city stats available for this server yet.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              final it = items[i];
+
+              final subtitleParts = <String>[it.country];
+              subtitleParts.add('${it.points} pts');
+              subtitleParts.add(_formatDuration(it.stayedFor));
+
+              return _DetailsTile(
+                title: it.city,
+                subtitle: subtitleParts.join(' • '),
+                leading: Icons.location_city,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _openCountriesSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _StatsDetailsSheet(
+        title: 'Countries',
+        emptyText: 'No country stats available yet.',
+        onRetry: () async {
+          await ref.read(countriesViewmodelProvider.notifier).refresh();
+        },
+        buildList: (data) {
+          final items = data.countries;
+
+          if (items.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'No country stats available for this server yet.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              final it = items[i];
+              final cityCount = it.cities.length;
+
+              return _DetailsTile(
+                title: it.country,
+                subtitle: '$cityCount ${cityCount == 1 ? 'city' : 'cities'}',
+                leading: Icons.public,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final totalSeconds = d.inSeconds;
+
+    if (totalSeconds <= 0) {
+      return '0s';
+    }
+
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+
+    if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    }
+
+    return '${seconds}s';
+  }
 }
 
 class _StatTile extends StatelessWidget {
   final String label, value;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
+
   const _StatTile({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   @override
@@ -339,35 +502,228 @@ class _StatTile extends StatelessWidget {
     return Card(
       elevation: 12,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              backgroundColor: color.withValues(alpha: 0.2),
-              radius: 24,
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 12),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  value,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(color: color, fontWeight: FontWeight.bold),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                backgroundColor: color.withValues(alpha: 0.2),
+                radius: 24,
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(color: color, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(label,
+              const SizedBox(height: 4),
+              Text(
+                label,
                 style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatsDetailsSheet extends ConsumerWidget {
+  final String title;
+  final String emptyText;
+  final Widget Function(VisitedCountriesUiModel data) buildList;
+  final Future<void> Function() onRetry;
+
+  const _StatsDetailsSheet({
+    required this.title,
+    required this.emptyText,
+    required this.buildList,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(countriesViewmodelProvider);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.72,
+      minChildSize: 0.40,
+      maxChildSize: 0.92,
+      builder: (_, controller) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: Theme.of(context).pageBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: async.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => _StatsDetailsError(
+                    error: e,
+                    onRetry: onRetry,
+                  ),
+                  data: (result) {
+                    if (result case Ok(value: final VisitedCountriesUiModel? data)) {
+                      if (data == null) {
+                        return Center(child: Text(emptyText));
+                      }
+
+                      return PrimaryScrollController(
+                        controller: controller,
+                        child: buildList(data),
+                      );
+                    }
+
+                    if (result case Err(value: final Failure failure)) {
+                      return _StatsDetailsError(
+                        error: failure,
+                        onRetry: onRetry,
+                      );
+                    }
+
+                    return Center(child: Text(emptyText));
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatsDetailsError extends StatelessWidget {
+  final Object error;
+  final Future<void> Function()? onRetry;
+
+  const _StatsDetailsError({
+    required this.error,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final message = switch (error) {
+      Failure f => _friendlyFailureMessage(f),
+      _ => error.toString(),
+    };
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 40, color: theme.colorScheme.error),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await onRetry!();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  String _friendlyFailureMessage(Failure f) {
+    final statusCode = f.context['statusCode'];
+    if (statusCode == 502) {
+      return 'Server is temporarily unavailable (502). Try again in a bit.';
+    }
+    return f.message;
+  }
+}
+
+class _DetailsTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData leading;
+
+  const _DetailsTile({
+    required this.title,
+    required this.subtitle,
+    required this.leading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 10,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        leading: CircleAvatar(
+          radius: 20,
+          backgroundColor:
+          Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+          child: Icon(leading),
+        ),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(subtitle),
       ),
     );
   }

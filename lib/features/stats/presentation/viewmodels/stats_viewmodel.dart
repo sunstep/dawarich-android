@@ -1,8 +1,9 @@
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
+import 'package:dawarich/features/stats/application/queries/countries_query.dart';
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
-import 'package:dawarich/features/stats/domain/stats.dart';
+import 'package:dawarich/features/stats/domain/stats/stats.dart';
 import 'package:dawarich/features/stats/presentation/converters/stats_page_model_converter.dart';
-import 'package:dawarich/features/stats/presentation/models/stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:option_result/option.dart';
@@ -14,8 +15,19 @@ final statsViewmodelProvider = AsyncNotifierProvider<StatsViewmodel, StatsUiMode
 
 /// AsyncNotifier that manages stats page state
 final class StatsViewmodel extends AsyncNotifier<StatsUiModel?> {
+
+  CountriesQuery? _lastQuery;
+
   @override
   Future<StatsUiModel?> build() async {
+
+    final query = CountriesQuery(
+      startAt: DateTime.utc(1970, 1, 1),
+      endAt: DateTime.now().toUtc(),
+    );
+
+    _lastQuery = query;
+
     final useCase = await ref.watch(getStatsUseCaseProvider.future);
     return _fetchStats(useCase);
   }

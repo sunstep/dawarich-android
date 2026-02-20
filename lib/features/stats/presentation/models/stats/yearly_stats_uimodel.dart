@@ -1,4 +1,4 @@
-import 'package:dawarich/features/stats/presentation/models/monthly_stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/monthly_stats_uimodel.dart';
 
 class YearlyStatsUiModel {
   int year;

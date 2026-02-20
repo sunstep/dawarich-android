@@ -1,5 +1,5 @@
-import 'package:dawarich/features/stats/domain/yearly_stats.dart';
-import 'package:dawarich/features/stats/data/data_transfer_objects/stats_dto.dart';
+import 'package:dawarich/features/stats/domain/stats/yearly_stats.dart';
+import 'package:dawarich/features/stats/data/data_transfer_objects/stats/stats_dto.dart';
 
 class Stats {
   int totalDistance;

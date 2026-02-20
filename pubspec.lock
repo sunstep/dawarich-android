@@ -1393,6 +1393,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
+  session_box:
+    dependency: "direct main"
+    description:
+      name: session_box
+      sha256: "5306604db8474fbf7bd95b85a9dce04270358938c84b28d68d7e6a317ef7f54d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   shared_preferences:
     dependency: "direct main"
     description:

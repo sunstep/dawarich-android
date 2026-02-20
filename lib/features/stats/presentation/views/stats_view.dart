@@ -2,13 +2,19 @@ import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/core/feature_flags/feature_flags.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/stats/presentation/helpers/stats_period_snapshot.dart';
 import 'package:dawarich/features/stats/presentation/models/countries/visited_countries_uimodel.dart';
 import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/providers/derived/all_time_monthly_distance_provider.dart';
+import 'package:dawarich/features/stats/presentation/providers/stats_period_provider.dart';
 import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
+import 'package:dawarich/features/stats/presentation/widgets/monthly_distance_card.dart';
+import 'package:dawarich/features/stats/presentation/widgets/stats_year_picker_row.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -200,17 +206,31 @@ class StatsView extends ConsumerWidget {
   }
 
   Future<void> _refreshAll(WidgetRef ref) async {
-    await Future.wait([
+    final flags = ref.read(featureFlagsProvider);
+
+    final futures = <Future<void>>[
       ref.read(statsViewmodelProvider.notifier).refresh(),
-      ref.read(countriesViewmodelProvider.notifier).refresh(),
-    ]);
+    ];
+
+    if (flags.visitedPlacesStatsEnabled) {
+      futures.add(ref.read(countriesViewmodelProvider.notifier).refresh());
+    }
+
+    await Future.wait(futures);
   }
 
   Widget _buildFullContent(
       BuildContext context,
       StatsUiModel stats,
       WidgetRef ref,
-      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync) {
+      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync,
+      ) {
+    final selectedYear = ref.watch(selectedStatsYearProvider);
+    final years = availableYears(stats);
+    final snapshot = resolveStatsForYear(stats: stats, selectedYear: selectedYear);
+
+    final allTimeMonthly = ref.watch(allTimeMonthlyDistanceProvider);
+
     return RefreshIndicator(
       onRefresh: () async => await _refreshAll(ref),
       child: SingleChildScrollView(
@@ -220,8 +240,39 @@ class StatsView extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildOverviewCard(context, ref),
-            const SizedBox(height: 32),
-            _buildBreakdownGrid(context, stats, ref),
+            const SizedBox(height: 16),
+
+            StatsYearPickerRow(
+              availableYears: years,
+              selectedYear: selectedYear,
+              onChanged: (v) {
+                ref.read(selectedStatsYearProvider.notifier).setYear(v);
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            _buildBreakdownGrid(
+              context,
+              stats,
+              ref,
+              snapshot: snapshot,
+            ),
+
+            if (snapshot.isYearMode && snapshot.monthlyDistance != null) ...[
+              const SizedBox(height: 24),
+              MonthlyDistanceCard(
+                year: snapshot.selectedYear!,
+                monthly: snapshot.monthlyDistance!,
+              ),
+            ],
+
+            if (!snapshot.isYearMode && allTimeMonthly != null) ...[
+              const SizedBox(height: 24),
+              MonthlyDistanceCard(
+                monthly: allTimeMonthly,
+              ),
+            ],
           ],
         ),
       ),
@@ -311,22 +362,30 @@ class StatsView extends ConsumerWidget {
   Widget _buildBreakdownGrid(
       BuildContext context,
       StatsUiModel stats,
-      WidgetRef ref,
-      ) {
+      WidgetRef ref, {
+        required StatsPeriodSnapshot snapshot,
+      }) {
     final flags = ref.watch(featureFlagsProvider);
     final bool canShowCountries = flags.visitedPlacesStatsEnabled;
+
+    final locale = Localizations.localeOf(context).toString();
+    final nf = NumberFormat.decimalPattern(locale);
+
+    final String countriesValue = nf.format(snapshot.totalCountries);
+    final String citiesValue = nf.format(snapshot.totalCities);
+    final String distanceValue = nf.format(snapshot.totalDistance);
 
     final List<_StatTile> tiles = [
       _StatTile(
         label: 'Countries',
-        value: stats.totalCountries(context),
+        value: countriesValue,
         icon: Icons.public,
         color: Colors.purple,
         onTap: canShowCountries ? () => _openCountriesSheet(context, ref) : null,
       ),
       _StatTile(
         label: 'Cities',
-        value: stats.totalCities(context),
+        value: citiesValue,
         icon: Icons.location_city,
         color: Colors.green,
         onTap: canShowCountries ? () => _openCitiesSheet(context, ref) : null,
@@ -345,7 +404,7 @@ class StatsView extends ConsumerWidget {
       ),
       _StatTile(
         label: 'Distance',
-        value: '${stats.totalDistance(context)} km',
+        value: '$distanceValue km',
         icon: Icons.directions_walk,
         color: Colors.blue,
       ),

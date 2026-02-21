@@ -11,6 +11,11 @@ class StaggeredBarFill extends StatefulWidget {
   final Color color;
   final BorderRadius borderRadius;
 
+  final bool glow;
+  final double glowBlur;
+  final double glowSpread;
+  final double glowAlpha;
+
   const StaggeredBarFill({
     super.key,
     required this.fraction,
@@ -20,6 +25,10 @@ class StaggeredBarFill extends StatefulWidget {
     this.duration = const Duration(milliseconds: 550),
     this.curve = Curves.easeOutCubic,
     this.delay = Duration.zero,
+    this.glow = false,
+    this.glowBlur = 20,
+    this.glowSpread = 0,
+    this.glowAlpha = 0.40,
   });
 
   @override
@@ -32,20 +41,14 @@ class _StaggeredBarFillState extends State<StaggeredBarFill>
   late Animation<double> _anim;
 
   int _runId = 0;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
-
-    _anim = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _anim = CurvedAnimation(parent: _controller, curve: widget.curve);
 
     _restart();
   }
@@ -59,20 +62,33 @@ class _StaggeredBarFillState extends State<StaggeredBarFill>
     final durationChanged = oldWidget.duration != widget.duration;
     final curveChanged = oldWidget.curve != widget.curve;
 
+    // Glow props should trigger rebuild, but not necessarily restart animation
+    final glowChanged = oldWidget.glow != widget.glow ||
+        oldWidget.glowAlpha != widget.glowAlpha ||
+        oldWidget.glowBlur != widget.glowBlur ||
+        oldWidget.glowSpread != widget.glowSpread ||
+        oldWidget.color != widget.color;
+
     if (durationChanged) {
       _controller.duration = widget.duration;
     }
-
     if (curveChanged) {
       _anim = CurvedAnimation(parent: _controller, curve: widget.curve);
     }
 
     if (fractionChanged || delayChanged || durationChanged || curveChanged) {
       _restart();
+      return;
+    }
+
+    if (glowChanged) {
+      setState(() {}); // just redraw, don’t restart
     }
   }
 
   void _restart() {
+    _timer?.cancel();
+
     _runId += 1;
     final currentRun = _runId;
 
@@ -89,7 +105,7 @@ class _StaggeredBarFillState extends State<StaggeredBarFill>
         return;
       }
 
-      Timer(widget.delay, () {
+      _timer = Timer(widget.delay, () {
         if (!mounted) {
           return;
         }
@@ -103,6 +119,7 @@ class _StaggeredBarFillState extends State<StaggeredBarFill>
 
   @override
   void dispose() {
+    _timer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -110,6 +127,16 @@ class _StaggeredBarFillState extends State<StaggeredBarFill>
   @override
   Widget build(BuildContext context) {
     final target = widget.fraction.clamp(0.0, 1.0);
+
+    final glowShadows = widget.glow
+        ? <BoxShadow>[
+      BoxShadow(
+        color: widget.color.withValues(alpha: widget.glowAlpha),
+        blurRadius: widget.glowBlur,
+        spreadRadius: widget.glowSpread,
+      ),
+    ]
+        : const <BoxShadow>[];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -119,14 +146,36 @@ class _StaggeredBarFillState extends State<StaggeredBarFill>
             final t = _anim.value;
             final w = constraints.maxWidth * (target * t);
 
+            // Tiny hack: avoid a "true" 0 width shadow edge-case
+            final safeW = w <= 0.0 ? 0.0001 : w;
+
             return Align(
               alignment: Alignment.centerLeft,
-              child: Container(
-                width: w,
+              child: SizedBox(
+                width: safeW,
                 height: widget.height,
-                decoration: BoxDecoration(
-                  color: widget.color,
-                  borderRadius: widget.borderRadius,
+                child: Stack(
+                  clipBehavior: Clip.none, // ✅ allow glow to spill
+                  children: [
+                    // Glow layer (NOT clipped)
+                    if (widget.glow)
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: widget.borderRadius,
+                            boxShadow: glowShadows,
+                          ),
+                        ),
+                      ),
+
+                    // Fill layer (clipped to radius)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: widget.borderRadius,
+                        child: ColoredBox(color: widget.color),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );

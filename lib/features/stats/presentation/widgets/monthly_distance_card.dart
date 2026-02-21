@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:dawarich/features/stats/presentation/models/stats/monthly_stats_uimodel.dart';
-import 'package:dawarich/features/stats/presentation/widgets/staggered_bar_fill.dart';
+import 'package:dawarich/features/stats/presentation/widgets/stats_bar_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -119,8 +119,10 @@ class _MonthlyDistanceCardState extends State<MonthlyDistanceCard> {
                   controller: _scrollController,
                   primary: false,
                   shrinkWrap: true,
+                  clipBehavior: Clip.none,
+                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
                   itemCount: rows.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (_, i) {
                     final r = rows[i];
                     final double fraction =
@@ -128,14 +130,14 @@ class _MonthlyDistanceCardState extends State<MonthlyDistanceCard> {
 
                     final isPeak = maxValue > 0 && r.value == maxValue;
 
-                    return _MonthRow(
+                    return StatsBarRow(
                       key: ValueKey('${widget.selectedYear ?? 'all'}-${r.label}'),
-                      label: r.label,
-                      valueText: r.valueText,
+                      label: Text(r.label),
+                      value: Text(r.valueText),
                       fraction: fraction,
-                      color: barColor,
-                      isPeak: isPeak,
                       delay: Duration(milliseconds: 45 * i),
+                      baseColor: barColor,
+                      isPeak: isPeak,
                     );
                   },
                 ),
@@ -189,73 +191,4 @@ final class _MonthRowModel {
   final String valueText;
 
   const _MonthRowModel(this.label, this.value, this.valueText);
-}
-
-class _MonthRow extends StatelessWidget {
-  final String label;
-  final String valueText;
-  final double fraction;
-  final Color color;
-  final bool isPeak;
-  final Duration delay;
-
-  const _MonthRow({
-    required super.key,
-    required this.label,
-    required this.valueText,
-    required this.fraction,
-    required this.color,
-    required this.isPeak,
-    required this.delay,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final trackColor =
-    Theme.of(context).colorScheme.surface.withValues(alpha: 0.25);
-
-    final fillAlpha = isPeak ? 0.55 : 0.35;
-    final fillColor = color.withValues(alpha: fillAlpha);
-
-    final textWeight = isPeak ? FontWeight.w800 : FontWeight.w600;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        children: [
-          Container(height: 44, color: trackColor),
-
-          Positioned.fill(
-            child: StaggeredBarFill(
-              fraction: fraction,
-              delay: delay,
-              height: 44,
-              color: fillColor,
-              borderRadius: BorderRadius.circular(0),
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SizedBox(
-              height: 44,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: textWeight,
-                      ),
-                    ),
-                  ),
-                  Text(valueText),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

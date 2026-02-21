@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
-import 'package:dawarich/features/stats/presentation/widgets/staggered_bar_fill.dart';
+import 'package:dawarich/features/stats/presentation/widgets/stats_bar_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -81,14 +81,17 @@ class YearOverYearDistanceCard extends StatelessWidget {
                 final fraction = maxValue <= 0 ? 0.0 : (r.distance / maxValue);
                 final isSelected = selectedYear != null && r.year == selectedYear;
 
-                return _YearRow(
+                final isPeak = maxValue > 0 && r.distance == maxValue;
+
+                return StatsBarRow(
                   key: ValueKey('${selectedYear ?? 'all'}-${r.year}'),
-                  year: r.year,
-                  valueText: r.valueText,
+                  label: Text(r.year.toString()),
+                  value: Text(r.valueText),
                   fraction: fraction,
-                  color: barColor,
-                  isSelected: isSelected,
                   delay: Duration(milliseconds: 45 * i),
+                  baseColor: barColor,
+                  isPeak: isPeak,
+                  isSelected: isSelected,
                   onTap: () => onYearSelected(r.year),
                 );
               },
@@ -144,85 +147,4 @@ final class _YearRowModel {
   final String valueText;
 
   const _YearRowModel(this.year, this.distance, this.valueText);
-}
-
-class _YearRow extends StatelessWidget {
-  final int year;
-  final String valueText;
-  final double fraction;
-  final Color color;
-  final bool isSelected;
-  final Duration delay;
-  final VoidCallback onTap;
-
-  const _YearRow({
-    super.key,
-    required this.year,
-    required this.valueText,
-    required this.fraction,
-    required this.color,
-    required this.isSelected,
-    required this.delay,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final trackColor =
-    Theme.of(context).colorScheme.surface.withValues(alpha: 0.25);
-
-    final fillAlpha = isSelected ? 0.55 : 0.35;
-    final fillColor = color.withValues(alpha: fillAlpha);
-
-    final textWeight = isSelected ? FontWeight.w800 : FontWeight.w600;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            children: [
-              Container(height: 44, color: trackColor),
-
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: StaggeredBarFill(
-                    fraction: fraction,
-                    delay: delay,
-                    height: 44,
-                    color: fillColor,
-                    borderRadius: BorderRadius.zero,
-                  ),
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: SizedBox(
-                  height: 44,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          year.toString(),
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: textWeight,
-                          ),
-                        ),
-                      ),
-                      Text(valueText),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

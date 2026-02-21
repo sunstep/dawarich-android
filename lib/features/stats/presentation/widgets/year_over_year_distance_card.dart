@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/widgets/staggered_bar_fill.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -87,6 +88,7 @@ class YearOverYearDistanceCard extends StatelessWidget {
                   fraction: fraction,
                   color: barColor,
                   isSelected: isSelected,
+                  delay: Duration(milliseconds: 45 * i),
                   onTap: () => onYearSelected(r.year),
                 );
               },
@@ -147,9 +149,10 @@ final class _YearRowModel {
 class _YearRow extends StatelessWidget {
   final int year;
   final String valueText;
-  final double fraction; // 0..1
+  final double fraction;
   final Color color;
   final bool isSelected;
+  final Duration delay;
   final VoidCallback onTap;
 
   const _YearRow({
@@ -159,6 +162,7 @@ class _YearRow extends StatelessWidget {
     required this.fraction,
     required this.color,
     required this.isSelected,
+    required this.delay,
     required this.onTap,
   });
 
@@ -183,16 +187,17 @@ class _YearRow extends StatelessWidget {
             children: [
               Container(height: 44, color: trackColor),
 
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.0, end: fraction.clamp(0.0, 1.0)),
-                duration: const Duration(milliseconds: 550),
-                curve: Curves.easeOutCubic,
-                builder: (context, animatedFraction, _) {
-                  return FractionallySizedBox(
-                    widthFactor: animatedFraction,
-                    child: Container(height: 44, color: fillColor),
-                  );
-                },
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: StaggeredBarFill(
+                    fraction: fraction,
+                    delay: delay,
+                    height: 44,
+                    color: fillColor,
+                    borderRadius: BorderRadius.zero,
+                  ),
+                ),
               ),
 
               Padding(

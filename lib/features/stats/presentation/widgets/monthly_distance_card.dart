@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:dawarich/features/stats/presentation/models/stats/monthly_stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/widgets/staggered_bar_fill.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -134,6 +135,7 @@ class _MonthlyDistanceCardState extends State<MonthlyDistanceCard> {
                       fraction: fraction,
                       color: barColor,
                       isPeak: isPeak,
+                      delay: Duration(milliseconds: 45 * i),
                     );
                   },
                 ),
@@ -192,9 +194,10 @@ final class _MonthRowModel {
 class _MonthRow extends StatelessWidget {
   final String label;
   final String valueText;
-  final double fraction; // 0..1
+  final double fraction;
   final Color color;
   final bool isPeak;
+  final Duration delay;
 
   const _MonthRow({
     required super.key,
@@ -203,6 +206,7 @@ class _MonthRow extends StatelessWidget {
     required this.fraction,
     required this.color,
     required this.isPeak,
+    required this.delay,
   });
 
   @override
@@ -221,16 +225,14 @@ class _MonthRow extends StatelessWidget {
         children: [
           Container(height: 44, color: trackColor),
 
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0.0, end: fraction.clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 550),
-            curve: Curves.easeOutCubic,
-            builder: (context, animatedFraction, _) {
-              return FractionallySizedBox(
-                widthFactor: animatedFraction,
-                child: Container(height: 44, color: fillColor),
-              );
-            },
+          Positioned.fill(
+            child: StaggeredBarFill(
+              fraction: fraction,
+              delay: delay,
+              height: 44,
+              color: fillColor,
+              borderRadius: BorderRadius.circular(0),
+            ),
           ),
 
           Padding(

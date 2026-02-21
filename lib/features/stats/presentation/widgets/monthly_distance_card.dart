@@ -128,6 +128,7 @@ class _MonthlyDistanceCardState extends State<MonthlyDistanceCard> {
                     final isPeak = maxValue > 0 && r.value == maxValue;
 
                     return _MonthRow(
+                      key: ValueKey('${widget.selectedYear ?? 'all'}-${r.label}'),
                       label: r.label,
                       valueText: r.valueText,
                       fraction: fraction,
@@ -196,6 +197,7 @@ class _MonthRow extends StatelessWidget {
   final bool isPeak;
 
   const _MonthRow({
+    required super.key,
     required this.label,
     required this.valueText,
     required this.fraction,
@@ -218,10 +220,19 @@ class _MonthRow extends StatelessWidget {
       child: Stack(
         children: [
           Container(height: 44, color: trackColor),
-          FractionallySizedBox(
-            widthFactor: fraction.clamp(0.0, 1.0),
-            child: Container(height: 44, color: fillColor),
+
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: fraction.clamp(0.0, 1.0)),
+            duration: const Duration(milliseconds: 550),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedFraction, _) {
+              return FractionallySizedBox(
+                widthFactor: animatedFraction,
+                child: Container(height: 44, color: fillColor),
+              );
+            },
           ),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: SizedBox(

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -16,19 +18,19 @@ class YearOverYearDistanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final years = stats.yearlyStats.where((y) => y.year > 0).toList()
-      ..sort((a, b) => b.year.compareTo(a.year));
+    final locale = Localizations.localeOf(context).toString();
+    final nf = NumberFormat.decimalPattern(locale);
 
+    final years = _availableYears(stats);
     if (years.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final maxKm = years
-        .map((y) => y.totalDistance)
-        .fold<int>(0, (a, b) => a > b ? a : b);
+    // Show newest -> oldest (assuming your availableYears already does this)
+    final rows = _rows(stats, years, nf);
 
-    final locale = Localizations.localeOf(context).toString();
-    final nf = NumberFormat.decimalPattern(locale);
+    final maxValue = _maxDistance(rows);
+    final barColor = Theme.of(context).colorScheme.primary;
 
     return Card(
       elevation: 12,
@@ -38,84 +40,183 @@ class YearOverYearDistanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Year over year',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Year over year',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<int?>(
+                    value: selectedYear,
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('All time'),
+                      ),
+                      for (final y in years)
+                        DropdownMenuItem<int?>(
+                          value: y,
+                          child: Text(y.toString()),
+                        ),
+                    ],
+                    onChanged: onYearSelected,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: years.length,
+              itemCount: rows.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (_, i) {
-                final y = years[i];
-                final fraction =
-                maxKm <= 0 ? 0.0 : (y.totalDistance / maxKm).clamp(0.0, 1.0);
+                final r = rows[i];
 
-                final isSelected = selectedYear == y.year;
+                final fraction = maxValue <= 0 ? 0.0 : (r.distance / maxValue);
+                final isSelected = selectedYear != null && r.year == selectedYear;
 
-                return InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => onYearSelected(isSelected ? null : y.year),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surface
-                          .withValues(alpha: isSelected ? 0.35 : 0.25),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 52,
-                          child: Text(
-                            y.year.toString(),
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
-                            child: Stack(
-                              children: [
-                                Container(
-                                  height: 10,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.10),
-                                ),
-                                FractionallySizedBox(
-                                  widthFactor: fraction,
-                                  child: Container(
-                                    height: 10,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withValues(alpha: 0.55),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text('${nf.format(y.totalDistance)} km'),
-                      ],
-                    ),
-                  ),
+                return _YearRow(
+                  key: ValueKey('${selectedYear ?? 'all'}-${r.year}'),
+                  year: r.year,
+                  valueText: r.valueText,
+                  fraction: fraction,
+                  color: barColor,
+                  isSelected: isSelected,
+                  onTap: () => onYearSelected(r.year),
                 );
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  List<int> _availableYears(StatsUiModel stats) {
+    final years = <int>[];
+    for (final y in stats.yearlyStats) {
+      if (y.year > 0 && years.contains(y.year) == false) {
+        years.add(y.year);
+      }
+    }
+    years.sort((a, b) => b.compareTo(a));
+    return years;
+  }
+
+  List<_YearRowModel> _rows(
+      StatsUiModel stats,
+      List<int> years,
+      NumberFormat nf,
+      ) {
+    // Map year -> distance quickly
+    final map = <int, int>{};
+    for (final y in stats.yearlyStats) {
+      map[y.year] = y.totalDistance;
+    }
+
+    final out = <_YearRowModel>[];
+    for (final year in years) {
+      final distance = map[year] ?? 0;
+      out.add(_YearRowModel(year, distance, '${nf.format(distance)} km'));
+    }
+    return out;
+  }
+
+  int _maxDistance(List<_YearRowModel> rows) {
+    var maxValue = 0;
+    for (final r in rows) {
+      maxValue = max(maxValue, r.distance);
+    }
+    return maxValue;
+  }
+}
+
+final class _YearRowModel {
+  final int year;
+  final int distance;
+  final String valueText;
+
+  const _YearRowModel(this.year, this.distance, this.valueText);
+}
+
+class _YearRow extends StatelessWidget {
+  final int year;
+  final String valueText;
+  final double fraction; // 0..1
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _YearRow({
+    super.key,
+    required this.year,
+    required this.valueText,
+    required this.fraction,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final trackColor =
+    Theme.of(context).colorScheme.surface.withValues(alpha: 0.25);
+
+    final fillAlpha = isSelected ? 0.55 : 0.35;
+    final fillColor = color.withValues(alpha: fillAlpha);
+
+    final textWeight = isSelected ? FontWeight.w800 : FontWeight.w600;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              Container(height: 44, color: trackColor),
+
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: fraction.clamp(0.0, 1.0)),
+                duration: const Duration(milliseconds: 550),
+                curve: Curves.easeOutCubic,
+                builder: (context, animatedFraction, _) {
+                  return FractionallySizedBox(
+                    widthFactor: animatedFraction,
+                    child: Container(height: 44, color: fillColor),
+                  );
+                },
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  height: 44,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          year.toString(),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: textWeight,
+                          ),
+                        ),
+                      ),
+                      Text(valueText),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

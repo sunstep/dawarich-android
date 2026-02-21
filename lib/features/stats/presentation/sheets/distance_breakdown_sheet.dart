@@ -1,10 +1,11 @@
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/stats/presentation/helpers/stats_period_snapshot.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/monthly_stats_uimodel.dart';
 import 'package:dawarich/features/stats/presentation/providers/derived/all_time_monthly_distance_provider.dart';
 import 'package:dawarich/features/stats/presentation/providers/stats_period_breakdown_provider.dart';
 import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/widgets/monthly_distance_card.dart';
-import 'package:dawarich/features/stats/presentation/widgets/stats_year_picker_row.dart';
+import 'package:dawarich/features/stats/presentation/widgets/year_over_year_distance_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -78,37 +79,40 @@ class DistanceBreakdownSheet extends ConsumerWidget {
 
                     final allTimeMonthly = ref.watch(allTimeMonthlyDistanceProvider);
 
+                    final MonthlyStatsUiModel? monthly = snapshot.isYearMode
+                        ? snapshot.monthlyDistance
+                        : allTimeMonthly;
+
+                    if (monthly == null) {
+                      return _SheetEmpty(
+                        controller: controller,
+                        text: 'No monthly distance data available.',
+                      );
+                    }
+
                     return PrimaryScrollController(
                       controller: controller,
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                         children: [
-                          StatsYearPickerRow(
-                            availableYears: years,
+                          const SizedBox(height: 12),
+
+                          YearOverYearDistanceCard(
+                            stats: stats,
                             selectedYear: breakdownYear,
-                            onChanged: (v) => ref
-                                .read(statsBreakdownYearProvider.notifier)
-                                .setYear(v),
+                            onYearSelected: (v) => ref.read(statsBreakdownYearProvider.notifier).setYear(v),
                           ),
+
                           const SizedBox(height: 16),
 
-                          if (snapshot.isYearMode &&
-                              snapshot.monthlyDistance != null) ...[
-                            MonthlyDistanceCard(
-                              year: snapshot.selectedYear,
-                              monthly: snapshot.monthlyDistance!,
-                            ),
-                          ] else if (!snapshot.isYearMode &&
-                              allTimeMonthly != null) ...[
-                            MonthlyDistanceCard(
-                              monthly: allTimeMonthly,
-                            ),
-                          ] else ...[
-                            _SheetEmpty(
-                              controller: controller,
-                              text: 'No monthly distance data available.',
-                            ),
-                          ],
+                          MonthlyDistanceCard(
+                            availableYears: years,
+                            selectedYear: breakdownYear,
+                            onYearChanged: (v) => ref
+                                .read(statsBreakdownYearProvider.notifier)
+                                .setYear(v),
+                            monthly: monthly,
+                          ),
                         ],
                       ),
                     );

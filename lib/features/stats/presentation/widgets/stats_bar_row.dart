@@ -9,20 +9,15 @@ class StatsBarRow extends StatelessWidget {
   final double fraction; // 0..1
   final Duration delay;
 
-  /// Base color (typically theme primary) used for non-peak fills + glow accents.
+  /// Accent used for the peak border. Example: const Color(0xFFFFB300)
   final Color baseColor;
 
-  /// When true: applies the "peak" chrome + PeakPill.
   final bool isPeak;
-
-  /// Optional: when true, slightly stronger fill for selected rows (yearly).
   final bool isSelected;
-
-  /// Optional tap support (yearly). Null => non-tappable.
   final VoidCallback? onTap;
-
-  /// Height of the row.
   final double height;
+
+  final double peakBorderWidth;
 
   const StatsBarRow({
     super.key,
@@ -35,34 +30,41 @@ class StatsBarRow extends StatelessWidget {
     this.isSelected = false,
     this.onTap,
     this.height = 44,
+    this.peakBorderWidth = 2.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
     final radius = BorderRadius.circular(12);
 
-    final trackColor = cs.surface.withValues(alpha: 0.22);
+    final trackColor = isLight
+        ? Colors.black.withValues(alpha: 0.06)
+        : Colors.white.withValues(alpha: 0.08);
 
-    final fillAlpha = isPeak
-        ? 0.58
-        : (isSelected ? 0.46 : 0.34);
+    final fillBase = cs.onSurface;
+    final normalFill = fillBase.withValues(alpha: isLight ? 0.10 : 0.18);
+    final selectedFill = fillBase.withValues(alpha: isLight ? 0.14 : 0.26);
+    final fillColor = isSelected ? selectedFill : normalFill;
 
-    final fillColor = baseColor.withValues(alpha: fillAlpha);
+    final labelStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: cs.onSurface.withValues(alpha: isLight ? 0.92 : 0.84),
+      fontWeight: (isSelected || isPeak) ? FontWeight.w800 : FontWeight.w600,
+    );
 
-    final labelColor = isPeak
-        ? cs.onSurface.withValues(alpha: 0.95)
-        : cs.onSurface.withValues(alpha: 0.78);
+    final valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: cs.onSurface.withValues(alpha: isLight ? 0.92 : 0.78),
+      fontWeight: isPeak ? FontWeight.w800 : null,
+    );
 
-    final valueColor = isPeak
-        ? cs.onSurface.withValues(alpha: 0.95)
-        : cs.onSurface.withValues(alpha: 0.78);
+    final peakBorder = Border.all(
+      color: baseColor.withValues(alpha: isLight ? 0.95 : 0.90),
+      width: peakBorderWidth,
+    );
 
-    final textWeight = isPeak
-        ? FontWeight.w900
-        : (isSelected ? FontWeight.w800 : FontWeight.w600);
-
-    final content = ClipRRect(
+    final row = ClipRRect(
       borderRadius: radius,
       child: Stack(
         children: [
@@ -74,7 +76,7 @@ class StatsBarRow extends StatelessWidget {
               delay: delay,
               height: height,
               color: fillColor,
-              borderRadius: radius,
+              borderRadius: BorderRadius.circular(0), // already clipped
             ),
           ),
 
@@ -85,13 +87,13 @@ class StatsBarRow extends StatelessWidget {
                 children: [
                   Expanded(
                     child: DefaultTextStyle.merge(
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: textWeight,
-                        color: labelColor,
-                      ),
+                      style: labelStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          label,
+                          Flexible(child: _ellipsizeIfText(label)),
                           if (isPeak) ...[
                             const SizedBox(width: 8),
                             const PeakPill(),
@@ -101,27 +103,28 @@ class StatsBarRow extends StatelessWidget {
                     ),
                   ),
                   DefaultTextStyle.merge(
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: isPeak ? FontWeight.w800 : null,
-                      color: valueColor,
-                    ),
+                    style: valueStyle,
                     child: value,
                   ),
                 ],
               ),
             ),
           ),
+
+          if (isPeak)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: radius,
+                    border: peakBorder,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
-
-    final row = isPeak
-        ? _peakChrome(
-      borderRadius: radius,
-      glowColor: baseColor,
-      child: content,
-    )
-        : content;
 
     if (onTap == null) {
       return row;
@@ -137,61 +140,14 @@ class StatsBarRow extends StatelessWidget {
     );
   }
 
-  Widget _peakChrome({
-    required BorderRadius borderRadius,
-    required Color glowColor,
-    required Widget child,
-  }) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: borderRadius,
-                boxShadow: [
-                  BoxShadow(
-                    color: glowColor.withValues(alpha: 0.24),
-                    blurRadius: 16,
-                    spreadRadius: 0,
-                  ),
-                  BoxShadow(
-                    color: glowColor.withValues(alpha: 0.12),
-                    blurRadius: 30,
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        child,
-
-        Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: borderRadius,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  width: 1,
-                ),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.14),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.12),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+  Widget _ellipsizeIfText(Widget w) {
+    if (w is Text) {
+      return Text(
+        w.data ?? '',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    return w;
   }
 }

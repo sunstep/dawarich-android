@@ -74,7 +74,7 @@ class YearOverYearDistanceCard extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: rows.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => const SizedBox(height: 20),
               itemBuilder: (_, i) {
                 final r = rows[i];
 

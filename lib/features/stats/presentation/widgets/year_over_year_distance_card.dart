@@ -26,7 +26,6 @@ class YearOverYearDistanceCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // Show newest -> oldest (assuming your availableYears already does this)
     final rows = _rows(stats, years, nf);
 
     final maxValue = _maxDistance(rows);

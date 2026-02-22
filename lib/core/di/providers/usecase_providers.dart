@@ -9,6 +9,7 @@ import 'package:dawarich/features/stats/application/repositories/stats_repositor
 import 'package:dawarich/features/stats/application/usecases/get_last_stats_sync_usecase.dart';
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/application/usecases/get_visited_countries_usecase.dart';
+import 'package:dawarich/features/stats/application/usecases/should_refresh_stats_usecase.dart';
 import 'package:dawarich/features/stats/data/mappers/countries_mapper.dart';
 import 'package:dawarich/features/stats/data/repositories/countries_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
@@ -131,6 +132,13 @@ final getStatsUseCaseProvider = FutureProvider<GetStatsUseCase>((ref) async {
 final getLastStatsSyncUseCaseProvider = FutureProvider<GetLastStatsSyncUsecase>((ref) async {
   return GetLastStatsSyncUsecase(await ref.watch(statsRepositoryProvider.future));
 });
+
+final shouldRefreshStatsUseCaseProvider =
+FutureProvider<ShouldRefreshStatsUseCase>((ref) async {
+  final getLastSync = await ref.watch(getLastStatsSyncUseCaseProvider.future);
+  return ShouldRefreshStatsUseCase(getLastSync);
+});
+
 
 // --- Countries repositories ---
 

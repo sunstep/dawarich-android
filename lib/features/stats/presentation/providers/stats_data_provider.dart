@@ -7,5 +7,7 @@ part 'stats_data_provider.g.dart';
 
 @riverpod
 AsyncValue<StatsUiModel?> statsData(Ref ref) {
-  return ref.watch(statsViewmodelProvider);
+  final stateAsync = ref.watch(statsViewmodelProvider);
+
+  return stateAsync.whenData((state) => state?.stats);
 }

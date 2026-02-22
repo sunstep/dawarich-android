@@ -10,6 +10,7 @@ import 'package:dawarich/features/stats/presentation/providers/derived/all_time_
 import 'package:dawarich/features/stats/presentation/providers/stats_period_breakdown_provider.dart';
 import 'package:dawarich/features/stats/presentation/providers/stats_period_provider.dart';
 import 'package:dawarich/features/stats/presentation/sheets/distance_breakdown_sheet.dart';
+import 'package:dawarich/features/stats/presentation/viewmodels/stats_page_state.dart';
 import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
 import 'package:dawarich/features/stats/presentation/widgets/period_row.dart';
 import 'package:flutter/material.dart';
@@ -29,19 +30,31 @@ class StatsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
 
-    final flags = ref.watch(featureFlagsProvider);
-
     final statsAsync = ref.watch(statsViewmodelProvider);
+
+    final state = statsAsync.value;
+
+    if (statsAsync.hasError && state == null) {
+      return _buildErrorScaffold(context, statsAsync.error!, ref);
+    }
+
+    if (state == null) {
+      return _buildLoadingScaffold(context);
+    }
+
+    final flags = ref.watch(featureFlagsProvider);
 
     final AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync =
     flags.visitedPlacesStatsEnabled
         ? ref.watch(countriesViewmodelProvider)
         : const AsyncData<Result<VisitedCountriesUiModel?, Failure>>(Ok(null));
 
-    return statsAsync.when(
-      loading: () => _buildLoadingScaffold(context),
-      error: (e, _) => _buildErrorScaffold(context, e, ref),
-      data: (stats) => _buildDataScaffold(context, stats, ref, countriesAsync),
+    return _buildDataScaffold(
+      context,
+      state,
+      ref,
+      countriesAsync,
+      isRefreshing: statsAsync.isLoading,
     );
   }
 
@@ -63,9 +76,11 @@ class StatsView extends ConsumerWidget {
 
   Widget _buildDataScaffold(
       BuildContext context,
-      StatsUiModel? stats,
+      StatsPageState state,
       WidgetRef ref,
-      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync,) {
+      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync, {
+        required bool isRefreshing,
+      }) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
       child: Scaffold(
@@ -77,9 +92,16 @@ class StatsView extends ConsumerWidget {
         ),
         drawer: CustomDrawer(),
         body: SafeArea(
-          child: stats == null
+          child: state.stats == null
               ? _buildEmptyState(context, ref)
-              : _buildFullContent(context, stats, ref, countriesAsync),
+              : _buildFullContent(
+            context,
+            state.stats!,
+            ref,
+            countriesAsync,
+            syncedAtUtc: state.syncedAtUtc,
+            isRefreshing: isRefreshing,
+          ),
         ),
       ),
     );
@@ -225,8 +247,10 @@ class StatsView extends ConsumerWidget {
       BuildContext context,
       StatsUiModel stats,
       WidgetRef ref,
-      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync,
-      ) {
+      AsyncValue<Result<VisitedCountriesUiModel?, Failure>> countriesAsync, {
+        required DateTime? syncedAtUtc,
+        required bool isRefreshing,
+      }) {
     final selectedYear = ref.watch(selectedStatsYearProvider);
     final years = availableYears(stats);
     final snapshot = resolveStatsForYear(stats: stats, selectedYear: selectedYear);
@@ -246,6 +270,8 @@ class StatsView extends ConsumerWidget {
               ref,
               availableYears: years,
               selectedYear: selectedYear,
+              syncedAtUtc: syncedAtUtc,
+              isRefreshing: isRefreshing,
             ),
 
             const SizedBox(height: 24),
@@ -268,7 +294,14 @@ class StatsView extends ConsumerWidget {
       WidgetRef ref, {
         required List<int> availableYears,
         required int? selectedYear,
+        required DateTime? syncedAtUtc,
+        required bool isRefreshing,
       }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final lastSyncText = _formatLastSync(context, syncedAtUtc);
+
     return Card(
       elevation: 12,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -280,14 +313,46 @@ class StatsView extends ConsumerWidget {
             Center(
               child: Text(
                 'Your Journey',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+
+            // ✅ Last sync row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.sync,
+                  size: 16,
+                  color: cs.onSurface.withValues(alpha: 0.65),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  lastSyncText,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.70),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (isRefreshing) ...[
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: cs.onSurface.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+
             const SizedBox(height: 16),
 
-            // Period row
             PeriodRow(
               availableYears: availableYears,
               selectedYear: selectedYear,
@@ -302,7 +367,7 @@ class StatsView extends ConsumerWidget {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),
                 label: const Text('Refresh Stats'),
-                style: Theme.of(context).elevatedButtonTheme.style,
+                style: theme.elevatedButtonTheme.style,
                 onPressed: () async => await _refreshAll(ref),
               ),
             ),
@@ -554,6 +619,31 @@ class StatsView extends ConsumerWidget {
     }
 
     return '${seconds}s';
+  }
+
+  String _formatLastSync(BuildContext context, DateTime? lastSyncedAtUtc) {
+    if (lastSyncedAtUtc == null) {
+      return 'Last sync: never';
+    }
+
+    final local = lastSyncedAtUtc.toLocal();
+    final now = DateTime.now();
+
+    final diff = now.difference(local);
+
+    if (diff.inSeconds < 30) {
+      return 'Last sync: just now';
+    }
+    if (diff.inMinutes < 60) {
+      return 'Last sync: ${diff.inMinutes}m ago';
+    }
+    if (diff.inHours < 24) {
+      return 'Last sync: ${diff.inHours}h ago';
+    }
+
+    final locale = Localizations.localeOf(context).toString();
+    final df = DateFormat.yMMMd(locale).add_Hm();
+    return 'Last sync: ${df.format(local)}';
   }
 }
 

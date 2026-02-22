@@ -10,8 +10,8 @@ final class GetStatsUseCase {
   final IStatsRepository _statsRepository;
   GetStatsUseCase(this._statsRepository);
 
-  Future<Option<Stats>> call() async {
-    Option<StatsDTO> result = await _statsRepository.getStats();
+  Future<Option<Stats>> call({bool forceRefresh = false}) async {
+    Option<StatsDTO> result = await _statsRepository.getStats(forceRefresh: forceRefresh);
 
     if (result case Some(value: StatsDTO statsDTO)) {
       return Some(Stats.fromDTO(statsDTO));

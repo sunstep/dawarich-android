@@ -6,11 +6,14 @@ import 'package:dawarich/features/batch/application/usecases/check_batch_thresho
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
 import 'package:dawarich/features/stats/application/repositories/countries_repository_interfaces.dart';
 import 'package:dawarich/features/stats/application/repositories/stats_repository_interfaces.dart';
+import 'package:dawarich/features/stats/application/usecases/get_last_stats_sync_usecase.dart';
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/application/usecases/get_visited_countries_usecase.dart';
 import 'package:dawarich/features/stats/data/mappers/countries_mapper.dart';
 import 'package:dawarich/features/stats/data/repositories/countries_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
+import 'package:dawarich/features/stats/data/sources/local/stats_local_data_source.dart';
+import 'package:dawarich/features/stats/data/sources/remote/stats_remote_data_source.dart';
 import 'package:dawarich/features/stats/presentation/converters/countries_mapper.dart';
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
 import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
@@ -56,6 +59,18 @@ import 'package:dawarich/features/tracking/data/repositories/drift_tracker_setti
 import 'package:dawarich/features/batch/application/usecases/point_validator.dart';
 import 'package:dawarich/features/timeline/application/usecases/get_default_map_center_usecase.dart';
 
+final statsRemoteDataSourceProvider = FutureProvider<IStatsRemoteDataSource>((ref) async {
+  final dio = await ref.watch(dioClientProvider.future);
+  return StatsRemoteDataSource(dio);
+});
+
+final statsCacheDataSourceProvider = FutureProvider<IStatsCacheDataSource>((ref) async {
+  final db = await ref.watch(sqliteClientProvider.future);
+
+  return StatsCacheDataSource(db.statsCacheDao);
+
+});
+
 // --- Repositories ---
 final apiPointRepositoryProvider = FutureProvider<IApiPointRepository>((ref) async {
   final dio = await ref.watch(dioClientProvider.future);
@@ -68,10 +83,11 @@ final pointLocalRepositoryProvider = FutureProvider<IPointLocalRepository>((ref)
 });
 
 final statsRepositoryProvider = FutureProvider<IStatsRepository>((ref) async {
-  final dio = await ref.watch(dioClientProvider.future);
-  return StatsRepository(dio);
-});
+  final remote = await ref.watch(statsRemoteDataSourceProvider.future);
+  final cache = await ref.watch(statsCacheDataSourceProvider.future);
 
+  return StatsRepository(remote: remote, cache: cache);
+});
 // --- Tracking repositories ---
 final hardwareRepositoryProvider = Provider<IHardwareRepository>((ref) {
   return HardwareRepository(
@@ -110,6 +126,10 @@ final getTotalPagesUseCaseProvider = FutureProvider<GetTotalPagesUseCase>((ref) 
 
 final getStatsUseCaseProvider = FutureProvider<GetStatsUseCase>((ref) async {
   return GetStatsUseCase(await ref.watch(statsRepositoryProvider.future));
+});
+
+final getLastStatsSyncUseCaseProvider = FutureProvider<GetLastStatsSyncUsecase>((ref) async {
+  return GetLastStatsSyncUsecase(await ref.watch(statsRepositoryProvider.future));
 });
 
 // --- Countries repositories ---

@@ -29,4 +29,16 @@ class StatsDTO {
           .toList(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "totalDistanceKm": totalDistance,
+      "totalPointsTracked": totalPoints,
+      "totalReverseGeocodedPoints": totalReverseGeocodedPoints,
+      "totalCountriesVisited": totalCountries,
+      "totalCitiesVisited": totalCities,
+      "yearlyStats": yearlyStats.map((y) => y.toJson()).toList(),
+    };
+  }
+
 }

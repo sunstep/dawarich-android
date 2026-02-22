@@ -24,4 +24,14 @@ class YearlyStatsDTO {
       monthlyStats: MonthlyStatsDTO.fromJson(json["monthlyDistanceKm"]),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "year": year,
+      "totalDistanceKm": totalDistance,
+      "totalCountriesVisited": totalCountries,
+      "totalCitiesVisited": totalCities,
+      "monthlyDistanceKm": monthlyStats.toJson(),
+    };
+  }
 }

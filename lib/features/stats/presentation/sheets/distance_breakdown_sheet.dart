@@ -71,9 +71,9 @@ class DistanceBreakdownSheet extends ConsumerWidget {
                       );
                     }
 
-                    final years = availableYears(stats);
+                    final years = availableYears(stats.stats!);
                     final snapshot = resolveStatsForYear(
-                      stats: stats,
+                      stats: stats.stats!,
                       selectedYear: breakdownYear,
                     );
 
@@ -98,7 +98,7 @@ class DistanceBreakdownSheet extends ConsumerWidget {
                           const SizedBox(height: 12),
 
                           YearOverYearDistanceCard(
-                            stats: stats,
+                            stats: stats.stats!,
                             selectedYear: breakdownYear,
                             onYearSelected: (v) => ref.read(statsBreakdownYearProvider.notifier).setYear(v),
                           ),

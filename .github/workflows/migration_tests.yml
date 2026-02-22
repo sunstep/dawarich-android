@@ -27,8 +27,6 @@ jobs:
             BASE="${{ github.event.pull_request.base.sha }}"
             HEAD="${{ github.event.pull_request.head.sha }}"
 
-            # ✅ This is the important fix:
-            # Use merge-base so we diff exactly what the PR introduces.
             MERGE_BASE="$(git merge-base "$BASE" "$HEAD")"
             echo "PR base=$BASE"
             echo "PR head=$HEAD"
@@ -36,7 +34,6 @@ jobs:
 
             CHANGED="$(git diff --name-only "$MERGE_BASE" "$HEAD" || true)"
           else
-            # workflow_dispatch: pretend everything matters
             echo "drift_changed=true" >> "$GITHUB_OUTPUT"
             echo "schemas_changed=true" >> "$GITHUB_OUTPUT"
             echo "tests_changed=true" >> "$GITHUB_OUTPUT"
@@ -94,7 +91,12 @@ jobs:
   test-migrations:
     needs: [detect-migration, enforce-snapshots]
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-migration.outputs.should_run_tests == 'true' }}
+    if: >-
+      ${{
+        always() &&
+        (github.event_name == 'workflow_dispatch' || needs.detect-migration.outputs.should_run_tests == 'true') &&
+        (needs.enforce-snapshots.result == 'success' || needs.enforce-snapshots.result == 'skipped')
+      }}
     steps:
       - uses: actions/checkout@v4
 

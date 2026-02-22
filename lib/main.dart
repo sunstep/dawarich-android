@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 late final AppRouter appRouter;
+final container = ProviderContainer();
 
 Future<void> main() async {
 
@@ -37,8 +38,6 @@ Future<void> main() async {
       if (kDebugMode) {
         debugPrint('[App] Initialization completed successfully');
       }
-
-      final container = ProviderContainer();
 
       appRouter = AppRouter(container);
 

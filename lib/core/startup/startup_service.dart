@@ -8,10 +8,10 @@ import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:dawarich/main.dart';
+import 'package:dawarich_android_user_module/dawarich_android_user_module.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:option_result/option_result.dart';
-import 'package:session_box/session_box.dart';
 
 final class StartupService {
   static Future<void> initializeAppFromContainer(ProviderContainer container) async {
@@ -22,7 +22,7 @@ final class StartupService {
     final initNotif = container.read(initializeTrackerNotificationServiceUseCaseProvider);
     await initNotif();
 
-    final SessionBox<User> sessionService =
+    final DawarichAndroidUserModule<User> sessionService =
         await container.read(sessionBoxProvider.future);
     final User? refreshedSessionUser = await sessionService.refreshSession();
 

@@ -24,7 +24,7 @@ final class TrackerNotificationService {
     const settings = InitializationSettings(android: androidSettings);
 
     await _plugin.initialize(
-      settings,
+      settings: settings,
       onDidReceiveNotificationResponse: onTap,
     );
 
@@ -59,15 +59,15 @@ final class TrackerNotificationService {
     const details = NotificationDetails(android: android);
 
     await _plugin.show(
-      NotificationConstants.notificationId,
-      title,
-      body,
-      details,
+      id: NotificationConstants.notificationId,
+      title: title,
+      body: body,
+      notificationDetails: details,
       payload: payload,
     );
   }
 
   Future<void> cancelTracker() {
-    return _plugin.cancel(NotificationConstants.notificationId);
+    return _plugin.cancel(id: NotificationConstants.notificationId);
   }
 }

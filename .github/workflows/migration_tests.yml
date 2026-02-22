@@ -1,53 +1,123 @@
 name: Migration Tests
 
 on:
-  push:
-    branches: [ main, dev ]
-    paths:
-      - '../../lib/core/data/drift/**'
-      - 'test/core/database/drift/**'
-      - 'drift_schemas/**'
+  workflow_dispatch:
   pull_request:
     branches: [ main, dev ]
-    paths:
-      - '../../lib/core/data/drift/**'
-      - 'test/core/database/drift/**'
-      - 'drift_schemas/**'
 
 jobs:
-  test-migrations:
+  detect-migration:
     runs-on: ubuntu-latest
-
+    outputs:
+      drift_changed: ${{ steps.detect.outputs.drift_changed }}
+      schemas_changed: ${{ steps.detect.outputs.schemas_changed }}
+      tests_changed: ${{ steps.detect.outputs.tests_changed }}
+      should_run_tests: ${{ steps.detect.outputs.should_run_tests }}
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.38.x'
-        channel: 'stable'
+      - id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    - name: Get dependencies
-      run: flutter pub get
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
 
-    - name: Generate Drift code
-      run: dart run build_runner build --delete-conflicting-outputs
+            MERGE_BASE="$(git merge-base "$BASE" "$HEAD")"
+            echo "PR base=$BASE"
+            echo "PR head=$HEAD"
+            echo "merge-base=$MERGE_BASE"
 
-    - name: Generate schema files (if not committed)
-      run: |
-        if [ ! -d "drift_schemas" ]; then
-          echo "Generating schema files..."
-          dart run drift_dev schema dump lib/core/database/drift/database/sqlite_client.dart drift_schemas/
-        else
-          echo "Schema files already exist"
-        fi
+            CHANGED="$(git diff --name-only "$MERGE_BASE" "$HEAD" || true)"
+          else
+            echo "drift_changed=true" >> "$GITHUB_OUTPUT"
+            echo "schemas_changed=true" >> "$GITHUB_OUTPUT"
+            echo "tests_changed=true" >> "$GITHUB_OUTPUT"
+            echo "should_run_tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-    - name: Run migration tests
-      run: flutter test test/core/database/drift/schema_verification_test.dart
+          echo "Changed files:"
+          echo "$CHANGED"
 
-    - name: Upload test results
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: test/failures/
+          DRIFT_CHANGED="false"
+          SCHEMAS_CHANGED="false"
+          TESTS_CHANGED="false"
+
+          if echo "$CHANGED" | grep -E -q '^lib/core/data/drift/'; then
+            DRIFT_CHANGED="true"
+          fi
+
+          if echo "$CHANGED" | grep -E -q '^drift_schemas/'; then
+            SCHEMAS_CHANGED="true"
+          fi
+
+          if echo "$CHANGED" | grep -E -q '^test/drift/'; then
+            TESTS_CHANGED="true"
+          fi
+
+          SHOULD_RUN="false"
+          if [[ "$DRIFT_CHANGED" == "true" || "$SCHEMAS_CHANGED" == "true" || "$TESTS_CHANGED" == "true" ]]; then
+            SHOULD_RUN="true"
+          fi
+
+          echo "drift_changed=$DRIFT_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "schemas_changed=$SCHEMAS_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "tests_changed=$TESTS_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "should_run_tests=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+
+          echo "Detected:"
+          echo "  drift_changed=$DRIFT_CHANGED"
+          echo "  schemas_changed=$SCHEMAS_CHANGED"
+          echo "  tests_changed=$TESTS_CHANGED"
+          echo "  should_run_tests=$SHOULD_RUN"
+
+  enforce-snapshots:
+    needs: detect-migration
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' && needs.detect-migration.outputs.drift_changed == 'true' && needs.detect-migration.outputs.schemas_changed != 'true' }}
+    steps:
+      - name: Fail if Drift changed without updated schema snapshots
+        shell: bash
+        run: |
+          echo "❌ Drift code changed but drift_schemas/ did NOT change."
+          echo "Please run your drift schema dump / make_migrations flow and commit updated snapshots."
+          exit 1
+
+  test-migrations:
+    needs: [detect-migration, enforce-snapshots]
+    runs-on: ubuntu-latest
+    if: >-
+      ${{
+        always() &&
+        (github.event_name == 'workflow_dispatch' || needs.detect-migration.outputs.should_run_tests == 'true') &&
+        (needs.enforce-snapshots.result == 'success' || needs.enforce-snapshots.result == 'skipped')
+      }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter (from .flutter-version)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .flutter-version
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run migration tests
+        run: flutter test test/drift
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test/failures/

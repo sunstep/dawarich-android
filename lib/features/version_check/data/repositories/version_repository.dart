@@ -62,7 +62,7 @@ final class VersionRepository implements IVersionRepository {
         code: 'UNEXPECTED_ERROR',
         message: 'Unexpected error while fetching server version',
         cause: e,
-        stack: s,
+        stackTrace: s,
         context: {'endpoint': '/api/v1/health', 'method': 'HEAD'},
       ));
     }
@@ -133,7 +133,7 @@ final class VersionRepository implements IVersionRepository {
         code: 'UNEXPECTED_ERROR',
         message: 'Unexpected error while fetching compatibility SHA',
         cause: e,
-        stack: s,
+        stackTrace: s,
         context: {'endpoint': ghUrl, 'method': 'GET'}
       ));
     }
@@ -194,7 +194,7 @@ final class VersionRepository implements IVersionRepository {
         code: 'UNEXPECTED_ERROR',
         message: 'Unexpected error while fetching compatibility rules',
         cause: e,
-        stack: s,
+        stackTrace: s,
         context: {'url': url, 'method': 'GET'},
       ));
     }
@@ -267,7 +267,7 @@ final class VersionRepository implements IVersionRepository {
       code: code,
       message: friendly,
       cause: e,
-      stack: s,
+      stackTrace: s,
       context: {
         ...ctx,
         'dio': e.type.toString(),

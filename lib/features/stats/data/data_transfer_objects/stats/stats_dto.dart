@@ -1,4 +1,4 @@
-import 'package:dawarich/features/stats/data/data_transfer_objects/yearly_stats_dto.dart';
+import 'package:dawarich/features/stats/data/data_transfer_objects/stats/yearly_stats_dto.dart';
 
 class StatsDTO {
   int totalDistance;
@@ -29,4 +29,16 @@ class StatsDTO {
           .toList(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "totalDistanceKm": totalDistance,
+      "totalPointsTracked": totalPoints,
+      "totalReverseGeocodedPoints": totalReverseGeocodedPoints,
+      "totalCountriesVisited": totalCountries,
+      "totalCitiesVisited": totalCities,
+      "yearlyStats": yearlyStats.map((y) => y.toJson()).toList(),
+    };
+  }
+
 }

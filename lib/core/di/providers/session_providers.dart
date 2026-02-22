@@ -2,8 +2,8 @@ import 'package:dawarich/core/di/providers/user_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/auth/application/repositories/user_repository_interfaces.dart';
 import 'package:dawarich/features/auth/application/usecases/validate_user_usecase.dart';
+import 'package:dawarich_android_user_module/dawarich_android_user_module.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:session_box/session_box.dart';
 
 
 final validateUserUseCaseProvider = FutureProvider<ValidateUserUseCase>((ref) async {
@@ -12,13 +12,13 @@ final validateUserUseCaseProvider = FutureProvider<ValidateUserUseCase>((ref) as
 });
 
 
-final sessionBoxProvider = FutureProvider<SessionBox<User>>((ref) async {
+final sessionBoxProvider = FutureProvider<DawarichAndroidUserModule<User>>((ref) async {
 
   ref.keepAlive();
 
   final validateUser = await ref.watch(validateUserUseCaseProvider.future);
 
-  final box = await SessionBox.create<User>(
+  final box = await DawarichAndroidUserModule.create<User>(
     encrypt: false,
     toJson: (user) => user.toJson(),
     fromJson: (json) => User.fromJson(json),

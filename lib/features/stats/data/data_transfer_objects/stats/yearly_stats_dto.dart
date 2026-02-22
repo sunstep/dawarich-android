@@ -1,4 +1,4 @@
-import 'package:dawarich/features/stats/data/data_transfer_objects/monthly_stats_dto.dart';
+import 'package:dawarich/features/stats/data/data_transfer_objects/stats/monthly_stats_dto.dart';
 
 class YearlyStatsDTO {
   int year;
@@ -23,5 +23,15 @@ class YearlyStatsDTO {
       totalCities: json["totalCitiesVisited"] ?? 0,
       monthlyStats: MonthlyStatsDTO.fromJson(json["monthlyDistanceKm"]),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "year": year,
+      "totalDistanceKm": totalDistance,
+      "totalCountriesVisited": totalCountries,
+      "totalCitiesVisited": totalCities,
+      "monthlyDistanceKm": monthlyStats.toJson(),
+    };
   }
 }

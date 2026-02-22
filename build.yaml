@@ -4,7 +4,7 @@ targets:
       drift_dev:
         options:
           databases:
-            app: lib/core/database/drift/database/sqlite_client.dart
+            app: lib/core/data/drift/database/sqlite_client.dart
 
           # Where drift stores schema snapshots
           schema_dir: drift_schemas

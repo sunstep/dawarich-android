@@ -43,4 +43,21 @@ class MonthlyStatsDTO {
       december: json["december"] ?? 0,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "january": january,
+      "february": february,
+      "march": march,
+      "april": april,
+      "may": may,
+      "june": june,
+      "july": july,
+      "august": august,
+      "september": september,
+      "october": october,
+      "november": november,
+      "december": december,
+    };
+  }
 }

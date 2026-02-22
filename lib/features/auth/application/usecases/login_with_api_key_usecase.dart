@@ -5,16 +5,16 @@ import 'package:dawarich/features/auth/application/converters/user_converter.dar
 import 'package:dawarich/features/auth/application/repositories/connect_repository_interfaces.dart';
 import 'package:dawarich/features/auth/application/repositories/user_repository_interfaces.dart';
 import 'package:dawarich/features/auth/data/data_transfer_objects/users/user_dto.dart';
+import 'package:dawarich_android_user_module/dawarich_android_user_module.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
-import 'package:session_box/session_box.dart';
 
 final class LoginWithApiKeyUseCase {
 
   final IConnectRepository _connectRepository;
   final IApiConfigManager _apiConfigManager;
   final IUserRepository _userStorageRepository;
-  final SessionBox<User> _userSession;
+  final DawarichAndroidUserModule<User> _userSession;
 
   LoginWithApiKeyUseCase(this._connectRepository, this._apiConfigManager,
       this._userStorageRepository, this._userSession);

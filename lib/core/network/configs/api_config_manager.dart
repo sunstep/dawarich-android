@@ -8,8 +8,6 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   ApiConfig? _apiConfig;
   ApiConfigManager();
-  static const _aEnc   = AndroidOptions(encryptedSharedPreferences: true);
-  static const _aPlain = AndroidOptions(encryptedSharedPreferences: false);
   static const _iOS    = IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
   @override
@@ -21,59 +19,13 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
 
     final String? host = await _secureStorage.read(
         key: 'host',
-        aOptions: _aEnc,
         iOptions: _iOS
     );
+
     final String? apiKey = await _secureStorage.read(
         key: 'apiKey',
-        aOptions: _aEnc,
         iOptions: _iOS
     );
-
-    if (host == null || apiKey == null) {
-
-      if (kDebugMode) {
-        debugPrint('ApiConfigManager: Attempting to read legacy unencrypted storage.');
-      }
-
-      final String? legacyHost = await _secureStorage.read(
-          key: 'host',
-          aOptions: _aPlain,
-          iOptions: _iOS
-      );
-      final String? legacyApiKey = await _secureStorage.read(
-          key: 'apiKey',
-          aOptions: _aPlain,
-          iOptions: _iOS
-      );
-      if (legacyHost != null && legacyApiKey != null) {
-        if (kDebugMode) {
-          debugPrint('ApiConfigManager: legacy config found, migrating to encrypted storage.');
-        }
-        await _secureStorage.write(
-            key: 'host',
-            value: legacyHost,
-            aOptions: _aEnc,
-            iOptions: _iOS
-        );
-        await _secureStorage.write(
-            key: 'apiKey',
-            value: legacyApiKey,
-            aOptions: _aEnc,
-            iOptions: _iOS
-        );
-        await _secureStorage.delete(
-            key: 'host',
-            aOptions: _aPlain,
-            iOptions: _iOS
-        );
-        await _secureStorage.delete(
-            key: 'apiKey',
-            aOptions: _aPlain,
-            iOptions: _iOS
-        );
-      }
-    }
 
     if (host != null && apiKey != null) {
       ApiConfig config = ApiConfig(host: host, apiKey: apiKey);
@@ -114,13 +66,11 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
     await _secureStorage.write(
         key: 'host',
         value: cfg.host,
-        aOptions: _aEnc,
         iOptions: _iOS
     );
     await _secureStorage.write(
         key: 'apiKey',
         value: cfg.apiKey,
-        aOptions: _aEnc,
         iOptions: _iOS
     );
   }
@@ -129,12 +79,10 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
   Future<void> clearConfiguration() async {
     await _secureStorage.delete(
         key: 'host',
-        aOptions: _aEnc,
         iOptions: _iOS
     );
     await _secureStorage.delete(
         key: 'apiKey',
-        aOptions: _aEnc,
         iOptions: _iOS
     );
 

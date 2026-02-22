@@ -56,11 +56,11 @@ jobs:
           fetch-depth: 0
           ref: ${{ steps.ref.outputs.ref }}
 
-      - name: Setup Flutter
+      - name: Setup Flutter (from .flutter-version)
         uses: subosito/flutter-action@v2
         with:
-          channel: ${{ env.FLUTTER_CHANNEL }}
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .flutter-version
+          channel: stable
           cache: true
 
       - name: Setup Java

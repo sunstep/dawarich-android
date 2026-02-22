@@ -165,6 +165,18 @@ jobs:
 
           ls -la dist
 
+      - name: Determine prerelease flag
+        id: pre
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.rel.outputs.tag }}"
+          if [[ "$TAG" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
@@ -173,3 +185,4 @@ jobs:
           files: dist/*
           generate_release_notes: false
           fail_on_unmatched_files: true
+          prerelease: ${{ steps.pre.outputs.prerelease }}

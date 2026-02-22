@@ -3,7 +3,7 @@ final class Failure {
   final String code;          // stable machine code: 'NETWORK_TIMEOUT', 'UNAUTHORIZED', ...
   final String message;       // safe, user-oriented text (localize at UI if you prefer)
   final Object? cause;        // original exception (not for display)
-  final StackTrace? stack;    // for logging
+  final StackTrace? stackTrace;    // for logging
   final Map<String, Object?> context; // any extra key-values (e.g. endpoint, ids)
 
   const Failure({
@@ -11,7 +11,7 @@ final class Failure {
     required this.code,
     required this.message,
     this.cause,
-    this.stack,
+    this.stackTrace,
     this.context = const {},
   });
 
@@ -22,9 +22,15 @@ final class Failure {
       code: code,
       message: message,
       cause: cause,
-      stack: stack,
+      stackTrace: stackTrace,
       context: {...context, ...extra},
     );
+  }
+
+  @override
+  String toString() {
+    final codePart = code.isNotEmpty ? '[$code]' : '';
+    return '$codePart $message';
   }
 }
 

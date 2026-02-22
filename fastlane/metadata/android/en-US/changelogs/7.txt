@@ -1,0 +1,9 @@
+Full and more detailed release notes are always available at the GitHub repository!
+
+v0.18.0
+
+This release features an upgrade to the stats page.
+
+* The distance card is now tappable, breaking down your distance per year and per month.
+* The breakdown is also visualized.
+* The stats page is now cached, making it load instantly.

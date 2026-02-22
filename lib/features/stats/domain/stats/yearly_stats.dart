@@ -1,5 +1,5 @@
-import 'package:dawarich/features/stats/data/data_transfer_objects/yearly_stats_dto.dart';
-import 'package:dawarich/features/stats/domain/monthly_stats.dart';
+import 'package:dawarich/features/stats/data/data_transfer_objects/stats/yearly_stats_dto.dart';
+import 'package:dawarich/features/stats/domain/stats/monthly_stats.dart';
 
 class YearlyStats {
   int year;

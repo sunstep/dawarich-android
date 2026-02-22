@@ -31,7 +31,7 @@ final class GetServerVersionUseCase {
         code: 'INVALID_SEMVER',
         message: 'Server version is not a valid semantic version.',
         cause: e,
-        stack: s,
+        stackTrace: s,
         context: <String, Object?>{'raw': versionString},
       ));
     }

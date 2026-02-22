@@ -56,7 +56,7 @@ jobs:
         fi
 
     - name: Run migration tests
-      run: flutter test test/core/database/drift/schema_verification_test.dart
+      run: flutter test test/drift
 
     - name: Upload test results
       if: failure()

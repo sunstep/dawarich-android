@@ -26,6 +26,15 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BASE="${{ github.event.pull_request.base.sha }}"
             HEAD="${{ github.event.pull_request.head.sha }}"
+
+            # ✅ This is the important fix:
+            # Use merge-base so we diff exactly what the PR introduces.
+            MERGE_BASE="$(git merge-base "$BASE" "$HEAD")"
+            echo "PR base=$BASE"
+            echo "PR head=$HEAD"
+            echo "merge-base=$MERGE_BASE"
+
+            CHANGED="$(git diff --name-only "$MERGE_BASE" "$HEAD" || true)"
           else
             # workflow_dispatch: pretend everything matters
             echo "drift_changed=true" >> "$GITHUB_OUTPUT"
@@ -35,30 +44,25 @@ jobs:
             exit 0
           fi
 
-          echo "Diff range: $BASE..$HEAD"
-          CHANGED="$(git diff --name-only "$BASE" "$HEAD" || true)"
+          echo "Changed files:"
           echo "$CHANGED"
 
           DRIFT_CHANGED="false"
           SCHEMAS_CHANGED="false"
           TESTS_CHANGED="false"
 
-          # 1) Any drift-related change
           if echo "$CHANGED" | grep -E -q '^lib/core/data/drift/'; then
             DRIFT_CHANGED="true"
           fi
 
-          # 2) Any schema snapshot change
           if echo "$CHANGED" | grep -E -q '^drift_schemas/'; then
             SCHEMAS_CHANGED="true"
           fi
 
-          # 3) Any generated migration test change
           if echo "$CHANGED" | grep -E -q '^test/drift/'; then
             TESTS_CHANGED="true"
           fi
 
-          # Decide whether to run tests
           SHOULD_RUN="false"
           if [[ "$DRIFT_CHANGED" == "true" || "$SCHEMAS_CHANGED" == "true" || "$TESTS_CHANGED" == "true" ]]; then
             SHOULD_RUN="true"

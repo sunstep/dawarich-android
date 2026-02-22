@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [ main, dev ]
-  push:
-    branches: [ main, dev ]
 
 jobs:
   detect-migration:
@@ -28,11 +26,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BASE="${{ github.event.pull_request.base.sha }}"
             HEAD="${{ github.event.pull_request.head.sha }}"
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            BASE="${{ github.event.before }}"
-            HEAD="${{ github.sha }}"
           else
-            # workflow_dispatch / schedule: pretend everything matters
+            # workflow_dispatch: pretend everything matters
             echo "drift_changed=true" >> "$GITHUB_OUTPUT"
             echo "schemas_changed=true" >> "$GITHUB_OUTPUT"
             echo "tests_changed=true" >> "$GITHUB_OUTPUT"
@@ -48,18 +43,22 @@ jobs:
           SCHEMAS_CHANGED="false"
           TESTS_CHANGED="false"
 
+          # 1) Any drift-related change
           if echo "$CHANGED" | grep -E -q '^lib/core/data/drift/'; then
             DRIFT_CHANGED="true"
           fi
 
+          # 2) Any schema snapshot change
           if echo "$CHANGED" | grep -E -q '^drift_schemas/'; then
             SCHEMAS_CHANGED="true"
           fi
 
+          # 3) Any generated migration test change
           if echo "$CHANGED" | grep -E -q '^test/drift/'; then
             TESTS_CHANGED="true"
           fi
 
+          # Decide whether to run tests
           SHOULD_RUN="false"
           if [[ "$DRIFT_CHANGED" == "true" || "$SCHEMAS_CHANGED" == "true" || "$TESTS_CHANGED" == "true" ]]; then
             SHOULD_RUN="true"
@@ -79,7 +78,7 @@ jobs:
   enforce-snapshots:
     needs: detect-migration
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_dispatch' && needs.detect.outputs.drift_changed == 'true' && needs.detect.outputs.schemas_changed != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && needs.detect-migration.outputs.drift_changed == 'true' && needs.detect-migration.outputs.schemas_changed != 'true' }}
     steps:
       - name: Fail if Drift changed without updated schema snapshots
         shell: bash
@@ -91,7 +90,7 @@ jobs:
   test-migrations:
     needs: [detect-migration, enforce-snapshots]
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect.outputs.should_run_tests == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-migration.outputs.should_run_tests == 'true' }}
     steps:
       - uses: actions/checkout@v4
 

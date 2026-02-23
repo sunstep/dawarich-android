@@ -3,5 +3,8 @@ import 'package:option_result/option_result.dart';
 
 abstract interface class IConnectRepository {
   Future<bool> testHost(String host);
-  Future<Result<UserDto, String>> loginApiKey(String apiKey);
+  Future<Result<UserDto, String>> loginApiKeyOnHost({
+    required String hostWithProtocol,
+    required String apiKey,
+  });
 }

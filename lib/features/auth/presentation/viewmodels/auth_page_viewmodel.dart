@@ -1,4 +1,5 @@
 import 'package:dawarich/core/application/errors/failure.dart';
+import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
 import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/auth/application/usecases/login_with_api_key_usecase.dart';
 import 'package:dawarich/features/auth/application/usecases/test_host_connection_usecase.dart';
@@ -51,21 +52,55 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   String? get snackbarMessage => _snackbarMessage;
   String? get errorMessage => _errorMessage;
 
+  Future<void> initFromConfig(IApiConfigManager cfg) async {
+    final apiConfig = cfg.apiConfig;
+
+    final host = apiConfig?.host ?? '';
+    final hasHost = apiConfig != null;
+
+    _hostController.text = host;
+    _currentStep = hasHost ? 1 : 0;
+
+    _hostVerified = false;
+
+    safeNotifyListeners();
+  }
+
+  void _onHostChanged() {
+    if (_hostVerified) {
+      _hostVerified = false;
+      safeNotifyListeners();
+    }
+  }
+
   /// Verifies connectivity to the given [host].
+  /// On success: normalizes the host (adds protocol if needed), updates the controller,
+  /// marks host as verified, and returns true.
+  /// On failure: sets a human-friendly error message and returns false.
   Future<bool> testHost(String host) async {
     _setVerifyingHost(true);
     _setErrorMessage(null);
 
-    final bool result = await _testHostConnectionUseCase(host.trim());
+    try {
+      final res = await _testHostConnectionUseCase(host);
 
-    _setVerifyingHost(false);
-    if (result) {
-      _setHostVerified(true);
-      return true;
+      if (res case Ok(value: final String normalizedHost)) {
+        _hostController.text = normalizedHost;
+        _setHostVerified(true);
+        return true;
+      }
+
+      final failure = res.unwrapErr();
+      _setHostVerified(false);
+      _setErrorMessage(
+        failure.code == 'HOST_EMPTY'
+            ? 'Please enter a server address.'
+            : 'Unable to reach the server. Please check the address and try again.',
+      );
+      return false;
+    } finally {
+      _setVerifyingHost(false);
     }
-
-    _setErrorMessage('Unable to reach the host. Please try again.');
-    return false;
   }
 
   /// Call this when the user goes back to step 1
@@ -79,16 +114,29 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
     _setLoggingIn(true);
     _setErrorMessage(null);
 
-    final bool isValid = await _loginWithApiKeyUseCase(apiKey.trim());
-    _setLoggingIn(false);
+    try {
+      final host = _hostController.text.trim();
 
-    if (isValid) {
+      if (!_hostVerified || host.isEmpty) {
+        _setErrorMessage('Please verify the server first.');
+        return false;
+      }
+
+      final ok = await _loginWithApiKeyUseCase(
+        host: host,
+        apiKey: apiKey.trim(),
+      );
+
+      if (!ok) {
+        _setErrorMessage('Invalid API key. Please check and try again.');
+        return false;
+      }
+
       clearErrorMessage();
       return true;
+    } finally {
+      _setLoggingIn(false);
     }
-
-    _setErrorMessage('Invalid API key. Please check and try again.');
-    return false;
   }
 
   Future<void> tryQrLogin(
@@ -97,28 +145,24 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
         required VoidCallback onNavigateToVersionCheck,
         required void Function(String) onShowError,
       }) async {
-
     _setErrorMessage(null);
     _setLoggingIn(true);
     _setVerifyingHost(true);
 
-
     try {
-
       final payload = AuthQrPayload.fromJsonString(qrResult.trim());
 
       setHost(payload.serverUrl);
       setApiKey(payload.apiKey);
 
-      final okHost  = await _testHostConnectionUseCase(payload.serverUrl);
-      if (!okHost) {
-        onShowError('Server unreachable or invalid.');
-        return;
-      }
-
-      final okLogin = await _loginWithApiKeyUseCase(payload.apiKey);
+      final okLogin = await _loginWithApiKeyUseCase(apiKey: payload.apiKey, host: payload.serverUrl);
       if (!okLogin) {
-        onShowError('Invalid API key.');
+        final hostRes = await _testHostConnectionUseCase(payload.serverUrl);
+        if (hostRes.isErr()) {
+          onShowError('Server unreachable or invalid.');
+        } else {
+          onShowError('Invalid API key.');
+        }
         return;
       }
 
@@ -128,16 +172,14 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
       } else {
         onNavigateToVersionCheck();
       }
-
     } on FormatException {
       onShowError('The scanned QR code is invalid. Please try again.');
-    } catch (e) {
+    } catch (_) {
       onShowError('Login failed. Please try again.');
     } finally {
       _setVerifyingHost(false);
       _setLoggingIn(false);
     }
-
   }
 
   /// Attempts email/password based authentication.
@@ -241,5 +283,13 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   void _setErrorMessage(String? message) {
     _errorMessage = message;
     safeNotifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _hostController.removeListener(_onHostChanged);
+    _hostController.dispose();
+    _apiKeyController.dispose();
+    super.dispose();
   }
 }

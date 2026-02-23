@@ -12,15 +12,12 @@ import 'package:dawarich/features/auth/presentation/viewmodels/auth_page_viewmod
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final connectRepositoryProvider = FutureProvider<IConnectRepository>((ref) async {
-  final cfg = await ref.watch(apiConfigManagerProvider.future);
-  final dio = await ref.watch(dioClientProvider.future);
-  return ConnectRepository(cfg, dio);
+  return ConnectRepository();
 });
 
 final testHostConnectionUseCaseProvider = FutureProvider<TestHostConnectionUseCase>((ref) async {
-  final apiConfigManager = await ref.watch(apiConfigManagerProvider.future);
   final repo = await ref.watch(connectRepositoryProvider.future);
-  return TestHostConnectionUseCase(apiConfigManager, repo);
+  return TestHostConnectionUseCase(repo);
 });
 
 final loginWithApiKeyUseCaseProvider = FutureProvider<LoginWithApiKeyUseCase>((ref) async {

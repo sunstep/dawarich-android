@@ -40,7 +40,7 @@ final class AuthInterceptor extends Interceptor {
     final isApiHost = requestUri.host == apiHost;
 
 
-    final shouldAttachAuth = !skipAuthFlag && isApiHost && config.isConfigured;
+    final shouldAttachAuth = !skipAuthFlag && isApiHost && config.isFullyConfigured;
 
     if (shouldAttachAuth) {
       options.headers['Authorization'] = 'Bearer ${config.apiKey}';

@@ -105,6 +105,7 @@ jobs:
         with:
           flutter-version-file: .flutter-version
           channel: stable
+          cache: 'true'
 
       - name: Get dependencies
         run: flutter pub get

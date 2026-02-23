@@ -14,7 +14,7 @@ import 'package:dawarich/core/data/drift/entities/track/track_table.dart';
 import 'package:dawarich/core/data/drift/entities/user/user_settings_table.dart';
 import 'package:dawarich/core/data/drift/entities/user/user_table.dart';
 import 'package:dawarich/core/data/drift/database/migrations.dart';
-import 'package:dawarich/features/stats/data/sources/local/stats_cache_dao.dart';
+import 'package:dawarich/core/data/drift/daos/stats_cache_dao.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
 import 'package:drift/native.dart';
@@ -206,7 +206,7 @@ final class SQLiteClient extends _$SQLiteClient {
   }
 
 
-  static const int kSchemaVersion = 6;
+  static const int kSchemaVersion = 7;
   @override
   int get schemaVersion => kSchemaVersion;
 

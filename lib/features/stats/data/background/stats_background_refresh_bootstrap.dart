@@ -1,4 +1,6 @@
 import 'package:dawarich/core/di/providers/core_providers.dart';
+import 'package:dawarich/core/di/providers/session_providers.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
 import 'package:dawarich/features/stats/data/sources/local/stats_local_data_source.dart';
 import 'package:dawarich/features/stats/data/sources/remote/stats_remote_data_source.dart';
@@ -19,6 +21,14 @@ final class StatsBackgroundRefreshBootstrap {
         return;
       }
 
+      final User? user = await container.read(sessionUserProvider.future);
+      if (user == null) {
+        if (kDebugMode) {
+          debugPrint('[StatsBgRefresh] Skipping: no session user');
+        }
+        return;
+      }
+
       final db = await container.read(sqliteClientProvider.future);
       final dio = await container.read(dioClientProvider.future);
 
@@ -26,7 +36,7 @@ final class StatsBackgroundRefreshBootstrap {
       final remoteDs = StatsRemoteDataSource(dio);
 
       final repo = StatsRepository(cache: cacheDs, remote: remoteDs);
-      await repo.getStats(forceRefresh: forceRefresh);
+      await repo.getStats(user.id, forceRefresh: forceRefresh);
     } catch (e, s) {
       if (kDebugMode) {
         debugPrint('[StatsBackgroundRefreshBootstrap] failed: $e\n$s');

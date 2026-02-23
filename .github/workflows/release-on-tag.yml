@@ -20,8 +20,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FLUTTER_CHANNEL: stable
-      FLUTTER_VERSION: "3.35.5"
       JAVA_VERSION: "21"
 
     steps:

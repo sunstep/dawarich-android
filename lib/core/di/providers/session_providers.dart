@@ -42,3 +42,37 @@ class AuthenticatedUserNotifier extends Notifier<User?> {
   }
 }
 
+/// Guaranteed non-null user in guarded routes.
+/// If this throws, your app state is inconsistent (bug), not "user forgot to login".
+final currentUserProvider = Provider<User>((ref) {
+  final user = ref.watch(authenticatedUserProvider);
+  if (user == null) {
+    throw StateError(
+      'currentUserProvider: User is required but authenticatedUserProvider is null. '
+          'This should be impossible inside guarded routes.',
+    );
+  }
+  return user;
+});
+
+/// Convenience provider for the local DB user id.
+/// Adjust the field name if your User model uses something else than `id`.
+final currentUserIdProvider = Provider<int>((ref) {
+  final user = ref.watch(currentUserProvider);
+  return user.id;
+});
+
+/// Async session user (nullable).
+/// Works in background bootstraps because it reads from session storage, not router state.
+final sessionUserProvider = FutureProvider<User?>((ref) async {
+  final DawarichAndroidUserModule<User> box = await ref.watch(sessionBoxProvider.future);
+  return box.getUser();
+});
+
+/// Convenience: local DB user id, nullable, from session.
+/// Background jobs can use this and skip when null.
+final sessionUserIdProvider = FutureProvider<int?>((ref) async {
+  final user = await ref.watch(sessionUserProvider.future);
+  return user?.id;
+});
+

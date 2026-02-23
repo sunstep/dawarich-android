@@ -151,6 +151,16 @@ class _AuthFormCardState extends State<_AuthFormCard> {
       return;
     }
 
+    if (vm.currentStep == 1) {
+      final host = vm.hostController.text.trim();
+
+      if (host.isEmpty) {
+        vm.setCurrentStep(0);
+        vm.setSnackbarMessage('Please set a server first.');
+        return;
+      }
+    }
+
     if (!(_apiFormKey.currentState?.validate() ?? false)) {
       return;
     }

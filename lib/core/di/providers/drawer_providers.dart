@@ -14,7 +14,7 @@ final drawerViewModelProvider = FutureProvider<DrawerViewModel>((ref) async {
   final sessionBox = await ref.watch(sessionBoxProvider.future);
   final apiConfigService = await ref.watch(apiConfigServiceProvider.future);
 
-  final vm = DrawerViewModel(sessionBox, apiConfigService);
+  final vm = DrawerViewModel(ref, sessionBox, apiConfigService);
 
   ref.onDispose(vm.dispose);
   return vm;

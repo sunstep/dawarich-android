@@ -7,8 +7,9 @@ final class GetLastStatsSyncUsecase {
   final IStatsRepository _statsRepository;
   GetLastStatsSyncUsecase(this._statsRepository);
 
-  Future<DateTime?> call() async {
-    final result = await _statsRepository.getLastSyncedAt();
+  Future<DateTime?> call(int userId) async {
+
+    final result = await _statsRepository.getLastSyncedAt(userId);
     if (result case Some(value: DateTime lastSyncedAt)) {
       return lastSyncedAt;
     }

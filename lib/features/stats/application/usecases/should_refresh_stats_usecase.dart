@@ -10,8 +10,8 @@ final class ShouldRefreshStatsUseCase {
 
   ShouldRefreshStatsUseCase(this._getLastSync);
 
-  Future<bool> call({required DateTime nowUtc}) async {
-    final lastOpt = await _getLastSync();
+  Future<bool> call(int userId, {required DateTime nowUtc}) async {
+    final lastOpt = await _getLastSync(userId);
 
     if (lastOpt case Some(value: final lastUtc)) {
       final age = nowUtc.difference(lastUtc);

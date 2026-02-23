@@ -1,43 +1,88 @@
 
-import 'package:dawarich/core/network/configs/api_config_manager_interfaces.dart';
+import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/features/auth/application/repositories/connect_repository_interfaces.dart';
 import 'package:flutter/foundation.dart';
+import 'package:option_result/result.dart';
 
 final class TestHostConnectionUseCase {
 
-  final IApiConfigManager _apiConfigManager;
   final IConnectRepository _connectRepository;
 
-  TestHostConnectionUseCase(this._apiConfigManager, this._connectRepository);
+  TestHostConnectionUseCase(this._connectRepository);
 
-  Future<bool> call(String host) async {
-    host = host.trim();
+  /// Returns Ok(normalizedHostWithProtocol) when reachable.
+  /// Returns Err(Failure) otherwise.
+  Future<Result<String, Failure>> call(String host) async {
+    final normalizedInput = host.trim();
 
-    if (host.endsWith("/")) {
-      host = host.substring(0, host.length - 1);
+    if (normalizedInput.isEmpty) {
+      return Err(
+        Failure(
+          kind: FailureKind.validation,
+          code: 'HOST_EMPTY',
+          message: 'Host is empty.',
+          context: const {'where': 'TestHostConnectionUseCase'},
+        ),
+      );
     }
 
-    // If user explicitly specified a protocol, use it as-is
-    if (host.startsWith("http://") || host.startsWith("https://")) {
-      _apiConfigManager.createConfig(host);
-      return _connectRepository.testHost(host);
+    var cleaned = normalizedInput;
+
+    // remove trailing slash
+    if (cleaned.endsWith("/")) {
+      cleaned = cleaned.substring(0, cleaned.length - 1);
     }
 
-    // No protocol specified - try HTTPS first, then HTTP
-    final httpsUrl = "https://$host";
-    _apiConfigManager.createConfig(httpsUrl);
+    // User provided protocol -> test as-is
+    if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+      final ok = await _connectRepository.testHost(cleaned);
 
-    if (await _connectRepository.testHost(httpsUrl)) {
-      return true;
+      if (ok) {
+        return Ok(cleaned);
+      }
+
+      return Err(
+        Failure(
+          kind: FailureKind.network,
+          code: 'HOST_UNREACHABLE',
+          message: 'Unable to reach server.',
+          context: {
+            'where': 'TestHostConnectionUseCase',
+            'attempted': cleaned,
+          },
+        ),
+      );
     }
 
-    // HTTPS failed, try HTTP (common for local IP addresses)
+    // No protocol -> try https then http
+    final httpsUrl = "https://$cleaned";
+    final okHttps = await _connectRepository.testHost(httpsUrl);
+
+    if (okHttps) {
+      return Ok(httpsUrl);
+    }
+
     if (kDebugMode) {
-      debugPrint("[TestHost] HTTPS failed, trying HTTP for: $host");
+      debugPrint("[TestHost] HTTPS failed, trying HTTP for: $cleaned");
     }
 
-    final httpUrl = "http://$host";
-    _apiConfigManager.createConfig(httpUrl);
-    return _connectRepository.testHost(httpUrl);
+    final httpUrl = "http://$cleaned";
+    final okHttp = await _connectRepository.testHost(httpUrl);
+
+    if (okHttp) {
+      return Ok(httpUrl);
+    }
+
+    return Err(
+      Failure(
+        kind: FailureKind.network,
+        code: 'HOST_UNREACHABLE',
+        message: 'Unable to reach server via HTTPS or HTTP.',
+        context: {
+          'where': 'TestHostConnectionUseCase',
+          'attempted': [httpsUrl, httpUrl],
+        },
+      ),
+    );
   }
 }

@@ -11,26 +11,19 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
   static const _iOS    = IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
   @override
+  bool get hasHost => _apiConfig?.hasHost == true;
+  @override
+  bool get isConfigured => _apiConfig?.isFullyConfigured == true;
+
+  @override
   Future<void> load() async {
+    final host = await _secureStorage.read(key: 'host', iOptions: _iOS);
+    final apiKey = await _secureStorage.read(key: 'apiKey', iOptions: _iOS);
 
-    if (kDebugMode) {
-      debugPrint('ApiConfigManager: Attempting to read api config from encrypted storage.');
-    }
-
-    final String? host = await _secureStorage.read(
-        key: 'host',
-        iOptions: _iOS
-    );
-
-    final String? apiKey = await _secureStorage.read(
-        key: 'apiKey',
-        iOptions: _iOS
-    );
-
-    if (host != null && apiKey != null) {
-      ApiConfig config = ApiConfig(host: host, apiKey: apiKey);
-
-      _apiConfig = config;
+    if (host != null && host.trim().isNotEmpty) {
+      _apiConfig = ApiConfig(host: host.trim(), apiKey: apiKey?.trim());
+    } else {
+      _apiConfig = null;
     }
   }
 
@@ -44,22 +37,23 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
 
   @override
   void setApiKey(String apiKey) {
-    ApiConfig? configCopy = _apiConfig;
+    final ApiConfig? cfg = _apiConfig;
 
-    if (configCopy == null) {
-      throw Exception('Cannot set API key before setting host');
+    if (cfg == null) {
+      if (kDebugMode) {
+        debugPrint('[ApiConfigManager] Ignoring setApiKey: no config/host set');
+      }
+      return;
     }
 
-    configCopy.setApiKey(apiKey.trim());
-
-    _apiConfig = configCopy;
+    _apiConfig = cfg.copyWith(apiKey: apiKey.trim());
   }
 
   @override
   Future<void> storeApiConfig() async {
     final ApiConfig? cfg = _apiConfig;
 
-    if (cfg == null || !cfg.isConfigured) {
+    if (cfg == null || !cfg.isFullyConfigured) {
       throw Exception('Cannot store incomplete ApiConfigDTO');
     }
 
@@ -89,9 +83,4 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
     _apiConfig = null;
   }
 
-  @override
-  bool get isConfigured {
-    final ApiConfig? configCopy = _apiConfig;
-    return configCopy != null && configCopy.isConfigured;
-  }
 }

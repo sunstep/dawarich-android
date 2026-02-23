@@ -77,9 +77,6 @@ android {
                 signingConfig signingConfigs.debug
             }
 
-            // Make sure release label stays clean.
-            resValue "string", "app_name", "Dawarich"
-
             // optimizations
             minifyEnabled    true
             shrinkResources  true
@@ -150,4 +147,3 @@ rootProject.subprojects { subproject ->
 flutter {
     source = "../.."
 }
-

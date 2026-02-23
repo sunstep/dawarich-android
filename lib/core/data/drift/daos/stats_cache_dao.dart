@@ -1,8 +1,7 @@
 import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/data/drift/entities/stats/stats_cache_table.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+
 
 part 'stats_cache_dao.g.dart';
 

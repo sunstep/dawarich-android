@@ -1,6 +1,8 @@
 import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/data/drift/entities/stats/stats_cache_table.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 part 'stats_cache_dao.g.dart';
 
@@ -8,22 +10,22 @@ part 'stats_cache_dao.g.dart';
 class StatsCacheDao extends DatabaseAccessor<SQLiteClient> with _$StatsCacheDaoMixin {
   StatsCacheDao(super.db);
 
-  static const int _singletonId = 1;
 
-  Future<StatsCacheTableData?> getCacheRow() async {
+  Future<StatsCacheTableData?> getCacheRow(int userId) async {
+
     final query =
-    select(db.statsCacheTable)..where((t) => t.id.equals(_singletonId));
+    select(db.statsCacheTable)..where((t) => t.userId.equals(userId));
 
     return query.getSingleOrNull();
   }
 
-  Future<void> upsertStats({
+  Future<void> upsertStats(int userId, {
     required String payloadJson,
     required DateTime syncedAt,
   }) async {
 
     final row = StatsCacheTableCompanion.insert(
-      id: const Value(_singletonId),
+      userId: Value(userId),
       payloadJson: payloadJson,
       syncedAt: syncedAt,
     );
@@ -31,8 +33,8 @@ class StatsCacheDao extends DatabaseAccessor<SQLiteClient> with _$StatsCacheDaoM
     await into(db.statsCacheTable).insertOnConflictUpdate(row);
   }
 
-  Future<void> clear() async {
-    await (delete(db.statsCacheTable)..where((t) => t.id.equals(_singletonId))).go();
+  Future<void> clear(int userId) async {
+    await (delete(db.statsCacheTable)..where((t) => t.userId.equals(userId))).go();
   }
 
 }

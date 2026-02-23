@@ -1,4 +1,5 @@
 
+import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
 import 'package:dawarich/features/stats/application/usecases/should_refresh_stats_usecase.dart';
 import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
@@ -26,7 +27,9 @@ final class StatsAutoRefreshCoordinator {
       final ShouldRefreshStatsUseCase shouldRefresh = await _ref.read(shouldRefreshStatsUseCaseProvider.future);
       final nowUtc = DateTime.now().toUtc();
 
-      final mustRefresh = await shouldRefresh(nowUtc: nowUtc);
+      final int userId = _ref.read(currentUserIdProvider);
+
+      final mustRefresh = await shouldRefresh(userId, nowUtc: nowUtc);
       if (mustRefresh) {
         await _ref.read(statsViewmodelProvider.notifier).refresh();
       }

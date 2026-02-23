@@ -17,25 +17,40 @@ final class AuthGuard extends AutoRouteGuard {
   @override
   Future<void> onNavigation(NavigationResolver resolver, StackRouter router) async {
     try {
-      final DawarichAndroidUserModule<User> sessionBox = await _container.read(sessionBoxProvider.future);
+
+      final User? cached = _container.read(authenticatedUserProvider);
+      if (cached != null) {
+        resolver.next(true);
+        return;
+      }
+
+      final DawarichAndroidUserModule<User> sessionBox =
+      await _container.read(sessionBoxProvider.future);
+
       final User? user = await sessionBox.getUser();
 
       if (user != null) {
         _container.read(authenticatedUserProvider.notifier).setUser(user);
         resolver.next(true);
-      } else {
-        if (kDebugMode) {
-          debugPrint('[AuthGuard] User not authenticated, redirecting to auth...');
-        }
-        _container.read(authenticatedUserProvider.notifier).setUser(null);
-        resolver.redirectUntil(const AuthRoute());
+        return;
       }
+
+      if (kDebugMode) {
+        debugPrint('[AuthGuard] User not authenticated, redirecting to auth...');
+      }
+
+      _container.read(authenticatedUserProvider.notifier).setUser(null);
+
+      resolver.redirectUntil(const AuthRoute());
+      return;
     } catch (e, s) {
       if (kDebugMode) {
         debugPrint('[AuthGuard] Error checking auth: $e\n$s');
       }
+
       _container.read(authenticatedUserProvider.notifier).setUser(null);
       resolver.redirectUntil(const AuthRoute());
+      return;
     }
   }
 }

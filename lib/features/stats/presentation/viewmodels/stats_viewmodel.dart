@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
+import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
 import 'package:dawarich/features/stats/domain/stats/stats.dart';
 import 'package:dawarich/features/stats/presentation/converters/stats_page_model_converter.dart';
@@ -20,10 +22,12 @@ class StatsViewmodel extends _$StatsViewmodel {
 
     final getStats = await ref.watch(getStatsUseCaseProvider.future);
     final getLastSyncedAt = await ref.watch(getLastStatsSyncUseCaseProvider.future);
+    final User user = ref.watch(currentUserProvider);
+    final int userId = user.id;
 
     final (statsOpt, lastSyncedAtUtc) = await (
-    getStats(),
-    getLastSyncedAt(),
+      getStats(userId),
+      getLastSyncedAt(userId),
     ).wait;
 
     if (statsOpt case Some(value: final stats)) {
@@ -46,12 +50,16 @@ class StatsViewmodel extends _$StatsViewmodel {
       final getStats = await ref.read(getStatsUseCaseProvider.future);
       final getLastSyncedAt = await ref.read(getLastStatsSyncUseCaseProvider.future);
 
+      final User user = ref.read(currentUserProvider);
+      final int userId = user.id;
+
       final StatsUiModel? stats = await _fetchStats(
+        userId,
         getStats,
         forceRefresh: true,
       );
 
-      final DateTime? lastSyncedAtUtc = await getLastSyncedAt();
+      final DateTime? lastSyncedAtUtc = await getLastSyncedAt(userId);
 
       return StatsPageState(
         stats: stats,
@@ -61,10 +69,11 @@ class StatsViewmodel extends _$StatsViewmodel {
   }
 
   Future<StatsUiModel?> _fetchStats(
+      int userId,
       GetStatsUseCase useCase, {
         bool forceRefresh = false,
       }) async {
-    final Option<Stats> result = await useCase(forceRefresh: forceRefresh);
+    final Option<Stats> result = await useCase(userId, forceRefresh: forceRefresh);
 
     if (result case Some(value: final Stats stats)) {
       return stats.toUiModel();

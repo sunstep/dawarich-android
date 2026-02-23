@@ -15,9 +15,9 @@ final class StatsRepository implements IStatsRepository {
         _cache = cache;
 
   @override
-  Future<Option<StatsDTO>> getStats({bool forceRefresh = false}) async {
+  Future<Option<StatsDTO>> getStats(int userId, {bool forceRefresh = false}) async {
     if (!forceRefresh) {
-      final cached = await _cache.getCachedStats();
+      final cached = await _cache.getCachedStats(userId);
       if (cached.isSome()) {
         return Some(cached.unwrap().stats);
       }
@@ -25,7 +25,7 @@ final class StatsRepository implements IStatsRepository {
 
     final remote = await _remote.fetchStats();
     if (remote.isSome()) {
-      await _cache.upsert(
+      await _cache.upsert(userId,
         stats: remote.unwrap(),
         syncedAt: DateTime.now(),
       );
@@ -35,7 +35,7 @@ final class StatsRepository implements IStatsRepository {
   }
 
   @override
-  Future<Option<DateTime>> getLastSyncedAt() {
-    return _cache.getLastSyncedAt();
+  Future<Option<DateTime>> getLastSyncedAt(int userId) {
+    return _cache.getLastSyncedAt(userId);
   }
 }

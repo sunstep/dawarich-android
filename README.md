@@ -82,7 +82,7 @@
 
 ## Roadmap
 Curious what’s next? Track planned work and priorities on the project board:
-- Project board: https://github.com/sunstep/dawarich-android/projects/...
+- Project board: https://github.com/sunstep/dawarich-android/projects/7
 
 ## Compatibility
 - Requires a working Dawarich server instance + API key

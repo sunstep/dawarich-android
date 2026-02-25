@@ -1,4 +1,3 @@
-
 import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/core/network/dio_client.dart';
 import 'package:dawarich/features/version_check/application/repository/version_repository_interfaces.dart';
@@ -18,7 +17,7 @@ final class VersionRepository implements IVersionRepository {
 
     final sha = shaRes.unwrap();
     final url =
-        'https://raw.githubusercontent.com/sunstep/dawarich-android-feedback/$sha/compat.json';
+        'https://raw.githubusercontent.com/sunstep/dawarich-android/$sha/compat.json';
     return Ok(url);
   }
 
@@ -73,8 +72,8 @@ final class VersionRepository implements IVersionRepository {
   Future<Result<String, Failure>> _getCompatCommitSha() async {
 
     const ghUrl =
-        'https://api.github.com/repos/sunstep/dawarich-android-feedback/commits'
-        '?path=compat.json&sha=main&per_page=1'; // In the future this will be same repository as the code it self.
+        'https://api.github.com/repos/sunstep/dawarich-android/commits'
+        '?path=compat.json&sha=main&per_page=1';
 
     try {
       final resp = await _apiClient.get(ghUrl,

@@ -38,6 +38,26 @@
   <em>⚠️ Unofficial community client: not affiliated with the Dawarich maintainer ⚠️ </em>
 </p>
 
+<table align="center" style="max-width: 900px; width: 100%; border-collapse: separate; border-spacing: 0;">
+  <tr>
+    <td style="
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(59,130,246,0.45);
+      background: rgba(59,130,246,0.12);
+      color: inherit;
+      font-size: 15px;
+    ">
+      <span style="font-size: 18px; margin-right: 8px;">ℹ️</span>
+      <strong>Now available on Google Play</strong><br/>
+      Install Dawarich Android here:
+      <a href="https://play.google.com/store/apps/details?id=com.sunstep.dawarich">
+        play.google.com/store/apps/details?id=com.sunstep.dawarich
+      </a>
+    </td>
+  </tr>
+</table>
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/5a825d1a-a956-4186-a073-993e0b7ca93d"
        alt="Dawarich Android app mockup"
@@ -45,10 +65,12 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/sunstep/dawarich-android/releases">
-   <img src="https://i.ibb.co/q0mdc4Z/get-it-on-github.png" height="80"/>
-</a>
-
+  <a href="[YOUR_PLAY_URL](https://play.google.com/store/apps/details?id=com.sunstep.dawarich)">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80" />
+  </a>
+  <a href="https://github.com/sunstep/dawarich-android/releases">
+    <img src="https://i.ibb.co/q0mdc4Z/get-it-on-github.png" height="80" />
+  </a>
 </p>
 
 # Features summarized
@@ -57,6 +79,10 @@
 * View the stats of your Dawarich profile with ease
 * Manage your points: view or delete individual points
 * Track new points from your mobile
+
+## Roadmap
+Curious what’s next? Track planned work and priorities on the project board:
+- Project board: https://github.com/sunstep/dawarich-android/projects/...
 
 ## Compatibility
 - Requires a working Dawarich server instance + API key
@@ -69,6 +95,9 @@ I found Dawarich while looking for a self-hosted alternative to Google Maps Time
 It was immediately clear that a dedicated mobile client unlocks the full experience, generic GPS tracker apps don’t match Dawarich’s UX and feature set.
 
 This is an **unofficial community client** and is not affiliated with the Dawarich maintainer.
+
+## Support this project
+
 
 ## License
 

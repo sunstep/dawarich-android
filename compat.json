@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "default": {
+    "blocked": true,
+    "message": "This version is no longer supported. Please update to the latest version."
+  },
+  "rules": [
+    {
+      "client": ">=0.12.1",
+      "allowServer": ">=0.30.6",
+      "blocked": false,
+      "message": "Please update the server to version 0.30.6 or newer."
+    }
+  ],
+}

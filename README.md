@@ -65,7 +65,7 @@
 </p>
 
 <p align="center">
-  <a href="[YOUR_PLAY_URL](https://play.google.com/store/apps/details?id=com.sunstep.dawarich)">
+  <a href="[https://play.google.com/store/apps/details?id=com.sunstep.dawarich](https://play.google.com/store/apps/details?id=com.sunstep.dawarich)">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80" />
   </a>
   <a href="https://github.com/sunstep/dawarich-android/releases">
@@ -96,7 +96,25 @@ It was immediately clear that a dedicated mobile client unlocks the full experie
 
 This is an **unofficial community client** and is not affiliated with the Dawarich maintainer.
 
-## Support this project
+## 💚 Support This Project
+
+Dawarich Android is developed in my spare time as an independent, community-driven client for the Dawarich ecosystem.
+
+If you enjoy the app and want to support continued development, you can do so here:
+
+❤️ GitHub Sponsors: https://github.com/sponsors/sunstep
+
+🎯 Patreon: https://www.patreon.com/5471938/join
+
+☕ Ko-fi: https://ko-fi.com/sunstep
+
+☕ Buy Me a Coffee: https://buymeacoffee.com/sunstep
+
+Support is completely optional and never unlocks features this app will always remain open source.
+
+Contributions simply help cover development time, testing, infrastructure, and future improvements.
+
+Thank you for supporting independent software 💚
 
 
 ## License

@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   release:
@@ -195,20 +196,32 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Create a new branch from main, add the file, push, open PR
+          # Create a new branch from main, add the file, force-push, open PR
+          # Force-push handles retries where the branch already exists from a previous failed run
           git checkout -b "$BRANCH" origin/main
           mkdir -p "$(dirname "$CHANGELOG")"
           cp /tmp/changelog.txt "$CHANGELOG"
           git add "$CHANGELOG"
           git commit -m "chore: add F-Droid changelog for build ${BUILD_NUMBER} [skip ci]"
-          git push origin "$BRANCH"
+          git push --force origin "$BRANCH"
 
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "chore: F-Droid changelog for ${TAG}" \
-            --body "Auto-generated F-Droid changelog for build ${BUILD_NUMBER} (${TAG})." \
-            --label "automated"
+          # Only create a PR if one doesn't already exist for this branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --base main --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #${EXISTING_PR} already exists for branch ${BRANCH}, skipping creation."
+            PR_NUMBER="$EXISTING_PR"
+          else
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "chore: F-Droid changelog for ${TAG}" \
+              --body "Auto-generated F-Droid changelog for build ${BUILD_NUMBER} (${TAG}).")
+            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+            echo "Created PR #${PR_NUMBER}"
+          fi
+
+          # Enable auto-merge (squash) so the changelog lands on main without manual intervention
+          gh pr merge "$PR_NUMBER" --auto --squash
 
       # -------------------- Collect artifacts --------------------
       - name: Collect artifacts

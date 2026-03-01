@@ -10,6 +10,8 @@ import 'package:option_result/option_result.dart';
 
 final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
 
+  static const hostedUrl = 'https://my.dawarich.app';
+
   final RefreshServerCompatibilityUseCase _refreshServerCompatibility;
   final TestHostConnectionUseCase _testHostConnectionUseCase;
   final LoginWithApiKeyUseCase _loginWithApiKeyUseCase;
@@ -33,6 +35,7 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   bool _apiKeyPreferred = true;
   bool _passwordVisible = false;
   bool _apiKeyVisible = false;
+  bool _hostedMode = true;
   String? _snackbarMessage;
   String? _errorMessage;
 
@@ -50,6 +53,12 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   bool get apiKeyVisible => _apiKeyVisible;
   String? get snackbarMessage => _snackbarMessage;
   String? get errorMessage => _errorMessage;
+  bool get hostedMode => _hostedMode;
+
+  /// The effective host used for login — auto-resolves to the hosted URL
+  /// in hosted mode, otherwise uses the user-entered host.
+  String get effectiveHost =>
+      _hostedMode ? hostedUrl : _hostController.text.trim();
 
   Future<void> initFromConfig(IApiConfigManager cfg) async {
     final apiConfig = cfg.apiConfig;
@@ -106,6 +115,36 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   void resetHostVerification() {
     _setHostVerified(false);
     clearErrorMessage();
+  }
+
+  /// Attempts API-key based authentication against the hosted instance.
+  /// Combines host verification + login in a single action.
+  Future<bool> tryLoginHosted(String apiKey) async {
+    _setLoggingIn(true);
+    _setErrorMessage(null);
+
+    try {
+      final hostOk = await testHost(hostedUrl);
+      if (!hostOk) {
+        _setErrorMessage('Unable to reach $hostedUrl. Please try again later.');
+        return false;
+      }
+
+      final ok = await _loginWithApiKeyUseCase(
+        host: hostedUrl,
+        apiKey: apiKey.trim(),
+      );
+
+      if (!ok) {
+        _setErrorMessage('Invalid API key. Please check and try again.');
+        return false;
+      }
+
+      clearErrorMessage();
+      return true;
+    } finally {
+      _setLoggingIn(false);
+    }
   }
 
   /// Attempts API-key based authentication.
@@ -216,6 +255,19 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   // Toggle API key vs credential login
   void setApiKeyPreference(bool useApiKey) {
     _apiKeyPreferred = useApiKey;
+    safeNotifyListeners();
+  }
+
+  void setHostedMode(bool hosted) {
+    _hostedMode = hosted;
+    _currentStep = 0;
+    _hostVerified = false;
+    _errorMessage = null;
+    if (hosted) {
+      _hostController.text = hostedUrl;
+    } else {
+      _hostController.clear();
+    }
     safeNotifyListeners();
   }
 

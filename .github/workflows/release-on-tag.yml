@@ -103,11 +103,15 @@ jobs:
         id: ver
         shell: bash
         run: |
-          VLINE=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
-          APP_VERSION="${VLINE%%+*}"
-          BUILD_NUMBER="${VLINE##*+}"
+          TAG="${{ steps.rel.outputs.tag }}"
+          # Strip 'v' prefix and any prerelease suffix for the build name
+          SEMVER="${TAG#v}"
+          # For the clean build name, strip prerelease (e.g. 0.19.0-beta.1 → 0.19.0)
+          APP_VERSION="${SEMVER%%-*}"
+          BUILD_NUMBER="$(git rev-list --count HEAD)"
           echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "full_version=$SEMVER"       >> "$GITHUB_OUTPUT"
 
       # -------------------- GMS build (default pubspec.yaml) --------------------
       - name: Pub get (GMS)
@@ -120,7 +124,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          flutter build apk --release --flavor gms
+          flutter build apk --release --flavor gms \
+            --build-name=${{ steps.ver.outputs.app_version }} \
+            --build-number=${{ steps.ver.outputs.build_number }}
 
       # -------------------- Switch to FOSS pubspec --------------------
       - name: Switch pubspec to FOSS
@@ -146,7 +152,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          flutter build apk --release --flavor foss
+          flutter build apk --release --flavor foss \
+            --build-name=${{ steps.ver.outputs.app_version }} \
+            --build-number=${{ steps.ver.outputs.build_number }}
 
       # -------------------- Collect artifacts --------------------
       - name: Collect artifacts

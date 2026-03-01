@@ -1,11 +1,10 @@
 import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
-import 'package:dawarich/features/version_check/presentation/widgets/compatibility_banner.dart';
+import 'package:dawarich/shared/widgets/app_scaffold.dart';
 import 'package:dawarich/shared/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
-import 'package:dawarich/shared/widgets/custom_appbar.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
@@ -54,13 +53,11 @@ class _TimelinePageState extends ConsumerState<TimelineView> with TickerProvider
   Widget _loadingScaffold(BuildContext context, String message) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: "Timeline",
-          titleFontSize: 20,
-          backgroundColor: Colors.transparent,
-        ),
+      child: AppScaffold(
+        title: "Timeline",
+        titleFontSize: 20,
+        appBarBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.transparent,
         drawer: CustomDrawer(),
         body: Center(child: TextLoadingIndicator(message: message)),
       ),
@@ -70,13 +67,11 @@ class _TimelinePageState extends ConsumerState<TimelineView> with TickerProvider
   Widget _errorScaffold(BuildContext context, Object error) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: "Timeline",
-          titleFontSize: 20,
-          backgroundColor: Colors.transparent,
-        ),
+      child: AppScaffold(
+        title: "Timeline",
+        titleFontSize: 20,
+        appBarBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.transparent,
         drawer: CustomDrawer(),
         body: Center(
           child: Padding(
@@ -355,20 +350,13 @@ class _TimelinePageState extends ConsumerState<TimelineView> with TickerProvider
   Widget _pageBase(BuildContext context, TimelineViewModel vm) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: "Timeline",
-          titleFontSize: 20,
-          backgroundColor: Colors.transparent,
-        ),
-        body: Column(
-          children: [
-            const CompatibilityBanner(),
-            Expanded(child: _pageContent(vm)),
-          ],
-        ),
+      child: AppScaffold(
+        title: "Timeline",
+        titleFontSize: 20,
+        appBarBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.transparent,
         drawer: CustomDrawer(),
+        body: _pageContent(vm),
       ),
     );
   }

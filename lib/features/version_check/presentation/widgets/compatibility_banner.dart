@@ -77,14 +77,14 @@ class _CompatibilityBannerState extends ConsumerState<CompatibilityBanner>
             : const Color(0xFF2C2416))
         : (isIncompatible ? Colors.red.shade50 : Colors.orange.shade50);
 
-    final Color borderColor = accentColor.withOpacity(isDark ? 0.4 : 0.3);
+    final Color borderColor = accentColor.withValues(alpha: isDark ? 0.4 : 0.3);
 
     final Color textColor = isDark
-        ? Colors.white.withOpacity(0.87)
+        ? Colors.white.withValues(alpha: 0.87)
         : (isIncompatible ? Colors.red.shade900 : Colors.orange.shade900);
 
     final Color subtitleColor = isDark
-        ? Colors.white.withOpacity(0.6)
+        ? Colors.white.withValues(alpha: 0.6)
         : (isIncompatible ? Colors.red.shade700 : Colors.orange.shade800);
 
     final String title =
@@ -105,7 +105,7 @@ class _CompatibilityBannerState extends ConsumerState<CompatibilityBanner>
               border: Border.all(color: borderColor, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: accentColor.withOpacity(isDark ? 0.15 : 0.10),
+                  color: accentColor.withValues(alpha: isDark ? 0.15 : 0.10),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -120,7 +120,7 @@ class _CompatibilityBannerState extends ConsumerState<CompatibilityBanner>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: accentColor.withOpacity(isDark ? 0.20 : 0.12),
+                      color: accentColor.withValues(alpha: isDark ? 0.20 : 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -170,7 +170,7 @@ class _CompatibilityBannerState extends ConsumerState<CompatibilityBanner>
                       child: Icon(
                         Icons.close_rounded,
                         size: 18,
-                        color: textColor.withOpacity(0.5),
+                        color: textColor.withValues(alpha: 0.5),
                       ),
                     ),
                   ),

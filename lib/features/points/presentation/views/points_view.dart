@@ -4,7 +4,7 @@ import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/points/presentation/viewmodels/points_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
-import 'package:dawarich/shared/widgets/custom_appbar.dart';
+import 'package:dawarich/shared/widgets/app_scaffold.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:shimmer/shimmer.dart';
@@ -51,13 +51,11 @@ class _PointsViewState extends ConsumerState<PointsView> {
         value: vm,
         child: Container(
           decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: CustomAppbar(
-              title: 'Points',
-              titleFontSize: 32,
-              backgroundColor: Colors.transparent,
-            ),
+          child: AppScaffold(
+            title: 'Points',
+            titleFontSize: 32,
+            appBarBackgroundColor: Colors.transparent,
+            scaffoldBackgroundColor: Colors.transparent,
             drawer: CustomDrawer(),
             body: const SafeArea(child: _PointsBody()),
           ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dawarich/core/data/drift/database/crypto/sqlcipher_bootstrap.dart';
+import 'package:dawarich/core/di/providers/settings_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
 import 'package:dawarich/core/theme/light_theme.dart';
@@ -59,11 +60,12 @@ class Dawarich extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
         title: 'Dawarich',
         theme: LightTheme.primaryTheme,
         darkTheme: DarkTheme.primaryTheme,
-        themeMode: ThemeMode.system,
+        themeMode: themeMode,
         routerConfig: appRouter.config(),
     );
   }

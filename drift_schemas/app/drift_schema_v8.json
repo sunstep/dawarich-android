@@ -58,6 +58,16 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
+          },
+          {
+            "name": "theme_mode",
+            "getter_name": "themeMode",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('\\'system\\'')",
+            "default_client_dart": null,
+            "dsl_features": []
           }
         ],
         "is_virtual": false,
@@ -1039,7 +1049,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"app_settings_table\" (\"user_id\" INTEGER NOT NULL, \"biometric_lock_enabled\" INTEGER NOT NULL DEFAULT 0 CHECK (\"biometric_lock_enabled\" IN (0, 1)), \"lock_timeout_seconds\" INTEGER NOT NULL DEFAULT 0, \"last_authenticated_at\" INTEGER NULL, PRIMARY KEY (\"user_id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"app_settings_table\" (\"user_id\" INTEGER NOT NULL, \"biometric_lock_enabled\" INTEGER NOT NULL DEFAULT 0 CHECK (\"biometric_lock_enabled\" IN (0, 1)), \"lock_timeout_seconds\" INTEGER NOT NULL DEFAULT 0, \"last_authenticated_at\" INTEGER NULL, \"theme_mode\" TEXT NOT NULL DEFAULT 'system', PRIMARY KEY (\"user_id\"));"
         }
       ]
     },

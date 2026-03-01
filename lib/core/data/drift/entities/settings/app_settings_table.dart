@@ -14,6 +14,10 @@ class AppSettingsTable extends Table {
   /// When the user last successfully authenticated via biometric/screen lock.
   DateTimeColumn get lastAuthenticatedAt => dateTime().nullable()();
 
+  /// Theme mode: 'system', 'light', or 'dark'.
+  TextColumn get themeMode =>
+      text().withDefault(const Constant('system'))();
+
   @override
   Set<Column> get primaryKey => {userId};
 }

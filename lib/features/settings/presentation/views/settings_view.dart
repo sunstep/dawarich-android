@@ -18,6 +18,7 @@ class SettingsView extends ConsumerStatefulWidget {
 class _SettingsViewState extends ConsumerState<SettingsView> {
   bool _lockEnabled = false;
   int _lockTimeoutSeconds = 0;
+  ThemeMode _themeMode = ThemeMode.system;
   DeviceLockAvailability _availability = const DeviceLockAvailability(
     hasBiometrics: false,
     hasDeviceLock: false,
@@ -43,18 +44,22 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         await ref.read(isBiometricLockEnabledUseCaseProvider.future);
     final getTimeout =
         await ref.read(getLockTimeoutUseCaseProvider.future);
+    final getTheme =
+        await ref.read(getThemeModeUseCaseProvider.future);
     final checkAvailability =
         ref.read(checkBiometricAvailabilityUseCaseProvider);
     final userId = ref.read(currentUserIdProvider);
 
     final enabled = await isEnabled(userId);
     final timeout = await getTimeout(userId);
+    final themeStr = await getTheme(userId);
     final availability = await checkAvailability();
 
     if (mounted) {
       setState(() {
         _lockEnabled = enabled;
         _lockTimeoutSeconds = timeout;
+        _themeMode = themeModeFromString(themeStr);
         _availability = availability;
         _loading = false;
       });
@@ -104,6 +109,18 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     }
   }
 
+  Future<void> _onThemeChanged(ThemeMode mode) async {
+    final setTheme =
+        await ref.read(setThemeModeUseCaseProvider.future);
+    final userId = ref.read(currentUserIdProvider);
+
+    await setTheme(userId, mode: themeModeToString(mode));
+    ref.read(themeModeProvider.notifier).set(mode);
+    if (mounted) {
+      setState(() => _themeMode = mode);
+    }
+  }
+
   String get _lockTitle {
     if (_availability.hasBiometrics) return 'Biometric / Screen Lock';
     if (_availability.hasDeviceLock) return 'Screen Lock (PIN / Pattern)';
@@ -139,12 +156,13 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         // ── General ──
         const _SectionHeader(title: 'General', icon: Icons.tune_outlined),
         const SizedBox(height: 8),
-        const _SettingsCard(
+        _SettingsCard(
           children: [
-            _InfoTile(
+            _PickerTile(
               icon: Icons.palette_outlined,
               title: 'Theme',
-              subtitle: 'System default',
+              value: themeModeLabel(_themeMode),
+              onTap: () => _showThemePicker(context),
             ),
           ],
         ),
@@ -218,6 +236,60 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         _onTimeoutChanged(selected);
       }
     });
+  }
+
+  void _showThemePicker(BuildContext context) {
+    showModalBottomSheet<ThemeMode>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Text(
+                  'Theme',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              for (final mode in ThemeMode.values)
+                ListTile(
+                  leading: Icon(_themeIcon(mode),
+                      color: mode == _themeMode
+                          ? theme.colorScheme.primary
+                          : null),
+                  title: Text(themeModeLabel(mode)),
+                  trailing: mode == _themeMode
+                      ? Icon(Icons.check, color: theme.colorScheme.primary)
+                      : null,
+                  onTap: () => Navigator.pop(ctx, mode),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    ).then((selected) {
+      if (selected != null) {
+        _onThemeChanged(selected);
+      }
+    });
+  }
+
+  IconData _themeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return Icons.light_mode_outlined;
+      case ThemeMode.dark:
+        return Icons.dark_mode_outlined;
+      case ThemeMode.system:
+        return Icons.brightness_auto_outlined;
+    }
   }
 }
 

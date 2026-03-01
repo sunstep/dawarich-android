@@ -791,6 +791,7 @@ final class Schema8 extends i0.VersionedSchema {
           _column_62,
           _column_63,
           _column_64,
+          _column_65,
         ],
         attachedDatabase: database,
       ),
@@ -973,6 +974,8 @@ class Shape9 extends i0.VersionedTable {
       columnsByName['lock_timeout_seconds']! as i1.GeneratedColumn<int>;
   i1.GeneratedColumn<int> get lastAuthenticatedAt =>
       columnsByName['last_authenticated_at']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get themeMode =>
+      columnsByName['theme_mode']! as i1.GeneratedColumn<String>;
 }
 
 i1.GeneratedColumn<int> _column_62(String aliasedName) =>
@@ -989,6 +992,11 @@ i1.GeneratedColumn<int> _column_63(String aliasedName) =>
 i1.GeneratedColumn<int> _column_64(String aliasedName) =>
     i1.GeneratedColumn<int>('last_authenticated_at', aliasedName, true,
         type: i1.DriftSqlType.int, $customConstraints: 'NULL');
+i1.GeneratedColumn<String> _column_65(String aliasedName) =>
+    i1.GeneratedColumn<String>('theme_mode', aliasedName, false,
+        type: i1.DriftSqlType.string,
+        $customConstraints: 'NOT NULL DEFAULT \'system\'',
+        defaultValue: const i1.CustomExpression('\'system\''));
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema6 schema) from5To6,
   required Future<void> Function(i1.Migrator m, Schema7 schema) from6To7,

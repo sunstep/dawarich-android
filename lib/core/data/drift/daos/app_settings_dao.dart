@@ -57,6 +57,20 @@ class AppSettingsDao extends DatabaseAccessor<SQLiteClient>
     ));
   }
 
+  Future<String> getThemeMode(int userId) async {
+    final row = await getSettings(userId);
+    return row?.themeMode ?? 'system';
+  }
+
+  Future<void> setThemeMode(int userId, String mode) async {
+    await _ensureRow(userId);
+    await (update(db.appSettingsTable)
+          ..where((t) => t.userId.equals(userId)))
+        .write(AppSettingsTableCompanion(
+      themeMode: Value(mode),
+    ));
+  }
+
   /// Ensures a row exists for the given user, inserting defaults if needed.
   Future<void> _ensureRow(int userId) async {
     final existing = await getSettings(userId);

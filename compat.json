@@ -12,9 +12,9 @@
       "message": "Your Dawarich server is too old for this app version. Please update to at least 1.3.0."
     },
     {
-      "client": ">=0.15.0 <0.18.0",
+      "client": ">=0.15.0 <=0.18.1",
       "recommendServer": ">=1.0.0",
-      "severity": "warning",
+      "severity": "incompatible",
       "message": "Your Dawarich server may not be fully compatible. Please update to at least 1.0.0."
     }
   ]

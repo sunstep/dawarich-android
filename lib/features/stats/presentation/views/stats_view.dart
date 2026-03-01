@@ -15,7 +15,7 @@ import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.
 import 'package:dawarich/features/stats/presentation/widgets/period_row.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
-import 'package:dawarich/shared/widgets/custom_appbar.dart';
+import 'package:dawarich/shared/widgets/app_scaffold.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:option_result/option_result.dart';
@@ -61,13 +61,11 @@ class StatsView extends ConsumerWidget {
   Widget _buildLoadingScaffold(BuildContext context) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: 'Stats',
-          titleFontSize: 32,
-          backgroundColor: Colors.transparent,
-        ),
+      child: AppScaffold(
+        title: 'Stats',
+        titleFontSize: 32,
+        appBarBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.transparent,
         drawer: CustomDrawer(),
         body: SafeArea(child: _buildFullSkeleton(context)),
       ),
@@ -83,13 +81,11 @@ class StatsView extends ConsumerWidget {
       }) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: 'Stats',
-          titleFontSize: 32,
-          backgroundColor: Colors.transparent,
-        ),
+      child: AppScaffold(
+        title: 'Stats',
+        titleFontSize: 32,
+        appBarBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.transparent,
         drawer: CustomDrawer(),
         body: SafeArea(
           child: state.stats == null
@@ -110,13 +106,11 @@ class StatsView extends ConsumerWidget {
   Widget _buildErrorScaffold(BuildContext context, Object error, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: 'Stats',
-          titleFontSize: 32,
-          backgroundColor: Colors.transparent,
-        ),
+      child: AppScaffold(
+        title: 'Stats',
+        titleFontSize: 32,
+        appBarBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.transparent,
         drawer: CustomDrawer(),
         body: Center(
           child: Column(

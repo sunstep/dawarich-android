@@ -9,7 +9,6 @@ import 'package:dawarich/features/settings/presentation/views/settings_view.dart
 import 'package:dawarich/features/stats/presentation/views/stats_view.dart';
 import 'package:dawarich/features/timeline/presentation/views/timeline_view.dart';
 import 'package:dawarich/features/tracking/presentation/views/tracker_view.dart';
-import 'package:dawarich/features/version_check/presentation/views/version_check_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
@@ -32,7 +31,6 @@ final class AppRouter extends RootStackRouter {
     AutoRoute(page: SplashRoute.page, initial: true),
     AutoRoute(page: AuthRoute.page, path: '/auth'),
     AutoRoute(page: AuthQrScanRoute.page, path: '/qrScan'),
-    AutoRoute(page: VersionCheckRoute.page, path: '/versionCheck'),
 
     // Protected routes (auth required)
     AutoRoute(page: TimelineRoute.page, path: '/timeline', guards: [_authGuard]),

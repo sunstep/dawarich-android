@@ -71,9 +71,6 @@ final class ServerStepWidget extends StatelessWidget {
       onNavigateToTimeline: () => appRouter.replaceAll([
         const TimelineRoute()
       ]),
-      onNavigateToVersionCheck: () => appRouter.replaceAll([
-        const VersionCheckRoute()
-      ]),
       onShowError: (msg) => _showInlineError(context, msg),
     );
   }

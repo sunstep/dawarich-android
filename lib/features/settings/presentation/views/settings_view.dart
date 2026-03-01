@@ -1,6 +1,6 @@
 import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
-import 'package:dawarich/shared/widgets/custom_appbar.dart';
+import 'package:dawarich/shared/widgets/app_scaffold.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 
 @RoutePage()
@@ -10,10 +10,11 @@ class SettingsView extends StatelessWidget {
 
   @override
   build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppbar(title: "Settings", titleFontSize: 40),
-      body: _pageContent(context),
+    return AppScaffold(
+      title: "Settings",
+      titleFontSize: 40,
       drawer: CustomDrawer(),
+      body: _pageContent(context),
     );
   }
 

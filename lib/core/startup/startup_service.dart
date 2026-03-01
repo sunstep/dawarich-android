@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dawarich/core/application/errors/failure.dart';
 import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
 import 'package:dawarich/core/di/providers/version_check_providers.dart';
@@ -11,7 +10,6 @@ import 'package:dawarich/main.dart';
 import 'package:dawarich_android_user_module/dawarich_android_user_module.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:option_result/option_result.dart';
 
 final class StartupService {
   static Future<void> initializeAppFromContainer(ProviderContainer container) async {
@@ -33,17 +31,10 @@ final class StartupService {
 
       sessionService.setUserId(refreshedSessionUser.id);
 
-      final serverCompatabilityChecker =
-          await container.read(serverVersionCompatibilityUseCase.future);
-      final Result<(), Failure> isSupported = await serverCompatabilityChecker();
+      final refreshServerCompatibility =
+          await container.read(refreshServerCompatibilityUseCaseProvider.future);
+      await refreshServerCompatibility();
 
-      if (!isSupported.isOk()) {
-        if (kDebugMode) {
-          debugPrint('[StartupService] Server version not supported, navigating to version check screen...');
-        }
-        appRouter.replaceAll([const VersionCheckRoute()]);
-        return;
-      }
 
       final pendingRoute = InitializeTrackerNotificationServiceUseCase.pendingNotificationRoute;
       if (pendingRoute != null) {

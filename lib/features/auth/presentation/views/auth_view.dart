@@ -72,13 +72,13 @@ final class _AuthFormCard extends StatefulWidget {
 class _AuthFormCardState extends State<_AuthFormCard> {
   final _hostFormKey = GlobalKey<FormState>();
   final _apiFormKey = GlobalKey<FormState>();
+  final _hostedApiFormKey = GlobalKey<FormState>();
 
   AuthPageViewModel get vm => widget.vm;
 
   @override
   void initState() {
     super.initState();
-
     vm.addListener(_onVmChanged);
   }
 
@@ -89,10 +89,7 @@ class _AuthFormCardState extends State<_AuthFormCard> {
   }
 
   void _onVmChanged() {
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     setState(() {});
   }
 
@@ -106,28 +103,38 @@ class _AuthFormCardState extends State<_AuthFormCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _ConnectHeader(vm: vm),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _ConnectHeader(vm: vm),
+            ),
             const SizedBox(height: 24),
-            Stepper(
-              physics: const ClampingScrollPhysics(),
-              currentStep: vm.currentStep,
-              onStepContinue: () => _handleContinue(context, vm),
-              onStepCancel: vm.currentStep > 0 ? () => vm.goToPreviousStep() : null,
-              controlsBuilder: (ctx, details) => _buildControls(ctx, details, vm),
-              steps: [
-                Step(
-                  title: const Text('Server'),
-                  isActive: vm.currentStep >= 0,
-                  state: vm.currentStep > 0 ? StepState.complete : StepState.indexed,
-                  content: ServerStepWidget(formKey: _hostFormKey),
-                ),
-                Step(
-                  title: const Text('Login'),
-                  isActive: vm.currentStep >= 1,
-                  state: vm.currentStep > 1 ? StepState.complete : StepState.indexed,
-                  content: LoginStepWidget(formKey: _apiFormKey),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _ModeSelector(
+                hostedMode: vm.hostedMode,
+                onChanged: vm.setHostedMode,
+              ),
+            ),
+            const SizedBox(height: 24),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: vm.hostedMode
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _HostedBody(
+                        key: const ValueKey('hosted'),
+                        vm: vm,
+                        formKey: _hostedApiFormKey,
+                        onSignIn: () => _handleHostedSignIn(context),
+                      ),
+                    )
+                  : _SelfHostedBody(
+                      key: const ValueKey('selfhosted'),
+                      vm: vm,
+                      hostFormKey: _hostFormKey,
+                      apiFormKey: _apiFormKey,
+                      onContinue: () => _handleSelfHostedContinue(context),
+                    ),
             ),
           ],
         ),
@@ -135,24 +142,28 @@ class _AuthFormCardState extends State<_AuthFormCard> {
     );
   }
 
-  Future<void> _handleContinue(BuildContext context, AuthPageViewModel vm) async {
+  Future<void> _handleHostedSignIn(BuildContext context) async {
+    if (!(_hostedApiFormKey.currentState?.validate() ?? false)) return;
+
+    final ok = await vm.tryLoginHosted(vm.apiKeyController.text.trim());
+    if (!ok) return;
+
+    await vm.refreshServerCompatibility();
+    if (context.mounted) {
+      context.router.root.replaceAll([const PermissionsOnboardingRoute()]);
+    }
+  }
+
+  Future<void> _handleSelfHostedContinue(BuildContext context) async {
     if (vm.currentStep == 0) {
-      if (!(_hostFormKey.currentState?.validate() ?? false)) {
-        return;
-      }
-
+      if (!(_hostFormKey.currentState?.validate() ?? false)) return;
       final ok = await vm.testHost(vm.hostController.text.trim());
-
-      if (ok) {
-        vm.goToNextStep();
-      }
-
+      if (ok) vm.goToNextStep();
       return;
     }
 
     if (vm.currentStep == 1) {
       final host = vm.hostController.text.trim();
-
       if (host.isEmpty) {
         vm.setCurrentStep(0);
         vm.setSnackbarMessage('Please set a server first.');
@@ -160,52 +171,244 @@ class _AuthFormCardState extends State<_AuthFormCard> {
       }
     }
 
-    if (!(_apiFormKey.currentState?.validate() ?? false)) {
-      return;
-    }
+    if (!(_apiFormKey.currentState?.validate() ?? false)) return;
 
     final ok = await vm.tryLoginApiKey(vm.apiKeyController.text.trim());
-
-    if (!ok) {
-      return;
-    }
+    if (!ok) return;
 
     await vm.refreshServerCompatibility();
-
     if (context.mounted) {
       context.router.root.replaceAll([const PermissionsOnboardingRoute()]);
     }
   }
+}
 
-  Widget _buildControls(BuildContext context, ControlsDetails d, AuthPageViewModel vm) {
+// ─── Mode Selector ───────────────────────────────────────────────────────────
+
+final class _ModeSelector extends StatelessWidget {
+  final bool hostedMode;
+  final ValueChanged<bool> onChanged;
+
+  const _ModeSelector({required this.hostedMode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SegmentedButton<bool>(
+      segments: const [
+        ButtonSegment<bool>(
+          value: true,
+          label: Text('Hosted'),
+          icon: Icon(Icons.cloud_outlined),
+        ),
+        ButtonSegment<bool>(
+          value: false,
+          label: Text('Self-hosted'),
+          icon: Icon(Icons.dns_outlined),
+        ),
+      ],
+      selected: {hostedMode},
+      onSelectionChanged: (s) => onChanged(s.first),
+      style: ButtonStyle(
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        visualDensity: VisualDensity.comfortable,
+        side: WidgetStatePropertyAll(
+          BorderSide(color: theme.colorScheme.outline.withAlpha(80)),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Hosted Body ─────────────────────────────────────────────────────────────
+
+final class _HostedBody extends StatelessWidget {
+  final AuthPageViewModel vm;
+  final GlobalKey<FormState> formKey;
+  final VoidCallback onSignIn;
+
+  const _HostedBody({
+    super.key,
+    required this.vm,
+    required this.formKey,
+    required this.onSignIn,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final busy = vm.isVerifyingHost || vm.isLoggingIn;
-    final isLast = vm.currentStep == 1;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Row(
+    return Form(
+      key: formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (vm.currentStep > 0)
-            TextButton(onPressed: d.onStepCancel, child: const Text('Back')),
-          const Spacer(),
-          ElevatedButton(
-            onPressed: busy ? null : d.onStepContinue,
-            child: busy
-                ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: Colors.white,
+          // Subtle hosted-instance badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withAlpha(120),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.language, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(
+                  AuthPageViewModel.hostedUrl.replaceFirst('https://', ''),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Enter the API key from your Dawarich account.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodySmall?.color,
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: vm.apiKeyController,
+            obscureText: !vm.apiKeyVisible,
+            decoration: InputDecoration(
+              labelText: 'API Key',
+              prefixIcon: const Icon(Icons.vpn_key),
+              filled: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              suffixIcon: IconButton(
+                icon: Icon(vm.apiKeyVisible
+                    ? Icons.visibility
+                    : Icons.visibility_off),
+                onPressed: () => vm.setApiKeyVisibility(!vm.apiKeyVisible),
               ),
-            )
-                : Text(isLast ? 'Sign in' : 'Next'),
+            ),
+            validator: (v) =>
+                (v != null && v.isNotEmpty) ? null : 'Enter your API key',
+          ),
+          if (vm.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                vm.errorMessage!,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: busy ? null : onSignIn,
+              child: busy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Sign in'),
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+// ─── Self-hosted Body ────────────────────────────────────────────────────────
+
+final class _SelfHostedBody extends StatelessWidget {
+  final AuthPageViewModel vm;
+  final GlobalKey<FormState> hostFormKey;
+  final GlobalKey<FormState> apiFormKey;
+  final VoidCallback onContinue;
+
+  const _SelfHostedBody({
+    super.key,
+    required this.vm,
+    required this.hostFormKey,
+    required this.apiFormKey,
+    required this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = vm.isVerifyingHost || vm.isLoggingIn;
+    final isLast = vm.currentStep == 1;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stepper(
+          physics: const ClampingScrollPhysics(),
+          currentStep: vm.currentStep,
+          onStepContinue: onContinue,
+          onStepCancel:
+              vm.currentStep > 0 ? () => vm.goToPreviousStep() : null,
+          controlsBuilder: (ctx, details) => Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Row(
+              children: [
+                if (vm.currentStep > 0)
+                  TextButton(
+                      onPressed: details.onStepCancel,
+                      child: const Text('Back')),
+                const Spacer(),
+                ElevatedButton(
+                  onPressed: busy ? null : details.onStepContinue,
+                  child: busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(isLast ? 'Sign in' : 'Next'),
+                ),
+              ],
+            ),
+          ),
+          steps: [
+            Step(
+              title: const Text('Server'),
+              isActive: vm.currentStep >= 0,
+              state: vm.currentStep > 0
+                  ? StepState.complete
+                  : StepState.indexed,
+              content: ServerStepWidget(formKey: hostFormKey),
+            ),
+            Step(
+              title: const Text('Login'),
+              isActive: vm.currentStep >= 1,
+              state: vm.currentStep > 1
+                  ? StepState.complete
+                  : StepState.indexed,
+              content: LoginStepWidget(formKey: apiFormKey),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Connect Header ──────────────────────────────────────────────────────────
 
 final class _ConnectHeader extends StatelessWidget {
   final AuthPageViewModel vm;

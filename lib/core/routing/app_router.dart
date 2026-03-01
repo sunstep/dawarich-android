@@ -4,6 +4,7 @@ import 'package:dawarich/core/shell/splash_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_qr_scan_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_view.dart';
 import 'package:dawarich/features/batch/presentation/views/batch_explorer_view.dart';
+import 'package:dawarich/features/onboarding/presentation/views/permissions_onboarding_view.dart';
 import 'package:dawarich/features/points/presentation/views/points_view.dart';
 import 'package:dawarich/features/settings/presentation/views/settings_view.dart';
 import 'package:dawarich/features/stats/presentation/views/stats_view.dart';
@@ -31,6 +32,7 @@ final class AppRouter extends RootStackRouter {
     AutoRoute(page: SplashRoute.page, initial: true),
     AutoRoute(page: AuthRoute.page, path: '/auth'),
     AutoRoute(page: AuthQrScanRoute.page, path: '/qrScan'),
+    AutoRoute(page: PermissionsOnboardingRoute.page, path: '/onboarding'),
 
     // Protected routes (auth required)
     AutoRoute(page: TimelineRoute.page, path: '/timeline', guards: [_authGuard]),
@@ -59,6 +61,8 @@ final class AppRouter extends RootStackRouter {
         return const BatchExplorerRoute();
       case '/auth':
         return const AuthRoute();
+      case '/onboarding':
+        return const PermissionsOnboardingRoute();
       default:
         return const TimelineRoute();
     }

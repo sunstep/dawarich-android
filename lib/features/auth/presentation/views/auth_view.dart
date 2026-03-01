@@ -173,7 +173,7 @@ class _AuthFormCardState extends State<_AuthFormCard> {
     await vm.refreshServerCompatibility();
 
     if (context.mounted) {
-      context.router.root.replaceAll([const TimelineRoute()]);
+      context.router.root.replaceAll([const PermissionsOnboardingRoute()]);
     }
   }
 

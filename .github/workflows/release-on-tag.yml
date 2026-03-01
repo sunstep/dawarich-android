@@ -172,28 +172,43 @@ jobs:
               > "$CHANGELOG_DIR/${BUILD_NUMBER}.txt"
           fi
 
-      - name: Push F-Droid changelog to default branch
+      - name: Push F-Droid changelog via PR
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           BUILD_NUMBER="${{ steps.ver.outputs.build_number }}"
+          TAG="${{ steps.rel.outputs.tag }}"
           CHANGELOG="fastlane/metadata/android/en-US/changelogs/${BUILD_NUMBER}.txt"
-          # Only push if the file doesn't already exist on the default branch
+          BRANCH="chore/fdroid-changelog-${BUILD_NUMBER}"
+
+          # Skip if the file already exists on main
           git fetch origin main
           if git show "origin/main:${CHANGELOG}" &>/dev/null; then
-            echo "Changelog ${BUILD_NUMBER}.txt already exists, skipping."
+            echo "Changelog ${BUILD_NUMBER}.txt already exists on main, skipping."
             exit 0
           fi
+
           # Save to temp before switching branches
           cp "$CHANGELOG" /tmp/changelog.txt
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout main
+
+          # Create a new branch from main, add the file, push, open PR
+          git checkout -b "$BRANCH" origin/main
           mkdir -p "$(dirname "$CHANGELOG")"
           cp /tmp/changelog.txt "$CHANGELOG"
           git add "$CHANGELOG"
-          git commit -m "chore: add F-Droid changelog for build ${BUILD_NUMBER}"
-          git push origin main
+          git commit -m "chore: add F-Droid changelog for build ${BUILD_NUMBER} [skip ci]"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: F-Droid changelog for ${TAG}" \
+            --body "Auto-generated F-Droid changelog for build ${BUILD_NUMBER} (${TAG})." \
+            --label "automated"
 
       # -------------------- Collect artifacts --------------------
       - name: Collect artifacts

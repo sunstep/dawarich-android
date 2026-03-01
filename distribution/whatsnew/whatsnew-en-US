@@ -1,6 +1,12 @@
 Full and more detailed release notes are always available at the GitHub repository!
 
-v0.18.1
+v0.19.0
 
-* Fixed stats cache not being scoped to users.
-* Renamed app to Dawarich (Community)
+* Added hosted vs self-hosted mode selector for easier onboarding
+* Added biometric lock with configurable timeout
+* Added theme setting (light, dark, system)
+* Added settings page with categorized preferences
+* Added permissions onboarding flow
+* Added about page with app info and links
+* Modernized navigation drawer
+* Improved version check to be advisory instead of blocking

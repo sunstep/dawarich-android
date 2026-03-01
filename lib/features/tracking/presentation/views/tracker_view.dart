@@ -5,7 +5,7 @@ import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
-import 'package:dawarich/shared/widgets/custom_appbar.dart';
+import 'package:dawarich/shared/widgets/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/features/tracking/presentation/models/tracker_page_viewmodel.dart';
 import 'package:flutter/services.dart';
@@ -24,36 +24,30 @@ final class TrackerView extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
       child: vmAsync.when(
-        loading: () => Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: const CustomAppbar(
-            title: 'Tracker',
-            titleFontSize: 32,
-            backgroundColor: Colors.transparent,
-          ),
+        loading: () => AppScaffold(
+          title: 'Tracker',
+          titleFontSize: 32,
+          appBarBackgroundColor: Colors.transparent,
+          scaffoldBackgroundColor: Colors.transparent,
           drawer: CustomDrawer(),
           body: const Center(child: CircularProgressIndicator()),
         ),
-        error: (e, _) => Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: const CustomAppbar(
-            title: 'Tracker',
-            titleFontSize: 32,
-            backgroundColor: Colors.transparent,
-          ),
+        error: (e, _) => AppScaffold(
+          title: 'Tracker',
+          titleFontSize: 32,
+          appBarBackgroundColor: Colors.transparent,
+          scaffoldBackgroundColor: Colors.transparent,
           drawer: CustomDrawer(),
           body: Center(child: Text(e.toString())),
         ),
         data: (vm) {
           return ChangeNotifierProvider.value(
             value: vm,
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: const CustomAppbar(
-                title: 'Tracker',
-                titleFontSize: 32,
-                backgroundColor: Colors.transparent,
-              ),
+            child: AppScaffold(
+              title: 'Tracker',
+              titleFontSize: 32,
+              appBarBackgroundColor: Colors.transparent,
+              scaffoldBackgroundColor: Colors.transparent,
               drawer: CustomDrawer(),
               body: _TrackerViewContentBody(),
             ),

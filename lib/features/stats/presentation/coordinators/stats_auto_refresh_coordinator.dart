@@ -24,10 +24,17 @@ final class StatsAutoRefreshCoordinator {
     _isRunning = true;
 
     try {
+      // Skip if the user is not yet fully authenticated (e.g. still on
+      // the permissions onboarding page after a fresh login).
+      final user = _ref.read(authenticatedUserProvider);
+      if (user == null) {
+        return;
+      }
+
       final ShouldRefreshStatsUseCase shouldRefresh = await _ref.read(shouldRefreshStatsUseCaseProvider.future);
       final nowUtc = DateTime.now().toUtc();
 
-      final int userId = _ref.read(currentUserIdProvider);
+      final int userId = user.id;
 
       final mustRefresh = await shouldRefresh(userId, nowUtc: nowUtc);
       if (mustRefresh) {

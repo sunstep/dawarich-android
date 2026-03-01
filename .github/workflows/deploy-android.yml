@@ -1,4 +1,4 @@
-name: Build & Deploy Android (gms + foss)
+name: Build & Deploy Android (gms + foss) → Open Beta
 
 on:
   push:
@@ -10,19 +10,6 @@ on:
       - "tools/**"
       - ".github/workflows/**"
   workflow_dispatch:
-    inputs:
-      track:
-        description: "Play track to deploy to"
-        required: true
-        default: "alpha"
-        type: choice
-        options: [ alpha, production ]
-      status:
-        description: "Play release status"
-        required: true
-        default: "draft"
-        type: choice
-        options: [ draft, inProgress, completed ]
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -91,6 +78,16 @@ jobs:
             printf '\nandroid.ndkVersion=%s\n' "${NDK_VER}" >> "${GP}"
           fi
 
+      - name: Read pubspec version (semver only, build number from CI)
+        id: ver
+        shell: bash
+        run: |
+          VLINE=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
+          APP_VERSION="${VLINE%%+*}"
+          BUILD_NUMBER="$(git rev-list --count HEAD)"
+          echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+
       - name: Flutter pub get
         run: flutter pub get
 
@@ -133,20 +130,16 @@ jobs:
           EOF
 
       - name: Build GMS AAB (release)
-        run: flutter build appbundle --release --flavor gms
+        run: |
+          flutter build appbundle --release --flavor gms \
+            --build-name=${{ steps.ver.outputs.app_version }} \
+            --build-number=${{ steps.ver.outputs.build_number }}
 
       - name: Build FOSS APK (release)
-        run: flutter build apk --release --flavor foss
-
-      - name: Read pubspec version
-        id: ver
-        shell: bash
         run: |
-          VLINE=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
-          APP_VERSION="${VLINE%%+*}"
-          BUILD_NUMBER="${VLINE##*+}"
-          echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
-          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          flutter build apk --release --flavor foss \
+            --build-name=${{ steps.ver.outputs.app_version }} \
+            --build-number=${{ steps.ver.outputs.build_number }}
 
       - name: Collect artifacts
         shell: bash
@@ -164,10 +157,11 @@ jobs:
         with:
           name: android-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}
           path: dist/*
-          retention-days: 14
+          retention-days: 30
 
-  upload:
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'release:')
+  # ── Always upload to open beta on push to main ──
+  upload-beta:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -182,7 +176,7 @@ jobs:
       - name: Ensure whatsnew directory exists
         run: mkdir -p distribution/whatsnew
 
-      - name: Upload to Play (GMS only)
+      - name: Upload to Play open beta (GMS)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
@@ -190,5 +184,5 @@ jobs:
           releaseName: ${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
           releaseFiles: dist/*-gms.aab
           whatsNewDirectory: distribution/whatsnew
-          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'alpha' }}
-          status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || 'completed' }}
+          track: beta
+          status: completed

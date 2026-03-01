@@ -39,7 +39,7 @@ final getUserByCredentialsUseCaseProvider = FutureProvider<GetUserByCredentialsU
 });
 
 final authPageViewModelProvider = FutureProvider<AuthPageViewModel>((ref) async {
-  final serverCompat = await ref.watch(serverVersionCompatibilityUseCase.future);
+  final serverCompat = await ref.watch(refreshServerCompatibilityUseCaseProvider.future);
 
   final testHost = await ref.watch(testHostConnectionUseCaseProvider.future);
   final login = await ref.watch(loginWithApiKeyUseCaseProvider.future);

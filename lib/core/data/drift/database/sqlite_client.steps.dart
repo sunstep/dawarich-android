@@ -764,9 +764,243 @@ class Shape8 extends i0.VersionedTable {
       columnsByName['payload_json']! as i1.GeneratedColumn<String>;
 }
 
+final class Schema8 extends i0.VersionedSchema {
+  Schema8({required super.database}) : super(version: 8);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    appSettingsTable,
+    pointGeometryTable,
+    pointPropertiesTable,
+    pointsTable,
+    userTable,
+    statsCache,
+    trackTable,
+    trackerSettingsTable,
+    userSettingsTable,
+  ];
+  late final Shape9 appSettingsTable = Shape9(
+      source: i0.VersionedTable(
+        entityName: 'app_settings_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(user_id)',
+        ],
+        columns: [
+          _column_21,
+          _column_62,
+          _column_63,
+          _column_64,
+          _column_65,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape0 pointGeometryTable = Shape0(
+      source: i0.VersionedTable(
+        entityName: 'point_geometry_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_0,
+          _column_1,
+          _column_2,
+          _column_3,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape1 pointPropertiesTable = Shape1(
+      source: i0.VersionedTable(
+        entityName: 'point_properties_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_0,
+          _column_4,
+          _column_5,
+          _column_6,
+          _column_7,
+          _column_8,
+          _column_9,
+          _column_10,
+          _column_11,
+          _column_12,
+          _column_13,
+          _column_14,
+          _column_15,
+          _column_16,
+          _column_17,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape2 pointsTable = Shape2(
+      source: i0.VersionedTable(
+        entityName: 'points_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'UNIQUE(deduplication_key)',
+        ],
+        columns: [
+          _column_0,
+          _column_1,
+          _column_18,
+          _column_19,
+          _column_20,
+          _column_21,
+          _column_22,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape6 userTable = Shape6(
+      source: i0.VersionedTable(
+        entityName: 'user_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'UNIQUE(dawarich_id, dawarich_endpoint)',
+        ],
+        columns: [
+          _column_0,
+          _column_36,
+          _column_37,
+          _column_38,
+          _column_39,
+          _column_40,
+          _column_41,
+          _column_42,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape8 statsCache = Shape8(
+      source: i0.VersionedTable(
+        entityName: 'stats_cache',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(user_id)',
+        ],
+        columns: [
+          _column_43,
+          _column_24,
+          _column_25,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape4 trackTable = Shape4(
+      source: i0.VersionedTable(
+        entityName: 'track_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_0,
+          _column_26,
+          _column_27,
+          _column_28,
+          _column_29,
+          _column_21,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape5 trackerSettingsTable = Shape5(
+      source: i0.VersionedTable(
+        entityName: 'tracker_settings_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [
+          'PRIMARY KEY(user_id)',
+        ],
+        columns: [
+          _column_30,
+          _column_31,
+          _column_32,
+          _column_33,
+          _column_34,
+          _column_35,
+          _column_21,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape7 userSettingsTable = Shape7(
+      source: i0.VersionedTable(
+        entityName: 'user_settings_table',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_0,
+          _column_43,
+          _column_44,
+          _column_45,
+          _column_46,
+          _column_47,
+          _column_48,
+          _column_49,
+          _column_50,
+          _column_51,
+          _column_52,
+          _column_53,
+          _column_54,
+          _column_55,
+          _column_56,
+          _column_57,
+          _column_58,
+          _column_59,
+          _column_60,
+          _column_61,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+}
+
+class Shape9 extends i0.VersionedTable {
+  Shape9({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<int> get userId =>
+      columnsByName['user_id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get biometricLockEnabled =>
+      columnsByName['biometric_lock_enabled']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get lockTimeoutSeconds =>
+      columnsByName['lock_timeout_seconds']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get lastAuthenticatedAt =>
+      columnsByName['last_authenticated_at']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get themeMode =>
+      columnsByName['theme_mode']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<int> _column_62(String aliasedName) =>
+    i1.GeneratedColumn<int>('biometric_lock_enabled', aliasedName, false,
+        type: i1.DriftSqlType.int,
+        $customConstraints:
+            'NOT NULL DEFAULT 0 CHECK (biometric_lock_enabled IN (0, 1))',
+        defaultValue: const i1.CustomExpression('0'));
+i1.GeneratedColumn<int> _column_63(String aliasedName) =>
+    i1.GeneratedColumn<int>('lock_timeout_seconds', aliasedName, false,
+        type: i1.DriftSqlType.int,
+        $customConstraints: 'NOT NULL DEFAULT 0',
+        defaultValue: const i1.CustomExpression('0'));
+i1.GeneratedColumn<int> _column_64(String aliasedName) =>
+    i1.GeneratedColumn<int>('last_authenticated_at', aliasedName, true,
+        type: i1.DriftSqlType.int, $customConstraints: 'NULL');
+i1.GeneratedColumn<String> _column_65(String aliasedName) =>
+    i1.GeneratedColumn<String>('theme_mode', aliasedName, false,
+        type: i1.DriftSqlType.string,
+        $customConstraints: 'NOT NULL DEFAULT \'system\'',
+        defaultValue: const i1.CustomExpression('\'system\''));
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema6 schema) from5To6,
   required Future<void> Function(i1.Migrator m, Schema7 schema) from6To7,
+  required Future<void> Function(i1.Migrator m, Schema8 schema) from7To8,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -780,6 +1014,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from6To7(migrator, schema);
         return 7;
+      case 7:
+        final schema = Schema8(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from7To8(migrator, schema);
+        return 8;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -789,9 +1028,11 @@ i0.MigrationStepWithVersion migrationSteps({
 i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema6 schema) from5To6,
   required Future<void> Function(i1.Migrator m, Schema7 schema) from6To7,
+  required Future<void> Function(i1.Migrator m, Schema8 schema) from7To8,
 }) =>
     i0.VersionedSchema.stepByStepHelper(
         step: migrationSteps(
       from5To6: from5To6,
       from6To7: from6To7,
+      from7To8: from7To8,
     ));

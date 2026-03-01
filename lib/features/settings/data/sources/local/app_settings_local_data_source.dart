@@ -1,0 +1,46 @@
+import 'package:dawarich/core/data/drift/daos/app_settings_dao.dart';
+
+abstract interface class IAppSettingsLocalDataSource {
+  Future<bool> isBiometricLockEnabled(int userId);
+  Future<void> setBiometricLockEnabled(int userId, bool enabled);
+  Future<int> getLockTimeoutSeconds(int userId);
+  Future<void> setLockTimeoutSeconds(int userId, int seconds);
+  Future<DateTime?> getLastAuthenticatedAt(int userId);
+  Future<void> setLastAuthenticatedAt(int userId, DateTime time);
+}
+
+final class AppSettingsLocalDataSource implements IAppSettingsLocalDataSource {
+  final AppSettingsDao _dao;
+
+  AppSettingsLocalDataSource(this._dao);
+
+  @override
+  Future<bool> isBiometricLockEnabled(int userId) {
+    return _dao.isBiometricLockEnabled(userId);
+  }
+
+  @override
+  Future<void> setBiometricLockEnabled(int userId, bool enabled) {
+    return _dao.setBiometricLockEnabled(userId, enabled);
+  }
+
+  @override
+  Future<int> getLockTimeoutSeconds(int userId) {
+    return _dao.getLockTimeoutSeconds(userId);
+  }
+
+  @override
+  Future<void> setLockTimeoutSeconds(int userId, int seconds) {
+    return _dao.setLockTimeoutSeconds(userId, seconds);
+  }
+
+  @override
+  Future<DateTime?> getLastAuthenticatedAt(int userId) {
+    return _dao.getLastAuthenticatedAt(userId);
+  }
+
+  @override
+  Future<void> setLastAuthenticatedAt(int userId, DateTime time) {
+    return _dao.setLastAuthenticatedAt(userId, time);
+  }
+}

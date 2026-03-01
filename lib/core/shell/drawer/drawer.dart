@@ -365,6 +365,12 @@ final class _NavSection extends StatelessWidget {
           label: 'Tracker',
           onTap: () => onNavigate(const TrackerRoute()),
         ),
+        const SizedBox(height: 8),
+        _NavTile(
+          icon: Icons.settings_outlined,
+          label: 'Settings',
+          onTap: () => onNavigate(const SettingsRoute()),
+        ),
       ],
     );
   }

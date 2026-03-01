@@ -7,6 +7,8 @@ import 'package:dawarich/core/di/providers/version_check_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/shell/life_cycle/life_cycle_controller.dart';
+import 'package:dawarich/core/di/providers/settings_providers.dart';
+import 'package:dawarich/features/biometric_lock/domain/app_lock_timestamp_tracker.dart';
 import 'package:dawarich/features/onboarding/application/usecases/check_onboarding_permissions_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:dawarich/main.dart';
@@ -24,6 +26,7 @@ final class StartupService {
     final initNotif = container.read(initializeTrackerNotificationServiceUseCaseProvider);
     await initNotif();
 
+
     final DawarichAndroidUserModule<User> sessionService =
         await container.read(sessionBoxProvider.future);
     final User? refreshedSessionUser = await sessionService.refreshSession();
@@ -34,6 +37,14 @@ final class StartupService {
       }
 
       sessionService.setUserId(refreshedSessionUser.id);
+
+      // Initialize the lock tracker with persisted auth time for this user.
+      final appSettingsRepo =
+          await container.read(appSettingsRepositoryProvider.future);
+      await AppLockTimestampTracker.instance.initialize(
+        appSettingsRepo,
+        refreshedSessionUser.id,
+      );
 
       final refreshServerCompatibility =
           await container.read(refreshServerCompatibilityUseCaseProvider.future);
@@ -68,7 +79,26 @@ final class StartupService {
       final allGranted = permissions.every((p) => p.granted);
 
       if (allGranted) {
-        appRouter.replaceAll([const TimelineRoute()]);
+        final isEnabled =
+            await container.read(isBiometricLockEnabledUseCaseProvider.future);
+        final biometricEnabled =
+            await isEnabled(refreshedSessionUser.id);
+        if (biometricEnabled) {
+          final getTimeout =
+              await container.read(getLockTimeoutUseCaseProvider.future);
+          final timeoutSeconds =
+              await getTimeout(refreshedSessionUser.id);
+          final shouldLock = AppLockTimestampTracker.instance.shouldLock(
+            timeoutSeconds: timeoutSeconds,
+          );
+          if (shouldLock) {
+            appRouter.replaceAll([const BiometricLockRoute()]);
+          } else {
+            appRouter.replaceAll([const TimelineRoute()]);
+          }
+        } else {
+          appRouter.replaceAll([const TimelineRoute()]);
+        }
       } else {
         if (kDebugMode) {
           debugPrint('[StartupService] Missing permissions, navigating to onboarding...');

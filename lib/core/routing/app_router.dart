@@ -5,6 +5,7 @@ import 'package:dawarich/features/about/presentation/views/about_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_qr_scan_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_view.dart';
 import 'package:dawarich/features/batch/presentation/views/batch_explorer_view.dart';
+import 'package:dawarich/features/biometric_lock/presentation/views/biometric_lock_view.dart';
 import 'package:dawarich/features/onboarding/presentation/views/permissions_onboarding_view.dart';
 import 'package:dawarich/features/points/presentation/views/points_view.dart';
 import 'package:dawarich/features/settings/presentation/views/settings_view.dart';
@@ -34,6 +35,7 @@ final class AppRouter extends RootStackRouter {
     AutoRoute(page: AuthRoute.page, path: '/auth'),
     AutoRoute(page: AuthQrScanRoute.page, path: '/qrScan'),
     AutoRoute(page: PermissionsOnboardingRoute.page, path: '/onboarding'),
+    AutoRoute(page: BiometricLockRoute.page, path: '/biometricLock'),
 
     // Protected routes (auth required)
     AutoRoute(page: TimelineRoute.page, path: '/timeline', guards: [_authGuard]),

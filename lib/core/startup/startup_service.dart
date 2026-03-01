@@ -1,14 +1,18 @@
 import 'dart:async';
 
+import 'package:dawarich/core/background/workmanager/stats_refresh_worker.dart';
 import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
 import 'package:dawarich/core/di/providers/version_check_providers.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/core/shell/life_cycle/life_cycle_controller.dart';
+import 'package:dawarich/features/onboarding/application/usecases/check_onboarding_permissions_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich_android_user_module/dawarich_android_user_module.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final class StartupService {
@@ -35,6 +39,13 @@ final class StartupService {
           await container.read(refreshServerCompatibilityUseCaseProvider.future);
       await refreshServerCompatibility();
 
+      // Register the lifecycle observer so stats auto-refresh on app resume.
+      final lifecycleController = AppLifecycleController(container);
+      WidgetsBinding.instance.addObserver(lifecycleController);
+
+      // Register WorkManager periodic task for background stats refresh.
+      await initializeAndRegisterStatsWorker();
+
 
       final pendingRoute = InitializeTrackerNotificationServiceUseCase.pendingNotificationRoute;
       if (pendingRoute != null) {
@@ -51,7 +62,19 @@ final class StartupService {
       if (kDebugMode) {
         debugPrint('[StartupService] Navigating to timeline screen...');
       }
-      appRouter.replaceAll([const TimelineRoute()]);
+
+      // Check if all onboarding permissions have been granted.
+      final permissions = await CheckOnboardingPermissionsUseCase()();
+      final allGranted = permissions.every((p) => p.granted);
+
+      if (allGranted) {
+        appRouter.replaceAll([const TimelineRoute()]);
+      } else {
+        if (kDebugMode) {
+          debugPrint('[StartupService] Missing permissions, navigating to onboarding...');
+        }
+        appRouter.replaceAll([const PermissionsOnboardingRoute()]);
+      }
       return;
     } else {
       if (kDebugMode) {

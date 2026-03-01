@@ -357,6 +357,9 @@ jobs:
             echo "Created PR #${PR_NUMBER}"
           fi
 
-          # Enable auto-merge (squash) so the changelog lands on main without manual intervention
-          gh pr merge "$PR_NUMBER" --auto --squash
+          # Merge the PR: try auto-merge first, fall back to immediate merge if PR is already clean
+          if ! gh pr merge "$PR_NUMBER" --auto --squash 2>/dev/null; then
+            echo "Auto-merge unavailable (PR may already be clean). Merging immediately."
+            gh pr merge "$PR_NUMBER" --squash
+          fi
 

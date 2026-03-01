@@ -1,4 +1,6 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:dawarich/core/di/providers/session_providers.dart';
+import 'package:dawarich/core/di/providers/settings_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/onboarding/application/usecases/check_onboarding_permissions_usecase.dart';
@@ -7,18 +9,20 @@ import 'package:dawarich/features/onboarding/domain/permission_item.dart';
 import 'package:dawarich/features/onboarding/presentation/viewmodels/permissions_onboarding_viewmodel.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as legacy;
 
 @RoutePage()
-final class PermissionsOnboardingView extends StatefulWidget {
+final class PermissionsOnboardingView extends ConsumerStatefulWidget {
   const PermissionsOnboardingView({super.key});
 
   @override
-  State<PermissionsOnboardingView> createState() =>
+  ConsumerState<PermissionsOnboardingView> createState() =>
       _PermissionsOnboardingViewState();
 }
 
-class _PermissionsOnboardingViewState extends State<PermissionsOnboardingView>
+class _PermissionsOnboardingViewState
+    extends ConsumerState<PermissionsOnboardingView>
     with WidgetsBindingObserver {
   late final PermissionsOnboardingViewModel _vm;
 
@@ -55,13 +59,21 @@ class _PermissionsOnboardingViewState extends State<PermissionsOnboardingView>
     if (mounted) setState(() {});
   }
 
-  void _onContinue() {
-    appRouter.replaceAll([const TimelineRoute()]);
+  Future<void> _onContinue() async {
+    final isEnabled =
+        await ref.read(isBiometricLockEnabledUseCaseProvider.future);
+    final userId = await ref.read(sessionUserIdProvider.future);
+    final biometricEnabled = userId != null && await isEnabled(userId);
+    if (biometricEnabled) {
+      appRouter.replaceAll([const BiometricLockRoute()]);
+    } else {
+      appRouter.replaceAll([const TimelineRoute()]);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<PermissionsOnboardingViewModel>.value(
+    return legacy.ChangeNotifierProvider<PermissionsOnboardingViewModel>.value(
       value: _vm,
       child: Container(
         decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),

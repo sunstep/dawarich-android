@@ -68,8 +68,10 @@ jobs:
 
           echo "should_deploy=$DEPLOY" >> "$GITHUB_OUTPUT"
 
-  # ── GMS build ──
+  # ── GMS build (only when deploying) ──
   build-gms:
+    needs: gate
+    if: needs.gate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     env:
       JAVA_VERSION: "21"
@@ -185,8 +187,10 @@ jobs:
           path: build/app/outputs/bundle/gmsRelease/*.aab
           retention-days: 30
 
-  # ── FOSS build (parallel to GMS) ──
+  # ── FOSS build (parallel to GMS, only when deploying) ──
   build-foss:
+    needs: gate
+    if: needs.gate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     env:
       JAVA_VERSION: "21"

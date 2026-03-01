@@ -190,5 +190,5 @@ jobs:
           releaseName: ${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
           releaseFiles: dist/*-gms.aab
           whatsNewDirectory: distribution/whatsnew
-          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'alpha' }}
+          track: ${{ github.event_name == 'workflow_dispatch' && inputs.track || 'beta' }}
           status: ${{ github.event_name == 'workflow_dispatch' && inputs.status || 'completed' }}

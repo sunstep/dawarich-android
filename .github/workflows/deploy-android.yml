@@ -159,9 +159,9 @@ jobs:
           path: dist/*
           retention-days: 30
 
-  # ── Always upload to open beta on push to main ──
+  # ── Upload to open beta only when commit message contains 'release:' ──
   upload-beta:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'release:')
     needs: build
     runs-on: ubuntu-latest
     steps:

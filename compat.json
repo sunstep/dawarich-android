@@ -14,7 +14,7 @@
     {
       "client": ">=0.15.0 <=0.18.1",
       "recommendServer": ">=1.4.0",
-      "severity": "warning",
+      "severity": "incompatible",
       "message": "Your Dawarich server may not be fully compatible. Please update to at least 1.4.0."
     }
   ]

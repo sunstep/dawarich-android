@@ -107,35 +107,33 @@ final class RefreshServerCompatibilityUseCase {
     final String messageFromRule = (rule['message'] as String?) ?? '';
 
     // Parse severity from the rule: "incompatible", "warning", or "ok" (default).
+    // This is the severity applied when the server does NOT meet the recommendation.
     final ServerCompatibilityStatus ruleSeverity =
         _parseSeverity(rule['severity'] as String?);
-
-    // If the rule itself marks this combination as incompatible, report immediately.
-    if (ruleSeverity == ServerCompatibilityStatus.incompatible) {
-      return Ok(ServerCompatibilityState(
-        status: ServerCompatibilityStatus.incompatible,
-        checkedAt: now,
-        appVersion: appVersion.toString(),
-        serverVersion: serverVersion.toString(),
-        message: messageFromRule.isNotEmpty
-            ? messageFromRule
-            : 'This app version is not compatible according to compatibility rules.',
-        reasonCode: 'SEVERITY_INCOMPATIBLE',
-      ));
-    }
 
     // Check recommended server version, if present.
     final String? recommendServerStr = rule['recommendServer'] as String?;
     if (recommendServerStr == null || recommendServerStr.trim().isEmpty) {
+      // No server recommendation — severity applies directly to this
+      // client version (e.g. the default rule blocking old app versions).
+      if (ruleSeverity == ServerCompatibilityStatus.ok) {
+        return Ok(ServerCompatibilityState(
+          status: ServerCompatibilityStatus.ok,
+          checkedAt: now,
+          appVersion: appVersion.toString(),
+          serverVersion: serverVersion.toString(),
+          reasonCode: 'NO_SERVER_RECOMMENDATION',
+        ));
+      }
       return Ok(ServerCompatibilityState(
         status: ruleSeverity,
         checkedAt: now,
         appVersion: appVersion.toString(),
         serverVersion: serverVersion.toString(),
-        message: ruleSeverity == ServerCompatibilityStatus.warning && messageFromRule.isNotEmpty
+        message: messageFromRule.isNotEmpty
             ? messageFromRule
-            : null,
-        reasonCode: 'NO_SERVER_RECOMMENDATION',
+            : 'This app version has a compatibility issue.',
+        reasonCode: 'SEVERITY_NO_SERVER_CHECK',
       ));
     }
 
@@ -155,31 +153,34 @@ final class RefreshServerCompatibilityUseCase {
     }
 
     final bool serverOk = serverConstraint.allows(serverVersion);
-    if (!serverOk) {
+    if (serverOk) {
+      // Server meets the recommendation — all good.
       return Ok(ServerCompatibilityState(
-        status: ruleSeverity == ServerCompatibilityStatus.ok
-            ? ServerCompatibilityStatus.warning
-            : ruleSeverity,
+        status: ServerCompatibilityStatus.ok,
         checkedAt: now,
         appVersion: appVersion.toString(),
         serverVersion: serverVersion.toString(),
         recommendServer: recommendServerStr,
-        message: messageFromRule.isNotEmpty
-            ? messageFromRule
-            : 'Your server version is not within the recommended range.',
-        reasonCode: 'SERVER_VERSION_NOT_RECOMMENDED',
+        reasonCode: 'SERVER_OK',
       ));
     }
 
+    // Server does NOT meet the recommendation — apply the rule's severity.
     return Ok(ServerCompatibilityState(
-      status: ServerCompatibilityStatus.ok,
+      status: ruleSeverity == ServerCompatibilityStatus.ok
+          ? ServerCompatibilityStatus.warning
+          : ruleSeverity,
       checkedAt: now,
       appVersion: appVersion.toString(),
       serverVersion: serverVersion.toString(),
       recommendServer: recommendServerStr,
-      reasonCode: 'SERVER_OK',
+      message: messageFromRule.isNotEmpty
+          ? messageFromRule
+          : 'Your server version is not within the recommended range.',
+      reasonCode: 'SERVER_VERSION_NOT_RECOMMENDED',
     ));
   }
+
 
   Map<String, dynamic>? _tryDecodeMap(String raw) {
     try {

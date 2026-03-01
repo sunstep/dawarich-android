@@ -156,6 +156,42 @@ jobs:
             --build-name=${{ steps.ver.outputs.app_version }} \
             --build-number=${{ steps.ver.outputs.build_number }}
 
+      # -------------------- F-Droid changelog --------------------
+      - name: Generate F-Droid changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_NUMBER="${{ steps.ver.outputs.build_number }}"
+          CHANGELOG_DIR="fastlane/metadata/android/en-US/changelogs"
+          WHATSNEW="distribution/whatsnew/whatsnew-en-US"
+          mkdir -p "$CHANGELOG_DIR"
+          if [ -f "$WHATSNEW" ]; then
+            cp "$WHATSNEW" "$CHANGELOG_DIR/${BUILD_NUMBER}.txt"
+          else
+            echo "See https://github.com/sunstep/dawarich-android/releases/tag/${{ steps.rel.outputs.tag }}" \
+              > "$CHANGELOG_DIR/${BUILD_NUMBER}.txt"
+          fi
+
+      - name: Push F-Droid changelog to default branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_NUMBER="${{ steps.ver.outputs.build_number }}"
+          CHANGELOG="fastlane/metadata/android/en-US/changelogs/${BUILD_NUMBER}.txt"
+          # Only push if the file doesn't already exist on the default branch
+          git fetch origin main
+          if git show "origin/main:${CHANGELOG}" &>/dev/null; then
+            echo "Changelog ${BUILD_NUMBER}.txt already exists, skipping."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          cp "$CHANGELOG" "$CHANGELOG"  # already in working dir
+          git add "$CHANGELOG"
+          git commit -m "chore: add F-Droid changelog for build ${BUILD_NUMBER}"
+          git push origin main
+
       # -------------------- Collect artifacts --------------------
       - name: Collect artifacts
         shell: bash

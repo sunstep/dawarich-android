@@ -46,6 +46,13 @@ final class StartupService {
         refreshedSessionUser.id,
       );
 
+      // Load the persisted theme preference.
+      final getTheme =
+          await container.read(getThemeModeUseCaseProvider.future);
+      final savedTheme = await getTheme(refreshedSessionUser.id);
+      container.read(themeModeProvider.notifier).set(
+          themeModeFromString(savedTheme));
+
       final refreshServerCompatibility =
           await container.read(refreshServerCompatibilityUseCaseProvider.future);
       await refreshServerCompatibility();

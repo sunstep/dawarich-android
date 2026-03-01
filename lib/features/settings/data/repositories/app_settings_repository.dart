@@ -35,4 +35,14 @@ final class AppSettingsRepository implements IAppSettingsRepository {
   Future<void> setLastAuthenticatedAt(int userId, DateTime time) {
     return _local.setLastAuthenticatedAt(userId, time);
   }
+
+  @override
+  Future<String> getThemeMode(int userId) {
+    return _local.getThemeMode(userId);
+  }
+
+  @override
+  Future<void> setThemeMode(int userId, String mode) {
+    return _local.setThemeMode(userId, mode);
+  }
 }

@@ -5,4 +5,6 @@ abstract interface class IAppSettingsRepository {
   Future<void> setLockTimeoutSeconds(int userId, int seconds);
   Future<DateTime?> getLastAuthenticatedAt(int userId);
   Future<void> setLastAuthenticatedAt(int userId, DateTime time);
+  Future<String> getThemeMode(int userId);
+  Future<void> setThemeMode(int userId, String mode);
 }

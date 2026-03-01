@@ -7,6 +7,8 @@ abstract interface class IAppSettingsLocalDataSource {
   Future<void> setLockTimeoutSeconds(int userId, int seconds);
   Future<DateTime?> getLastAuthenticatedAt(int userId);
   Future<void> setLastAuthenticatedAt(int userId, DateTime time);
+  Future<String> getThemeMode(int userId);
+  Future<void> setThemeMode(int userId, String mode);
 }
 
 final class AppSettingsLocalDataSource implements IAppSettingsLocalDataSource {
@@ -42,5 +44,15 @@ final class AppSettingsLocalDataSource implements IAppSettingsLocalDataSource {
   @override
   Future<void> setLastAuthenticatedAt(int userId, DateTime time) {
     return _dao.setLastAuthenticatedAt(userId, time);
+  }
+
+  @override
+  Future<String> getThemeMode(int userId) {
+    return _dao.getThemeMode(userId);
+  }
+
+  @override
+  Future<void> setThemeMode(int userId, String mode) {
+    return _dao.setThemeMode(userId, mode);
   }
 }

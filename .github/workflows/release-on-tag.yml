@@ -352,7 +352,8 @@ jobs:
               --base main \
               --head "$BRANCH" \
               --title "chore: F-Droid changelog for ${TAG}" \
-              --body "Auto-generated F-Droid changelog for build ${BUILD_NUMBER} (${TAG}).")
+              --body "Auto-generated F-Droid changelog for build ${BUILD_NUMBER} (${TAG})." \
+              --label "automated")
             PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
             echo "Created PR #${PR_NUMBER}"
           fi

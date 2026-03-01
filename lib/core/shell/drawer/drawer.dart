@@ -6,6 +6,7 @@ import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 final class CustomDrawer extends ConsumerStatefulWidget {
 
@@ -35,6 +36,7 @@ class _CustomDrawerState extends ConsumerState<CustomDrawer> {
         vm: vm,
         onNavigate: (route) => _navigateTo(context, route),
         onLogout: () => _logout(context, vm),
+        onAbout: () => _pushTo(context, const AboutRoute()),
       ),
     );
   }
@@ -89,6 +91,15 @@ class _CustomDrawerState extends ConsumerState<CustomDrawer> {
     });
   }
 
+  Future<void> _pushTo(BuildContext context, PageRouteInfo<Object?> route) async {
+    final router = context.router.root;
+    _runNavGuarded(() async {
+      if (!mounted) return;
+      _closeDrawer(context);
+      await router.push(route);
+    });
+  }
+
   Future<void> _logout(BuildContext context, DrawerViewModel vm) async {
     final router = context.router.root;
     _runNavGuarded(() async {
@@ -111,11 +122,13 @@ final class _CustomDrawerContent extends StatelessWidget {
   final DrawerViewModel vm;
   final void Function(PageRouteInfo<Object?> route) onNavigate;
   final VoidCallback onLogout;
+  final VoidCallback onAbout;
 
   const _CustomDrawerContent({
     required this.vm,
     required this.onNavigate,
     required this.onLogout,
+    required this.onAbout,
   });
 
 
@@ -220,7 +233,43 @@ final class _CustomDrawerContent extends StatelessWidget {
                     selectedBg: Colors.red.shade900.withValues(alpha: 0.3),
                     selectedIconColor: Colors.redAccent,
                   ),
-                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: onAbout,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      child: FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, snapshot) {
+                          final version = snapshot.hasData
+                              ? 'v${snapshot.data!.version}'
+                              : '';
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 14,
+                                color: theme.textTheme.bodySmall?.color
+                                    ?.withValues(alpha: 0.4),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Dawarich $version',
+                                style:
+                                    theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.textTheme.bodySmall?.color
+                                      ?.withValues(alpha: 0.4),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dawarich/core/routing/guards/auth_guard.dart';
 import 'package:dawarich/core/shell/splash_view.dart';
+import 'package:dawarich/features/about/presentation/views/about_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_qr_scan_view.dart';
 import 'package:dawarich/features/auth/presentation/views/auth_view.dart';
 import 'package:dawarich/features/batch/presentation/views/batch_explorer_view.dart';
@@ -41,6 +42,7 @@ final class AppRouter extends RootStackRouter {
     AutoRoute(page: TrackerRoute.page, path: '/tracker', guards: [_authGuard]),
     AutoRoute(page: BatchExplorerRoute.page, path: '/batchExplorer', guards: [_authGuard]),
     AutoRoute(page: SettingsRoute.page, path: '/settings', guards: [_authGuard]),
+    AutoRoute(page: AboutRoute.page, path: '/about', guards: [_authGuard]),
   ];
 
   /// Convert a path string to a PageRouteInfo.

@@ -184,10 +184,13 @@ jobs:
             echo "Changelog ${BUILD_NUMBER}.txt already exists, skipping."
             exit 0
           fi
+          # Save to temp before switching branches
+          cp "$CHANGELOG" /tmp/changelog.txt
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout main
-          cp "$CHANGELOG" "$CHANGELOG"  # already in working dir
+          mkdir -p "$(dirname "$CHANGELOG")"
+          cp /tmp/changelog.txt "$CHANGELOG"
           git add "$CHANGELOG"
           git commit -m "chore: add F-Droid changelog for build ${BUILD_NUMBER}"
           git push origin main

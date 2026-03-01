@@ -16,15 +16,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # ── Detect whether this push should deploy to beta ──
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+    steps:
+      - name: Check for release guard
+        id: check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # For workflow_dispatch always deploy
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Check the head commit message first (covers direct pushes and squash merges)
+          COMMIT_MSG=$(cat <<'ENDOFMSG'
+          ${{ github.event.head_commit.message }}
+          ENDOFMSG
+          )
+          if echo "$COMMIT_MSG" | head -1 | grep -qi 'release:'; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Check the PR title that produced this merge commit
+          PR_TITLE=$(gh api "/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            --jq '.[0].title // empty' 2>/dev/null || true)
+          if echo "$PR_TITLE" | grep -qi 'release:'; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "No 'release:' guard found in commit message or PR title."
+          echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+
+  # ── GMS build ──
+  build-gms:
     runs-on: ubuntu-latest
     env:
       JAVA_VERSION: "21"
-
     outputs:
       app_version: ${{ steps.ver.outputs.app_version }}
       build_number: ${{ steps.ver.outputs.build_number }}
-
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -36,7 +76,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Setup Java (Gradle/Android)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -48,7 +88,7 @@ jobs:
       - name: Gradle wrapper validation
         uses: gradle/actions/wrapper-validation@v3
 
-      - name: Write android/local.properties (sdk.dir + flutter.sdk)
+      - name: Write android/local.properties
         shell: bash
         run: |
           set -e
@@ -78,7 +118,7 @@ jobs:
             printf '\nandroid.ndkVersion=%s\n' "${NDK_VER}" >> "${GP}"
           fi
 
-      - name: Read pubspec version (semver only, build number from CI)
+      - name: Read pubspec version
         id: ver
         shell: bash
         run: |
@@ -94,7 +134,7 @@ jobs:
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Configure Gradle performance flags (safe)
+      - name: Configure Gradle performance flags
         run: |
           sed -i '/^org\.gradle\.configuration-cache/d' android/gradle.properties || true
           cat >> android/gradle.properties <<'EOF'
@@ -107,14 +147,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # --- dependency gate
-      - name: FOSS proprietary dependency check (release classpath)
-        shell: bash
-        run: |
-            chmod +x tools/check_proprietary_deps.sh
-            tools/check_proprietary_deps.sh fossReleaseRuntimeClasspath
-
-      # --- Signing for release builds
       - name: Decode keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -135,42 +167,155 @@ jobs:
             --build-name=${{ steps.ver.outputs.app_version }} \
             --build-number=${{ steps.ver.outputs.build_number }}
 
+      - name: Upload GMS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gms-aab
+          path: build/app/outputs/bundle/gmsRelease/*.aab
+          retention-days: 30
+
+  # ── FOSS build (parallel to GMS) ──
+  build-foss:
+    runs-on: ubuntu-latest
+    env:
+      JAVA_VERSION: "21"
+    outputs:
+      app_version: ${{ steps.ver.outputs.app_version }}
+      build_number: ${{ steps.ver.outputs.build_number }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Setup Flutter (from .flutter-version)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .flutter-version
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Gradle wrapper validation
+        uses: gradle/actions/wrapper-validation@v3
+
+      - name: Write android/local.properties
+        shell: bash
+        run: |
+          set -e
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          FLUTTER_SDK="${FLUTTER_HOME:-$(dirname "$(dirname "$(readlink -f "$(which flutter)")")")}"
+          {
+            echo "sdk.dir=${SDK_DIR}"
+            echo "flutter.sdk=${FLUTTER_SDK}"
+          } > android/local.properties
+
+      - name: Use preinstalled NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          NDK_DIR="${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-${ANDROID_NDK:-${ANDROID_NDK_LATEST_HOME:-}}}}"
+          if [ -z "${NDK_DIR}" ]; then
+            NDK_DIR=$(ls -d "${SDK_DIR}/ndk/"* 2>/dev/null | sort -V | tail -1 || true)
+          fi
+          [ -n "${NDK_DIR}" ] && [ -d "${NDK_DIR}" ] || { echo "::error::No preinstalled NDK found"; exit 1; }
+          NDK_VER="$(basename "$NDK_DIR")"
+          GP=android/gradle.properties
+          touch "${GP}"
+          if grep -q '^android\.ndkVersion=' "${GP}"; then
+            sed -i "s/^android\.ndkVersion=.*/android.ndkVersion=${NDK_VER}/" "${GP}"
+          else
+            printf '\nandroid.ndkVersion=%s\n' "${NDK_VER}" >> "${GP}"
+          fi
+
+      - name: Read pubspec version
+        id: ver
+        shell: bash
+        run: |
+          VLINE=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
+          APP_VERSION="${VLINE%%+*}"
+          BUILD_NUMBER="$(git rev-list --count HEAD)"
+          echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Switch pubspec to FOSS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp pubspec-foss.yaml pubspec.yaml
+          cp pubspec-foss.lock pubspec.lock
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Configure Gradle performance flags
+        run: |
+          sed -i '/^org\.gradle\.configuration-cache/d' android/gradle.properties || true
+          cat >> android/gradle.properties <<'EOF'
+          org.gradle.caching=true
+          org.gradle.parallel=true
+          org.gradle.daemon=true
+          org.gradle.configuration-cache=false
+          EOF
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: FOSS proprietary dependency check
+        shell: bash
+        run: |
+          chmod +x tools/check_proprietary_deps.sh
+          tools/check_proprietary_deps.sh fossReleaseRuntimeClasspath
+
+      - name: Decode keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/dawarich-upload.jks
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties <<'EOF'
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=../dawarich-upload.jks
+          EOF
+
       - name: Build FOSS APK (release)
         run: |
           flutter build apk --release --flavor foss \
             --build-name=${{ steps.ver.outputs.app_version }} \
             --build-number=${{ steps.ver.outputs.build_number }}
 
-      - name: Collect artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-          AAB=$(ls build/app/outputs/bundle/gmsRelease/*.aab | head -1)
-          cp "$AAB" "dist/dawarich-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}-gms.aab"
-          cp "build/app/outputs/flutter-apk/app-foss-release.apk" \
-             "dist/dawarich-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}-foss.apk"
-          ls -la dist
-
-      - name: Upload artifacts
+      - name: Upload FOSS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}
-          path: dist/*
+          name: foss-apk
+          path: build/app/outputs/flutter-apk/app-foss-release.apk
           retention-days: 30
 
-  # ── Upload to open beta only when commit message contains 'release:' ──
+  # ── Upload to open beta only when 'release:' is in the PR title or commit message ──
   upload-beta:
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'release:')
-    needs: build
+    needs: [gate, build-gms, build-foss]
+    if: needs.gate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Download GMS artifact
         uses: actions/download-artifact@v4
         with:
-          name: android-${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
+          name: gms-aab
           path: dist
 
       - name: Ensure whatsnew directory exists
@@ -181,8 +326,8 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: ${{ secrets.PACKAGE_NAME_GMS }}
-          releaseName: ${{ needs.build.outputs.app_version }}+${{ needs.build.outputs.build_number }}
-          releaseFiles: dist/*-gms.aab
+          releaseName: ${{ needs.build-gms.outputs.app_version }}+${{ needs.build-gms.outputs.build_number }}
+          releaseFiles: dist/*.aab
           whatsNewDirectory: distribution/whatsnew
           track: beta
           status: completed

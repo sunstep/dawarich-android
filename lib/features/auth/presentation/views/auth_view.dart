@@ -4,7 +4,6 @@ import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/auth/presentation/viewmodels/auth_page_viewmodel.dart';
 import 'package:dawarich/features/auth/presentation/widgets/connect_steps.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as provider;
@@ -171,17 +170,10 @@ class _AuthFormCardState extends State<_AuthFormCard> {
       return;
     }
 
-    final bool isServerSupported = await vm.checkServerSupport();
-
-    if (kDebugMode || isServerSupported) {
-      if (context.mounted) {
-        context.router.root.replaceAll([const TimelineRoute()]);
-      }
-      return;
-    }
+    await vm.refreshServerCompatibility();
 
     if (context.mounted) {
-      context.router.root.replaceAll([const VersionCheckRoute()]);
+      context.router.root.replaceAll([const TimelineRoute()]);
     }
   }
 

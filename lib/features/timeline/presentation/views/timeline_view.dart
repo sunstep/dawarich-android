@@ -1,6 +1,7 @@
 import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/version_check/presentation/widgets/compatibility_banner.dart';
 import 'package:dawarich/shared/widgets/custom_loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/shell/drawer/drawer.dart';
@@ -361,7 +362,12 @@ class _TimelinePageState extends ConsumerState<TimelineView> with TickerProvider
           titleFontSize: 20,
           backgroundColor: Colors.transparent,
         ),
-        body: _pageContent(vm),
+        body: Column(
+          children: [
+            const CompatibilityBanner(),
+            Expanded(child: _pageContent(vm)),
+          ],
+        ),
         drawer: CustomDrawer(),
       ),
     );

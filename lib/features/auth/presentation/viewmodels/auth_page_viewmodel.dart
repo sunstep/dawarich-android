@@ -4,19 +4,18 @@ import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/auth/application/usecases/login_with_api_key_usecase.dart';
 import 'package:dawarich/features/auth/application/usecases/test_host_connection_usecase.dart';
 import 'package:dawarich/features/auth/domain/models/auth_qr_payload.dart';
-import 'package:dawarich/features/version_check/application/usecases/server_version_compatibility_usecase.dart';
-import 'package:flutter/foundation.dart';
+import 'package:dawarich/features/version_check/application/usecases/refresh_server_compatibility_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:option_result/option_result.dart';
 
 final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
 
-  final ServerVersionCompatibilityUseCase _serverVersionCompatabilityUseCase;
+  final RefreshServerCompatibilityUseCase _refreshServerCompatibility;
   final TestHostConnectionUseCase _testHostConnectionUseCase;
   final LoginWithApiKeyUseCase _loginWithApiKeyUseCase;
 
   AuthPageViewModel(
-    this._serverVersionCompatabilityUseCase,
+    this._refreshServerCompatibility,
     this._testHostConnectionUseCase,
     this._loginWithApiKeyUseCase,
   );
@@ -142,7 +141,6 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   Future<void> tryQrLogin(
       String qrResult, {
         required VoidCallback onNavigateToTimeline,
-        required VoidCallback onNavigateToVersionCheck,
         required void Function(String) onShowError,
       }) async {
     _setErrorMessage(null);
@@ -166,12 +164,8 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
         return;
       }
 
-      final isServerSupported = await checkServerSupport();
-      if (kDebugMode || isServerSupported) {
-        onNavigateToTimeline();
-      } else {
-        onNavigateToVersionCheck();
-      }
+      await refreshServerCompatibility();
+      onNavigateToTimeline();
     } on FormatException {
       onShowError('The scanned QR code is invalid. Please try again.');
     } catch (_) {
@@ -198,8 +192,8 @@ final class AuthPageViewModel extends ChangeNotifier with SafeChangeNotifier {
   //   return false;
   // }
 
-  Future<bool> checkServerSupport() async {
-    final Result<(), Failure> supportResult = await _serverVersionCompatabilityUseCase();
+  Future<bool> refreshServerCompatibility() async {
+    final Result<(), Failure> supportResult = await _refreshServerCompatibility();
     return supportResult.isOk();
   }
 

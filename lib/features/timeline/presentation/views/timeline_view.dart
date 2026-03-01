@@ -1,5 +1,6 @@
 import 'package:auto_route/annotations.dart';
 import 'package:dawarich/core/di/providers/viewmodel_providers.dart';
+import 'package:dawarich/core/map/vector_map_config.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/shared/widgets/app_scaffold.dart';
 import 'package:dawarich/shared/widgets/custom_loading_indicator.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:dawarich/features/timeline/presentation/models/timeline_page_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vector_map_tiles/vector_map_tiles.dart';
 
 @RoutePage()
 final class TimelineView extends ConsumerStatefulWidget {
@@ -258,11 +260,12 @@ class _TimelinePageState extends ConsumerState<TimelineView> with TickerProvider
             }
           ),
           children: [
-            TileLayer(
-              urlTemplate:
-                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.sunstep.dawarich',
-              maxNativeZoom: 19,
+            VectorTileLayer(
+              tileProviders: VectorMapConfig.tileProviders(),
+              theme: Theme.of(context).brightness == Brightness.dark
+                  ? VectorMapConfig.darkTheme()
+                  : VectorMapConfig.lightTheme(),
+              tileOffset: TileOffset.DEFAULT,
             ),
             // --- API points (historical) ---
             if (mapModel.points.isNotEmpty)

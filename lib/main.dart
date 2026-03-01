@@ -45,6 +45,8 @@ Future<void> main() async {
       runApp(UncontrolledProviderScope(container: container, child: const Dawarich()));
 
     }, (Object error, StackTrace stack) {
+      // Suppress tile-fetch cancellation noise from vector_map_tiles.
+      if (error.toString() == 'Cancelled') return;
       debugPrint('[ZonedError] $error');
       debugPrint(stack.toString());
     }

@@ -17,14 +17,18 @@ permissions:
   pull-requests: write
 
 jobs:
-  release:
+  # ── Resolve tag and version metadata (fast, shared by all jobs) ──
+  meta:
     runs-on: ubuntu-latest
-
-    env:
-      JAVA_VERSION: "21"
-
+    outputs:
+      tag: ${{ steps.rel.outputs.tag }}
+      sha: ${{ steps.rel.outputs.sha }}
+      ref: ${{ steps.ref.outputs.ref }}
+      app_version: ${{ steps.ver.outputs.app_version }}
+      build_number: ${{ steps.ver.outputs.build_number }}
+      full_version: ${{ steps.ver.outputs.full_version }}
+      prerelease: ${{ steps.pre.outputs.prerelease }}
     steps:
-
       - name: Resolve ref (tag)
         id: ref
         shell: bash
@@ -35,6 +39,12 @@ jobs:
           else
             echo "ref=${{ github.ref }}" >> "$GITHUB_OUTPUT"
           fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.ref.outputs.ref }}
+
       - name: Resolve release metadata
         id: rel
         shell: bash
@@ -46,14 +56,44 @@ jobs:
           else
             TAG="${GITHUB_REF_NAME}"
           fi
-
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Read version from tag
+        id: ver
+        shell: bash
+        run: |
+          TAG="${{ steps.rel.outputs.tag }}"
+          SEMVER="${TAG#v}"
+          APP_VERSION="${SEMVER%%-*}"
+          BUILD_NUMBER="$(git rev-list --count HEAD)"
+          echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "full_version=$SEMVER"       >> "$GITHUB_OUTPUT"
+
+      - name: Determine prerelease flag
+        id: pre
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.rel.outputs.tag }}"
+          if [[ "$TAG" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── GMS APK build ──
+  build-gms:
+    needs: meta
+    runs-on: ubuntu-latest
+    env:
+      JAVA_VERSION: "21"
+    steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ steps.ref.outputs.ref }}
+          ref: ${{ needs.meta.outputs.ref }}
 
       - name: Setup Flutter (from .flutter-version)
         uses: subosito/flutter-action@v2
@@ -85,7 +125,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # --- Signing (needed for release APK/AAB)
       - name: Decode keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -100,25 +139,10 @@ jobs:
           storeFile=../dawarich-upload.jks
           EOF
 
-      - name: Read pubspec version (from default pubspec.yaml)
-        id: ver
-        shell: bash
-        run: |
-          TAG="${{ steps.rel.outputs.tag }}"
-          # Strip 'v' prefix and any prerelease suffix for the build name
-          SEMVER="${TAG#v}"
-          # For the clean build name, strip prerelease (e.g. 0.19.0-beta.1 → 0.19.0)
-          APP_VERSION="${SEMVER%%-*}"
-          BUILD_NUMBER="$(git rev-list --count HEAD)"
-          echo "app_version=$APP_VERSION"   >> "$GITHUB_OUTPUT"
-          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "full_version=$SEMVER"       >> "$GITHUB_OUTPUT"
-
-      # -------------------- GMS build (default pubspec.yaml) --------------------
-      - name: Pub get (GMS)
+      - name: Flutter pub get
         run: flutter pub get
 
-      - name: Run build_runner (GMS)
+      - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build APK (GMS)
@@ -126,10 +150,72 @@ jobs:
         run: |
           set -euo pipefail
           flutter build apk --release --flavor gms \
-            --build-name=${{ steps.ver.outputs.app_version }} \
-            --build-number=${{ steps.ver.outputs.build_number }}
+            --build-name=${{ needs.meta.outputs.app_version }} \
+            --build-number=${{ needs.meta.outputs.build_number }}
 
-      # -------------------- Switch to FOSS pubspec --------------------
+      - name: Upload GMS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gms-apk
+          path: build/app/outputs/flutter-apk/app-gms-release.apk
+          retention-days: 5
+
+  # ── FOSS APK build (parallel to GMS) ──
+  build-foss:
+    needs: meta
+    runs-on: ubuntu-latest
+    env:
+      JAVA_VERSION: "21"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.meta.outputs.ref }}
+
+      - name: Setup Flutter (from .flutter-version)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .flutter-version
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Write android/local.properties
+        shell: bash
+        run: |
+          set -e
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          FLUTTER_SDK="${FLUTTER_HOME:-$(dirname "$(dirname "$(readlink -f "$(which flutter)")")")}"
+          {
+            echo "sdk.dir=${SDK_DIR}"
+            echo "flutter.sdk=${FLUTTER_SDK}"
+          } > android/local.properties
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Decode keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/dawarich-upload.jks
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties <<'EOF'
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=../dawarich-upload.jks
+          EOF
+
       - name: Switch pubspec to FOSS
         shell: bash
         run: |
@@ -137,10 +223,10 @@ jobs:
           cp pubspec-foss.yaml pubspec.yaml
           cp pubspec-foss.lock pubspec.lock
 
-      - name: Pub get (FOSS)
+      - name: Flutter pub get
         run: flutter pub get
 
-      - name: Run build_runner (FOSS)
+      - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: FOSS proprietary dependency check
@@ -154,35 +240,86 @@ jobs:
         run: |
           set -euo pipefail
           flutter build apk --release --flavor foss \
-            --build-name=${{ steps.ver.outputs.app_version }} \
-            --build-number=${{ steps.ver.outputs.build_number }}
+            --build-name=${{ needs.meta.outputs.app_version }} \
+            --build-number=${{ needs.meta.outputs.build_number }}
 
-      # -------------------- F-Droid changelog --------------------
-      - name: Generate F-Droid changelog
+      - name: Upload FOSS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foss-apk
+          path: build/app/outputs/flutter-apk/app-foss-release.apk
+          retention-days: 5
+
+  # ── Create GitHub Release (waits for both builds) ──
+  release:
+    needs: [meta, build-gms, build-foss]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download GMS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gms-apk
+          path: dist
+
+      - name: Download FOSS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: foss-apk
+          path: dist
+
+      - name: Rename artifacts
         shell: bash
         run: |
           set -euo pipefail
-          BUILD_NUMBER="${{ steps.ver.outputs.build_number }}"
-          CHANGELOG_DIR="fastlane/metadata/android/en-US/changelogs"
-          WHATSNEW="distribution/whatsnew/whatsnew-en-US"
-          mkdir -p "$CHANGELOG_DIR"
-          if [ -f "$WHATSNEW" ]; then
-            cp "$WHATSNEW" "$CHANGELOG_DIR/${BUILD_NUMBER}.txt"
-          else
-            echo "See https://github.com/sunstep/dawarich-android/releases/tag/${{ steps.rel.outputs.tag }}" \
-              > "$CHANGELOG_DIR/${BUILD_NUMBER}.txt"
-          fi
+          VER="${{ needs.meta.outputs.app_version }}"
+          BN="${{ needs.meta.outputs.build_number }}"
+          mv dist/app-gms-release.apk  "dist/dawarich-${VER}+${BN}-gms.apk"
+          mv dist/app-foss-release.apk "dist/dawarich-${VER}+${BN}-foss.apk"
+          ls -la dist
 
-      - name: Push F-Droid changelog via PR
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.meta.outputs.tag }}
+          target_commitish: ${{ needs.meta.outputs.sha }}
+          files: dist/*
+          generate_release_notes: false
+          fail_on_unmatched_files: true
+          prerelease: ${{ needs.meta.outputs.prerelease }}
+
+  # ── F-Droid changelog (non-blocking, runs after meta, independent of release) ──
+  changelog:
+    needs: meta
+    runs-on: ubuntu-latest
+    # This job must never block the release
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.meta.outputs.ref }}
+
+      - name: Generate and push F-Droid changelog via PR
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          BUILD_NUMBER="${{ steps.ver.outputs.build_number }}"
-          TAG="${{ steps.rel.outputs.tag }}"
-          CHANGELOG="fastlane/metadata/android/en-US/changelogs/${BUILD_NUMBER}.txt"
+          BUILD_NUMBER="${{ needs.meta.outputs.build_number }}"
+          TAG="${{ needs.meta.outputs.tag }}"
+          CHANGELOG_DIR="fastlane/metadata/android/en-US/changelogs"
+          CHANGELOG="${CHANGELOG_DIR}/${BUILD_NUMBER}.txt"
+          WHATSNEW="distribution/whatsnew/whatsnew-en-US"
           BRANCH="chore/fdroid-changelog-${BUILD_NUMBER}"
+
+          # Generate the changelog file
+          mkdir -p "$CHANGELOG_DIR"
+          if [ -f "$WHATSNEW" ]; then
+            cp "$WHATSNEW" "$CHANGELOG"
+          else
+            echo "See https://github.com/sunstep/dawarich-android/releases/tag/${TAG}" \
+              > "$CHANGELOG"
+          fi
 
           # Skip if the file already exists on main
           git fetch origin main
@@ -223,39 +360,3 @@ jobs:
           # Enable auto-merge (squash) so the changelog lands on main without manual intervention
           gh pr merge "$PR_NUMBER" --auto --squash
 
-      # -------------------- Collect artifacts --------------------
-      - name: Collect artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-
-          cp build/app/outputs/flutter-apk/app-gms-release.apk \
-            dist/dawarich-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}-gms.apk
-
-          cp build/app/outputs/flutter-apk/app-foss-release.apk \
-            dist/dawarich-${{ steps.ver.outputs.app_version }}+${{ steps.ver.outputs.build_number }}-foss.apk
-
-          ls -la dist
-
-      - name: Determine prerelease flag
-        id: pre
-        shell: bash
-        run: |
-          set -euo pipefail
-          TAG="${{ steps.rel.outputs.tag }}"
-          if [[ "$TAG" == *-* ]]; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create GitHub Release and upload assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.rel.outputs.tag }}
-          target_commitish: ${{ steps.rel.outputs.sha }}
-          files: dist/*
-          generate_release_notes: false
-          fail_on_unmatched_files: true
-          prerelease: ${{ steps.pre.outputs.prerelease }}

@@ -1,0 +1,3 @@
+Full and more detailed release notes are always available at the GitHub repository!
+https://github.com/sunstep/dawarich-android/releases
+

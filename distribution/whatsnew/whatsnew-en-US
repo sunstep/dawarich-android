@@ -1,12 +1,6 @@
 Full and more detailed release notes are always available at the GitHub repository!
 
-v0.19.0
+v0.19.1
 
-* Added hosted vs self-hosted mode selector for easier onboarding
-* Added biometric lock with configurable timeout
-* Added theme setting (light, dark, system)
-* Added settings page with categorized preferences
-* Added permissions onboarding flow
-* Added about page with app info and links
-* Modernized navigation drawer
-* Improved version check to be advisory instead of blocking
+* Added a new batch expiration setting.
+* Optimized battery usage by tracker.

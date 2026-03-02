@@ -64,6 +64,10 @@ final class StartupService {
       // Register WorkManager periodic task for background stats refresh.
       await initializeAndRegisterStatsWorker();
 
+      // Register periodic batch upload worker (handles both threshold
+      // and expiration uploads when the foreground service isn't running).
+      await registerBatchUploadWorker();
+
 
       final pendingRoute = InitializeTrackerNotificationServiceUseCase.pendingNotificationRoute;
       if (pendingRoute != null) {

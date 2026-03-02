@@ -2,7 +2,6 @@
 import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
 import 'package:dawarich/features/stats/application/usecases/should_refresh_stats_usecase.dart';
-import 'package:dawarich/features/stats/presentation/viewmodels/stats_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,7 +37,14 @@ final class StatsAutoRefreshCoordinator {
 
       final mustRefresh = await shouldRefresh(userId, nowUtc: nowUtc);
       if (mustRefresh) {
-        await _ref.read(statsViewmodelProvider.notifier).refresh();
+        // Refresh through the repository directly so we don't depend on
+        // the StatsViewmodel, which is auto-disposed when no UI watches it.
+        final getStats = await _ref.read(getStatsUseCaseProvider.future);
+        await getStats(userId, forceRefresh: true);
+
+        if (kDebugMode) {
+          debugPrint('[StatsAutoRefresh] Background cache refresh done');
+        }
       }
     } catch (e, s) {
       if (kDebugMode) {

@@ -261,24 +261,37 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final showNotif = ref.watch(showTrackerNotificationUseCaseProvider);
   final watchSettings = await ref.watch(watchTrackerSettingsUseCaseProvider.future);
 
+  final getCurrentBatch = await ref.watch(getCurrentBatchUseCaseProvider.future);
+  final batchUploadWorkflow = await ref.watch(batchUploadWorkflowUseCaseProvider.future);
   final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
-  final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
-  final getSettings = await ref.watch(getTrackerSettingsUseCaseProvider.future);
-
-  final checkThreshold = CheckBatchThresholdUseCase(getSettings, localRepo);
-  final getCurrentBatch = GetCurrentBatchUseCase(localRepo);
-  final batchUploadWorkflow = BatchUploadWorkflowUseCase(apiRepo, localRepo);
 
   return PointAutomationService(
     createStream,
     storePoint,
     batchCount,
     showNotif,
-    checkThreshold,
     getCurrentBatch,
     batchUploadWorkflow,
     watchSettings,
+    localRepo,
   );
+});
+
+final checkBatchThresholdUseCaseProvider = FutureProvider<CheckBatchThresholdUseCase>((ref) async {
+  final getSettings = await ref.watch(getTrackerSettingsUseCaseProvider.future);
+  final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
+  return CheckBatchThresholdUseCase(getSettings, localRepo);
+});
+
+final getCurrentBatchUseCaseProvider = FutureProvider<GetCurrentBatchUseCase>((ref) async {
+  final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
+  return GetCurrentBatchUseCase(localRepo);
+});
+
+final batchUploadWorkflowUseCaseProvider = FutureProvider<BatchUploadWorkflowUseCase>((ref) async {
+  final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
+  final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
+  return BatchUploadWorkflowUseCase(apiRepo, localRepo);
 });
 
 // --- Timeline helpers / use cases ---

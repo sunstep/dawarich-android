@@ -200,6 +200,9 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   String _deviceId = "";
   String get deviceId => _deviceId;
 
+  int? _batchExpirationMinutes;
+  int? get batchExpirationMinutes => _batchExpirationMinutes;
+
 
 
 
@@ -248,6 +251,7 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     _trackingFrequency = s.trackingFrequency;
     _locationAccuracy = s.locationPrecision;
     _minimumPointDistance = s.minimumPointDistance;
+    _batchExpirationMinutes = s.batchExpirationMinutes;
     _deviceId = s.deviceId;
 
     safeNotifyListeners();
@@ -351,6 +355,19 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     final newValue = (amount ?? 50).clamp(minBatch, maxBatch);
 
     final updated = trackerSettingsCopy.copyWith(pointsPerBatch: newValue);
+
+    _applySettings(updated);
+    await _saveTrackerSettings(updated);
+  }
+
+  /// Sets the batch expiration in minutes. Pass `null` to disable.
+  Future<void> setBatchExpirationMinutes(int? minutes) async {
+    final trackerSettingsCopy = _trackerSettings;
+    if (trackerSettingsCopy == null) return;
+
+    final updated = trackerSettingsCopy.copyWith(
+      batchExpirationMinutes: () => minutes,
+    );
 
     _applySettings(updated);
     await _saveTrackerSettings(updated);

@@ -359,8 +359,8 @@ jobs:
           fi
 
           # Merge the PR: try auto-merge first, fall back to immediate merge if PR is already clean
-          if ! gh pr merge "$PR_NUMBER" --auto --squash 2>/dev/null; then
+          if ! gh pr merge "$PR_NUMBER" --auto --squash --delete-branch 2>/dev/null; then
             echo "Auto-merge unavailable (PR may already be clean). Merging immediately."
-            gh pr merge "$PR_NUMBER" --squash
+            gh pr merge "$PR_NUMBER" --squash --delete-branch
           fi
 

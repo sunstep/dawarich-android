@@ -387,6 +387,7 @@ class _SettingsCardState extends State<_SettingsCard> {
                 _FrequencyPage(),
                 _MinimumPointDistancePage(),
                 _BatchingPage(),
+                _BatchExpirationPage(),
                 _AdvancedPage(),
                 _TrackRecordingPage(),
               ],
@@ -878,7 +879,107 @@ class _BatchingPageState extends State<_BatchingPage> {
   }
 }
 
-/// Page 4: Advanced settings
+/// Page 5: Batch expiration (time-based upload trigger)
+class _BatchExpirationPage extends StatelessWidget {
+  const _BatchExpirationPage();
+
+  static const _options = <int?, String>{
+    null: 'Off',
+    15: '15m',
+    30: '30m',
+    60: '1h',
+    120: '2h',
+    360: '6h',
+    720: '12h',
+    1440: '24h',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<TrackerPageViewModel>();
+    final theme = Theme.of(context);
+    final current = vm.batchExpirationMinutes;
+    final isEnabled = current != null && current > 0;
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Icon(
+              isEnabled ? Icons.hourglass_bottom_rounded : Icons.hourglass_disabled_rounded,
+              key: ValueKey(isEnabled),
+              size: 48,
+              color: isEnabled
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Batch Expiration',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isEnabled
+                ? 'Upload after ${_options[current] ?? '${current}m'} of inactivity'
+                : 'Only upload when batch is full',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: _options.entries.map((e) {
+              final isSelected = e.key == current;
+              final isOff = e.key == null;
+              return ChoiceChip(
+                label: Text(
+                  e.value,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : isOff
+                            ? theme.colorScheme.onSurfaceVariant
+                            : theme.colorScheme.onSurface,
+                  ),
+                ),
+                selected: isSelected,
+                onSelected: (_) => vm.setBatchExpirationMinutes(e.key),
+                selectedColor: isOff
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : theme.colorScheme.primary,
+                backgroundColor: theme.colorScheme.surfaceContainerLow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isSelected
+                        ? Colors.transparent
+                        : theme.colorScheme.outlineVariant,
+                  ),
+                ),
+                showCheckmark: false,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Page 6: Advanced settings
 class _AdvancedPage extends StatefulWidget {
   const _AdvancedPage();
 

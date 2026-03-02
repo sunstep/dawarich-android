@@ -8,6 +8,7 @@ final class TrackerSettings {
   final LocationPrecision locationPrecision;
   final int minimumPointDistance;
   final int pointsPerBatch;
+  final int? batchExpirationMinutes;
   final String deviceId;
 
   const TrackerSettings({
@@ -17,8 +18,13 @@ final class TrackerSettings {
     required this.locationPrecision,
     required this.minimumPointDistance,
     required this.pointsPerBatch,
+    this.batchExpirationMinutes,
     required this.deviceId,
   });
+
+  /// Whether batch expiration is enabled (non-null and > 0).
+  bool get isBatchExpirationEnabled =>
+      batchExpirationMinutes != null && batchExpirationMinutes! > 0;
 
   TrackerSettings copyWith({
     bool? automaticTracking,
@@ -26,7 +32,8 @@ final class TrackerSettings {
     LocationPrecision? locationPrecision,
     int? minimumPointDistance,
     int? pointsPerBatch,
-    String? deviceId
+    int? Function()? batchExpirationMinutes,
+    String? deviceId,
   }) {
     return TrackerSettings(
       userId: userId,
@@ -35,7 +42,10 @@ final class TrackerSettings {
       locationPrecision: locationPrecision ?? this.locationPrecision,
       minimumPointDistance: minimumPointDistance ?? this.minimumPointDistance,
       pointsPerBatch: pointsPerBatch ?? this.pointsPerBatch,
-      deviceId: deviceId ?? this.deviceId
+      batchExpirationMinutes: batchExpirationMinutes != null
+          ? batchExpirationMinutes()
+          : this.batchExpirationMinutes,
+      deviceId: deviceId ?? this.deviceId,
     );
   }
 }

@@ -427,4 +427,35 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<DateTime?> getOldestUnUploadedPointTimestamp(int userId) async {
+    try {
+      final query = _database.select(_database.pointsTable).join([
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id
+              .equalsExp(_database.pointsTable.propertiesId),
+        ),
+      ])
+        ..where(_database.pointsTable.isUploaded.equals(false) &
+            _database.pointsTable.userId.equals(userId))
+        ..orderBy([
+          OrderingTerm.asc(_database.pointPropertiesTable.recordTimestamp),
+        ])
+        ..limit(1);
+
+      final row = await query.getSingleOrNull();
+      if (row == null) return null;
+
+      return row
+          .readTable(_database.pointPropertiesTable)
+          .recordTimestamp;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("[PointRepo] Error getting oldest un-uploaded point timestamp: $e");
+      }
+      return null;
+    }
+  }
 }

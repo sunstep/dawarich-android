@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:dawarich/core/background/workmanager/stats_refresh_worker.dart';
 import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
@@ -200,6 +201,9 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
   String _deviceId = "";
   String get deviceId => _deviceId;
 
+  int? _batchExpirationMinutes;
+  int? get batchExpirationMinutes => _batchExpirationMinutes;
+
 
 
 
@@ -248,6 +252,7 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
     _trackingFrequency = s.trackingFrequency;
     _locationAccuracy = s.locationPrecision;
     _minimumPointDistance = s.minimumPointDistance;
+    _batchExpirationMinutes = s.batchExpirationMinutes;
     _deviceId = s.deviceId;
 
     safeNotifyListeners();
@@ -354,6 +359,24 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
 
     _applySettings(updated);
     await _saveTrackerSettings(updated);
+  }
+
+  /// Sets the batch expiration in minutes. Pass `null` to disable.
+  Future<void> setBatchExpirationMinutes(int? minutes) async {
+    final trackerSettingsCopy = _trackerSettings;
+    if (trackerSettingsCopy == null) return;
+
+    final updated = trackerSettingsCopy.copyWith(
+      batchExpirationMinutes: () => minutes,
+    );
+
+    _applySettings(updated);
+    await _saveTrackerSettings(updated);
+
+    // Re-register (or cancel) the WorkManager task to match the new setting.
+    await registerBatchExpirationWorker(
+      enabled: minutes != null && minutes > 0,
+    );
   }
 
 

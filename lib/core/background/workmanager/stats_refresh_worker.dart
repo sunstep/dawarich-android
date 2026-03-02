@@ -1,10 +1,10 @@
-import 'package:dawarich/features/batch/data/background/batch_expiration_bootstrap.dart';
+import 'package:dawarich/features/batch/data/background/batch_upload_bootstrap.dart';
 import 'package:dawarich/features/stats/data/background/stats_background_refresh_bootstrap.dart';
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 
 const String kStatsRefreshTask = 'stats_refresh_daily';
-const String kBatchExpirationTask = 'batch_expiration_check';
+const String kBatchUploadTask = 'batch_upload_check';
 
 bool _workmanagerInitialized = false;
 
@@ -13,8 +13,8 @@ void workmanagerCallbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     if (task == kStatsRefreshTask) {
       await StatsBackgroundRefreshBootstrap.runInBackground(forceRefresh: true);
-    } else if (task == kBatchExpirationTask) {
-      await BatchExpirationBootstrap.runInBackground();
+    } else if (task == kBatchUploadTask) {
+      await BatchUploadBootstrap.runInBackground();
     }
     return true;
   });
@@ -54,36 +54,29 @@ Future<void> initializeAndRegisterStatsWorker() async {
   }
 }
 
-/// Registers (or replaces) the batch expiration periodic task.
+/// Registers the periodic batch upload task.
 ///
-/// The task runs every 15 minutes (Android WorkManager minimum) and checks
-/// whether the oldest un-uploaded point exceeds the user's configured
-/// expiration threshold.  If so, it uploads the batch.
+/// This task runs every 15 minutes (Android WorkManager minimum) and handles:
+///  - Threshold-based uploads (batch is full)
+///  - Expiration-based uploads (batch has been sitting too long)
 ///
-/// Pass `enabled: false` to cancel the task when the user disables expiration.
-Future<void> registerBatchExpirationWorker({bool enabled = true}) async {
+/// Always registered when tracking is active. The task itself decides
+/// whether there is work to do.
+Future<void> registerBatchUploadWorker() async {
   await _ensureInitialized();
 
-  if (!enabled) {
-    await Workmanager().cancelByUniqueName(kBatchExpirationTask);
-    if (kDebugMode) {
-      debugPrint('[WorkManager] Batch expiration task cancelled');
-    }
-    return;
-  }
-
   await Workmanager().registerPeriodicTask(
-    kBatchExpirationTask,
-    kBatchExpirationTask,
+    kBatchUploadTask,
+    kBatchUploadTask,
     frequency: const Duration(minutes: 15),
     constraints: Constraints(
       networkType: NetworkType.connected,
     ),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
   );
 
   if (kDebugMode) {
-    debugPrint('[WorkManager] Batch expiration task registered (15min)');
+    debugPrint('[WorkManager] Batch upload task registered (15min)');
   }
 }
 

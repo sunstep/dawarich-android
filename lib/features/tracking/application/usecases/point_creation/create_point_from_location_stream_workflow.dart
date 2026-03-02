@@ -75,7 +75,7 @@ final class CreatePointFromLocationStreamWorkflow {
       precision: precision,
       distanceFilterMeters: distanceFilter,
       timeLimit: null,
-      intervalDuration: const Duration(milliseconds: 500),
+      intervalDuration: const Duration(seconds: 5),
     );
 
     if (kDebugMode) {
@@ -160,11 +160,18 @@ final class CreatePointFromLocationStreamWorkflow {
     LocationFix? latestFix;
     StreamSubscription<LocationFix>? locationSub;
 
+    final int minSeconds = 1;
+    final int intervalSeconds =
+    (frequencySeconds / 2).ceil().clamp(minSeconds, frequencySeconds);
+
+    final intervalDuration = Duration(seconds: intervalSeconds);
+
     final request = LocationRequest(
       precision: precision,
       distanceFilterMeters: 0,
       timeLimit: null,
-      intervalDuration: const Duration(seconds: 1),
+      // Poll at half the tracking frequency so we usually have a fresh fix
+      intervalDuration: intervalDuration,
     );
 
     try {

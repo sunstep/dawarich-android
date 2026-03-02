@@ -26,6 +26,7 @@ final class AppLifecycleController with WidgetsBindingObserver {
     }
   }
 
+
   Future<void> _checkBiometricLockOnResume() async {
     try {
       final isEnabled =

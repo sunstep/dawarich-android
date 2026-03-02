@@ -64,6 +64,14 @@ final class StartupService {
       // Register WorkManager periodic task for background stats refresh.
       await initializeAndRegisterStatsWorker();
 
+      // Register batch expiration worker if enabled in tracker settings.
+      final getTrackerSettings =
+          await container.read(getTrackerSettingsUseCaseProvider.future);
+      final trackerSettings = await getTrackerSettings(refreshedSessionUser.id);
+      await registerBatchExpirationWorker(
+        enabled: trackerSettings.isBatchExpirationEnabled,
+      );
+
 
       final pendingRoute = InitializeTrackerNotificationServiceUseCase.pendingNotificationRoute;
       if (pendingRoute != null) {

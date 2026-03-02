@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/check_batch_threshold_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
@@ -19,10 +20,15 @@ final class PointAutomationService {
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
   TrackerSettings? _currentSettings;
   Timer? _notificationRefreshTimer;
+  Timer? _batchExpirationTimer;
   DateTime? _lastPointTime;
 
   /// Interval for refreshing the notification to keep service alive
   static const _notificationRefreshInterval = Duration(seconds: 5);
+
+  /// How often the foreground service checks for expired batches.
+  /// More responsive than WorkManager's 15-minute minimum.
+  static const _batchExpirationCheckInterval = Duration(minutes: 5);
 
   final CreatePointFromLocationStreamWorkflow _createPointFromLocationStream;
   final StorePointUseCase _storePoint;
@@ -32,6 +38,7 @@ final class PointAutomationService {
   final GetCurrentBatchUseCase _getCurrentBatch;
   final BatchUploadWorkflowUseCase _batchUploadWorkflow;
   final WatchTrackerSettingsUseCase _watchTrackerSettings;
+  final IPointLocalRepository _localPointRepository;
 
   PointAutomationService(
     this._createPointFromLocationStream,
@@ -42,6 +49,7 @@ final class PointAutomationService {
     this._getCurrentBatch,
     this._batchUploadWorkflow,
     this._watchTrackerSettings,
+    this._localPointRepository,
   );
 
   /// Whether automatic tracking is currently active
@@ -65,6 +73,8 @@ final class PointAutomationService {
     _startSettingsWatch(userId);
 
     _startLocationStream(userId);
+
+    _startBatchExpirationTimer(userId);
   }
 
   /// Starts a timer that refreshes the notification periodically.
@@ -97,6 +107,56 @@ final class PointAutomationService {
       );
     } catch (e, s) {
       debugPrint("[PointAutomation] Notification refresh error: $e\n$s");
+    }
+  }
+
+  /// Starts a periodic timer that checks if the oldest un-uploaded point
+  /// has exceeded the configured batch expiration time.
+  void _startBatchExpirationTimer(int userId) {
+    _batchExpirationTimer?.cancel();
+    _batchExpirationTimer = Timer.periodic(
+      _batchExpirationCheckInterval,
+      (_) => _checkAndUploadExpiredBatch(userId),
+    );
+  }
+
+  /// Checks whether the oldest un-uploaded point has expired and uploads
+  /// the batch if so.
+  Future<void> _checkAndUploadExpiredBatch(int userId) async {
+    try {
+      final settings = _currentSettings;
+      if (settings == null || !settings.isBatchExpirationEnabled) return;
+
+      final oldest =
+          await _localPointRepository.getOldestUnUploadedPointTimestamp(userId);
+      if (oldest == null) return;
+
+      final expirationThreshold = DateTime.now().subtract(
+        Duration(minutes: settings.batchExpirationMinutes!),
+      );
+
+      if (oldest.isAfter(expirationThreshold)) return;
+
+      if (kDebugMode) {
+        debugPrint(
+          '[PointAutomation] Batch expired (oldest: $oldest, '
+          'threshold: $expirationThreshold) — uploading...',
+        );
+      }
+
+      final batch = await _getCurrentBatch(userId);
+      if (batch.isEmpty) return;
+
+      final result = await _batchUploadWorkflow(batch, userId);
+      if (result case Ok()) {
+        if (kDebugMode) {
+          debugPrint('[PointAutomation] Expired batch upload successful.');
+        }
+      } else if (result case Err(value: final err)) {
+        debugPrint('[PointAutomation] Expired batch upload failed: $err');
+      }
+    } catch (e, s) {
+      debugPrint('[PointAutomation] Error checking batch expiration: $e\n$s');
     }
   }
 
@@ -187,6 +247,8 @@ final class PointAutomationService {
     _lastPointTime = null;
     _notificationRefreshTimer?.cancel();
     _notificationRefreshTimer = null;
+    _batchExpirationTimer?.cancel();
+    _batchExpirationTimer = null;
     await _settingsWatchSub?.cancel();
     _settingsWatchSub = null;
     await _locationStreamSub?.cancel();

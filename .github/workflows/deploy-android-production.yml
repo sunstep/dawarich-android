@@ -1,4 +1,4 @@
-name: Build & Deploy Android (gms + foss) → Open Beta [main]
+name: Build & Deploy Android (gms + foss) → Production [main]
 
 on:
   push:

@@ -306,11 +306,14 @@ jobs:
           storeFile=../dawarich-upload.jks
           EOF
 
+      # Cronet HTTP depends on GMS to provide a native adapter. cronetHttpNoPlay is a flag that embeds a prebuilt cronet
+      # for non GMS builds/MicroG variants in order to make them work even without Google Services.
       - name: Build FOSS APK (release)
         run: |
           flutter build apk --release --flavor foss \
             --build-name=${{ steps.ver.outputs.app_version }} \
-            --build-number=${{ steps.ver.outputs.build_number }}
+            --build-number=${{ steps.ver.outputs.build_number }} \
+            --dart-define=cronetHttpNoPlay=true
 
       - name: Upload FOSS artifact
         uses: actions/upload-artifact@v4

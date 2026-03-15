@@ -53,6 +53,22 @@ final class CreatePointFromLocationStreamWorkflow {
     }
   }
 
+  Duration _getAutoModeInterval(
+      LocationPrecision precision,
+      int minimumDistance,
+      ) {
+    if (minimumDistance >= 100) {
+      return const Duration(seconds: 30);
+    }
+
+    return switch (precision) {
+      LocationPrecision.best => const Duration(seconds: 10),
+      LocationPrecision.high => const Duration(seconds: 10),
+      LocationPrecision.balanced => const Duration(seconds: 15),
+      LocationPrecision.lowPower => const Duration(seconds: 30),
+    };
+  }
+
   /// Auto mode: track when the device has moved a meaningful distance.
   /// Uses user's minimum distance if set, otherwise derives from precision setting.
   Stream<Result<LocalPoint, String>> _getAutoModePointStream(
@@ -60,27 +76,30 @@ final class CreatePointFromLocationStreamWorkflow {
     LocationPrecision precision,
     int minimumDistance,
   ) async* {
-    // Hybrid approach:
-    // - If user set a minimum distance, use that (they know what's meaningful to them)
-    // - Otherwise, derive from precision (reflects user's tracking mindset)
+
     final int distanceFilter = minimumDistance > 0
         ? minimumDistance
         : switch (precision) {
-            LocationPrecision.best => 5,
-            LocationPrecision.high => 5,
-            LocationPrecision.balanced => 10,
-            LocationPrecision.lowPower => 25,
+            LocationPrecision.best => 10,
+            LocationPrecision.high => 10,
+            LocationPrecision.balanced => 25,
+            LocationPrecision.lowPower => 50,
           };
+
+    final autoInterval = _getAutoModeInterval(precision, minimumDistance);
 
     final request = LocationRequest(
       precision: precision,
       distanceFilterMeters: distanceFilter,
       timeLimit: null,
-      intervalDuration: const Duration(seconds: 5),
+      intervalDuration: autoInterval,
     );
 
     if (kDebugMode) {
-      debugPrint('[LocationStream] Auto mode: distance filter = ${distanceFilter}m');
+      debugPrint(
+        '[LocationStream] Auto mode: distance filter = ${distanceFilter}m, '
+            'interval = ${autoInterval.inSeconds}s',
+      );
     }
 
     LocationFix? lastRecordedFix;

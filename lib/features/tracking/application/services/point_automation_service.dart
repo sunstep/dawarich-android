@@ -15,6 +15,7 @@ final class PointAutomationService {
   bool _isTracking = false;
   bool _writeBusy = false;
   bool _uploadBusy = false;
+  bool _isRestartingStream = false;
   int? _currentUserId;
   StreamSubscription<Result<dynamic, String>>? _locationStreamSub;
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
@@ -231,15 +232,60 @@ final class PointAutomationService {
         await _handleLocationUpdate(result, userId);
       },
       onError: (error, stackTrace) {
-        debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
+
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
+        }
+
+        unawaited(_scheduleLocationStreamRecovery(userId, 'stream error'));
       },
       onDone: () {
         if (kDebugMode) {
           debugPrint("[PointAutomation] Location stream completed");
         }
+        unawaited(_scheduleLocationStreamRecovery(userId, 'stream completed'));
       },
       cancelOnError: false,
     );
+  }
+
+  Future<void> _scheduleLocationStreamRecovery(int userId, String reason) async {
+    if (!_isTracking || _currentUserId != userId) {
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Stream recovery skipped: tracking no longer active.");
+      }
+      return;
+    }
+
+    if (_isRestartingStream) {
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Stream recovery skipped: restart already in progress.");
+      }
+      return;
+    }
+
+    _isRestartingStream = true;
+
+    try {
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Scheduling stream recovery due to: $reason");
+      }
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      if (!_isTracking || _currentUserId != userId) {
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Stream recovery aborted: tracking no longer active.");
+        }
+        return;
+      }
+
+      await _restartLocationStream(userId);
+    } catch (e, s) {
+      debugPrint("[PointAutomation] Stream recovery failed: $e\n$s");
+    } finally {
+      _isRestartingStream = false;
+    }
   }
 
   Future<void> _restartLocationStream(int userId) async {
@@ -273,6 +319,7 @@ final class PointAutomationService {
     }
 
     _isTracking = false;
+    _isRestartingStream = false;
     _currentUserId = null;
     _currentSettings = null;
     _lastPointTime = null;

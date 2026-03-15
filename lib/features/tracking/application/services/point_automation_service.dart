@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
@@ -13,11 +14,10 @@ import 'package:option_result/option_result.dart';
 
 final class PointAutomationService {
   bool _isTracking = false;
-  bool _writeBusy = false;
   bool _uploadBusy = false;
   bool _isRestartingStream = false;
   int? _currentUserId;
-  StreamSubscription<Result<dynamic, String>>? _locationStreamSub;
+  StreamSubscription<void>? _locationStreamSub;
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
   StreamSubscription<int>? _batchCountSub;
   TrackerSettings? _currentSettings;
@@ -225,18 +225,15 @@ final class PointAutomationService {
   void _startLocationStream(int userId) {
     _locationStreamSub?.cancel();
 
-    final pointStream = _createPointFromLocationStream.getPointStream(userId);
+    final Stream<Result<LocalPoint, String>> pointStream =
+      _createPointFromLocationStream.getPointStream(userId);
 
-    _locationStreamSub = pointStream.listen(
-      (result) async {
-        await _handleLocationUpdate(result, userId);
-      },
+    _locationStreamSub = pointStream
+        .asyncMap((result) => _handleLocationUpdate(result, userId))
+        .listen(
+          (_) {},
       onError: (error, stackTrace) {
-
-        if (kDebugMode) {
-          debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
-        }
-
+        debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
         unawaited(_scheduleLocationStreamRecovery(userId, 'stream error'));
       },
       onDone: () {
@@ -353,16 +350,7 @@ final class PointAutomationService {
   /// Only stores the point locally. The reactive [_batchCountSub] stream
   /// picks up the count change and triggers the upload when the threshold
   /// is met.
-  Future<void> _handleLocationUpdate(Result<dynamic, String> result, int userId) async {
-    if (_writeBusy) {
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Skipping location update, write busy.");
-      }
-      return;
-    }
-
-    _writeBusy = true;
-
+  Future<void> _handleLocationUpdate(Result<LocalPoint, String> result, int userId) async {
     try {
       if (result case Ok(value: final point)) {
         if (kDebugMode) {
@@ -381,8 +369,6 @@ final class PointAutomationService {
       }
     } catch (e, s) {
       debugPrint("[PointAutomation] Error handling location update: $e\n$s");
-    } finally {
-      _writeBusy = false;
     }
   }
 }

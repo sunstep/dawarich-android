@@ -15,6 +15,7 @@ import 'package:option_result/result.dart';
 /// - Auto mode (0): Event-driven tracking when location changes meaningfully
 /// - Timer mode (>0): Fixed interval tracking
 final class CreatePointFromLocationStreamWorkflow {
+
   final GetTrackerSettingsUseCase _getTrackerSettings;
   final ILocationProvider _locationProvider;
   final CreatePointUseCase _createPointFromLocationFix;
@@ -44,7 +45,7 @@ final class CreatePointFromLocationStreamWorkflow {
     if (isAutoMode) {
       yield* _getAutoModePointStream(userId, precision, minimumDistance);
     } else {
-      yield* _getTimerPointStream(userId, precision, trackingFrequencySeconds);
+      yield* _getTimerPointStream(userId, precision, minimumDistance, trackingFrequencySeconds);
     }
 
     if (kDebugMode) {
@@ -153,31 +154,34 @@ final class CreatePointFromLocationStreamWorkflow {
 
   /// Timer mode: emit points at fixed intervals using cached location.
   Stream<Result<LocalPoint, String>> _getTimerPointStream(
-    int userId,
-    LocationPrecision precision,
-    int frequencySeconds,
-  ) async* {
+      int userId,
+      LocationPrecision precision,
+      int minimumDistance,
+      int frequencySeconds,
+      ) async* {
     LocationFix? latestFix;
     StreamSubscription<LocationFix>? locationSub;
+    Timer? periodicTimer;
+    final controller = StreamController<Result<LocalPoint, String>>();
 
     final int minSeconds = 1;
     final int intervalSeconds =
     (frequencySeconds / 2).ceil().clamp(minSeconds, frequencySeconds);
 
     final intervalDuration = Duration(seconds: intervalSeconds);
+    final staleMax = _getTimerModeStaleMax(frequencySeconds);
 
     final request = LocationRequest(
       precision: precision,
-      distanceFilterMeters: 0,
+      distanceFilterMeters: minimumDistance,
       timeLimit: null,
-      // Poll at half the tracking frequency so we usually have a fresh fix
       intervalDuration: intervalDuration,
     );
 
     try {
       final locationStream = _locationProvider.getLocationStream(request);
       locationSub = locationStream.listen(
-        (fix) {
+            (fix) {
           latestFix = fix;
           if (kDebugMode) {
             debugPrint('[LocationStream] Cache updated: ${fix.latitude}, ${fix.longitude}');
@@ -190,52 +194,63 @@ final class CreatePointFromLocationStreamWorkflow {
         },
       );
 
-      final controller = StreamController<Result<LocalPoint, String>>();
-
       final initialResult = await _locationProvider.getCurrent(request);
       if (initialResult case Ok(value: final fix)) {
         latestFix = fix;
         final timestamp = DateTime.now().toUtc();
         final pointResult = await _createPointFromLocationFix(fix, timestamp, userId);
         if (pointResult case Ok(value: final point)) {
-          yield Ok(point);
+          controller.add(Ok(point));
+        } else if (pointResult case Err(value: final err)) {
+          controller.add(Err('Failed to create initial point: $err'));
         }
       }
 
       final timerDuration = Duration(seconds: frequencySeconds);
 
       if (kDebugMode) {
-        debugPrint('[LocationStream] Timer mode: interval = ${frequencySeconds}s');
+        debugPrint(
+          '[LocationStream] Timer mode: interval = ${frequencySeconds}s, '
+              'staleMax = ${staleMax.inSeconds}s',
+        );
       }
 
-      Timer.periodic(timerDuration, (timer) async {
+      periodicTimer = Timer.periodic(timerDuration, (timer) async {
         if (controller.isClosed) {
           timer.cancel();
           return;
         }
 
-        LocationFix? fixToUse = latestFix;
-
-        if (fixToUse == null ||
-            DateTime.now().difference(fixToUse.timestampUtc).inSeconds > 30) {
-          if (kDebugMode) {
-            debugPrint('[LocationStream] Cache stale, fetching current position');
-          }
-          final currentResult = await _locationProvider.getCurrent(request);
-          if (currentResult case Ok(value: final fix)) {
-            fixToUse = fix;
-            latestFix = fix;
-          }
-        }
+        final fixToUse = latestFix;
 
         if (fixToUse == null) {
-          controller.add(Err('No location available'));
+          if (kDebugMode) {
+            debugPrint('[LocationStream] No cached fix yet, skipping timer tick');
+          }
+          controller.add(const Err('No cached location available'));
+          return;
+        }
+
+        final age = DateTime.now().toUtc().difference(fixToUse.timestampUtc);
+
+        if (age < Duration.zero || age > staleMax) {
+          if (kDebugMode) {
+            debugPrint(
+              '[LocationStream] Cached fix too stale for timer tick '
+                  '(age: ${age.inSeconds}s, max: ${staleMax.inSeconds}s), skipping',
+            );
+          }
+          controller.add(Err('Cached location too stale (age: ${age.inSeconds}s)'));
           return;
         }
 
         try {
           final timestamp = DateTime.now().toUtc();
-          final pointResult = await _createPointFromLocationFix(fixToUse, timestamp, userId);
+          final pointResult = await _createPointFromLocationFix(
+            fixToUse,
+            timestamp,
+            userId,
+          );
 
           if (pointResult case Ok(value: final point)) {
             controller.add(Ok(point));
@@ -253,17 +268,22 @@ final class CreatePointFromLocationStreamWorkflow {
         }
       });
 
-      await for (final result in controller.stream) {
-        yield result;
-      }
-
-      await locationSub.cancel();
+      yield* controller.stream;
     } catch (e, s) {
       if (kDebugMode) {
         debugPrint('[LocationStream] Timer error: $e\n$s');
       }
       yield Err('Location stream error: $e');
+    } finally {
+      periodicTimer?.cancel();
       await locationSub?.cancel();
+      await controller.close();
     }
+  }
+
+  Duration _getTimerModeStaleMax(int frequencySeconds) {
+    return Duration(
+      seconds: (frequencySeconds * 2).clamp(30, 300),
+    );
   }
 }

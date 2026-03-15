@@ -20,7 +20,6 @@ final class PointAutomationService {
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
   StreamSubscription<int>? _batchCountSub;
   TrackerSettings? _currentSettings;
-  Timer? _expirationTimer;
   Timer? _heartbeatTimer;
   DateTime? _lastPointTime;
   int _lastKnownBatchCount = 0;
@@ -70,7 +69,6 @@ final class PointAutomationService {
     _startSettingsWatch(userId);
     _startLocationStream(userId);
     _startBatchCountWatch(userId);
-    _syncExpirationTimer(userId);
   }
 
   // ── Heartbeat (OEM keep-alive) ─────────────────────────────────────────
@@ -161,72 +159,6 @@ final class PointAutomationService {
     );
   }
 
-  // ── Expiration timer (time-based, derived from setting) ─────────────────
-
-  /// Starts (or restarts) the expiration timer based on the current setting.
-  /// Only runs when batch expiration is enabled. The check interval equals
-  /// the configured expiration duration — if set to 15m, we check every 15m.
-  /// This is sufficient because the check asks "is the oldest point older
-  /// than N minutes?", so the worst-case delay is N minutes after the actual
-  /// expiration.
-  void _syncExpirationTimer(int userId) {
-    _expirationTimer?.cancel();
-    _expirationTimer = null;
-
-    final settings = _currentSettings;
-    if (settings == null || !settings.isBatchExpirationEnabled) {
-      if (kDebugMode) {
-        debugPrint('[PointAutomation] Expiration timer off (disabled or no settings)');
-      }
-      return;
-    }
-
-    final interval = Duration(minutes: settings.batchExpirationMinutes!);
-
-    _expirationTimer = Timer.periodic(
-      interval,
-      (_) => _checkExpiration(userId),
-    );
-
-    if (kDebugMode) {
-      debugPrint(
-        '[PointAutomation] Expiration timer started '
-        '(interval: ${settings.batchExpirationMinutes}m)',
-      );
-    }
-  }
-
-  /// Checks whether the oldest un-uploaded point has expired according to
-  /// the user's setting.
-  Future<void> _checkExpiration(int userId) async {
-    if (_uploadBusy) return;
-
-    try {
-      final settings = _currentSettings;
-      if (settings == null || !settings.isBatchExpirationEnabled) return;
-
-      final oldest =
-          await _localPointRepository.getOldestUnUploadedPointTimestamp(userId);
-      if (oldest == null) return;
-
-      final threshold = DateTime.now().subtract(
-        Duration(minutes: settings.batchExpirationMinutes!),
-      );
-
-      if (oldest.isBefore(threshold)) {
-        if (kDebugMode) {
-          debugPrint(
-            '[PointAutomation] Batch expired '
-            '(oldest: $oldest, threshold: $threshold) — uploading...',
-          );
-        }
-        await _uploadCurrentBatch(userId);
-      }
-    } catch (e, s) {
-      debugPrint('[PointAutomation] Expiration check error: $e\n$s');
-    }
-  }
-
   // ── Upload helper ──────────────────────────────────────────────────────
 
   /// Fetches the current un-uploaded batch and uploads it.
@@ -273,11 +205,6 @@ final class PointAutomationService {
             debugPrint("[PointAutomation] Settings changed (${old.trackingFrequency}s -> ${settings.trackingFrequency}s), restarting location stream...");
           }
           await _restartLocationStream(userId);
-        }
-
-        // Re-sync the expiration timer if the expiration setting changed.
-        if (old?.batchExpirationMinutes != settings.batchExpirationMinutes) {
-          _syncExpirationTimer(userId);
         }
       },
       onError: (e) {
@@ -352,8 +279,6 @@ final class PointAutomationService {
     _lastKnownBatchCount = 0;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
-    _expirationTimer?.cancel();
-    _expirationTimer = null;
     await _batchCountSub?.cancel();
     _batchCountSub = null;
     await _settingsWatchSub?.cancel();

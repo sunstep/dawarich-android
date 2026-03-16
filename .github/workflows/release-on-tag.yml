@@ -239,6 +239,8 @@ jobs:
           flutter build apk --release --flavor foss \
             --build-name=${{ needs.meta.outputs.app_version }} \
             --build-number=${{ needs.meta.outputs.build_number }}
+            --dart-define=cronetHttpNoPlay=true \
+            --dart-define=geolocatorNoPlay=true
 
       - name: Upload FOSS artifact
         uses: actions/upload-artifact@v4

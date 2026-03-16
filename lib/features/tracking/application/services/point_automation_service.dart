@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
+import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
@@ -13,14 +14,13 @@ import 'package:option_result/option_result.dart';
 
 final class PointAutomationService {
   bool _isTracking = false;
-  bool _writeBusy = false;
   bool _uploadBusy = false;
+  bool _isRestartingStream = false;
   int? _currentUserId;
-  StreamSubscription<Result<dynamic, String>>? _locationStreamSub;
+  StreamSubscription<void>? _locationStreamSub;
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
   StreamSubscription<int>? _batchCountSub;
   TrackerSettings? _currentSettings;
-  Timer? _expirationTimer;
   Timer? _heartbeatTimer;
   DateTime? _lastPointTime;
   int _lastKnownBatchCount = 0;
@@ -70,7 +70,6 @@ final class PointAutomationService {
     _startSettingsWatch(userId);
     _startLocationStream(userId);
     _startBatchCountWatch(userId);
-    _syncExpirationTimer(userId);
   }
 
   // ── Heartbeat (OEM keep-alive) ─────────────────────────────────────────
@@ -161,72 +160,6 @@ final class PointAutomationService {
     );
   }
 
-  // ── Expiration timer (time-based, derived from setting) ─────────────────
-
-  /// Starts (or restarts) the expiration timer based on the current setting.
-  /// Only runs when batch expiration is enabled. The check interval equals
-  /// the configured expiration duration — if set to 15m, we check every 15m.
-  /// This is sufficient because the check asks "is the oldest point older
-  /// than N minutes?", so the worst-case delay is N minutes after the actual
-  /// expiration.
-  void _syncExpirationTimer(int userId) {
-    _expirationTimer?.cancel();
-    _expirationTimer = null;
-
-    final settings = _currentSettings;
-    if (settings == null || !settings.isBatchExpirationEnabled) {
-      if (kDebugMode) {
-        debugPrint('[PointAutomation] Expiration timer off (disabled or no settings)');
-      }
-      return;
-    }
-
-    final interval = Duration(minutes: settings.batchExpirationMinutes!);
-
-    _expirationTimer = Timer.periodic(
-      interval,
-      (_) => _checkExpiration(userId),
-    );
-
-    if (kDebugMode) {
-      debugPrint(
-        '[PointAutomation] Expiration timer started '
-        '(interval: ${settings.batchExpirationMinutes}m)',
-      );
-    }
-  }
-
-  /// Checks whether the oldest un-uploaded point has expired according to
-  /// the user's setting.
-  Future<void> _checkExpiration(int userId) async {
-    if (_uploadBusy) return;
-
-    try {
-      final settings = _currentSettings;
-      if (settings == null || !settings.isBatchExpirationEnabled) return;
-
-      final oldest =
-          await _localPointRepository.getOldestUnUploadedPointTimestamp(userId);
-      if (oldest == null) return;
-
-      final threshold = DateTime.now().subtract(
-        Duration(minutes: settings.batchExpirationMinutes!),
-      );
-
-      if (oldest.isBefore(threshold)) {
-        if (kDebugMode) {
-          debugPrint(
-            '[PointAutomation] Batch expired '
-            '(oldest: $oldest, threshold: $threshold) — uploading...',
-          );
-        }
-        await _uploadCurrentBatch(userId);
-      }
-    } catch (e, s) {
-      debugPrint('[PointAutomation] Expiration check error: $e\n$s');
-    }
-  }
-
   // ── Upload helper ──────────────────────────────────────────────────────
 
   /// Fetches the current un-uploaded batch and uploads it.
@@ -274,11 +207,6 @@ final class PointAutomationService {
           }
           await _restartLocationStream(userId);
         }
-
-        // Re-sync the expiration timer if the expiration setting changed.
-        if (old?.batchExpirationMinutes != settings.batchExpirationMinutes) {
-          _syncExpirationTimer(userId);
-        }
       },
       onError: (e) {
         debugPrint("[PointAutomation] Settings watch error: $e");
@@ -297,22 +225,64 @@ final class PointAutomationService {
   void _startLocationStream(int userId) {
     _locationStreamSub?.cancel();
 
-    final pointStream = _createPointFromLocationStream.getPointStream(userId);
+    final Stream<Result<LocalPoint, String>> pointStream =
+      _createPointFromLocationStream.getPointStream(userId);
 
-    _locationStreamSub = pointStream.listen(
-      (result) async {
-        await _handleLocationUpdate(result, userId);
-      },
+    _locationStreamSub = pointStream
+        .asyncMap((result) => _handleLocationUpdate(result, userId))
+        .listen(
+          (_) {},
       onError: (error, stackTrace) {
         debugPrint("[PointAutomation] Stream error: $error\n$stackTrace");
+        unawaited(_scheduleLocationStreamRecovery(userId, 'stream error'));
       },
       onDone: () {
         if (kDebugMode) {
           debugPrint("[PointAutomation] Location stream completed");
         }
+        unawaited(_scheduleLocationStreamRecovery(userId, 'stream completed'));
       },
       cancelOnError: false,
     );
+  }
+
+  Future<void> _scheduleLocationStreamRecovery(int userId, String reason) async {
+    if (!_isTracking || _currentUserId != userId) {
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Stream recovery skipped: tracking no longer active.");
+      }
+      return;
+    }
+
+    if (_isRestartingStream) {
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Stream recovery skipped: restart already in progress.");
+      }
+      return;
+    }
+
+    _isRestartingStream = true;
+
+    try {
+      if (kDebugMode) {
+        debugPrint("[PointAutomation] Scheduling stream recovery due to: $reason");
+      }
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      if (!_isTracking || _currentUserId != userId) {
+        if (kDebugMode) {
+          debugPrint("[PointAutomation] Stream recovery aborted: tracking no longer active.");
+        }
+        return;
+      }
+
+      await _restartLocationStream(userId);
+    } catch (e, s) {
+      debugPrint("[PointAutomation] Stream recovery failed: $e\n$s");
+    } finally {
+      _isRestartingStream = false;
+    }
   }
 
   Future<void> _restartLocationStream(int userId) async {
@@ -346,14 +316,13 @@ final class PointAutomationService {
     }
 
     _isTracking = false;
+    _isRestartingStream = false;
     _currentUserId = null;
     _currentSettings = null;
     _lastPointTime = null;
     _lastKnownBatchCount = 0;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
-    _expirationTimer?.cancel();
-    _expirationTimer = null;
     await _batchCountSub?.cancel();
     _batchCountSub = null;
     await _settingsWatchSub?.cancel();
@@ -381,16 +350,7 @@ final class PointAutomationService {
   /// Only stores the point locally. The reactive [_batchCountSub] stream
   /// picks up the count change and triggers the upload when the threshold
   /// is met.
-  Future<void> _handleLocationUpdate(Result<dynamic, String> result, int userId) async {
-    if (_writeBusy) {
-      if (kDebugMode) {
-        debugPrint("[PointAutomation] Skipping location update, write busy.");
-      }
-      return;
-    }
-
-    _writeBusy = true;
-
+  Future<void> _handleLocationUpdate(Result<LocalPoint, String> result, int userId) async {
     try {
       if (result case Ok(value: final point)) {
         if (kDebugMode) {
@@ -409,8 +369,6 @@ final class PointAutomationService {
       }
     } catch (e, s) {
       debugPrint("[PointAutomation] Error handling location update: $e\n$s");
-    } finally {
-      _writeBusy = false;
     }
   }
 }

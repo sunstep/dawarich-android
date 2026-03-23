@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
-import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_intelligence_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_location_stream_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/watch_tracker_settings_usecase.dart';
+import 'package:dawarich/features/tracking/domain/enum/auto_tracking_runtime_mode.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
+import 'package:dawarich/features/tracking/domain/models/tracking_sample.dart';
 import 'package:flutter/foundation.dart';
 import 'package:option_result/option_result.dart';
 
@@ -22,13 +24,19 @@ final class PointAutomationService {
   StreamSubscription<int>? _batchCountSub;
   TrackerSettings? _currentSettings;
   Timer? _heartbeatTimer;
+  Timer? _activeSilenceTimer;
   DateTime? _lastPointTime;
   int _lastKnownBatchCount = 0;
 
   /// Heartbeat interval for re-posting the notification so aggressive OEMs
-  /// (Xiaomi, Huawei, Samsung) don't kill the foreground service.
   /// Uses the cached batch count — no DB query.
   static const _heartbeatInterval = Duration(seconds: 60);
+
+  AutoTrackingRuntimeMode get autoTrackingRuntimeMode =>
+      _autoTrackingRuntimeMode;
+
+  AutoTrackingRuntimeMode _autoTrackingRuntimeMode =
+      AutoTrackingRuntimeMode.active;
 
   final CreatePointFromLocationStreamWorkflow _createPointFromLocationStream;
   final StorePointUseCase _storePoint;
@@ -38,23 +46,29 @@ final class PointAutomationService {
   final BatchUploadWorkflowUseCase _batchUploadWorkflow;
   final WatchTrackerSettingsUseCase _watchTrackerSettings;
   final IPointLocalRepository _localPointRepository;
+  final TrackerIntelligenceService _trackerIntelligenceService;
+
 
   PointAutomationService(
-    this._createPointFromLocationStream,
-    this._storePoint,
-    this._getBatchPointCount,
-    this._showTrackerNotification,
-    this._getCurrentBatch,
-    this._batchUploadWorkflow,
-    this._watchTrackerSettings,
-    this._localPointRepository,
+      this._createPointFromLocationStream,
+      this._storePoint,
+      this._getBatchPointCount,
+      this._showTrackerNotification,
+      this._getCurrentBatch,
+      this._batchUploadWorkflow,
+      this._watchTrackerSettings,
+      this._localPointRepository,
+      this._trackerIntelligenceService
   );
 
   /// Whether automatic tracking is currently active
   bool get isTracking => _isTracking;
 
   Future<void> startTracking(int userId) async {
-    if (_isTracking) return;
+
+    if (_isTracking) {
+      return;
+    }
 
     if (kDebugMode) {
       debugPrint("[PointAutomation] Starting automatic tracking with location stream...");
@@ -63,8 +77,10 @@ final class PointAutomationService {
     _isTracking = true;
     _currentUserId = userId;
     _lastPointTime = null;
-
     await _refreshNotification(userId);
+
+    _trackerIntelligenceService.reset();
+    _setAutoTrackingRuntimeMode(_trackerIntelligenceService.currentMode);
 
     _startHeartbeatTimer();
     _startSettingsWatch(userId);
@@ -102,15 +118,20 @@ final class PointAutomationService {
   /// avoiding an extra DB query.
   void _refreshNotificationWithCount(int batchCount) {
     try {
+
+      final modeLabel = _autoTrackingRuntimeMode == AutoTrackingRuntimeMode.active
+          ? 'ACTIVE'
+          : 'PASSIVE';
+
       String body;
       if (_lastPointTime != null) {
         final lastTime = _lastPointTime!.toLocal();
         final lastTimeStr = '${lastTime.hour.toString().padLeft(2, '0')}:'
             '${lastTime.minute.toString().padLeft(2, '0')}:'
             '${lastTime.second.toString().padLeft(2, '0')}';
-        body = 'Last point: $lastTimeStr • $batchCount in batch';
+        body = '[$modeLabel] Last point: $lastTimeStr • $batchCount in batch';
       } else {
-        body = 'Waiting for location... • $batchCount in batch';
+        body = '[$modeLabel] Waiting for location... • $batchCount in batch';
       }
 
       _showTrackerNotification(
@@ -201,6 +222,14 @@ final class PointAutomationService {
         final old = _currentSettings;
         _currentSettings = settings;
 
+        if (_isTracking && settings.trackingFrequency == 0) {
+          if (_autoTrackingRuntimeMode == AutoTrackingRuntimeMode.active) {
+            _startOrResetActiveSilenceTimer(userId);
+          } else {
+            _cancelActiveSilenceTimer();
+          }
+        }
+
         if (old != null && _settingsRequireRestart(old, settings)) {
           if (kDebugMode) {
             debugPrint("[PointAutomation] Settings changed (${old.trackingFrequency}s -> ${settings.trackingFrequency}s), restarting location stream...");
@@ -225,8 +254,9 @@ final class PointAutomationService {
   void _startLocationStream(int userId) {
     _locationStreamSub?.cancel();
 
-    final Stream<Result<LocalPoint, String>> pointStream =
-      _createPointFromLocationStream.getPointStream(userId);
+    final Stream<TrackingSample> pointStream =
+    _createPointFromLocationStream.getTrackingSampleStream(
+        userId, runtimeMode: _autoTrackingRuntimeMode);
 
     _locationStreamSub = pointStream
         .asyncMap((result) => _handleLocationUpdate(result, userId))
@@ -261,8 +291,6 @@ final class PointAutomationService {
       return;
     }
 
-    _isRestartingStream = true;
-
     try {
       if (kDebugMode) {
         debugPrint("[PointAutomation] Scheduling stream recovery due to: $reason");
@@ -280,20 +308,26 @@ final class PointAutomationService {
       await _restartLocationStream(userId);
     } catch (e, s) {
       debugPrint("[PointAutomation] Stream recovery failed: $e\n$s");
-    } finally {
-      _isRestartingStream = false;
     }
   }
 
   Future<void> _restartLocationStream(int userId) async {
     try {
+      if (_isRestartingStream) {
+        return;
+      }
+
+      _isRestartingStream = true;
+
       final oldSub = _locationStreamSub;
       _locationStreamSub = null;
 
       if (oldSub != null) {
-        unawaited(oldSub.cancel().catchError((e) {
+        try {
+          await oldSub.cancel();
+        } catch (e) {
           debugPrint("[PointAutomation] Cancel error (ignored): $e");
-        }));
+        }
       }
 
       _startLocationStream(userId);
@@ -303,6 +337,8 @@ final class PointAutomationService {
       }
     } catch (e, s) {
       debugPrint("[PointAutomation] ERROR in _restartLocationStream: $e\n$s");
+    } finally {
+      _isRestartingStream = false;
     }
   }
 
@@ -323,12 +359,16 @@ final class PointAutomationService {
     _lastKnownBatchCount = 0;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+    _cancelActiveSilenceTimer();
+    _trackerIntelligenceService.reset();
+    _setAutoTrackingRuntimeMode(_trackerIntelligenceService.currentMode);
     await _batchCountSub?.cancel();
     _batchCountSub = null;
     await _settingsWatchSub?.cancel();
     _settingsWatchSub = null;
     await _locationStreamSub?.cancel();
     _locationStreamSub = null;
+
   }
 
   Future<void> restartTracking() async {
@@ -350,11 +390,45 @@ final class PointAutomationService {
   /// Only stores the point locally. The reactive [_batchCountSub] stream
   /// picks up the count change and triggers the upload when the threshold
   /// is met.
-  Future<void> _handleLocationUpdate(Result<LocalPoint, String> result, int userId) async {
+  Future<void> _handleLocationUpdate(TrackingSample sample, int userId) async {
     try {
-      if (result case Ok(value: final point)) {
+      final previousMode = _autoTrackingRuntimeMode;
+      final nextMode = _trackerIntelligenceService.evaluateFix(sample.fix);
+      _setAutoTrackingRuntimeMode(nextMode);
+
+      final settings = _currentSettings;
+      final isAutoMode = settings?.trackingFrequency == 0;
+
+      if (isAutoMode == true) {
+        if (nextMode == AutoTrackingRuntimeMode.active) {
+          _startOrResetActiveSilenceTimer(userId);
+        } else {
+          _cancelActiveSilenceTimer();
+        }
+      }
+
+      if (isAutoMode == true && previousMode != nextMode) {
         if (kDebugMode) {
-          debugPrint("[PointAutomation] Storing point from location stream");
+          debugPrint(
+            '[PointAutomation] Auto tracking mode changed '
+                '($previousMode -> $nextMode), restarting location stream...',
+          );
+        }
+
+        await _restartLocationStream(userId);
+      }
+
+      final pointResult = sample.pointResult;
+      if (pointResult == null) {
+        if (kDebugMode) {
+          debugPrint('[PointAutomation] No point created for this tracking sample.');
+        }
+        return;
+      }
+
+      if (pointResult case Ok(value: final point)) {
+        if (kDebugMode) {
+          debugPrint('[PointAutomation] Storing point from location stream');
         }
 
         final storeResult = await _storePoint(point);
@@ -362,13 +436,105 @@ final class PointAutomationService {
         if (storeResult case Ok()) {
           _lastPointTime = DateTime.now();
         } else if (storeResult case Err(value: final err)) {
-          debugPrint("[PointAutomation] Failed to store point: $err");
+          debugPrint('[PointAutomation] Failed to store point: $err');
         }
-      } else if (result case Err(value: final err)) {
-        debugPrint("[PointAutomation] Point creation error: $err");
+
+        return;
+      }
+
+      if (pointResult case Err(value: final err)) {
+        debugPrint('[PointAutomation] Point creation error: $err');
       }
     } catch (e, s) {
-      debugPrint("[PointAutomation] Error handling location update: $e\n$s");
+      debugPrint('[PointAutomation] Error handling location update: $e\n$s');
     }
   }
+
+
+  // - Tracking intelligence───────────────────────────────────────────────────-
+
+  void _setAutoTrackingRuntimeMode(AutoTrackingRuntimeMode mode) {
+    if (_autoTrackingRuntimeMode == mode) {
+      return;
+    }
+
+    _autoTrackingRuntimeMode = mode;
+    _refreshNotificationWithCount(_lastKnownBatchCount);
+
+    if (kDebugMode) {
+      debugPrint(
+        '[PointAutomation] Auto tracking runtime mode -> $mode',
+      );
+    }
+  }
+
+  void _cancelActiveSilenceTimer() {
+    _activeSilenceTimer?.cancel();
+    _activeSilenceTimer = null;
+  }
+
+  void _startOrResetActiveSilenceTimer(int userId) {
+    _cancelActiveSilenceTimer();
+
+    final settings = _currentSettings;
+    final isAutoMode = settings?.trackingFrequency == 0;
+
+    if (isAutoMode != true) {
+      return;
+    }
+
+    if (_autoTrackingRuntimeMode != AutoTrackingRuntimeMode.active) {
+      return;
+    }
+
+    _activeSilenceTimer = Timer(
+      TrackerIntelligenceService.passiveAfterStillness,
+          () async {
+        if (!_isTracking || _currentUserId != userId) {
+          return;
+        }
+
+        final latestSettings = _currentSettings;
+        final isStillAutoMode = latestSettings?.trackingFrequency == 0;
+
+        if (isStillAutoMode != true) {
+          return;
+        }
+
+        if (_autoTrackingRuntimeMode != AutoTrackingRuntimeMode.active) {
+          return;
+        }
+
+        final now = DateTime.now().toUtc();
+
+        final lastMovementTime =
+            _trackerIntelligenceService.lastMeaningfulMovementTime ?? now.subtract(TrackerIntelligenceService.passiveAfterStillness);
+
+        final stillFor = now.difference(lastMovementTime);
+
+        if (stillFor < TrackerIntelligenceService.passiveAfterStillness) {
+          if (kDebugMode) {
+            debugPrint(
+              '[PointAutomation] Passive timer elapsed, but movement was seen '
+                  '${stillFor.inSeconds}s ago. Staying active.',
+            );
+          }
+          _startOrResetActiveSilenceTimer(userId);
+          return;
+        }
+
+        if (kDebugMode) {
+          debugPrint(
+            '[PointAutomation] No meaningful movement for '
+                '${stillFor.inSeconds}s while active, switching to passive...',
+          );
+        }
+
+        _setAutoTrackingRuntimeMode(AutoTrackingRuntimeMode.passive);
+        await _restartLocationStream(userId);
+      },
+    );
+  }
+
+
 }

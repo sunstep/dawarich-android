@@ -18,6 +18,7 @@ import 'package:dawarich/features/stats/data/sources/local/stats_local_data_sour
 import 'package:dawarich/features/stats/data/sources/remote/stats_remote_data_source.dart';
 import 'package:dawarich/features/stats/presentation/converters/countries_mapper.dart';
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
+import 'package:dawarich/features/tracking/application/services/tracker_intelligence_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/cancel_tracker_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
@@ -264,6 +265,10 @@ final createPointFromLocationStreamWorkflowProvider = FutureProvider<CreatePoint
   return CreatePointFromLocationStreamWorkflow(getSettings, locationProvider, createFromPos);
 });
 
+final trackerIntelligenceServiceProvider = FutureProvider<TrackerIntelligenceService>((ref) async {
+  return TrackerIntelligenceService();
+});
+
 final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((ref) async {
   final createStream = await ref.watch(createPointFromLocationStreamWorkflowProvider.future);
   final storePoint = await ref.watch(storePointUseCaseProvider.future);
@@ -275,6 +280,8 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final batchUploadWorkflow = await ref.watch(batchUploadWorkflowUseCaseProvider.future);
   final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
 
+  final trackerIntelligenceService = await ref.watch(trackerIntelligenceServiceProvider.future);
+
   return PointAutomationService(
     createStream,
     storePoint,
@@ -284,6 +291,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
     batchUploadWorkflow,
     watchSettings,
     localRepo,
+    trackerIntelligenceService
   );
 });
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dawarich/core/background/schedulers/expired_batch_work_scheduler.dart';
+import 'package:dawarich/core/background/schedulers/tracking_watchdog_scheduler.dart';
 import 'package:dawarich/core/presentation/safe_change_notifier.dart';
 import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
@@ -501,8 +502,11 @@ final class TrackerPageViewModel extends ChangeNotifier with SafeChangeNotifier 
         return Err("Failed to start background service: $message");
       }
 
+      await TrackingWatchdogWorkScheduler.register();
+
     } else {
       BackgroundTrackingService.stop();
+      await TrackingWatchdogWorkScheduler.cancel();
     }
 
     setIsUpdatingTracking(false);

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dawarich/core/background/schedulers/tracking_watchdog_scheduler.dart';
 import 'package:dawarich/core/background/workmanager/stats_refresh_worker.dart';
 import 'package:dawarich/core/di/providers/session_providers.dart';
 import 'package:dawarich/core/di/providers/usecase_providers.dart';
@@ -67,6 +68,25 @@ final class StartupService {
       // Register periodic batch upload worker (handles both threshold
       // and expiration uploads when the foreground service isn't running).
       await registerBatchUploadWorker();
+
+      final getSettings =
+      await container.read(getTrackerSettingsUseCaseProvider.future);
+
+      final settings = await getSettings(refreshedSessionUser.id);
+
+      if (settings.automaticTracking) {
+        if (kDebugMode) {
+          debugPrint('[StartupService] Registering tracking watchdog (startup sync).');
+        }
+
+        await TrackingWatchdogWorkScheduler.register();
+      } else {
+        if (kDebugMode) {
+          debugPrint('[StartupService] Cancelling tracking watchdog (startup sync).');
+        }
+
+        await TrackingWatchdogWorkScheduler.cancel();
+      }
 
 
       final pendingRoute = InitializeTrackerNotificationServiceUseCase.pendingNotificationRoute;

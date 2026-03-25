@@ -335,6 +335,10 @@ final class BackgroundTrackingService {
         : Err("Failed to start background service.");
   }
 
+  static Future<bool> isRunning() async {
+    return FlutterBackgroundService().isRunning();
+  }
+
   static Future<void> stop() async {
     final service = FlutterBackgroundService();
 

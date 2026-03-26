@@ -394,10 +394,26 @@ final class PointAutomationService {
     try {
       final previousMode = _autoTrackingRuntimeMode;
       final nextMode = _trackerIntelligenceService.evaluateFix(sample.fix);
-      _setAutoTrackingRuntimeMode(nextMode);
 
       final settings = _currentSettings;
       final isAutoMode = settings?.trackingFrequency == 0;
+      final didModeValueChange = previousMode != nextMode;
+      final shouldRestartForModeChange = isAutoMode == true && didModeValueChange;
+
+      if (shouldRestartForModeChange) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PointAutomation] Auto tracking mode changed '
+                '($previousMode -> $nextMode), restarting location stream...',
+          );
+        }
+
+
+        _setAutoTrackingRuntimeMode(nextMode);
+        await _restartLocationStream(userId);
+      } else if (didModeValueChange) {
+        _setAutoTrackingRuntimeMode(nextMode);
+      }
 
       if (isAutoMode == true) {
         if (nextMode == AutoTrackingRuntimeMode.active) {
@@ -407,22 +423,13 @@ final class PointAutomationService {
         }
       }
 
-      if (isAutoMode == true && previousMode != nextMode) {
-        if (kDebugMode) {
-          debugPrint(
-            '[PointAutomation] Auto tracking mode changed '
-                '($previousMode -> $nextMode), restarting location stream...',
-          );
-        }
-
-        await _restartLocationStream(userId);
-      }
-
       final pointResult = sample.pointResult;
       if (pointResult == null) {
         if (kDebugMode) {
           debugPrint('[PointAutomation] No point created for this tracking sample.');
         }
+
+        _refreshNotificationWithCount(_lastKnownBatchCount);
         return;
       }
 
@@ -439,12 +446,15 @@ final class PointAutomationService {
           debugPrint('[PointAutomation] Failed to store point: $err');
         }
 
+        _refreshNotificationWithCount(_lastKnownBatchCount);
         return;
       }
 
       if (pointResult case Err(value: final err)) {
         debugPrint('[PointAutomation] Point creation error: $err');
       }
+
+      _refreshNotificationWithCount(_lastKnownBatchCount);
     } catch (e, s) {
       debugPrint('[PointAutomation] Error handling location update: $e\n$s');
     }

@@ -1,0 +1,6 @@
+
+enum AutoTrackingRuntimeMode {
+
+  active,
+  passive
+}

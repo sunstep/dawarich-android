@@ -1,6 +1,7 @@
 Full and more detailed release notes are always available at the GitHub repository!
 
-v0.19.1
+v0.19.1-beta3
 
-* Added a new batch expiration setting.
-* Optimized battery usage by tracker.
+* Added intelligence to auto mode. It goes to passive mode when idling, and active while moving.
+* Added a watchdog that runs every 15 minutes, it checks whether the tracker is still running when it should be running.
+

@@ -9,7 +9,8 @@ jobs:
   detect-migration:
     runs-on: ubuntu-latest
     outputs:
-      drift_changed: ${{ steps.detect.outputs.drift_changed }}
+      schema_version_changed: ${{ steps.detect.outputs.schema_version_changed }}
+      schema_files_changed: ${{ steps.detect.outputs.schema_files_changed }}
       schemas_changed: ${{ steps.detect.outputs.schemas_changed }}
       tests_changed: ${{ steps.detect.outputs.tests_changed }}
       should_run_tests: ${{ steps.detect.outputs.should_run_tests }}
@@ -34,7 +35,8 @@ jobs:
 
             CHANGED="$(git diff --name-only "$MERGE_BASE" "$HEAD" || true)"
           else
-            echo "drift_changed=true" >> "$GITHUB_OUTPUT"
+            echo "schema_version_changed=true" >> "$GITHUB_OUTPUT"
+            echo "schema_files_changed=true" >> "$GITHUB_OUTPUT"
             echo "schemas_changed=true" >> "$GITHUB_OUTPUT"
             echo "tests_changed=true" >> "$GITHUB_OUTPUT"
             echo "should_run_tests=true" >> "$GITHUB_OUTPUT"
@@ -44,12 +46,17 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED"
 
-          DRIFT_CHANGED="false"
+          SCHEMA_VERSION_CHANGED="false"
+          SCHEMA_FILES_CHANGED="false"
           SCHEMAS_CHANGED="false"
           TESTS_CHANGED="false"
 
-          if echo "$CHANGED" | grep -E -q '^lib/core/data/drift/'; then
-            DRIFT_CHANGED="true"
+          if git diff "$MERGE_BASE" "$HEAD" -- lib/core/data/drift/sqlite_client.dart | grep -q 'kSchemaVersion'; then
+            SCHEMA_VERSION_CHANGED="true"
+          fi
+
+          if echo "$CHANGED" | grep -E -q '^lib/core/data/drift/(tables/|migrations/|.*\.drift$)'; then
+            SCHEMA_FILES_CHANGED="true"
           fi
 
           if echo "$CHANGED" | grep -E -q '^drift_schemas/'; then
@@ -61,17 +68,19 @@ jobs:
           fi
 
           SHOULD_RUN="false"
-          if [[ "$DRIFT_CHANGED" == "true" || "$SCHEMAS_CHANGED" == "true" || "$TESTS_CHANGED" == "true" ]]; then
+          if [[ "$SCHEMA_VERSION_CHANGED" == "true" || "$SCHEMA_FILES_CHANGED" == "true" || "$SCHEMAS_CHANGED" == "true" || "$TESTS_CHANGED" == "true" ]]; then
             SHOULD_RUN="true"
           fi
 
-          echo "drift_changed=$DRIFT_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "schema_version_changed=$SCHEMA_VERSION_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "schema_files_changed=$SCHEMA_FILES_CHANGED" >> "$GITHUB_OUTPUT"
           echo "schemas_changed=$SCHEMAS_CHANGED" >> "$GITHUB_OUTPUT"
           echo "tests_changed=$TESTS_CHANGED" >> "$GITHUB_OUTPUT"
           echo "should_run_tests=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
 
           echo "Detected:"
-          echo "  drift_changed=$DRIFT_CHANGED"
+          echo "  schema_version_changed=$SCHEMA_VERSION_CHANGED"
+          echo "  schema_files_changed=$SCHEMA_FILES_CHANGED"
           echo "  schemas_changed=$SCHEMAS_CHANGED"
           echo "  tests_changed=$TESTS_CHANGED"
           echo "  should_run_tests=$SHOULD_RUN"
@@ -79,23 +88,36 @@ jobs:
   enforce-snapshots:
     needs: detect-migration
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_dispatch' && needs.detect-migration.outputs.drift_changed == 'true' && needs.detect-migration.outputs.schemas_changed != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && (needs.detect-migration.outputs.schema_version_changed == 'true' || needs.detect-migration.outputs.schema_files_changed == 'true') && needs.detect-migration.outputs.schemas_changed != 'true' }}
     steps:
-      - name: Fail if Drift changed without updated schema snapshots
+      - name: Fail if schema-affecting Drift files changed without updated snapshots
         shell: bash
         run: |
-          echo "❌ Drift code changed but drift_schemas/ did NOT change."
+          echo "❌ Schema-affecting Drift files changed, but drift_schemas/ did NOT change."
           echo "Please run your drift schema dump / make_migrations flow and commit updated snapshots."
           exit 1
 
+  enforce-version-bump:
+    needs: detect-migration
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' && needs.detect-migration.outputs.schema_files_changed == 'true' && needs.detect-migration.outputs.schema_version_changed != 'true' }}
+    steps:
+      - name: Fail if schema files changed without bumping schema version
+        shell: bash
+        run: |
+          echo "❌ Schema-affecting Drift files changed, but kSchemaVersion did NOT change."
+          echo "If this was a real schema change, bump the schema version."
+          exit 1
+
   test-migrations:
-    needs: [detect-migration, enforce-snapshots]
+    needs: [detect-migration, enforce-snapshots, enforce-version-bump]
     runs-on: ubuntu-latest
     if: >-
       ${{
         always() &&
         (github.event_name == 'workflow_dispatch' || needs.detect-migration.outputs.should_run_tests == 'true') &&
-        (needs.enforce-snapshots.result == 'success' || needs.enforce-snapshots.result == 'skipped')
+        (needs.enforce-snapshots.result == 'success' || needs.enforce-snapshots.result == 'skipped') &&
+        (needs.enforce-version-bump.result == 'success' || needs.enforce-version-bump.result == 'skipped')
       }}
     steps:
       - uses: actions/checkout@v4

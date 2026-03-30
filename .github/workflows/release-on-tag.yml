@@ -239,7 +239,6 @@ jobs:
           flutter build apk --release --flavor foss \
             --build-name=${{ needs.meta.outputs.app_version }} \
             --build-number=${{ needs.meta.outputs.build_number }} \
-            --build-number=${{ needs.meta.outputs.build_number }} \
             --dart-define=cronetHttpNoPlay=true \
             --dart-define=geolocatorNoPlay=true
 
@@ -286,31 +285,63 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          
+
           SPONSORS_FILE="distribution/contributors/sponsors.txt"
           CODE_FILE="distribution/contributors/code.txt"
           OUT="/tmp/contributors.md"
-          
-          {
-            if [ -f "$CODE_FILE" ] && [ -s "$CODE_FILE" ]; then
-              echo "## Code Contributors"
-              echo
-              echo "Thanks to:"
-              while IFS= read -r line; do
-                [ -n "$line" ] && echo "- $line"
-              done < "$CODE_FILE"
-              echo
-            fi
-          
-            if [ -f "$SPONSORS_FILE" ] && [ -s "$SPONSORS_FILE" ]; then
-              SPONSOR_NAMES=$(python -c "from pathlib import Path; names=[line.strip() for line in Path('$SPONSORS_FILE').read_text().splitlines() if line.strip()]; print('' if not names else names[0] if len(names)==1 else f'{names[0]} & {names[1]}' if len(names)==2 else ', '.join(names[:-1]) + f' & {names[-1]}')")
-              echo "## The real heroes"
-              echo
-              echo "💚 Huge thanks to ${SPONSOR_NAMES} for sponsoring the project 💚"
-              echo
-            fi
-          } > "$OUT"
-          
+
+          python - <<'PY'
+          from pathlib import Path
+
+          sponsors_file = Path("distribution/contributors/sponsors.txt")
+          code_file = Path("distribution/contributors/code.txt")
+          out_file = Path("/tmp/contributors.md")
+
+          lines = []
+
+          lines.append("## Contributors")
+          lines.append("")
+
+          if code_file.exists():
+              raw_code_lines = [line.strip() for line in code_file.read_text(encoding="utf-8").splitlines() if line.strip()]
+              code_entries = []
+
+              for line in raw_code_lines:
+                  if "|" in line:
+                      username, display_name = [part.strip() for part in line.split("|", 1)]
+                  else:
+                      username = line.strip()
+                      display_name = username
+
+                  if username:
+                      code_entries.append((username, display_name))
+
+              if code_entries:
+                  lines.append("### Code Contributors")
+                  lines.append("")
+                  linked_names = [f"[@{username}](https://github.com/{username})" if display_name == username else f"[@{username}](https://github.com/{username}) ({display_name})" for username, display_name in code_entries]
+                  lines.append("💙 Thanks to: " + ", ".join(linked_names) + " for contributing towards this project 💙")
+                  lines.append("")
+
+          if sponsors_file.exists():
+              sponsor_names = [line.strip() for line in sponsors_file.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+              if sponsor_names:
+                  lines.append("### Financial supporters")
+                  lines.append("")
+                  if len(sponsor_names) == 1:
+                      joined = sponsor_names[0]
+                  elif len(sponsor_names) == 2:
+                      joined = f"{sponsor_names[0]} & {sponsor_names[1]}"
+                  else:
+                      joined = ", ".join(sponsor_names[:-1]) + f" & {sponsor_names[-1]}"
+
+                  lines.append(f"💚 Huge thanks to {joined} for sponsoring the project 💚")
+                  lines.append("")
+
+          out_file.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+          PY
+
           echo "path=$OUT" >> "$GITHUB_OUTPUT"
 
       - name: Generate GitHub notes

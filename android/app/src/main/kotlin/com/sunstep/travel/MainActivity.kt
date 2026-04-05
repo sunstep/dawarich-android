@@ -1,4 +1,4 @@
-package com.sunstep.dawarich
+package com.sunstep.travel
 
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterFragmentActivity

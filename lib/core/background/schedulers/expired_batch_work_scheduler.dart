@@ -1,25 +1,11 @@
-
+import 'package:dawarich/core/background/workmanager/app_workmanager.dart';
 import 'package:dawarich/core/background/workmanager/expired_batch_upload_worker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 
 final class ExpiredBatchWorkScheduler {
-  static bool _initialized = false;
-
-  static Future<void> initialize() async {
-    if (_initialized) {
-      return;
-    }
-
-    await Workmanager().initialize(
-      ExpiredBatchUploadWorker.callbackDispatcher,
-    );
-
-    _initialized = true;
-  }
-
   static Future<void> register(int expirationMinutes) async {
-    await initialize();
+    await ensureWorkmanagerInitialized();
 
     final frequency = _getWorkerFrequency(expirationMinutes);
 
@@ -42,7 +28,7 @@ final class ExpiredBatchWorkScheduler {
   }
 
   static Future<void> cancel() async {
-    await initialize();
+    await ensureWorkmanagerInitialized();
 
     if (kDebugMode) {
       debugPrint('[ExpiredBatchWorker] Cancelling periodic work.');

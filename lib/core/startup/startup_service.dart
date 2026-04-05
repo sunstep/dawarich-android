@@ -11,6 +11,7 @@ import 'package:dawarich/core/shell/life_cycle/life_cycle_controller.dart';
 import 'package:dawarich/core/di/providers/settings_providers.dart';
 import 'package:dawarich/features/biometric_lock/domain/app_lock_timestamp_tracker.dart';
 import 'package:dawarich/features/onboarding/application/usecases/check_onboarding_permissions_usecase.dart';
+import 'package:dawarich/features/tracking/application/services/background_tracking_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
 import 'package:dawarich/main.dart';
 import 'package:dawarich_android_user_module/dawarich_android_user_module.dart';
@@ -19,6 +20,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final class StartupService {
+  // Held so we can removeObserver before adding a new one on Activity recreation.
+  // Without this, each boot cycle stacks another observer, causing duplicate
+  // lifecycle callbacks (multiple stats refreshes, multiple biometric lock checks,
+  // multiple onPaused timestamps) on every foreground/background transition.
+  static AppLifecycleController? _lifecycleController;
+
   static Future<void> initializeAppFromContainer(ProviderContainer container) async {
     if (kDebugMode) {
       debugPrint('[StartupService] Initializing app...');
@@ -53,13 +60,32 @@ final class StartupService {
       final savedTheme = await getTheme(refreshedSessionUser.id);
       container.read(themeModeProvider.notifier).set(
           themeModeFromString(savedTheme));
-
-      final refreshServerCompatibility =
-          await container.read(refreshServerCompatibilityUseCaseProvider.future);
-      await refreshServerCompatibility();
+      // Fire-and-forget: purely advisory, fails open, and makes up to 3 serial
+      // HTTP requests (server + GitHub x2) each with a 20 s Dio timeout.
+      // Awaiting it would block the splash screen for up to 60 s.
+      unawaited(() async {
+        try {
+          final refreshServerCompatibility =
+              await container.read(refreshServerCompatibilityUseCaseProvider.future);
+          await refreshServerCompatibility();
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[StartupService] Version check failed (non-critical): $e');
+          }
+        }
+      }());
 
       // Register the lifecycle observer so stats auto-refresh on app resume.
+      // Remove any previously registered observer first — the Android Activity
+      // can be recreated (config change, task restore) without killing the Dart
+      // process, which causes initializeAppFromContainer to run again. Without
+      // removal, observers accumulate and fire N times per lifecycle event.
+      final previous = _lifecycleController;
+      if (previous != null) {
+        WidgetsBinding.instance.removeObserver(previous);
+      }
       final lifecycleController = AppLifecycleController(container);
+      _lifecycleController = lifecycleController;
       WidgetsBinding.instance.addObserver(lifecycleController);
 
       // Register WorkManager periodic task for background stats refresh.
@@ -80,6 +106,20 @@ final class StartupService {
         }
 
         await TrackingWatchdogWorkScheduler.register();
+
+        // If the foreground service is not alive (e.g. the process crashed or
+        // was killed by the OEM), restart it immediately instead of waiting up
+        // to 15 minutes for the WorkManager watchdog to fire.
+        final isRunning = await BackgroundTrackingService.isRunning();
+        if (!isRunning) {
+          if (kDebugMode) {
+            debugPrint('[StartupService] Auto tracking enabled but service not running — restarting now.');
+          }
+          final result = await BackgroundTrackingService.start();
+          if (kDebugMode) {
+            debugPrint('[StartupService] Tracking restart result: $result');
+          }
+        }
       } else {
         if (kDebugMode) {
           debugPrint('[StartupService] Cancelling tracking watchdog (startup sync).');

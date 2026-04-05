@@ -1,24 +1,11 @@
+import 'package:dawarich/core/background/workmanager/app_workmanager.dart';
 import 'package:dawarich/core/background/workmanager/tracker_watchdog_worker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 
 final class TrackingWatchdogWorkScheduler {
-  static bool _initialized = false;
-
-  static Future<void> initialize() async {
-    if (_initialized) {
-      return;
-    }
-
-    await Workmanager().initialize(
-      TrackingWatchdogWorker.callbackDispatcher,
-    );
-
-    _initialized = true;
-  }
-
   static Future<void> register() async {
-    await initialize();
+    await ensureWorkmanagerInitialized();
 
     if (kDebugMode) {
       debugPrint('[TrackingWatchdog] Registering periodic watchdog.');
@@ -33,7 +20,7 @@ final class TrackingWatchdogWorkScheduler {
   }
 
   static Future<void> cancel() async {
-    await initialize();
+    await ensureWorkmanagerInitialized();
 
     if (kDebugMode) {
       debugPrint('[TrackingWatchdog] Cancelling periodic watchdog.');

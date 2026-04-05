@@ -1,35 +1,11 @@
-import 'package:dawarich/features/batch/data/background/batch_upload_bootstrap.dart';
-import 'package:dawarich/features/stats/data/background/stats_background_refresh_bootstrap.dart';
+import 'package:dawarich/core/background/workmanager/app_workmanager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 
-const String kStatsRefreshTask = 'stats_refresh_daily';
-const String kBatchUploadTask = 'batch_upload_check';
-
-bool _workmanagerInitialized = false;
-
-@pragma('vm:entry-point')
-void workmanagerCallbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    if (task == kStatsRefreshTask) {
-      await StatsBackgroundRefreshBootstrap.runInBackground(forceRefresh: true);
-    } else if (task == kBatchUploadTask) {
-      await BatchUploadBootstrap.runInBackground();
-    }
-    return true;
-  });
-}
-
-/// Ensures WorkManager is initialized exactly once.
-/// Safe to call multiple times — subsequent calls are no-ops.
-Future<void> _ensureInitialized() async {
-  if (_workmanagerInitialized) return;
-  await Workmanager().initialize(workmanagerCallbackDispatcher);
-  _workmanagerInitialized = true;
-  if (kDebugMode) {
-    debugPrint('[WorkManager] Initialized');
-  }
-}
+// Task name constants are now defined in app_workmanager.dart.
+// Re-exported here for backwards compatibility.
+export 'package:dawarich/core/background/workmanager/app_workmanager.dart'
+    show kStatsRefreshTask, kBatchUploadTask;
 
 /// Initializes WorkManager and registers the periodic stats refresh task.
 ///
@@ -37,7 +13,7 @@ Future<void> _ensureInitialized() async {
 /// WorkManager de-duplicates by `uniqueName`, so calling this multiple times
 /// (e.g. after re-login) is safe — it will replace the existing task.
 Future<void> initializeAndRegisterStatsWorker() async {
-  await _ensureInitialized();
+  await ensureWorkmanagerInitialized();
 
   await Workmanager().registerPeriodicTask(
     kStatsRefreshTask,
@@ -63,7 +39,7 @@ Future<void> initializeAndRegisterStatsWorker() async {
 /// Always registered when tracking is active. The task itself decides
 /// whether there is work to do.
 Future<void> registerBatchUploadWorker() async {
-  await _ensureInitialized();
+  await ensureWorkmanagerInitialized();
 
   await Workmanager().registerPeriodicTask(
     kBatchUploadTask,
@@ -79,4 +55,3 @@ Future<void> registerBatchUploadWorker() async {
     debugPrint('[WorkManager] Batch upload task registered (15min)');
   }
 }
-

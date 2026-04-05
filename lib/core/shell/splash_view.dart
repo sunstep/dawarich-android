@@ -61,7 +61,21 @@ class _SplashPageState extends ConsumerState<SplashView> {
       }
 
       final container = ProviderScope.containerOf(context);
-      await StartupService.initializeAppFromContainer(container);
+
+      // Guard the full startup sequence with its own timeout.
+      // coreProvider.timeout(10s) only covers DB/API/network init.
+      // initializeAppFromContainer does additional work (WorkManager, session,
+      // permissions) any of which could block on a platform-channel call.
+      // Without this guard, the splash screen can stall indefinitely.
+      await StartupService.initializeAppFromContainer(container).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          if (kDebugMode) {
+            debugPrint('[SplashPage] StartupService timed out after 30s');
+          }
+          throw TimeoutException('App startup timed out');
+        },
+      );
 
       if (kDebugMode) {
         debugPrint('[SplashPage] Boot completed.');

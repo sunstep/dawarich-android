@@ -144,6 +144,7 @@ final class SQLiteClient extends _$SQLiteClient {
         final conn = await existingIso.connect();
         _instance = SQLiteClient._(conn);
         completer.complete(_instance!);
+        _pendingInit = null;
         return _instance!;
       }
 
@@ -154,6 +155,7 @@ final class SQLiteClient extends _$SQLiteClient {
       final conn = await iso.connect().timeout(const Duration(seconds: 10));
       _instance = SQLiteClient._(conn);
       completer.complete(_instance!);
+      _pendingInit = null;
       return _instance!;
     } catch (e, s) {
       _pendingInit = null;
@@ -184,6 +186,16 @@ final class SQLiteClient extends _$SQLiteClient {
             File(dbPath),
             logStatements: kDebugMode,
             setup: (rawDb) {
+              // Set busy_timeout FIRST so every subsequent write operation
+              // (cipher setup, WAL activation, migrations, data writes) waits
+              // up to 5 s for the lock instead of failing with SQLITE_BUSY
+              // immediately.  This is critical because flutter_background_service
+              // creates a SEPARATE FlutterEngine / Dart VM, so IsolateNameServer
+              // is NOT shared between the main app and the background service —
+              // both VMs open independent Drift connections to the same file and
+              // can contend on writes at startup.
+              rawDb.execute('PRAGMA busy_timeout = 5000;');
+
               assert(_hasSqlCipher(
                   rawDb), 'SQLCipher not available: check deps & bootstrap');
               rawDb.execute('PRAGMA cipher_compatibility = 4;');

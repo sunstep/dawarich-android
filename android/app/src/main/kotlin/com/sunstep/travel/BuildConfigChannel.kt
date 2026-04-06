@@ -1,4 +1,4 @@
-package com.sunstep.dawarich
+package com.sunstep.travel
 
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -6,7 +6,7 @@ import io.flutter.plugin.common.MethodChannel
 
 object BuildConfigChannel {
 
-    private const val CHANNEL = "com.sunstep.dawarich/build_config"
+    private const val CHANNEL = "com.sunstep.travel/build_config"
 
     fun register(engine: FlutterEngine) {
         MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)

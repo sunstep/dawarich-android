@@ -1,6 +1,5 @@
 Full and more detailed release notes are always available at the GitHub repository!
 
-v0.19.1
+v0.19.2
 
-* Added a new batch expiration setting.
-* Optimized battery usage by tracker.
+* Change package name to better reflect that this is an unofficial project.

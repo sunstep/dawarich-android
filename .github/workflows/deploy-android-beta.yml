@@ -27,8 +27,12 @@ jobs:
   # ── Single source of truth for the build number ──
   # Runs first. All downstream jobs consume its outputs so both parallel
   # builds always use exactly the same version string.
+  # Add [skip deploy] to a merge commit message to land changes on the branch
+  # without triggering a Play upload. Unlike [skip ci], this does NOT suppress
+  # tag-triggered workflows, so release-on-tag.yml still fires on v* tags.
   generate:
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip deploy]')"
     outputs:
       app_version: ${{ steps.gen.outputs.app_version }}
       build_number: ${{ steps.gen.outputs.build_number }}
@@ -390,5 +394,4 @@ jobs:
           whatsNewDirectory: distribution/whatsnew
           track: beta
           status: completed
-
 

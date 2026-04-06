@@ -88,45 +88,59 @@ final class StartupService {
       _lifecycleController = lifecycleController;
       WidgetsBinding.instance.addObserver(lifecycleController);
 
-      // Register WorkManager periodic task for background stats refresh.
-      await initializeAndRegisterStatsWorker();
-
-      // Register periodic batch upload worker (handles both threshold
-      // and expiration uploads when the foreground service isn't running).
-      await registerBatchUploadWorker();
-
-      final getSettings =
-      await container.read(getTrackerSettingsUseCaseProvider.future);
-
-      final settings = await getSettings(refreshedSessionUser.id);
-
-      if (settings.automaticTracking) {
-        if (kDebugMode) {
-          debugPrint('[StartupService] Registering tracking watchdog (startup sync).');
+      // ── Deferred background work ──────────────────────────────────────
+      // WorkManager registrations, watchdog scheduling, and background-
+      // service startup are all non-critical for rendering the first real
+      // screen. They involve platform-channel calls that can individually
+      // stall for seconds (or deadlock entirely in the case of
+      // FlutterBackgroundService.configure() when autoStartOnBoot already
+      // started the service). Fire-and-forget them so the user sees the
+      // timeline / auth / onboarding screen immediately.
+      final capturedUserId = refreshedSessionUser.id;
+      final capturedContainer = container;
+      unawaited(() async {
+        try {
+          await initializeAndRegisterStatsWorker();
+        } catch (e) {
+          if (kDebugMode) debugPrint('[StartupService] Stats worker registration failed (non-critical): $e');
+        }
+        try {
+          await registerBatchUploadWorker();
+        } catch (e) {
+          if (kDebugMode) debugPrint('[StartupService] Batch upload worker registration failed (non-critical): $e');
         }
 
-        await TrackingWatchdogWorkScheduler.register();
+        try {
+          final getSettings =
+              await capturedContainer.read(getTrackerSettingsUseCaseProvider.future);
+          final settings = await getSettings(capturedUserId);
 
-        // If the foreground service is not alive (e.g. the process crashed or
-        // was killed by the OEM), restart it immediately instead of waiting up
-        // to 15 minutes for the WorkManager watchdog to fire.
-        final isRunning = await BackgroundTrackingService.isRunning();
-        if (!isRunning) {
-          if (kDebugMode) {
-            debugPrint('[StartupService] Auto tracking enabled but service not running — restarting now.');
+          if (settings.automaticTracking) {
+            if (kDebugMode) {
+              debugPrint('[StartupService] Registering tracking watchdog (deferred).');
+            }
+            await TrackingWatchdogWorkScheduler.register();
+
+            final isRunning = await BackgroundTrackingService.isRunning();
+            if (!isRunning) {
+              if (kDebugMode) {
+                debugPrint('[StartupService] Auto tracking enabled but service not running — restarting now.');
+              }
+              final result = await BackgroundTrackingService.start();
+              if (kDebugMode) {
+                debugPrint('[StartupService] Tracking restart result: $result');
+              }
+            }
+          } else {
+            if (kDebugMode) {
+              debugPrint('[StartupService] Cancelling tracking watchdog (deferred).');
+            }
+            await TrackingWatchdogWorkScheduler.cancel();
           }
-          final result = await BackgroundTrackingService.start();
-          if (kDebugMode) {
-            debugPrint('[StartupService] Tracking restart result: $result');
-          }
+        } catch (e, s) {
+          if (kDebugMode) debugPrint('[StartupService] Deferred tracking setup failed (non-critical): $e\n$s');
         }
-      } else {
-        if (kDebugMode) {
-          debugPrint('[StartupService] Cancelling tracking watchdog (startup sync).');
-        }
-
-        await TrackingWatchdogWorkScheduler.cancel();
-      }
+      }());
 
 
       final pendingRoute = InitializeTrackerNotificationServiceUseCase.pendingNotificationRoute;

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dawarich/core/data/drift/database/crypto/sqlcipher_bootstrap.dart';
 import 'package:dawarich/core/di/providers/settings_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/theme/dark_theme.dart';
@@ -18,7 +17,6 @@ Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      await SqlcipherBootstrap.ensure();
 
       FlutterError.onError = (FlutterErrorDetails details) {
         debugPrint('[FlutterError] ${details.exceptionAsString()}');

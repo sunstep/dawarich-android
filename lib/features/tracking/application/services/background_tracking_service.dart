@@ -272,21 +272,36 @@ final class BackgroundTrackingService {
 
     await ensureNotificationChannelExists();
 
-    await FlutterBackgroundService().configure(
-      androidConfiguration: AndroidConfiguration(
-        onStart: backgroundTrackingEntry,
-        autoStartOnBoot: true,
-        isForegroundMode: true,
-        foregroundServiceTypes: [AndroidForegroundType.location],
-        autoStart: false,
-        foregroundServiceNotificationId: NotificationConstants.notificationId,
-        notificationChannelId: NotificationConstants.channelId,
-      ),
-      iosConfiguration: IosConfiguration(
-        onForeground: backgroundTrackingEntry,
-        onBackground: (_) async => true,
-      ),
-    );
+    // FlutterBackgroundService.configure() is a platform-channel call that
+    // can deadlock when the service was already started by the platform
+    // (autoStartOnBoot). The _configured flag is per-Dart-isolate, so it's
+    // always false in a fresh foreground process even when the platform
+    // service is alive. Wrapping configure() in a timeout prevents the
+    // splash screen from freezing indefinitely in that scenario.
+    try {
+      await FlutterBackgroundService().configure(
+        androidConfiguration: AndroidConfiguration(
+          onStart: backgroundTrackingEntry,
+          autoStartOnBoot: true,
+          isForegroundMode: true,
+          foregroundServiceTypes: [AndroidForegroundType.location],
+          autoStart: false,
+          foregroundServiceNotificationId: NotificationConstants.notificationId,
+          notificationChannelId: NotificationConstants.channelId,
+        ),
+        iosConfiguration: IosConfiguration(
+          onForeground: backgroundTrackingEntry,
+          onBackground: (_) async => true,
+        ),
+      ).timeout(const Duration(seconds: 8));
+    } on TimeoutException {
+      debugPrint('[BackgroundService] configure() timed out — likely already running via autoStartOnBoot.');
+      // Don't set _configured — a subsequent call can retry.
+      return;
+    } catch (e) {
+      debugPrint('[BackgroundService] configure() failed: $e');
+      return;
+    }
 
     _configured = true;
   }

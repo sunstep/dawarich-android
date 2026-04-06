@@ -21,6 +21,8 @@ class SplashView extends ConsumerStatefulWidget {
 class _SplashPageState extends ConsumerState<SplashView> {
   bool _hasStartedBoot = false;
   bool _hasRetriedAfterTimeout = false;
+  bool _hasNavigatedAway = false;
+  Timer? _escapeTimer;
 
   @override
   void initState() {
@@ -28,7 +30,24 @@ class _SplashPageState extends ConsumerState<SplashView> {
     if (kDebugMode) {
       debugPrint('[SplashPage] initState called');
     }
+
+    _escapeTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted && !_hasNavigatedAway) {
+        _hasNavigatedAway = true;
+        if (kDebugMode) {
+          debugPrint('[SplashPage] Hard escape timer fired — navigating to auth');
+        }
+        appRouter.replaceAll([const AuthRoute()]);
+      }
+    });
+
     _startBoot();
+  }
+
+  @override
+  void dispose() {
+    _escapeTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _startBoot() async {
@@ -45,7 +64,7 @@ class _SplashPageState extends ConsumerState<SplashView> {
       }
 
       await ref.read(coreProvider.future).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 8),
         onTimeout: () {
           if (kDebugMode) {
             debugPrint('[SplashPage] Core provider timed out');
@@ -54,7 +73,7 @@ class _SplashPageState extends ConsumerState<SplashView> {
         },
       );
 
-      if (!mounted) return;
+      if (!mounted || _hasNavigatedAway) return;
 
       if (kDebugMode) {
         debugPrint('[SplashPage] coreProvider initialized successfully');
@@ -62,25 +81,27 @@ class _SplashPageState extends ConsumerState<SplashView> {
 
       final container = ProviderScope.containerOf(context);
 
-      // Guard the full startup sequence with its own timeout.
-      // coreProvider.timeout(10s) only covers DB/API/network init.
-      // initializeAppFromContainer does additional work (WorkManager, session,
-      // permissions) any of which could block on a platform-channel call.
-      // Without this guard, the splash screen can stall indefinitely.
       await StartupService.initializeAppFromContainer(container).timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 12),
         onTimeout: () {
           if (kDebugMode) {
-            debugPrint('[SplashPage] StartupService timed out after 30s');
+            debugPrint('[SplashPage] StartupService timed out after 12s');
           }
           throw TimeoutException('App startup timed out');
         },
       );
 
+      if (!mounted || _hasNavigatedAway) return;
+
+      _hasNavigatedAway = true;
+      _escapeTimer?.cancel();
+
       if (kDebugMode) {
         debugPrint('[SplashPage] Boot completed.');
       }
     } on TimeoutException {
+      if (_hasNavigatedAway) return;
+
       if (!_hasRetriedAfterTimeout) {
         _hasRetriedAfterTimeout = true;
         if (kDebugMode) {
@@ -89,7 +110,8 @@ class _SplashPageState extends ConsumerState<SplashView> {
 
         ref.invalidate(coreProvider);
         _hasStartedBoot = false;
-        await Future.delayed(const Duration(milliseconds: 1000));
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (_hasNavigatedAway) return;
         await _startBoot();
         return;
       }
@@ -97,14 +119,18 @@ class _SplashPageState extends ConsumerState<SplashView> {
       if (kDebugMode) {
         debugPrint('[SplashPage] Second timeout - navigating to auth');
       }
-      if (mounted) {
+      if (mounted && !_hasNavigatedAway) {
+        _hasNavigatedAway = true;
+        _escapeTimer?.cancel();
         appRouter.replaceAll([const AuthRoute()]);
       }
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[SplashPage] Error during boot: $e\n$st');
       }
-      if (mounted) {
+      if (mounted && !_hasNavigatedAway) {
+        _hasNavigatedAway = true;
+        _escapeTimer?.cancel();
         appRouter.replaceAll([const AuthRoute()]);
       }
     }

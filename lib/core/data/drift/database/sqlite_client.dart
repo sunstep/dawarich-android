@@ -8,10 +8,15 @@ import 'package:dawarich/core/data/drift/database/crypto/sqlcipher_bootstrap.dar
 import 'package:dawarich/core/data/drift/entities/point/point_geometry_table.dart';
 import 'package:dawarich/core/data/drift/entities/point/point_properties_table.dart';
 import 'package:dawarich/core/data/drift/entities/point/points_table.dart';
+import 'package:dawarich/core/data/drift/entities/settings/app_settings_table.dart';
 import 'package:dawarich/core/data/drift/entities/settings/tracker_settings_table.dart';
+import 'package:dawarich/core/data/drift/entities/stats/stats_cache_table.dart';
 import 'package:dawarich/core/data/drift/entities/track/track_table.dart';
 import 'package:dawarich/core/data/drift/entities/user/user_settings_table.dart';
 import 'package:dawarich/core/data/drift/entities/user/user_table.dart';
+import 'package:dawarich/core/data/drift/database/migrations.dart';
+import 'package:dawarich/core/data/drift/daos/app_settings_dao.dart';
+import 'package:dawarich/core/data/drift/daos/stats_cache_dao.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/isolate.dart';
 import 'package:drift/native.dart';
@@ -25,15 +30,23 @@ import 'package:sqlite3/sqlite3.dart' as s;
 part 'sqlite_client.g.dart';
 
 @DriftDatabase(tables: [
-  UserTable,
-  UserSettingsTable,
+  AppSettingsTable,
   PointsTable,
   PointGeometryTable,
   PointPropertiesTable,
+  StatsCacheTable,
   TrackTable,
-  TrackerSettingsTable
+  TrackerSettingsTable,
+  UserTable,
+  UserSettingsTable,
+],
+daos: [
+  AppSettingsDao,
+  StatsCacheDao,
 ])
 final class SQLiteClient extends _$SQLiteClient {
+
+  SQLiteClient(super.executor);
 
   static String get _dbFileName {
 
@@ -197,7 +210,7 @@ final class SQLiteClient extends _$SQLiteClient {
   }
 
 
-  static const int kSchemaVersion = 5;
+  static const int kSchemaVersion = 9;
   @override
   int get schemaVersion => kSchemaVersion;
 
@@ -211,7 +224,7 @@ final class SQLiteClient extends _$SQLiteClient {
 
       await m.createAll();
     },
-    // onUpgrade: no migrations for now. As the app is releasing we want a clean baseline, examples of migrations will appear when we actually do them,
+    onUpgrade: schemaUpgrade,
     beforeOpen: (details) async {
 
       if (kDebugMode) {

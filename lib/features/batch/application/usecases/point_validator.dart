@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/core/domain/models/point/point_pair.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:option_result/option_result.dart';
 
@@ -120,7 +120,7 @@ final class PointValidator {
     bool answer = false;
 
     final TrackerSettings settings = await _getTrackerSettings(userId);
-    final LocationAccuracy requiredAccuracy = settings.locationAccuracy;
+    final LocationPrecision requiredAccuracy = settings.locationPrecision;
 
     double requiredAccuracyMeters = _getAccuracyThreshold(requiredAccuracy);
 
@@ -129,38 +129,28 @@ final class PointValidator {
     return answer;
   }
 
-  double _getAccuracyThreshold(LocationAccuracy accuracy) {
+  double _getAccuracyThreshold(LocationPrecision precision) {
     if (Platform.isIOS) {
-      switch (accuracy) {
-        case LocationAccuracy.lowest:
-          return 3000; // iOS Lowest accuracy
-        case LocationAccuracy.low:
+      switch (precision) {
+        case LocationPrecision.lowPower:
           return 1000; // iOS Low accuracy
-        case LocationAccuracy.medium:
+        case LocationPrecision.balanced:
           return 100; // iOS Medium accuracy
-        case LocationAccuracy.high:
+        case LocationPrecision.high:
           return 10; // iOS High accuracy
-        case LocationAccuracy.best:
-        case LocationAccuracy.bestForNavigation:
-          return 5; // iOS Navigation-specific accuracy
-        default:
-          return 100;
+        case LocationPrecision.best:
+          return 5; // iOS Best accuracy
       }
     } else {
-      switch (accuracy) {
-        case LocationAccuracy.lowest:
-          return 500; // Android Passive accuracy
-        case LocationAccuracy.low:
+      switch (precision) {
+        case LocationPrecision.lowPower:
           return 500; // Android Low power accuracy
-        case LocationAccuracy.medium:
+        case LocationPrecision.balanced:
           return 100; // Android Balanced power accuracy
-        case LocationAccuracy.high:
+        case LocationPrecision.high:
           return 100; // Android High accuracy
-        case LocationAccuracy.best:
-        case LocationAccuracy.bestForNavigation:
-          return 50; // Android matches High accuracy
-        default:
-          return 100;
+        case LocationPrecision.best:
+          return 50; // Android Best accuracy
       }
     }
   }

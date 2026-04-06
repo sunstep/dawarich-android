@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 final class CheckSystemSettingsUseCase {
-  static const MethodChannel _channel =
-      MethodChannel('com.sunstep.dawarich/system_settings');
+
+  static const MethodChannel _channel = MethodChannel('com.sunstep.travel/system_settings');
 
   /// On Android: returns `true` if battery optimization is still enabled.
   /// On iOS: returns `true` if “Always” location permission is denied.

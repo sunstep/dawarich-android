@@ -1,38 +1,19 @@
-
-import 'package:dawarich/core/constants/notification.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 
 final class ShowTrackerNotificationUseCase {
+  final TrackerNotificationService _service;
 
-  static const trackerPayload = '/tracker';
-
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
-  FlutterLocalNotificationsPlugin();
+  ShowTrackerNotificationUseCase(this._service);
 
   Future<void> call({
     required String title,
     required String body,
     String? payload,
-  }) async {
-    const android = AndroidNotificationDetails(
-      NotificationConstants.channelId,
-      NotificationConstants.channelName,
-      importance: Importance.low,
-      priority: Priority.low,
-      ongoing: true,
-      onlyAlertOnce: true,
-      category: AndroidNotificationCategory.service,
-      autoCancel: false,
-      icon: NotificationConstants.notificationIcon,
-    );
-    const details = NotificationDetails(android: android);
-
-    await _notificationsPlugin.show(
-      NotificationConstants.notificationId,
-      title,
-      body,
-      details,
-      payload: payload ?? trackerPayload, // default to tracker
+  }) {
+    return _service.showTracker(
+      title: title,
+      body: body,
+      payload: payload ?? '/tracker',
     );
   }
 }

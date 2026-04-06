@@ -363,4 +363,99 @@ final class DriftPointLocalRepository implements IPointLocalRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<int> deleteUploadedPointsExceptLast(int userId) async {
+    try {
+      // Get the ID of the most recent point (regardless of upload status)
+      final lastPointQuery = _database.select(_database.pointsTable)
+        ..where((t) => t.userId.equals(userId))
+        ..orderBy([(t) => OrderingTerm.desc(t.id)])
+        ..limit(1);
+
+      final lastPoint = await lastPointQuery.getSingleOrNull();
+
+      if (lastPoint == null) {
+        return 0; // No points to delete
+      }
+
+      final lastPointId = lastPoint.id;
+
+      // Delete all uploaded points except the last one
+      // Also delete their associated geometry and properties
+      return await _database.transaction(() async {
+        // Get IDs of points to delete (uploaded, not the last one)
+        final pointsToDelete = await (_database.select(_database.pointsTable)
+          ..where((t) =>
+              t.userId.equals(userId) &
+              t.isUploaded.equals(true) &
+              t.id.isNotValue(lastPointId)))
+          .get();
+
+        if (pointsToDelete.isEmpty) {
+          return 0;
+        }
+
+        final pointIds = pointsToDelete.map((p) => p.id).toList();
+        final geometryIds = pointsToDelete.map((p) => p.geometryId).toList();
+        final propertiesIds = pointsToDelete.map((p) => p.propertiesId).toList();
+
+        // Delete points
+        final deletedCount = await (_database.delete(_database.pointsTable)
+          ..where((t) => t.id.isIn(pointIds)))
+          .go();
+
+        // Delete orphaned geometry and properties
+        await (_database.delete(_database.pointGeometryTable)
+          ..where((t) => t.id.isIn(geometryIds)))
+          .go();
+
+        await (_database.delete(_database.pointPropertiesTable)
+          ..where((t) => t.id.isIn(propertiesIds)))
+          .go();
+
+        if (kDebugMode) {
+          debugPrint("[PointRepo] Deleted $deletedCount old uploaded points, kept point $lastPointId");
+        }
+
+        return deletedCount;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("[PointRepo] Error deleting uploaded points: $e");
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<DateTime?> getOldestUnUploadedPointTimestamp(int userId) async {
+    try {
+      final query = _database.select(_database.pointsTable).join([
+        innerJoin(
+          _database.pointPropertiesTable,
+          _database.pointPropertiesTable.id
+              .equalsExp(_database.pointsTable.propertiesId),
+        ),
+      ])
+        ..where(_database.pointsTable.isUploaded.equals(false) &
+            _database.pointsTable.userId.equals(userId))
+        ..orderBy([
+          OrderingTerm.asc(_database.pointPropertiesTable.recordTimestamp),
+        ])
+        ..limit(1);
+
+      final row = await query.getSingleOrNull();
+      if (row == null) return null;
+
+      return row
+          .readTable(_database.pointPropertiesTable)
+          .recordTimestamp;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("[PointRepo] Error getting oldest un-uploaded point timestamp: $e");
+      }
+      return null;
+    }
+  }
 }

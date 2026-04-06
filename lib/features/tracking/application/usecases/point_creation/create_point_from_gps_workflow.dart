@@ -1,23 +1,25 @@
 import 'dart:async';
 
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
-import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
-import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_position_usecase.dart';
+import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
+import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
+import 'package:dawarich/features/tracking/domain/models/location_request.dart';
 import 'package:dawarich/features/tracking/domain/models/tracker_settings.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/result.dart';
 
 final class CreatePointFromGpsWorkflow {
 
   final GetTrackerSettingsUseCase _getTrackerPreferences;
-  final IHardwareRepository _hardwareInterfaces;
-  final CreatePointFromPositionUseCase _createPointFromPosition;
+  final ILocationProvider _locationProvider;
+  final CreatePointUseCase _createPointFromLocationFix;
 
   CreatePointFromGpsWorkflow(
       this._getTrackerPreferences,
-      this._hardwareInterfaces,
-      this._createPointFromPosition
+      this._locationProvider,
+      this._createPointFromLocationFix
   );
 
   /// The method that handles manually creating a point or when automatic tracking has not tracked a cached point for too long.
@@ -28,7 +30,7 @@ final class CreatePointFromGpsWorkflow {
     final TrackerSettings settings = await _getTrackerPreferences(userId);
     final bool isTrackingAutomatically = settings.automaticTracking;
     final int currentTrackingFrequency = settings.trackingFrequency;
-    final LocationAccuracy accuracy = settings.locationAccuracy;
+    final LocationPrecision accuracy = settings.locationPrecision;
 
     final Duration autoAttemptTimeout = _clampDuration(
       Duration(seconds: currentTrackingFrequency),
@@ -48,11 +50,18 @@ final class CreatePointFromGpsWorkflow {
     final Duration attemptTimeout = isTrackingAutomatically ? autoAttemptTimeout : manualTimeout;
     final Duration staleMax = isTrackingAutomatically ? autoStaleMax : manualStaleMax;
 
-    Result<Position, String> posResult;
+    Result<LocationFix, String> posResult;
 
     try {
-      posResult = await _hardwareInterfaces
-          .getPosition(accuracy)
+
+      final LocationRequest request = LocationRequest(
+        precision: accuracy,
+        distanceFilterMeters: 0,
+        timeLimit: attemptTimeout,
+      );
+
+      posResult = await _locationProvider
+          .getCurrent(request)
           .timeout(attemptTimeout);
     } on TimeoutException {
       return Err("NO_FIX_TIMEOUT");
@@ -64,10 +73,10 @@ final class CreatePointFromGpsWorkflow {
       return Err(error);
     }
 
-    final Position position = posResult.unwrap();
+    final LocationFix fix = posResult.unwrap();
 
     final DateTime nowUtc = DateTime.now().toUtc();
-    final DateTime fixTs = position.timestamp.toUtc();
+    final DateTime fixTs = fix.timestampUtc;
 
     final Duration age = nowUtc.difference(fixTs);
     if (age < Duration.zero || age > staleMax) {
@@ -75,7 +84,7 @@ final class CreatePointFromGpsWorkflow {
     }
 
     final Result<LocalPoint, String> pointResult =
-        await _createPointFromPosition(position, pointCreationTimestamp, userId);
+        await _createPointFromLocationFix(fix, pointCreationTimestamp, userId);
 
     if (pointResult case Err()) {
       return pointResult;

@@ -1,15 +1,11 @@
-import 'package:geolocator/geolocator.dart';
-import 'package:option_result/option_result.dart';
+import 'package:dawarich/features/tracking/domain/enum/battery_state.dart';
 
 abstract interface class IHardwareRepository {
-  Future<Result<Position, String>> getPosition(
-      LocationAccuracy locationAccuracy);
-  Future<Option<Position>> getCachedPosition();
 
   Future<String> getDeviceModel();
 
-  Future<String> getBatteryState();
+  Future<BatteryState> getBatteryState();
   Future<double> getBatteryLevel();
 
-  Future<String> getWiFiStatus();
+  Future<String?> getWiFiStatus();
 }

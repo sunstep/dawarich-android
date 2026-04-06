@@ -52,7 +52,7 @@ final class BatchUploadWorkflowUseCase {
         failedChunks.addAll(chunk);
       } else {
         List<int> chunkIds = chunk.map((p) => p.id).toList();
-        await _deletePoints(chunkIds, userId);
+        await _markAsUploaded(chunkIds, userId);
         uploaded += chunk.length;
         onChunkUploaded?.call(uploaded, dedupedLocalPoints.length);
       }
@@ -73,7 +73,7 @@ final class BatchUploadWorkflowUseCase {
 
         if (result case Err(value: final error)) {
           if (error.contains("already exists")) {
-            await _deletePoints([point.id], userId);
+            await _markAsUploaded([point.id], userId);
             uploadedCount++;
             onChunkUploaded?.call(uploadedCount, failedChunks.length);
             continue;
@@ -81,7 +81,7 @@ final class BatchUploadWorkflowUseCase {
 
           failedCount++;
         } else {
-          await _deletePoints([point.id], userId);
+          await _markAsUploaded([point.id], userId);
           uploadedCount++;
           onChunkUploaded?.call(uploadedCount, failedChunks.length);
         }
@@ -92,11 +92,30 @@ final class BatchUploadWorkflowUseCase {
       }
     }
 
+    // Clean up: delete all uploaded points except the last one
+    // The last point is kept as a reference for validating new points
+    await _cleanupAfterUpload(userId);
+
     return const Ok(());
   }
 
-  Future<bool> _deletePoints(List<int> pointIds, int userId) async {
-    final result = await _localPointRepository.deletePoints(userId, pointIds);
+  /// After upload, delete all uploaded points except the most recent one.
+  /// The last point is kept (marked as uploaded) for validation reference.
+  Future<void> _cleanupAfterUpload(int userId) async {
+    try {
+      final deleted = await _localPointRepository.deleteUploadedPointsExceptLast(userId);
+      if (kDebugMode) {
+        debugPrint('[Upload] Cleanup: deleted $deleted old uploaded points, kept last for reference');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Upload] Cleanup failed: $e');
+      }
+    }
+  }
+
+  Future<bool> _markAsUploaded(List<int> pointIds, int userId) async {
+    final result = await _localPointRepository.markBatchAsUploaded(userId, pointIds);
     return result > 0;
   }
 

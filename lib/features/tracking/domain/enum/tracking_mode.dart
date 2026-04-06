@@ -1,0 +1,4 @@
+enum TrackingMode {
+  manual,
+  automatic,
+}

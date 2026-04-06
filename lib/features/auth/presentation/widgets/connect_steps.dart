@@ -69,10 +69,7 @@ final class ServerStepWidget extends StatelessWidget {
     await vm.tryQrLogin(
       qrResult,
       onNavigateToTimeline: () => appRouter.replaceAll([
-        const TimelineRoute()
-      ]),
-      onNavigateToVersionCheck: () => appRouter.replaceAll([
-        const VersionCheckRoute()
+        const PermissionsOnboardingRoute()
       ]),
       onShowError: (msg) => _showInlineError(context, msg),
     );

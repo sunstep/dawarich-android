@@ -19,6 +19,9 @@ void backgroundTrackingEntry(ServiceInstance backgroundService) {
 
 
   BackgroundTrackingEntry.registerListeners(backgroundService);
+  if (kDebugMode) {
+    debugPrint('[Background] Listeners registered (stopService, restartTracking)');
+  }
   backgroundService.invoke('ready');
 
   unawaited(() async {

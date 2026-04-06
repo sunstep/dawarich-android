@@ -1,0 +1,12 @@
+A community Dawarich Mobile Client made in Flutter by Sunstep, to bring Dawarich right into your mobile
+
+Features:
+* Simply connect to your Dawarich instance using your host and API key or using QR code
+
+* View your location timeline from your phone
+
+* View the stats of your Dawarich profile with ease
+
+* Manage your points: view or delete individual points
+
+* Track new points from your mobile

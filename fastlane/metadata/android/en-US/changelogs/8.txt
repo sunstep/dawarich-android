@@ -1,0 +1,6 @@
+Full and more detailed release notes are always available at the GitHub repository!
+
+v0.18.1
+
+* Fixed stats cache not being scoped to users.
+* Renamed app to Dawarich (Community)

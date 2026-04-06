@@ -4,7 +4,7 @@ import 'package:auto_route/annotations.dart';
 import 'package:dawarich/features/batch/presentation/models/local_point_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
 import 'package:dawarich/features/batch/presentation/viewmodels/batch_explorer_viewmodel.dart';
-import 'package:dawarich/shared/widgets/custom_appbar.dart';
+import 'package:dawarich/shared/widgets/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,13 +93,11 @@ class _BatchExplorerScaffoldState extends State<_BatchExplorerScaffold> {
 
     return Container(
       decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: const CustomAppbar(
-          title: "Batch Explorer",
-          titleFontSize: 30,
-          backgroundColor: Colors.transparent,
-        ),
+      child: AppScaffold(
+        title: "Batch Explorer",
+        titleFontSize: 30,
+        appBarBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.transparent,
         body: SafeArea(child: _BatchContent()),
         bottomNavigationBar:
             vm.hasPoints ? const _BatchFooter() : const SizedBox.shrink(),

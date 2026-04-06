@@ -1,14 +1,17 @@
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
+import 'package:dawarich/core/di/providers/core_providers.dart';
 import 'package:dawarich/core/di/providers/drawer_providers.dart';
 import 'package:dawarich/core/shell/drawer/drawer_viewmodel.dart';
 import 'package:dawarich/core/theme/app_gradients.dart';
+import 'package:dawarich/features/version_check/domain/server_compatibility_status.dart';
+import 'package:dawarich/features/version_check/presentation/server_compatibility_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 final class CustomDrawer extends ConsumerStatefulWidget {
-
   const CustomDrawer({super.key});
 
   @override
@@ -31,10 +34,12 @@ class _CustomDrawerState extends ConsumerState<CustomDrawer> {
         context,
         child: Center(child: Text(e.toString())),
       ),
-      data: (vm) => _CustomDrawerContent(
+      data: (vm) => _DrawerBody(
         vm: vm,
+        ref: ref,
         onNavigate: (route) => _navigateTo(context, route),
         onLogout: () => _logout(context, vm),
+        onAbout: () => _pushTo(context, const AboutRoute()),
       ),
     );
   }
@@ -43,13 +48,15 @@ class _CustomDrawerState extends ConsumerState<CustomDrawer> {
     return SafeArea(
       child: Drawer(
         backgroundColor: Colors.transparent,
-        width: MediaQuery.of(context).size.width * 0.75,
+        width: MediaQuery.of(context).size.width * 0.78,
         child: ClipRRect(
-          borderRadius: const BorderRadius.horizontal(right: Radius.circular(24)),
+          borderRadius:
+              const BorderRadius.horizontal(right: Radius.circular(24)),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
-              decoration: BoxDecoration(gradient: Theme.of(context).pageBackground),
+              decoration:
+                  BoxDecoration(gradient: Theme.of(context).pageBackground),
               child: child,
             ),
           ),
@@ -59,18 +66,12 @@ class _CustomDrawerState extends ConsumerState<CustomDrawer> {
   }
 
   void _closeDrawer(BuildContext context) {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
+    if (Navigator.canPop(context)) Navigator.pop(context);
   }
 
   void _runNavGuarded(Future<void> Function() action) {
-    if (_isNavigating) {
-      return;
-    }
-
+    if (_isNavigating) return;
     _isNavigating = true;
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await action();
@@ -80,12 +81,23 @@ class _CustomDrawerState extends ConsumerState<CustomDrawer> {
     });
   }
 
-  Future<void> _navigateTo(BuildContext context, PageRouteInfo<Object?> route) async {
+  Future<void> _navigateTo(
+      BuildContext context, PageRouteInfo<Object?> route) async {
     final router = context.router.root;
     _runNavGuarded(() async {
       if (!mounted) return;
       _closeDrawer(context);
       await router.replace(route);
+    });
+  }
+
+  Future<void> _pushTo(
+      BuildContext context, PageRouteInfo<Object?> route) async {
+    final router = context.router.root;
+    _runNavGuarded(() async {
+      if (!mounted) return;
+      _closeDrawer(context);
+      await router.push(route);
     });
   }
 
@@ -95,132 +107,66 @@ class _CustomDrawerState extends ConsumerState<CustomDrawer> {
       if (!mounted) return;
       _closeDrawer(context);
       await vm.logout();
-
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       router.replaceAll([const AuthRoute()]);
     });
   }
-
 }
 
-final class _CustomDrawerContent extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Drawer body
+// ---------------------------------------------------------------------------
 
+final class _DrawerBody extends StatelessWidget {
   final DrawerViewModel vm;
+  final WidgetRef ref;
   final void Function(PageRouteInfo<Object?> route) onNavigate;
   final VoidCallback onLogout;
+  final VoidCallback onAbout;
 
-  const _CustomDrawerContent({
+  const _DrawerBody({
     required this.vm,
+    required this.ref,
     required this.onNavigate,
     required this.onLogout,
+    required this.onAbout,
   });
-
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final textColor = theme.colorScheme.onSurface.withValues(alpha: 0.95);
-    final iconColor = theme.colorScheme.onSurface.withValues(alpha: isDark ? 0.7 : 0.65);
-    final selectedBg = Colors.red.withValues(alpha: isDark ? 0.3 : 0.1);
-    final selectedIcon = theme.colorScheme.secondary;
-
     return SafeArea(
       child: Drawer(
         backgroundColor: Colors.transparent,
-        width: MediaQuery.of(context).size.width * 0.75,
+        width: MediaQuery.of(context).size.width * 0.78,
         child: ClipRRect(
-          borderRadius: const BorderRadius.horizontal(right: Radius.circular(24)),
+          borderRadius:
+              const BorderRadius.horizontal(right: Radius.circular(24)),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
-              decoration: BoxDecoration(gradient: theme.pageBackground),
+              decoration: BoxDecoration(
+                gradient: theme.pageBackground,
+                border: Border(
+                  right: BorderSide(
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.06),
+                  ),
+                ),
+              ),
               child: Column(
                 children: [
-                  Container(
-                    height: 120,
-                    alignment: Alignment.bottomLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    child: Text(
-                      'Dawarich',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Divider(
-                    color: theme.dividerColor.withValues(alpha: 0.5),
-                    thickness: 1,
-                    height: 1,
-                  ),
+                  _DrawerHeader(ref: ref),
+                  const SizedBox(height: 8),
                   Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        _tile(
-                          context,
-                          icon: Icons.map,
-                          label: 'Timeline',
-                          onTap: () => onNavigate(const TimelineRoute()),
-                          textColor: textColor,
-                          iconColor: iconColor,
-                          selectedBg: selectedBg,
-                          selectedIconColor: selectedIcon,
-                        ),
-                        _tile(
-                          context,
-                          icon: Icons.analytics,
-                          label: 'Stats',
-                          onTap: () => onNavigate(const StatsRoute()),
-                          textColor: textColor,
-                          iconColor: iconColor,
-                          selectedBg: selectedBg,
-                          selectedIconColor: selectedIcon,
-                        ),
-                        _tile(
-                          context,
-                          icon: Icons.place,
-                          label: 'Points',
-                          onTap: () => onNavigate(const PointsRoute()),
-                          textColor: textColor,
-                          iconColor: iconColor,
-                          selectedBg: selectedBg,
-                          selectedIconColor: selectedIcon,
-                        ),
-                        _tile(
-                          context,
-                          icon: Icons.gps_fixed,
-                          label: 'Tracker',
-                          onTap: () => onNavigate(const TrackerRoute()),
-                          textColor: textColor,
-                          iconColor: iconColor,
-                          selectedBg: selectedBg,
-                          selectedIconColor: selectedIcon,
-                        ),
-                      ],
-                    ),
+                    child: _NavSection(onNavigate: onNavigate),
                   ),
-                  Divider(
-                    color: theme.dividerColor.withValues(alpha: 0.5),
-                    thickness: 1,
-                    height: 1,
+                  _BottomSection(
+                    onLogout: onLogout,
+                    onAbout: onAbout,
                   ),
-                  _tile(
-                    context,
-                    icon: Icons.logout,
-                    label: 'Logout',
-                    onTap: onLogout,
-                    textColor: Colors.red.shade300,
-                    iconColor: Colors.red.shade200,
-                    selectedBg: Colors.red.shade900.withValues(alpha: 0.3),
-                    selectedIconColor: Colors.redAccent,
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -229,34 +175,365 @@ final class _CustomDrawerContent extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _tile(
-      BuildContext context, {
-        required IconData icon,
-        required String label,
-        required VoidCallback onTap,
-        required Color textColor,
-        required Color iconColor,
-        required Color selectedBg,
-        required Color selectedIconColor,
-      }) {
-    const verticalPadding = 16.0;
-    const horizontalPadding = 24.0;
+// ---------------------------------------------------------------------------
+// Header — app name, connected instance, server version + compat badge
+// ---------------------------------------------------------------------------
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
+final class _DrawerHeader extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _DrawerHeader({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final compatState = ref.watch(serverCompatibilityProvider);
+    final apiCfgAsync = ref.watch(apiConfigManagerProvider);
+
+    final String? serverHost = apiCfgAsync.whenOrNull(
+      data: (cfg) {
+        final host = cfg.apiConfig?.host;
+        if (host == null || host.isEmpty) return null;
+        // Strip protocol for a cleaner look
+        return host
+            .replaceFirst(RegExp(r'^https?://'), '')
+            .replaceFirst(RegExp(r'/$'), '');
+      },
+    );
+
+    final String? serverVersion = compatState.serverVersion;
+    final ServerCompatibilityStatus status = compatState.status;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 44, 24, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // App title
+          Row(
+            children: [
+              Icon(Icons.pin_drop, size: 28, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Text(
+                'Dawarich',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Server info pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: isDark ? 0.07 : 0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.06),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.dns_outlined,
+                  size: 18,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        serverHost ?? 'Not connected',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      if (serverVersion != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Server v$serverVersion',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            color: theme.textTheme.bodySmall?.color
+                                ?.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _CompatBadge(status: status),
+              ],
+            ),
+          ),
+        ],
       ),
-      leading: Icon(icon, color: iconColor, size: 28),
-      title: Text(label, style: TextStyle(color: textColor, fontSize: 18)),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Compatibility badge
+// ---------------------------------------------------------------------------
+
+final class _CompatBadge extends StatelessWidget {
+  final ServerCompatibilityStatus status;
+
+  const _CompatBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (IconData icon, Color color, String tooltip) = switch (status) {
+      ServerCompatibilityStatus.ok => (
+          Icons.check_circle,
+          Colors.green,
+          'Compatible',
+        ),
+      ServerCompatibilityStatus.warning => (
+          Icons.warning_amber_rounded,
+          Colors.orange,
+          'Compatibility warning',
+        ),
+      ServerCompatibilityStatus.incompatible => (
+          Icons.error_outline,
+          Colors.red,
+          'Incompatible',
+        ),
+      ServerCompatibilityStatus.unknown => (
+          Icons.help_outline,
+          Colors.grey,
+          'Status unknown',
+        ),
+    };
+
+    return Tooltip(
+      message: tooltip,
+      child: Icon(icon, size: 20, color: color),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Navigation section — single column, card-style buttons
+// ---------------------------------------------------------------------------
+
+final class _NavSection extends StatelessWidget {
+  final void Function(PageRouteInfo<Object?> route) onNavigate;
+
+  const _NavSection({required this.onNavigate});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      children: [
+        _NavTile(
+          icon: Icons.map_outlined,
+          label: 'Timeline',
+          onTap: () => onNavigate(const TimelineRoute()),
+        ),
+        const SizedBox(height: 8),
+        _NavTile(
+          icon: Icons.analytics_outlined,
+          label: 'Stats',
+          onTap: () => onNavigate(const StatsRoute()),
+        ),
+        const SizedBox(height: 8),
+        _NavTile(
+          icon: Icons.place_outlined,
+          label: 'Points',
+          onTap: () => onNavigate(const PointsRoute()),
+        ),
+        const SizedBox(height: 8),
+        _NavTile(
+          icon: Icons.gps_fixed_outlined,
+          label: 'Tracker',
+          onTap: () => onNavigate(const TrackerRoute()),
+        ),
+        const SizedBox(height: 8),
+        _NavTile(
+          icon: Icons.settings_outlined,
+          label: 'Settings',
+          onTap: () => onNavigate(const SettingsRoute()),
+        ),
+      ],
+    );
+  }
+}
+
+final class _NavTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _NavTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: (isDark ? Colors.white : Colors.black)
+          .withValues(alpha: isDark ? 0.07 : 0.04),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: theme.colorScheme.primary.withValues(alpha: 0.10),
+        highlightColor: theme.colorScheme.primary.withValues(alpha: 0.06),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 26,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      hoverColor: selectedBg,
-      selectedTileColor: selectedBg,
-      selectedColor: selectedIconColor,
-      onTap: onTap,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom section — logout + about
+// ---------------------------------------------------------------------------
+
+final class _BottomSection extends StatelessWidget {
+  final VoidCallback onLogout;
+  final VoidCallback onAbout;
+
+  const _BottomSection({
+    required this.onLogout,
+    required this.onAbout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Divider(
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+          thickness: 1,
+          height: 1,
+          indent: 24,
+          endIndent: 24,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: onLogout,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded,
+                        size: 22, color: Colors.red.shade300),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Logout',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: Colors.red.shade300,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Subtle about / version badge
+        GestureDetector(
+          onTap: onAbout,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
+            child: FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final version =
+                    snapshot.hasData ? 'v${snapshot.data!.version}' : '';
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: isDark ? 0.07 : 0.04),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: (isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 13,
+                        color: theme.textTheme.bodySmall?.color
+                            ?.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Dawarich $version',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color
+                              ?.withValues(alpha: 0.5),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 

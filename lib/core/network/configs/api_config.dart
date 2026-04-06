@@ -1,11 +1,17 @@
 class ApiConfig {
   final String host;
   String? apiKey;
-  bool get isConfigured => apiKey != null;
+
+  bool get hasHost => host.trim().isNotEmpty;
+  bool get hasApiKey => apiKey != null && apiKey!.trim().isNotEmpty;
+  bool get isFullyConfigured => hasHost && hasApiKey;
 
   ApiConfig({required this.host, this.apiKey});
 
-  void setApiKey(String apiKey) {
-    this.apiKey = apiKey;
+  ApiConfig copyWith({String? host, String? apiKey}) {
+    return ApiConfig(
+      host: host ?? this.host,
+      apiKey: apiKey ?? this.apiKey,
+    );
   }
 }

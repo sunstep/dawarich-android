@@ -7,12 +7,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 final class DbKeyProvider {
 
   final FlutterSecureStorage _ss = const FlutterSecureStorage();
-  final _aEnc = const AndroidOptions(encryptedSharedPreferences: true);
   static const _k = 'db_key_v1';
 
   Future<String> getOrCreateHexKey() async {
 
-    final String? e = await _ss.read(key: _k, aOptions: _aEnc);
+    final String? e = await _ss.read(key: _k);
 
     if (e != null && e.isNotEmpty) {
       return e;
@@ -26,7 +25,6 @@ final class DbKeyProvider {
     await _ss.write(
       key: _k,
       value: hex,
-      aOptions: _aEnc,
     );
     return hex;
   }

@@ -4,9 +4,25 @@ import 'package:dawarich/core/application/usecases/api/get_total_pages_usecase.d
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/check_batch_threshold_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
+import 'package:dawarich/features/stats/application/repositories/countries_repository_interfaces.dart';
 import 'package:dawarich/features/stats/application/repositories/stats_repository_interfaces.dart';
+import 'package:dawarich/features/stats/application/usecases/get_last_stats_sync_usecase.dart';
 import 'package:dawarich/features/stats/application/usecases/get_stats_usecase.dart';
+import 'package:dawarich/features/stats/application/usecases/get_visited_countries_usecase.dart';
+import 'package:dawarich/features/stats/application/usecases/should_refresh_stats_usecase.dart';
+import 'package:dawarich/features/stats/data/mappers/countries_mapper.dart';
+import 'package:dawarich/features/stats/data/repositories/countries_repository.dart';
 import 'package:dawarich/features/stats/data/repositories/stats_repository.dart';
+import 'package:dawarich/features/stats/data/sources/local/stats_local_data_source.dart';
+import 'package:dawarich/features/stats/data/sources/remote/stats_remote_data_source.dart';
+import 'package:dawarich/features/stats/presentation/converters/countries_mapper.dart';
+import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/cancel_tracker_notification_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/initialize_tracker_notification_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/notifications/was_launched_from_notification_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_usecase.dart';
+import 'package:dawarich/features/tracking/data/repositories/location_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core_providers.dart';
 import 'package:dawarich/core/data/repositories/drift/drift_local_point_repository.dart';
@@ -26,7 +42,7 @@ import 'package:dawarich/features/tracking/application/usecases/get_last_point_u
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_cache_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_gps_workflow.dart';
-import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_position_usecase.dart';
+import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_from_location_stream_workflow.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/store_point_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_device_model_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/settings/get_tracker_settings_usecase.dart';
@@ -44,6 +60,18 @@ import 'package:dawarich/features/tracking/data/repositories/drift_tracker_setti
 import 'package:dawarich/features/batch/application/usecases/point_validator.dart';
 import 'package:dawarich/features/timeline/application/usecases/get_default_map_center_usecase.dart';
 
+final statsRemoteDataSourceProvider = FutureProvider<IStatsRemoteDataSource>((ref) async {
+  final dio = await ref.watch(dioClientProvider.future);
+  return StatsRemoteDataSource(dio);
+});
+
+final statsCacheDataSourceProvider = FutureProvider<IStatsCacheDataSource>((ref) async {
+  final db = await ref.watch(sqliteClientProvider.future);
+
+  return StatsCacheDataSource(db.statsCacheDao);
+
+});
+
 // --- Repositories ---
 final apiPointRepositoryProvider = FutureProvider<IApiPointRepository>((ref) async {
   final dio = await ref.watch(dioClientProvider.future);
@@ -56,16 +84,21 @@ final pointLocalRepositoryProvider = FutureProvider<IPointLocalRepository>((ref)
 });
 
 final statsRepositoryProvider = FutureProvider<IStatsRepository>((ref) async {
-  final dio = await ref.watch(dioClientProvider.future);
-  return StatsRepository(dio);
-});
+  final remote = await ref.watch(statsRemoteDataSourceProvider.future);
+  final cache = await ref.watch(statsCacheDataSourceProvider.future);
 
+  return StatsRepository(remote: remote, cache: cache);
+});
 // --- Tracking repositories ---
 final hardwareRepositoryProvider = Provider<IHardwareRepository>((ref) {
   return HardwareRepository(
     ref.watch(deviceDataClientProvider),
     ref.watch(connectivityDataClientProvider),
   );
+});
+
+final locationProviderProvider = Provider<ILocationProvider>((ref) {
+  return LocationProvider();
 });
 
 final trackerSettingsRepositoryProvider = FutureProvider<ITrackerSettingsRepository>((ref) async {
@@ -96,6 +129,39 @@ final getStatsUseCaseProvider = FutureProvider<GetStatsUseCase>((ref) async {
   return GetStatsUseCase(await ref.watch(statsRepositoryProvider.future));
 });
 
+final getLastStatsSyncUseCaseProvider = FutureProvider<GetLastStatsSyncUsecase>((ref) async {
+  return GetLastStatsSyncUsecase(await ref.watch(statsRepositoryProvider.future));
+});
+
+final shouldRefreshStatsUseCaseProvider =
+FutureProvider<ShouldRefreshStatsUseCase>((ref) async {
+  final getLastSync = await ref.watch(getLastStatsSyncUseCaseProvider.future);
+  return ShouldRefreshStatsUseCase(getLastSync);
+});
+
+
+// --- Countries repositories ---
+
+final countriesDtoMapperProvider = Provider<VisitedCountriesDataMapper>((ref) {
+  return VisitedCountriesDataMapper();
+});
+
+final countriesUiMapperProvider = Provider<VisitedCountriesUiMapper>((ref) {
+  return VisitedCountriesUiMapper();
+});
+
+final countriesRepositoryProvider = FutureProvider<ICountriesRepository>((ref) async {
+  final dio = await ref.watch(dioClientProvider.future);
+  final mapper = ref.watch(countriesDtoMapperProvider);
+  return CountriesRepository(dio, mapper);
+});
+
+// --- Countries use case ---
+final getVisitedCountriesUseCaseProvider = FutureProvider<GetVisitedCountriesUseCase>((ref) async {
+  final repo = await ref.watch(countriesRepositoryProvider.future);
+  return GetVisitedCountriesUseCase(repo);
+});
+
 // --- Tracking usecases ---
 final storePointUseCaseProvider = FutureProvider<StorePointUseCase>((ref) async {
   final repo = await ref.watch(pointLocalRepositoryProvider.future);
@@ -112,10 +178,35 @@ final watchTrackerSettingsUseCaseProvider = FutureProvider<WatchTrackerSettingsU
   return WatchTrackerSettingsUseCase(repo);
 });
 
-final showTrackerNotificationUseCaseProvider = Provider<ShowTrackerNotificationUseCase>((ref) {
-  return ShowTrackerNotificationUseCase();
+final trackerNotificationServiceProvider = Provider<TrackerNotificationService>((ref) {
+  return TrackerNotificationService();
 });
 
+final initializeTrackerNotificationServiceUseCaseProvider =
+Provider<InitializeTrackerNotificationServiceUseCase>((ref) {
+  return InitializeTrackerNotificationServiceUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
+
+
+final showTrackerNotificationUseCaseProvider = Provider<ShowTrackerNotificationUseCase>((ref) {
+  return ShowTrackerNotificationUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
+
+final cancelTrackerNotificationUseCaseProvider = Provider<CancelTrackerNotificationUseCase>((ref) {
+  return CancelTrackerNotificationUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
+
+final wasLaunchedFromNotificationUseCaseProvider = Provider<WasLaunchedFromNotificationUseCase>((ref) {
+  return WasLaunchedFromNotificationUseCase(
+    ref.watch(trackerNotificationServiceProvider),
+  );
+});
 final getBatchPointCountUseCaseProvider = FutureProvider<GetBatchPointCountUseCase>((ref) async {
   final repo = await ref.watch(pointLocalRepositoryProvider.future);
   return GetBatchPointCountUseCase(repo);
@@ -131,54 +222,76 @@ final pointValidatorProvider = FutureProvider<PointValidator>((ref) async {
   return PointValidator(getSettings);
 });
 
-final createPointFromPositionUseCaseProvider = FutureProvider<CreatePointFromPositionUseCase>((ref) async {
+final createPointFromPositionUseCaseProvider = FutureProvider<CreatePointUseCase>((ref) async {
   final validator = await ref.watch(pointValidatorProvider.future);
-  return CreatePointFromPositionUseCase(
+  final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
+  return CreatePointUseCase(
     ref.watch(hardwareRepositoryProvider),
     await ref.watch(pointLocalRepositoryProvider.future),
     await ref.watch(trackRepositoryProvider.future),
     validator,
+    apiRepo,
   );
 });
 
 final createPointFromGpsWorkflowProvider = FutureProvider<CreatePointFromGpsWorkflow>((ref) async {
   final prefs = await ref.watch(getTrackerSettingsUseCaseProvider.future);
   final createFromPos = await ref.watch(createPointFromPositionUseCaseProvider.future);
-  return CreatePointFromGpsWorkflow(prefs, ref.watch(hardwareRepositoryProvider), createFromPos);
+  final locationProvider = ref.watch(locationProviderProvider);
+  return CreatePointFromGpsWorkflow(prefs, locationProvider, createFromPos);
 });
 
 final createPointFromCacheWorkflowProvider = FutureProvider<CreatePointFromCacheWorkflow>((ref) async {
   final createFromPos = await ref.watch(createPointFromPositionUseCaseProvider.future);
-  return CreatePointFromCacheWorkflow(ref.watch(hardwareRepositoryProvider), createFromPos);
+  final locationProvider = ref.watch(locationProviderProvider);
+  return CreatePointFromCacheWorkflow(locationProvider, createFromPos);
+});
+
+final createPointFromLocationStreamWorkflowProvider = FutureProvider<CreatePointFromLocationStreamWorkflow>((ref) async {
+  final getSettings = await ref.watch(getTrackerSettingsUseCaseProvider.future);
+  final locationProvider = ref.watch(locationProviderProvider);
+  final createFromPos = await ref.watch(createPointFromPositionUseCaseProvider.future);
+  return CreatePointFromLocationStreamWorkflow(getSettings, locationProvider, createFromPos);
 });
 
 final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((ref) async {
-  final watchSettings = await ref.watch(watchTrackerSettingsUseCaseProvider.future);
-  final createGps = await ref.watch(createPointFromGpsWorkflowProvider.future);
-  final createCache = await ref.watch(createPointFromCacheWorkflowProvider.future);
+  final createStream = await ref.watch(createPointFromLocationStreamWorkflowProvider.future);
   final storePoint = await ref.watch(storePointUseCaseProvider.future);
   final batchCount = await ref.watch(getBatchPointCountUseCaseProvider.future);
   final showNotif = ref.watch(showTrackerNotificationUseCaseProvider);
+  final watchSettings = await ref.watch(watchTrackerSettingsUseCaseProvider.future);
 
+  final getCurrentBatch = await ref.watch(getCurrentBatchUseCaseProvider.future);
+  final batchUploadWorkflow = await ref.watch(batchUploadWorkflowUseCaseProvider.future);
   final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
-  final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
-  final getSettings = await ref.watch(getTrackerSettingsUseCaseProvider.future);
-
-  final checkThreshold = CheckBatchThresholdUseCase(getSettings, localRepo);
-  final getCurrentBatch = GetCurrentBatchUseCase(localRepo);
-  final batchUploadWorkflow = BatchUploadWorkflowUseCase(apiRepo, localRepo);
 
   return PointAutomationService(
-    watchSettings,
-    createGps,
-    createCache,
+    createStream,
     storePoint,
     batchCount,
     showNotif,
-    checkThreshold,
     getCurrentBatch,
     batchUploadWorkflow,
+    watchSettings,
+    localRepo,
   );
+});
+
+final checkBatchThresholdUseCaseProvider = FutureProvider<CheckBatchThresholdUseCase>((ref) async {
+  final getSettings = await ref.watch(getTrackerSettingsUseCaseProvider.future);
+  final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
+  return CheckBatchThresholdUseCase(getSettings, localRepo);
+});
+
+final getCurrentBatchUseCaseProvider = FutureProvider<GetCurrentBatchUseCase>((ref) async {
+  final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
+  return GetCurrentBatchUseCase(localRepo);
+});
+
+final batchUploadWorkflowUseCaseProvider = FutureProvider<BatchUploadWorkflowUseCase>((ref) async {
+  final apiRepo = await ref.watch(apiPointRepositoryProvider.future);
+  final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
+  return BatchUploadWorkflowUseCase(apiRepo, localRepo);
 });
 
 // --- Timeline helpers / use cases ---

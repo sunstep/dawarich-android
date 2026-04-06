@@ -1,22 +1,23 @@
 import 'package:dawarich/core/routing/app_router.dart';
+import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-final class InitializeTrackerNotificationService {
-  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+final class InitializeTrackerNotificationServiceUseCase {
+  final TrackerNotificationService _service;
 
-  static bool _initialized = false;
+  InitializeTrackerNotificationServiceUseCase(this._service);
 
-  /// Stores the pending route payload if app was launched from notification
   static String? pendingNotificationRoute;
 
-  /// Initialize notification plugin and check for launch details.
-  /// Should be called once during app boot.
   Future<void> call() async {
-    if (_initialized) return;
-    _initialized = true;
+    await _service.init(
+      onTap: (NotificationResponse response) {
+        final payload = response.payload;
+        if (payload == null) {
+          return;
+        }
 
     const androidSettings =
         AndroidInitializationSettings('ic_bg_service_small');

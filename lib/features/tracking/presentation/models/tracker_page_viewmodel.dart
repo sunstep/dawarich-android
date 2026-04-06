@@ -14,6 +14,7 @@ import 'package:dawarich/features/tracking/application/usecases/track/end_track_
 import 'package:dawarich/features/tracking/application/usecases/track/get_active_track_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/track/start_track_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/track/watch_batch_point_count_usecase.dart';
+import 'package:dawarich/features/tracking/domain/enum/location_precision.dart';
 import 'package:dawarich/features/tracking/domain/models/last_point.dart';
 import 'package:dawarich/core/domain/models/point/local/local_point.dart';
 import 'package:dawarich/features/tracking/domain/models/track.dart';
@@ -25,8 +26,6 @@ import 'package:dawarich/features/batch/presentation/models/local_point_viewmode
 import 'package:dawarich/features/tracking/presentation/models/track_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dawarich/features/tracking/presentation/models/last_point_viewmodel.dart';
-import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:option_result/option_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -176,6 +175,7 @@ final class TrackerPageViewModel extends ChangeNotifier
   bool _isUpdatingTracking = false;
   bool get isTrackingAutomatically => _isTrackingAutomatically;
   bool get isUpdatingTracking => _isUpdatingTracking;
+  bool get showDotPulseLoading => _isUpdatingTracking;
 
   final _consentPromptController = StreamController<String>.broadcast();
   Stream<String> get onConsentPrompt => _consentPromptController.stream;
@@ -190,9 +190,9 @@ final class TrackerPageViewModel extends ChangeNotifier
   int _trackingFrequency = 10; // in seconds
   int get trackingFrequency => _trackingFrequency;
 
-  LocationAccuracy _locationAccuracy =
-      Platform.isAndroid ? LocationAccuracy.high : LocationAccuracy.best;
-  LocationAccuracy get locationAccuracy => _locationAccuracy;
+  LocationPrecision _locationAccuracy =
+      Platform.isAndroid ? LocationPrecision.high : LocationPrecision.best;
+  LocationPrecision get locationAccuracy => _locationAccuracy;
 
   int _minimumPointDistance = 0;
   int get minimumPointDistance => _minimumPointDistance;
@@ -200,7 +200,9 @@ final class TrackerPageViewModel extends ChangeNotifier
   String _deviceId = "";
   String get deviceId => _deviceId;
 
-  final TextEditingController deviceIdController = TextEditingController();
+  int? _batchExpirationMinutes;
+  int? get batchExpirationMinutes => _batchExpirationMinutes;
+
 
   Future<void> initialize() async {
     Stream<Option<LastPoint>> lastPointStream = _streamLastPoint(userId);
@@ -241,13 +243,11 @@ final class TrackerPageViewModel extends ChangeNotifier
     _isTrackingAutomatically = s.automaticTracking;
     _maxPointsPerBatch = s.pointsPerBatch;
     _trackingFrequency = s.trackingFrequency;
-    _locationAccuracy = s.locationAccuracy;
+    _locationAccuracy = s.locationPrecision;
     _minimumPointDistance = s.minimumPointDistance;
+    _batchExpirationMinutes = s.batchExpirationMinutes;
     _deviceId = s.deviceId;
 
-    if (!isDisposed) {
-      deviceIdController.text = s.deviceId;
-    }
     safeNotifyListeners();
   }
 
@@ -354,6 +354,20 @@ final class TrackerPageViewModel extends ChangeNotifier
     await _saveTrackerSettings(updated);
   }
 
+  /// Sets the batch expiration in minutes. Pass `null` to disable.
+  Future<void> setBatchExpirationMinutes(int? minutes) async {
+    final trackerSettingsCopy = _trackerSettings;
+    if (trackerSettingsCopy == null) return;
+
+    final updated = trackerSettingsCopy.copyWith(
+      batchExpirationMinutes: () => minutes,
+    );
+
+    _applySettings(updated);
+    await _saveTrackerSettings(updated);
+  }
+
+
   Future<bool> requestConsentFromUser(String message) {
     _consentResponseCompleter = Completer<bool>();
     _consentPromptController.add(message);
@@ -439,8 +453,8 @@ final class TrackerPageViewModel extends ChangeNotifier
     if (_isUpdatingTracking) {
       return Err("Tracking update already in progress.");
     }
-
     setIsUpdatingTracking(true);
+    await Future.delayed(const Duration(milliseconds: 500));
     setAutomaticTracking(enable);
 
     if (enable) {
@@ -552,14 +566,15 @@ final class TrackerPageViewModel extends ChangeNotifier
     await _saveTrackerSettings(updated);
   }
 
-  Future<void> setLocationAccuracy(LocationAccuracy accuracy) async {
+  Future<void> setLocationAccuracy(LocationPrecision accuracy) async {
+
     final TrackerSettings? copy = _trackerSettings;
 
     if (copy == null) {
       return;
     }
 
-    final updated = copy.copyWith(locationAccuracy: accuracy);
+    final updated = copy.copyWith(locationPrecision: accuracy);
     _applySettings(updated);
     await _saveTrackerSettings(updated);
   }
@@ -604,23 +619,17 @@ final class TrackerPageViewModel extends ChangeNotifier
   List<Map<String, dynamic>> get accuracyOptions {
     if (Platform.isIOS) {
       return [
-        {"label": "Reduced", "value": LocationAccuracy.reduced},
-        {"label": "Lowest", "value": LocationAccuracy.lowest},
-        {"label": "Low", "value": LocationAccuracy.low},
-        {"label": "Medium", "value": LocationAccuracy.medium},
-        {"label": "High", "value": LocationAccuracy.high},
-        {"label": "Best", "value": LocationAccuracy.best},
-        {
-          "label": "Best for Navigation",
-          "value": LocationAccuracy.bestForNavigation
-        },
+        {"label": "Low Power", "value": LocationPrecision.lowPower},
+        {"label": "Balanced", "value": LocationPrecision.balanced},
+        {"label": "High", "value": LocationPrecision.high},
+        {"label": "Best", "value": LocationPrecision.best},
       ];
     } else if (Platform.isAndroid) {
       return [
-        {"label": "Lowest", "value": LocationAccuracy.lowest},
-        {"label": "Low", "value": LocationAccuracy.low},
-        {"label": "Medium", "value": LocationAccuracy.medium},
-        {"label": "High", "value": LocationAccuracy.high},
+        {"label": "Low Power", "value": LocationPrecision.lowPower},
+        {"label": "Balanced", "value": LocationPrecision.balanced},
+        {"label": "High", "value": LocationPrecision.high},
+        {"label": "Best", "value": LocationPrecision.best},
       ];
     }
     return [];
@@ -636,7 +645,6 @@ final class TrackerPageViewModel extends ChangeNotifier
     _lastPointSub?.cancel();
     _batchCountSub?.cancel();
     _consentPromptController.close();
-    deviceIdController.dispose();
     super.dispose();
   }
 }

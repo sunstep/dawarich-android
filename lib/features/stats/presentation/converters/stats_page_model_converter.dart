@@ -1,8 +1,8 @@
 
 
-import 'package:dawarich/features/stats/domain/stats.dart';
+import 'package:dawarich/features/stats/domain/stats/stats.dart';
 import 'package:dawarich/features/stats/presentation/converters/yearly_stats_converter.dart';
-import 'package:dawarich/features/stats/presentation/models/stats_uimodel.dart';
+import 'package:dawarich/features/stats/presentation/models/stats/stats_uimodel.dart';
 
 extension StatsPageDomainToViewModelConverter on Stats {
   StatsUiModel toUiModel() {

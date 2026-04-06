@@ -1,0 +1,7 @@
+Full and more detailed release notes always available at the GitHub repository!
+
+v0.17.2
+
+* Fixed some issues in tracker notification logic, to hopefully make it more reliable
+
+Read the full changelog at GitHub

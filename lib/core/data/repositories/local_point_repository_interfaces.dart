@@ -14,4 +14,12 @@ abstract interface class IPointLocalRepository {
   Future<int> markBatchAsUploaded(int userId, List<int> pointIds);
   Future<int> deletePoints(int userId, List<int> pointIds);
   Future<int> clearBatch(int userId);
+
+  /// Deletes all uploaded points except the most recent one.
+  /// The last point is kept (marked as uploaded) for validation reference.
+  Future<int> deleteUploadedPointsExceptLast(int userId);
+
+  /// Returns the timestamp of the oldest un-uploaded point for a user,
+  /// or null if there are no pending points.
+  Future<DateTime?> getOldestUnUploadedPointTimestamp(int userId);
 }

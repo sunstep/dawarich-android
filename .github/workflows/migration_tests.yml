@@ -1,53 +1,146 @@
 name: Migration Tests
 
 on:
-  push:
-    branches: [ main, dev ]
-    paths:
-      - '../../lib/core/data/drift/**'
-      - 'test/core/database/drift/**'
-      - 'drift_schemas/**'
+  workflow_dispatch:
   pull_request:
     branches: [ main, dev ]
-    paths:
-      - '../../lib/core/data/drift/**'
-      - 'test/core/database/drift/**'
-      - 'drift_schemas/**'
 
 jobs:
-  test-migrations:
+  detect-migration:
     runs-on: ubuntu-latest
-
+    outputs:
+      schema_version_changed: ${{ steps.detect.outputs.schema_version_changed }}
+      schema_files_changed: ${{ steps.detect.outputs.schema_files_changed }}
+      schemas_changed: ${{ steps.detect.outputs.schemas_changed }}
+      tests_changed: ${{ steps.detect.outputs.tests_changed }}
+      should_run_tests: ${{ steps.detect.outputs.should_run_tests }}
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.38.x'
-        channel: 'stable'
+      - id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    - name: Get dependencies
-      run: flutter pub get
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
 
-    - name: Generate Drift code
-      run: dart run build_runner build --delete-conflicting-outputs
+            MERGE_BASE="$(git merge-base "$BASE" "$HEAD")"
+            echo "PR base=$BASE"
+            echo "PR head=$HEAD"
+            echo "merge-base=$MERGE_BASE"
 
-    - name: Generate schema files (if not committed)
-      run: |
-        if [ ! -d "drift_schemas" ]; then
-          echo "Generating schema files..."
-          dart run drift_dev schema dump lib/core/database/drift/database/sqlite_client.dart drift_schemas/
-        else
-          echo "Schema files already exist"
-        fi
+            CHANGED="$(git diff --name-only "$MERGE_BASE" "$HEAD" || true)"
+          else
+            echo "schema_version_changed=true" >> "$GITHUB_OUTPUT"
+            echo "schema_files_changed=true" >> "$GITHUB_OUTPUT"
+            echo "schemas_changed=true" >> "$GITHUB_OUTPUT"
+            echo "tests_changed=true" >> "$GITHUB_OUTPUT"
+            echo "should_run_tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-    - name: Run migration tests
-      run: flutter test test/core/database/drift/schema_verification_test.dart
+          echo "Changed files:"
+          echo "$CHANGED"
 
-    - name: Upload test results
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: test/failures/
+          SCHEMA_VERSION_CHANGED="false"
+          SCHEMA_FILES_CHANGED="false"
+          SCHEMAS_CHANGED="false"
+          TESTS_CHANGED="false"
+
+          if git diff "$MERGE_BASE" "$HEAD" -- lib/core/data/drift/sqlite_client.dart | grep -q 'kSchemaVersion'; then
+            SCHEMA_VERSION_CHANGED="true"
+          fi
+
+          if echo "$CHANGED" | grep -E -q '^lib/core/data/drift/(tables/|migrations/|.*\.drift$)'; then
+            SCHEMA_FILES_CHANGED="true"
+          fi
+
+          if echo "$CHANGED" | grep -E -q '^drift_schemas/'; then
+            SCHEMAS_CHANGED="true"
+          fi
+
+          if echo "$CHANGED" | grep -E -q '^test/drift/'; then
+            TESTS_CHANGED="true"
+          fi
+
+          SHOULD_RUN="false"
+          if [[ "$SCHEMA_VERSION_CHANGED" == "true" || "$SCHEMA_FILES_CHANGED" == "true" || "$SCHEMAS_CHANGED" == "true" || "$TESTS_CHANGED" == "true" ]]; then
+            SHOULD_RUN="true"
+          fi
+
+          echo "schema_version_changed=$SCHEMA_VERSION_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "schema_files_changed=$SCHEMA_FILES_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "schemas_changed=$SCHEMAS_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "tests_changed=$TESTS_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "should_run_tests=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+
+          echo "Detected:"
+          echo "  schema_version_changed=$SCHEMA_VERSION_CHANGED"
+          echo "  schema_files_changed=$SCHEMA_FILES_CHANGED"
+          echo "  schemas_changed=$SCHEMAS_CHANGED"
+          echo "  tests_changed=$TESTS_CHANGED"
+          echo "  should_run_tests=$SHOULD_RUN"
+
+  enforce-snapshots:
+    needs: detect-migration
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' && (needs.detect-migration.outputs.schema_version_changed == 'true' || needs.detect-migration.outputs.schema_files_changed == 'true') && needs.detect-migration.outputs.schemas_changed != 'true' }}
+    steps:
+      - name: Fail if schema-affecting Drift files changed without updated snapshots
+        shell: bash
+        run: |
+          echo "❌ Schema-affecting Drift files changed, but drift_schemas/ did NOT change."
+          echo "Please run your drift schema dump / make_migrations flow and commit updated snapshots."
+          exit 1
+
+  enforce-version-bump:
+    needs: detect-migration
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' && needs.detect-migration.outputs.schema_files_changed == 'true' && needs.detect-migration.outputs.schema_version_changed != 'true' }}
+    steps:
+      - name: Fail if schema files changed without bumping schema version
+        shell: bash
+        run: |
+          echo "❌ Schema-affecting Drift files changed, but kSchemaVersion did NOT change."
+          echo "If this was a real schema change, bump the schema version."
+          exit 1
+
+  test-migrations:
+    needs: [detect-migration, enforce-snapshots, enforce-version-bump]
+    runs-on: ubuntu-latest
+    if: >-
+      ${{
+        always() &&
+        (github.event_name == 'workflow_dispatch' || needs.detect-migration.outputs.should_run_tests == 'true') &&
+        (needs.enforce-snapshots.result == 'success' || needs.enforce-snapshots.result == 'skipped') &&
+        (needs.enforce-version-bump.result == 'success' || needs.enforce-version-bump.result == 'skipped')
+      }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter (from .flutter-version)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .flutter-version
+          channel: stable
+          cache: 'true'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run migration tests
+        run: flutter test test/drift
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test/failures/

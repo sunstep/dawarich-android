@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 /// Provides access to native build configuration.
 /// This exposes compile-time values set in Android's BuildConfig.
 class BuildConfigChannel {
-  static const _channel = MethodChannel('com.sunstep.dawarich/build_config');
+  static const _channel = MethodChannel('com.sunstep.travel/build_config');
 
   /// Gets the distribution flavor ('gms' or 'foss').
   /// This is a compile-time constant set via buildConfigField in gradle.

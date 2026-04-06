@@ -261,7 +261,7 @@ class _TimelinePageState extends ConsumerState<TimelineView> with TickerProvider
             TileLayer(
               urlTemplate:
                   'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.sunstep.dawarich',
+              userAgentPackageName: 'com.sunstep.travel',
               maxNativeZoom: 19,
             ),
             // --- API points (historical) ---

@@ -335,6 +335,26 @@ final class BackgroundTrackingService {
         : Err("Failed to start background service.");
   }
 
+  /// Starts the background service without performing permission or location-
+  /// service checks.
+  ///
+  /// Use this from contexts where permissions are already known to be granted
+  /// (WorkManager watchdog, app-resume check). Those contexts cannot request
+  /// permissions and would incorrectly abort the restart if, for example, the
+  /// system reports location services as temporarily unavailable.
+  static Future<bool> startServiceDirect() async {
+    await installConfigurationOnce();
+
+    final isRunning = await FlutterBackgroundService().isRunning();
+    if (isRunning) {
+      debugPrint('[BackgroundService] startServiceDirect: already running.');
+      return true;
+    }
+
+    debugPrint('[BackgroundService] startServiceDirect: starting service...');
+    return FlutterBackgroundService().startService();
+  }
+
   static Future<bool> isRunning() async {
     return FlutterBackgroundService().isRunning();
   }

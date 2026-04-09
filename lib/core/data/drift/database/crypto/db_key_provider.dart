@@ -2,6 +2,7 @@
 
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final class DbKeyProvider {
@@ -11,7 +12,16 @@ final class DbKeyProvider {
 
   Future<String> getOrCreateHexKey() async {
 
-    final String? e = await _ss.read(key: _k);
+
+    String? e;
+    try {
+      e = await _ss.read(key: _k).timeout(const Duration(seconds: 5));
+    } catch (err) {
+      if (kDebugMode) {
+        debugPrint('[DbKeyProvider] SecureStorage read timed out or failed: $err');
+      }
+      rethrow;
+    }
 
     if (e != null && e.isNotEmpty) {
       return e;
@@ -22,10 +32,15 @@ final class DbKeyProvider {
     final String hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0'))
         .join();
 
-    await _ss.write(
-      key: _k,
-      value: hex,
-    );
+    try {
+      await _ss.write(key: _k, value: hex)
+          .timeout(const Duration(seconds: 5));
+    } catch (err) {
+      if (kDebugMode) {
+        debugPrint('[DbKeyProvider] SecureStorage write timed out or failed: $err');
+      }
+      rethrow;
+    }
     return hex;
   }
 

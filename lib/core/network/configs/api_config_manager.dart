@@ -17,8 +17,22 @@ final class ApiConfigManager implements IApiConfigManager, IApiConfigLogout {
 
   @override
   Future<void> load() async {
-    final host = await _secureStorage.read(key: 'host', iOptions: _iOS);
-    final apiKey = await _secureStorage.read(key: 'apiKey', iOptions: _iOS);
+    String? host;
+    String? apiKey;
+    try {
+      host = await _secureStorage
+          .read(key: 'host', iOptions: _iOS)
+          .timeout(const Duration(seconds: 5));
+      apiKey = await _secureStorage
+          .read(key: 'apiKey', iOptions: _iOS)
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ApiConfigManager] SecureStorage read timed out or failed: $e');
+      }
+      _apiConfig = null;
+      return;
+    }
 
     if (host != null && host.trim().isNotEmpty) {
       _apiConfig = ApiConfig(host: host.trim(), apiKey: apiKey?.trim());

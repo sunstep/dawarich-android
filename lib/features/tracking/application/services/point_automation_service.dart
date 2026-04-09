@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:async';
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
@@ -28,13 +27,6 @@ final class PointAutomationService {
   Timer? _activeSilenceTimer;
   DateTime? _lastPointTime;
   int _lastKnownBatchCount = 0;
-  int _recoveryAttempt = 0;
-
-  /// Maximum consecutive stream recovery attempts before giving up.
-  /// After this, the service stays alive (notification visible) but stops
-  /// retrying. The 15-min WorkManager watchdog will eventually restart it
-  /// with a clean state.
-  static const _maxRecoveryAttempts = 10;
 
   /// Heartbeat interval for re-posting the notification so aggressive OEMs
   /// Uses the cached batch count — no DB query.
@@ -85,7 +77,6 @@ final class PointAutomationService {
     _isTracking = true;
     _currentUserId = userId;
     _lastPointTime = null;
-    _recoveryAttempt = 0;
     await _refreshNotification(userId);
 
     _trackerIntelligenceService.reset();
@@ -300,28 +291,12 @@ final class PointAutomationService {
       return;
     }
 
-    _recoveryAttempt++;
-
-    if (_recoveryAttempt > _maxRecoveryAttempts) {
-      debugPrint(
-        "[PointAutomation] Stream recovery exhausted ($_maxRecoveryAttempts attempts). "
-        "Giving up — watchdog will restart the service.",
-      );
-      return;
-    }
-
-    // Exponential backoff: 2s, 4s, 8s, 16s, 32s, 64s, 128s, 256s, capped at 300s (5 min).
-    final delaySec = math.min(math.pow(2, _recoveryAttempt).toInt(), 300);
-
     try {
       if (kDebugMode) {
-        debugPrint(
-          "[PointAutomation] Scheduling stream recovery (attempt $_recoveryAttempt) "
-          "due to: $reason — waiting ${delaySec}s",
-        );
+        debugPrint("[PointAutomation] Scheduling stream recovery due to: $reason");
       }
 
-      await Future<void>.delayed(Duration(seconds: delaySec));
+      await Future<void>.delayed(const Duration(seconds: 2));
 
       if (!_isTracking || _currentUserId != userId) {
         if (kDebugMode) {
@@ -382,7 +357,6 @@ final class PointAutomationService {
     _currentSettings = null;
     _lastPointTime = null;
     _lastKnownBatchCount = 0;
-    _recoveryAttempt = 0;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
     _cancelActiveSilenceTimer();
@@ -417,10 +391,6 @@ final class PointAutomationService {
   /// picks up the count change and triggers the upload when the threshold
   /// is met.
   Future<void> _handleLocationUpdate(TrackingSample sample, int userId) async {
-    // A location update arrived — the stream is healthy. Reset the backoff
-    // counter so the next failure starts from a short delay again.
-    _recoveryAttempt = 0;
-
     try {
       final previousMode = _autoTrackingRuntimeMode;
       final nextMode = _trackerIntelligenceService.evaluateFix(sample.fix);

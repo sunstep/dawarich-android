@@ -27,18 +27,7 @@ class BackgroundTrackingEntry {
 
     final container = ProviderContainer();
     // Ensure core deps are ready in background isolate.
-    // Timeout prevents the service from hanging indefinitely if the DB
-    // isolate can't be reached (e.g. IsolateNameServer race between the
-    // foreground and background FlutterEngines). On timeout, the caller's
-    // retry loop will dispose this container and create a fresh one.
-    await container.read(coreProvider.future).timeout(
-      const Duration(seconds: 15),
-      onTimeout: () {
-        throw TimeoutException(
-          'Core provider initialization timed out in background isolate',
-        );
-      },
-    );
+    await container.read(coreProvider.future);
     _container = container;
     return container;
   }
@@ -123,20 +112,8 @@ class BackgroundTrackingEntry {
       debugPrint('[Background] Starting background tracking...');
     }
 
-    // Wrap the critical provider resolution + tracking start in try/catch.
-    // Without this, an error in the deep provider chain (e.g. DB isolate
-    // timeout, Drift migration failure) propagates out of the unawaited
-    // fire-and-forget block in the entrypoint. The outer catch calls
-    // shutdown() but in some edge cases the exception bypasses it entirely,
-    // leaving the service alive but non-functional (zombie service).
-    try {
-      final automation = await container.read(pointAutomationServiceProvider.future);
-      await automation.startTracking(userId);
-    } catch (e, s) {
-      debugPrint('[Background] Failed to start tracking ($e) → shutting down.\n$s');
-      await shutdown(backgroundService, 'startTracking failed: $e');
-      return;
-    }
+    final automation = await container.read(pointAutomationServiceProvider.future);
+    await automation.startTracking(userId);
 
     try {
       final checkExpiredBatch =
@@ -272,36 +249,21 @@ final class BackgroundTrackingService {
 
     await ensureNotificationChannelExists();
 
-    // FlutterBackgroundService.configure() is a platform-channel call that
-    // can deadlock when the service was already started by the platform
-    // (autoStartOnBoot). The _configured flag is per-Dart-isolate, so it's
-    // always false in a fresh foreground process even when the platform
-    // service is alive. Wrapping configure() in a timeout prevents the
-    // splash screen from freezing indefinitely in that scenario.
-    try {
-      await FlutterBackgroundService().configure(
-        androidConfiguration: AndroidConfiguration(
-          onStart: backgroundTrackingEntry,
-          autoStartOnBoot: true,
-          isForegroundMode: true,
-          foregroundServiceTypes: [AndroidForegroundType.location],
-          autoStart: false,
-          foregroundServiceNotificationId: NotificationConstants.notificationId,
-          notificationChannelId: NotificationConstants.channelId,
-        ),
-        iosConfiguration: IosConfiguration(
-          onForeground: backgroundTrackingEntry,
-          onBackground: (_) async => true,
-        ),
-      ).timeout(const Duration(seconds: 8));
-    } on TimeoutException {
-      debugPrint('[BackgroundService] configure() timed out — likely already running via autoStartOnBoot.');
-      // Don't set _configured — a subsequent call can retry.
-      return;
-    } catch (e) {
-      debugPrint('[BackgroundService] configure() failed: $e');
-      return;
-    }
+    await FlutterBackgroundService().configure(
+      androidConfiguration: AndroidConfiguration(
+        onStart: backgroundTrackingEntry,
+        autoStartOnBoot: true,
+        isForegroundMode: true,
+        foregroundServiceTypes: [AndroidForegroundType.location],
+        autoStart: false,
+        foregroundServiceNotificationId: NotificationConstants.notificationId,
+        notificationChannelId: NotificationConstants.channelId,
+      ),
+      iosConfiguration: IosConfiguration(
+        onForeground: backgroundTrackingEntry,
+        onBackground: (_) async => true,
+      ),
+    );
 
     _configured = true;
   }
@@ -318,25 +280,21 @@ final class BackgroundTrackingService {
     _starting = Completer<void>();
 
     try {
-      final service = FlutterBackgroundService();
-
-      // Check isRunning() before configure() to avoid a platform-channel
-      // deadlock when the service was already auto-started on boot.
-      if (await service.isRunning()) {
-        _starting!.complete();
-        return;
-      }
-
       await installConfigurationOnce();
 
-      await service.startService();
+      final service = FlutterBackgroundService();
 
-      final ready = Completer<void>();
-      final sub = service.on('ready').listen((_) {
-        if (!ready.isCompleted) ready.complete();
-      });
-      await ready.future.timeout(const Duration(seconds: 5), onTimeout: () {});
-      await sub.cancel();
+      if (!await service.isRunning()) {
+        await service.startService();
+
+        final ready = Completer<void>();
+        final sub = service.on('ready').listen((_) {
+          if (!ready.isCompleted) ready.complete();
+        });
+        await ready.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+        await sub.cancel();
+      }
+
 
       _starting!.complete();
     } catch (e, s) {
@@ -363,47 +321,18 @@ final class BackgroundTrackingService {
       return Err("Background location permission is required.");
     }
 
-    // Check isRunning() BEFORE installConfigurationOnce().
-    // FlutterBackgroundService().configure() is a platform-channel call that
-    // can deadlock when the service was already started (e.g. autoStartOnBoot).
-    // The _configured flag is per-Dart-isolate, so it's always false in a fresh
-    // foreground process even if the platform service is already running.
-    // Checking isRunning() first avoids calling configure() entirely when
-    // the service is already alive — fixing the splash-screen freeze.
+    await installConfigurationOnce();
+
     final isRunning = await FlutterBackgroundService().isRunning();
     if (isRunning) {
       debugPrint('[BackgroundService] Already running — skipping start.');
       return Ok(());
     }
 
-    await installConfigurationOnce();
-
     final started = await FlutterBackgroundService().startService();
     return started
         ? Ok(())
         : Err("Failed to start background service.");
-  }
-
-  /// Starts the background service without performing permission or location-
-  /// service checks.
-  ///
-  /// Use this from contexts where permissions are already known to be granted
-  /// (WorkManager watchdog, app-resume check). Those contexts cannot request
-  /// permissions and would incorrectly abort the restart if, for example, the
-  /// system reports location services as temporarily unavailable.
-  static Future<bool> startServiceDirect() async {
-    // Check isRunning() first to avoid a potential configure() deadlock
-    // when the platform service is already alive (see start() comment).
-    final isRunning = await FlutterBackgroundService().isRunning();
-    if (isRunning) {
-      debugPrint('[BackgroundService] startServiceDirect: already running.');
-      return true;
-    }
-
-    await installConfigurationOnce();
-
-    debugPrint('[BackgroundService] startServiceDirect: starting service...');
-    return FlutterBackgroundService().startService();
   }
 
   static Future<bool> isRunning() async {

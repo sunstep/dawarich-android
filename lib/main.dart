@@ -11,12 +11,14 @@ late final AppRouter appRouter;
 final container = ProviderContainer();
 
 Future<void> main() async {
+  debugPrint('[main] Dart entrypoint reached');
 
   BindingBase.debugZoneErrorsAreFatal = true;
 
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      debugPrint('[main] WidgetsBinding initialized');
 
       FlutterError.onError = (FlutterErrorDetails details) {
         debugPrint('[FlutterError] ${details.exceptionAsString()}');
@@ -34,14 +36,16 @@ Future<void> main() async {
         return true;
       };
 
-      if (kDebugMode) {
-        debugPrint('[App] Initialization completed successfully');
-      }
-
       appRouter = AppRouter(container);
 
+      debugPrint('[main] Calling runApp');
       runApp(UncontrolledProviderScope(container: container, child: const Dawarich()));
+      debugPrint('[main] runApp returned — first frame scheduled');
 
+      // Log when the first frame actually renders (post-frame callback).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        debugPrint('[main] First frame rendered');
+      });
     }, (Object error, StackTrace stack) {
       debugPrint('[ZonedError] $error');
       debugPrint(stack.toString());

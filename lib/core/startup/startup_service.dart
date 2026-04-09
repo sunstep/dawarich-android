@@ -31,13 +31,45 @@ final class StartupService {
       debugPrint('[StartupService] Initializing app...');
     }
 
-    final initNotif = container.read(initializeTrackerNotificationServiceUseCaseProvider);
-    await initNotif();
+    // Guard notification init with a timeout6 this is a platform-channel
+    // call that should be fast but has no protection otherwise.
+    try {
+      final initNotif = container.read(initializeTrackerNotificationServiceUseCaseProvider);
+      await initNotif().timeout(const Duration(seconds: 3));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[StartupService] Notification init failed/timed out (non-critical): $e');
+      }
+    }
 
+    // Guard session box creation with a timeout. DawarichAndroidUserModule.create()
+    // may open storage (Hive/similar) that can contend with the background service's
+    // session box when both Dart isolates are in the same process. Without a timeout,
+    // a file-lock contention here causes an infinite hang.
+    final DawarichAndroidUserModule<User> sessionService;
+    try {
+      sessionService = await container
+          .read(sessionBoxProvider.future)
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[StartupService] Session box creation failed/timed out: $e');
+      }
+      appRouter.replaceAll([const AuthRoute()]);
+      return;
+    }
 
-    final DawarichAndroidUserModule<User> sessionService =
-        await container.read(sessionBoxProvider.future);
-    final User? refreshedSessionUser = await sessionService.refreshSession();
+    final User? refreshedSessionUser;
+    try {
+      refreshedSessionUser = await sessionService.refreshSession()
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[StartupService] Session refresh failed/timed out: $e');
+      }
+      appRouter.replaceAll([const AuthRoute()]);
+      return;
+    }
 
     if (refreshedSessionUser != null) {
       if (kDebugMode) {

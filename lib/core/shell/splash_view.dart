@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:auto_route/annotations.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/di/providers/core_providers.dart';
 import 'package:dawarich/core/routing/app_router.dart';
 import 'package:dawarich/core/startup/startup_service.dart';
@@ -108,6 +109,13 @@ class _SplashPageState extends ConsumerState<SplashView> {
           debugPrint('[SplashPage] Timeout - invalidating providers and retrying...');
         }
 
+        // Clear stale Drift IsolateNameServer mapping and cached instance
+        // so the retry doesn't re-watch the same stuck future. This is
+        // critical when the background service's Drift isolate is busy —
+        // without this, the retry re-watches sqliteClientProvider which
+        // is still awaiting the old (timed-out) connectSharedIsolate().
+        SQLiteClient.resetSharedState();
+        ref.invalidate(sqliteClientProvider);
         ref.invalidate(coreProvider);
         _hasStartedBoot = false;
         await Future.delayed(const Duration(milliseconds: 500));

@@ -11,6 +11,7 @@ import 'package:dawarich/features/tracking/application/services/background_track
 import 'package:dawarich/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final class AppLifecycleController with WidgetsBindingObserver {
@@ -22,15 +23,33 @@ final class AppLifecycleController with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       AppLockTimestampTracker.instance.onPaused();
+      // Tell the background service it can resume the motion detector.
+      _notifyBackgroundServiceAppState(foregrounded: false);
     }
 
     if (state == AppLifecycleState.resumed) {
       _container.read(statsAutoRefreshCoordinatorProvider).onAppResumed();
       _checkBiometricLockOnResume();
       unawaited(_restartTrackerIfNeeded());
+      // Tell the background service to pause the motion detector while the
+      // main-app engine is active (reduces Dart-VM pressure on next launch).
+      _notifyBackgroundServiceAppState(foregrounded: true);
     }
   }
 
+  /// Sends an `appForegrounded` or `appBackgrounded` event to the background
+  /// service so it can pause/resume the motion detector accordingly.
+  /// Fire-and-forget — failures are silently ignored.
+  void _notifyBackgroundServiceAppState({required bool foregrounded}) {
+    try {
+      FlutterBackgroundService().invoke(
+        foregrounded ? 'appForegrounded' : 'appBackgrounded',
+        {},
+      );
+    } catch (_) {
+      // Service may not be running — that's fine.
+    }
+  }
 
   Future<void> _checkBiometricLockOnResume() async {
     try {

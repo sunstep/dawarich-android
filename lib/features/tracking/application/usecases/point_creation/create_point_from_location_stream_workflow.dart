@@ -120,7 +120,12 @@ final class CreatePointFromLocationStreamWorkflow {
       return baseInterval;
     }
 
-    return const Duration(seconds: 15);
+    // Passive mode: poll GPS much less frequently.  The MotionDetectorService
+    // watches the accelerometer at near-zero battery cost and triggers an
+    // immediate one-shot fix when sustained motion is detected, so the 60 s
+    // interval here is just a periodic heartbeat — real wakeups come from
+    // the sensor.
+    return const Duration(seconds: 60);
   }
 
   /// Auto mode: track when the device has moved a meaningful distance.

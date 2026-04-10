@@ -35,6 +35,20 @@ final class TrackerIntelligenceService {
     _isOnWifi = false;
   }
 
+  /// Called by the motion detector to record that physical motion was observed
+  /// before a confirming GPS fix is available.
+  ///
+  /// Seeding [_lastMeaningfulMovementTime] here prevents the active-silence
+  /// timer (which starts on the first GPS fix after a mode switch) from
+  /// expiring prematurely in the gap between the accelerometer event and the
+  /// first active-mode GPS fix.  If the subsequent GPS fixes do not confirm
+  /// real movement the timer will still fire after [passiveAfterStillness] and
+  /// revert to passive normally.
+  void notifyMotion(DateTime atTime) {
+    _lastMeaningfulMovementTime = atTime;
+    _currentMode = AutoTrackingRuntimeMode.active;
+  }
+
   /// Called whenever the device's network connectivity changes.
   ///
   /// Returns the new [AutoTrackingRuntimeMode] so the caller can decide

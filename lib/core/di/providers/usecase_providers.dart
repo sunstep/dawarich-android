@@ -18,6 +18,7 @@ import 'package:dawarich/features/stats/data/sources/local/stats_local_data_sour
 import 'package:dawarich/features/stats/data/sources/remote/stats_remote_data_source.dart';
 import 'package:dawarich/features/stats/presentation/converters/countries_mapper.dart';
 import 'package:dawarich/features/tracking/application/repositories/location_provider_interface.dart';
+import 'package:dawarich/features/tracking/application/services/motion_detector_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_intelligence_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracking_notification_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/cancel_tracker_notification_usecase.dart';
@@ -269,6 +270,12 @@ final trackerIntelligenceServiceProvider = FutureProvider<TrackerIntelligenceSer
   return TrackerIntelligenceService();
 });
 
+final motionDetectorServiceProvider = Provider<MotionDetectorService>((ref) {
+  final service = MotionDetectorService();
+  ref.onDispose(service.dispose);
+  return service;
+});
+
 final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((ref) async {
   final createStream = await ref.watch(createPointFromLocationStreamWorkflowProvider.future);
   final storePoint = await ref.watch(storePointUseCaseProvider.future);
@@ -282,6 +289,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
 
   final trackerIntelligenceService = await ref.watch(trackerIntelligenceServiceProvider.future);
   final hardwareRepo = ref.watch(hardwareRepositoryProvider);
+  final motionDetector = ref.watch(motionDetectorServiceProvider);
 
   return PointAutomationService(
     createStream,
@@ -294,6 +302,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
     localRepo,
     trackerIntelligenceService,
     hardwareRepo,
+    motionDetector,
   );
 });
 

@@ -4,6 +4,7 @@ import 'package:dawarich/core/data/repositories/local_point_repository_interface
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
+import 'package:dawarich/features/tracking/application/services/motion_detector_service.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_intelligence_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
@@ -25,12 +26,27 @@ final class PointAutomationService {
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
   StreamSubscription<int>? _batchCountSub;
   StreamSubscription<void>? _connectivitySub;
+  StreamSubscription<void>? _motionSub;
   TrackerSettings? _currentSettings;
   Timer? _heartbeatTimer;
   Timer? _activeSilenceTimer;
   DateTime? _lastPointTime;
   int _lastKnownBatchCount = 0;
   int _recoveryAttempt = 0;
+
+  /// When `true` the main-app Flutter engine is in the foreground.
+  bool _isMainAppForegrounded = false;
+
+  /// One-shot timer that re-enables the motion detector after a brief pause
+  /// following the app coming to the foreground.  The pause covers the
+  /// engine-initialisation window (~5 s) to avoid Dart-VM contention that
+  /// could stall the first-frame render; after it expires the detector
+  /// resumes so it keeps working while the user views the app.
+  Timer? _foregroundResumeTimer;
+
+  /// How long the motion detector stays paused after the app is foregrounded.
+  /// 5 s is more than enough for Flutter engine initialisation to complete.
+  static const Duration _foregroundMotionResumeDelay = Duration(seconds: 5);
 
   /// Maximum consecutive stream recovery attempts before giving up.
   /// After this, the service stays alive (notification visible) but stops
@@ -58,6 +74,7 @@ final class PointAutomationService {
   final IPointLocalRepository _localPointRepository;
   final TrackerIntelligenceService _trackerIntelligenceService;
   final IHardwareRepository _hardwareRepository;
+  final MotionDetectorService _motionDetector;
 
 
   PointAutomationService(
@@ -71,6 +88,7 @@ final class PointAutomationService {
       this._localPointRepository,
       this._trackerIntelligenceService,
       this._hardwareRepository,
+      this._motionDetector,
   );
 
   /// Whether automatic tracking is currently active
@@ -100,6 +118,7 @@ final class PointAutomationService {
     _startConnectivityWatch(userId);
     _startLocationStream(userId);
     _startBatchCountWatch(userId);
+    _startMotionWatch(userId);
   }
 
   // ── Heartbeat (OEM keep-alive) ─────────────────────────────────────────
@@ -293,6 +312,57 @@ final class PointAutomationService {
     );
   }
 
+  // ── Motion-sensor watch ────────────────────────────────────────────────────
+
+  /// Subscribes to the motion detector's stream.  The detector itself is only
+  /// started/stopped by [_setAutoTrackingRuntimeMode], so this subscription
+  /// just forwards events regardless of whether the sensor is active.
+  void _startMotionWatch(int userId) {
+    _motionSub?.cancel();
+    _motionSub = _motionDetector.motionStream.listen(
+      (_) => _handleMotionDetected(userId),
+      onError: (Object e) {
+        debugPrint('[PointAutomation] Motion watch error: $e');
+      },
+    );
+  }
+
+  /// Called when the accelerometer detects sustained motion while in passive
+  /// mode.  Switches to active mode immediately — waiting for a one-shot GPS
+  /// fix to "confirm" movement is unreliable because:
+  ///
+  ///   • At the start of a journey the GPS displacement since the last passive
+  ///     fix is small and may not clear the accuracy-gated distance guard.
+  ///   • Speed accuracy on non-GMS builds can be high enough that the
+  ///     net-speed guard also fails.
+  ///
+  /// Instead, the accelerometer's 2/4-sample threshold (1.5 m/s²) is treated
+  /// as sufficient evidence.  [TrackerIntelligenceService.notifyMotion] seeds
+  /// [lastMeaningfulMovementTime] so the active-silence timer doesn't expire
+  /// before the first confirming GPS fix arrives.  If subsequent GPS fixes do
+  /// NOT confirm movement (false positive), the silence timer will still revert
+  /// to passive after [TrackerIntelligenceService.passiveAfterStillness].
+  Future<void> _handleMotionDetected(int userId) async {
+    if (!_isTracking || _currentUserId != userId) return;
+    if (_autoTrackingRuntimeMode != AutoTrackingRuntimeMode.passive) return;
+
+    final settings = _currentSettings;
+    if (settings?.trackingFrequency != 0) return; // only in auto mode
+
+    if (kDebugMode) {
+      debugPrint(
+        '[PointAutomation] Motion sensor fired — switching to active immediately.',
+      );
+    }
+
+    // Seed the intelligence service so the active-silence timer has a recent
+    // movement timestamp to work with.
+    _trackerIntelligenceService.notifyMotion(DateTime.now().toUtc());
+
+    _setAutoTrackingRuntimeMode(AutoTrackingRuntimeMode.active);
+    await _restartLocationStream(userId);
+  }
+
   // ── Location stream ────────────────────────────────────────────────────────
 
   void _startLocationStream(int userId) {
@@ -420,6 +490,8 @@ final class PointAutomationService {
     _recoveryAttempt = 0;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+    _foregroundResumeTimer?.cancel();
+    _foregroundResumeTimer = null;
     _cancelActiveSilenceTimer();
     _trackerIntelligenceService.reset();
     _setAutoTrackingRuntimeMode(_trackerIntelligenceService.currentMode);
@@ -429,6 +501,9 @@ final class PointAutomationService {
     _settingsWatchSub = null;
     await _connectivitySub?.cancel();
     _connectivitySub = null;
+    await _motionSub?.cancel();
+    _motionSub = null;
+    _motionDetector.stop();
     await _locationStreamSub?.cancel();
     _locationStreamSub = null;
 
@@ -528,6 +603,57 @@ final class PointAutomationService {
   }
 
 
+  // ── Main-app foreground state ──────────────────────────────────────────────
+
+  /// Called by the background-service event handler when the main app moves
+  /// to the foreground ([foregrounded] = `true`) or background (`false`).
+  ///
+  /// On foregrounding the motion detector is paused briefly
+  /// ([_foregroundMotionResumeDelay]) to prevent Dart-VM scheduling pressure
+  /// from stalling the main-app engine's first-frame render.  Once the guard
+  /// window expires the detector automatically resumes (if still passive) so
+  /// it keeps working while the user has the app open — important for
+  /// passive → active wake-ups during foreground use.
+  void setMainAppForegrounded(bool foregrounded) {
+    _isMainAppForegrounded = foregrounded;
+
+    // Cancel any pending resume timer regardless of direction.
+    _foregroundResumeTimer?.cancel();
+    _foregroundResumeTimer = null;
+
+    if (foregrounded) {
+      // Stop the sensor for the brief initialisation window.
+      _motionDetector.stop();
+
+      // Schedule automatic re-enable after the guard window.
+      _foregroundResumeTimer = Timer(_foregroundMotionResumeDelay, () {
+        _foregroundResumeTimer = null;
+        if (_isTracking &&
+            _autoTrackingRuntimeMode == AutoTrackingRuntimeMode.passive) {
+          if (kDebugMode) {
+            debugPrint(
+              '[PointAutomation] Foreground guard window passed — resuming motion detector.',
+            );
+          }
+          _motionDetector.start();
+        }
+      });
+    } else {
+      // App went to background — resume immediately if passive.
+      if (_isTracking &&
+          _autoTrackingRuntimeMode == AutoTrackingRuntimeMode.passive) {
+        _motionDetector.start();
+      }
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        '[PointAutomation] Main-app foregrounded=$foregrounded '
+        '→ motion detector ${foregrounded ? "paused (${_foregroundMotionResumeDelay.inSeconds}s guard)" : "resumed"}',
+      );
+    }
+  }
+
   // - Tracking intelligence───────────────────────────────────────────────────-
 
   void _setAutoTrackingRuntimeMode(AutoTrackingRuntimeMode mode) {
@@ -537,6 +663,39 @@ final class PointAutomationService {
 
     _autoTrackingRuntimeMode = mode;
     _refreshNotificationWithCount(_lastKnownBatchCount);
+
+    // Keep the motion detector running only while passive.  In active mode the
+    // GPS fires frequently enough on its own and the sensor would just waste
+    // the ~1 mA it draws.
+    if (mode == AutoTrackingRuntimeMode.passive) {
+      if (!_isMainAppForegrounded) {
+        // Normal case — app is backgrounded.
+        _motionDetector.start();
+      } else if (_foregroundResumeTimer == null) {
+        // App is foregrounded but the 5 s init-guard window has already
+        // expired (timer fired and set itself to null).  Safe to start the
+        // sensor now — engine initialisation is complete.
+        _motionDetector.start();
+        if (kDebugMode) {
+          debugPrint(
+            '[PointAutomation] Passive mode entered (foregrounded, init done) — '
+            'starting motion detector immediately.',
+          );
+        }
+      } else {
+        // Still within the init-guard window.  The pending
+        // _foregroundResumeTimer already checks _autoTrackingRuntimeMode
+        // before starting the sensor, so it will handle this transition.
+        if (kDebugMode) {
+          debugPrint(
+            '[PointAutomation] Passive mode entered during foreground init window — '
+            'motion detector deferred to guard timer.',
+          );
+        }
+      }
+    } else {
+      _motionDetector.stop();
+    }
 
     if (kDebugMode) {
       debugPrint(

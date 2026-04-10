@@ -125,7 +125,7 @@ final class SQLiteClient extends _$SQLiteClient {
         }
         try {
           final iso = DriftIsolate.fromConnectPort(existing);
-          final conn = await iso.connect().timeout(const Duration(seconds: 2));
+          final conn = await iso.connect().timeout(const Duration(seconds: 1));
           _instance = SQLiteClient._(conn);
           completer.complete(_instance!);
           _pendingInit = null;

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/constants/notification.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -201,6 +202,43 @@ class BackgroundTrackingEntry {
         debugPrint('[Background] Error restarting tracking: $e\n$s');
       }
     });
+
+    // ── Foreground / background app-state notifications ────────────────────
+    //
+    // The main app sends these events so we can pause the motion detector
+    // while the foreground engine is active.  Keeping the accelerometer
+    // subscription silent during main-app engine initialisation prevents
+    // Dart-VM scheduling pressure that could stall the first-frame render.
+
+    backgroundService.on('appForegrounded').listen((event) async {
+      if (kDebugMode) {
+        debugPrint('[Background] appForegrounded received — pausing motion detector');
+      }
+      try {
+        final container = _container;
+        if (container != null) {
+          final automation = await container.read(pointAutomationServiceProvider.future);
+          automation.setMainAppForegrounded(true);
+        }
+      } catch (e, s) {
+        debugPrint('[Background] Error handling appForegrounded: $e\n$s');
+      }
+    });
+
+    backgroundService.on('appBackgrounded').listen((event) async {
+      if (kDebugMode) {
+        debugPrint('[Background] appBackgrounded received — resuming motion detector');
+      }
+      try {
+        final container = _container;
+        if (container != null) {
+          final automation = await container.read(pointAutomationServiceProvider.future);
+          automation.setMainAppForegrounded(false);
+        }
+      } catch (e, s) {
+        debugPrint('[Background] Error handling appBackgrounded: $e\n$s');
+      }
+    });
   }
 
   static Future<void> shutdown(ServiceInstance svc, String reason) async {
@@ -211,6 +249,12 @@ class BackgroundTrackingEntry {
       _container?.dispose();
     } catch (_) {}
     _container = null;
+
+    // Remove the stale Drift IsolateNameServer port so the main app's next
+    // connectSharedIsolate() doesn't waste time trying to connect to a dead
+    // isolate (the 1 s timeout in connectSharedIsolate() adds up otherwise).
+    SQLiteClient.resetSharedState();
+
     svc.stopSelf();
   }
 

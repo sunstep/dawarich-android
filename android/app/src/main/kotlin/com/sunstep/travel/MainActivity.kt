@@ -1,7 +1,5 @@
 package com.sunstep.travel
 
-import android.app.ActivityManager
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -109,15 +107,19 @@ class MainActivity : FlutterFragmentActivity() {
 
         Log.d(TAG, "super.onCreate(null) complete")
 
-        // Arm the watchdog when:
-        //  • the background service is running (contention risk), OR
-        //  • we're already in recovery (the recreate just happened).
-        val bgRunning = isBackgroundServiceRunning()
-        if (bgRunning || recoveryAttempts > 0) {
-            Log.w(TAG, "Arming startup watchdog " +
-                    "(bgService=$bgRunning, recoveryAttempts=$recoveryAttempts)")
-            handler.postDelayed(startupWatchdog, WATCHDOG_MS)
-        }
+        // ── Recovery: watchdog armed on every launch ──────────────────────────
+        //
+        // Always armed unconditionally — not just when the background service
+        // is detected.  getRunningServices() can under-report own-package
+        // services on some OEM ROMs (API 26+ deprecation side-effects), so
+        // relying on it as a gate could leave the watchdog disarmed exactly
+        // when it is needed.
+        //
+        // If Flutter renders normally (< 2 s on a clean launch) the display
+        // listener fires, flutterUiReady is set, and the watchdog is cancelled
+        // before it expires — zero cost in the happy path.
+        Log.d(TAG, "Arming startup watchdog (recoveryAttempts=$recoveryAttempts)")
+        handler.postDelayed(startupWatchdog, WATCHDOG_MS)
     }
 
     override fun onDestroy() {
@@ -159,12 +161,4 @@ class MainActivity : FlutterFragmentActivity() {
         } catch (_: Exception) {}
     }
 
-    @Suppress("DEPRECATION")
-    private fun isBackgroundServiceRunning(): Boolean {
-        val manager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-            ?: return false
-        return manager.getRunningServices(Int.MAX_VALUE).any {
-            it.service.className == BackgroundService::class.java.name
-        }
-    }
 }

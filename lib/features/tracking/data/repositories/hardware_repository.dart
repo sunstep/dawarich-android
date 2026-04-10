@@ -6,6 +6,7 @@ import 'package:dawarich/features/tracking/data/sources/device_data_client.dart'
 import 'package:dawarich/features/tracking/data/sources/connectivity_data_client.dart';
 import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/domain/enum/battery_state.dart';
+import 'package:dawarich/features/tracking/domain/enum/connectivity_kind.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 final class HardwareRepository implements IHardwareRepository {
@@ -74,4 +75,15 @@ final class HardwareRepository implements IHardwareRepository {
     return null;
   }
 
+  @override
+  Stream<ConnectivityKind> watchConnectivity() {
+    return Connectivity().onConnectivityChanged.map((results) {
+      if (results.contains(ConnectivityResult.wifi)) return ConnectivityKind.wifi;
+      if (results.contains(ConnectivityResult.ethernet)) return ConnectivityKind.ethernet;
+      if (results.contains(ConnectivityResult.vpn)) return ConnectivityKind.vpn;
+      if (results.contains(ConnectivityResult.mobile)) return ConnectivityKind.mobile;
+      if (results.contains(ConnectivityResult.other)) return ConnectivityKind.other;
+      return ConnectivityKind.none;
+    });
+  }
 }

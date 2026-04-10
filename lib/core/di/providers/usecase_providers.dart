@@ -281,6 +281,7 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
 
   final trackerIntelligenceService = await ref.watch(trackerIntelligenceServiceProvider.future);
+  final hardwareRepo = ref.watch(hardwareRepositoryProvider);
 
   return PointAutomationService(
     createStream,
@@ -291,7 +292,8 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
     batchUploadWorkflow,
     watchSettings,
     localRepo,
-    trackerIntelligenceService
+    trackerIntelligenceService,
+    hardwareRepo,
   );
 });
 

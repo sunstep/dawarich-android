@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
 import 'package:dawarich/features/batch/application/usecases/batch_upload_workflow_usecase.dart';
 import 'package:dawarich/features/batch/application/usecases/get_current_batch_usecase.dart';
+import 'package:dawarich/features/tracking/application/repositories/hardware_repository_interfaces.dart';
 import 'package:dawarich/features/tracking/application/services/tracker_intelligence_service.dart';
 import 'package:dawarich/features/tracking/application/usecases/get_batch_point_count_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/notifications/show_tracker_notification_usecase.dart';
@@ -23,6 +24,7 @@ final class PointAutomationService {
   StreamSubscription<void>? _locationStreamSub;
   StreamSubscription<TrackerSettings>? _settingsWatchSub;
   StreamSubscription<int>? _batchCountSub;
+  StreamSubscription<void>? _connectivitySub;
   TrackerSettings? _currentSettings;
   Timer? _heartbeatTimer;
   Timer? _activeSilenceTimer;
@@ -55,6 +57,7 @@ final class PointAutomationService {
   final WatchTrackerSettingsUseCase _watchTrackerSettings;
   final IPointLocalRepository _localPointRepository;
   final TrackerIntelligenceService _trackerIntelligenceService;
+  final IHardwareRepository _hardwareRepository;
 
 
   PointAutomationService(
@@ -66,7 +69,8 @@ final class PointAutomationService {
       this._batchUploadWorkflow,
       this._watchTrackerSettings,
       this._localPointRepository,
-      this._trackerIntelligenceService
+      this._trackerIntelligenceService,
+      this._hardwareRepository,
   );
 
   /// Whether automatic tracking is currently active
@@ -93,6 +97,7 @@ final class PointAutomationService {
 
     _startHeartbeatTimer();
     _startSettingsWatch(userId);
+    _startConnectivityWatch(userId);
     _startLocationStream(userId);
     _startBatchCountWatch(userId);
   }
@@ -258,7 +263,37 @@ final class PointAutomationService {
            old.minimumPointDistance != current.minimumPointDistance;
   }
 
-  // ── Location stream ────────────────────────────────────────────────────
+  // ── Connectivity watch ─────────────────────────────────────────────────────
+
+  void _startConnectivityWatch(int userId) {
+    _connectivitySub?.cancel();
+
+    _connectivitySub = _hardwareRepository.watchConnectivity().listen(
+      (kind) async {
+        if (!_isTracking || _currentUserId != userId) return;
+
+        final previousMode = _autoTrackingRuntimeMode;
+        final nextMode = _trackerIntelligenceService.notifyConnectivityChanged(kind);
+
+        if (kDebugMode) {
+          debugPrint('[PointAutomation] Connectivity changed: $kind → mode $nextMode');
+        }
+
+        final settings = _currentSettings;
+        final isAutoMode = settings?.trackingFrequency == 0;
+
+        if (isAutoMode && previousMode != nextMode) {
+          _setAutoTrackingRuntimeMode(nextMode);
+          await _restartLocationStream(userId);
+        }
+      },
+      onError: (e) {
+        debugPrint('[PointAutomation] Connectivity watch error: $e');
+      },
+    );
+  }
+
+  // ── Location stream ────────────────────────────────────────────────────────
 
   void _startLocationStream(int userId) {
     _locationStreamSub?.cancel();
@@ -392,6 +427,8 @@ final class PointAutomationService {
     _batchCountSub = null;
     await _settingsWatchSub?.cancel();
     _settingsWatchSub = null;
+    await _connectivitySub?.cancel();
+    _connectivitySub = null;
     await _locationStreamSub?.cancel();
     _locationStreamSub = null;
 

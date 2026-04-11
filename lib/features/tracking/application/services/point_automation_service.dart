@@ -37,6 +37,13 @@ final class PointAutomationService {
   /// When `true` the main-app Flutter engine is in the foreground.
   bool _isMainAppForegrounded = false;
 
+  /// Guards the very first connectivity event after [startTracking].
+  /// On startup the connectivity stream immediately emits the current state.
+  /// We skip the WiFi → passive shortcut for that first event so the tracker
+  /// always begins in active mode; subsequent WiFi connections (arriving home
+  /// mid-session) still trigger passive mode normally.
+  bool _startupConnectivityGuard = true;
+
   /// One-shot timer that re-enables the motion detector after a brief pause
   /// following the app coming to the foreground.  The pause covers the
   /// engine-initialisation window (~5 s) to avoid Dart-VM contention that
@@ -108,6 +115,7 @@ final class PointAutomationService {
     _currentUserId = userId;
     _lastPointTime = null;
     _recoveryAttempt = 0;
+    _startupConnectivityGuard = true;
     await _refreshNotification(userId);
 
     _trackerIntelligenceService.reset();
@@ -164,7 +172,7 @@ final class PointAutomationService {
             '${lastTime.second.toString().padLeft(2, '0')}';
         body = '[$modeLabel] Last point: $lastTimeStr • $batchCount in batch';
       } else {
-        body = '[$modeLabel] Waiting for location... • $batchCount in batch';
+        body = '[$modeLabel] Monitoring location... • $batchCount in batch';
       }
 
       _showTrackerNotification(
@@ -290,6 +298,19 @@ final class PointAutomationService {
     _connectivitySub = _hardwareRepository.watchConnectivity().listen(
       (kind) async {
         if (!_isTracking || _currentUserId != userId) return;
+
+        // Skip the very first event emitted immediately on subscription.
+        // connectivity_plus emits the current state at subscribe time, but we
+        // always want the tracker to begin in active mode regardless of whether
+        // the device is already on WiFi. Subsequent events (e.g. arriving home
+        // mid-session) still apply the WiFi → passive shortcut normally.
+        if (_startupConnectivityGuard) {
+          _startupConnectivityGuard = false;
+          if (kDebugMode) {
+            debugPrint('[PointAutomation] Connectivity startup event suppressed ($kind)');
+          }
+          return;
+        }
 
         final previousMode = _autoTrackingRuntimeMode;
         final nextMode = _trackerIntelligenceService.notifyConnectivityChanged(kind);
@@ -488,6 +509,7 @@ final class PointAutomationService {
     _lastPointTime = null;
     _lastKnownBatchCount = 0;
     _recoveryAttempt = 0;
+    _startupConnectivityGuard = true;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
     _foregroundResumeTimer?.cancel();

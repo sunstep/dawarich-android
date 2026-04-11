@@ -22,8 +22,26 @@ final class TrackerIntelligenceService {
   bool _isOnWifi = false;
 
   static const Duration passiveAfterStillness = Duration(minutes: 1);
+
+  /// Thresholds used when deciding whether a GPS fix confirms the device is
+  /// moving while already in **passive** mode (passive → active wake-up).
+  /// These are intentionally strict so that low-accuracy passive-mode fixes
+  /// (balanced / lowPower precision, ±30–100 m) don't spam spurious wakeups.
   static const double activeWakeThresholdMeters = 25;
   static const double activeWakeSpeedThresholdMps = 2.0;
+
+  /// Thresholds used to keep [_lastMeaningfulMovementTime] fresh while already
+  /// in **active** mode.  They must be low enough to catch normal walking
+  /// (~1.4–1.6 m/s, ~10–15 m per 10 s fix interval) so the one-minute silence
+  /// timer does not prematurely switch a walking user to passive mode.
+  ///
+  /// Using the same strict [activeWakeThresholdMeters] / [activeWakeSpeedThresholdMps]
+  /// here was the root cause of active → passive flipping mid-walk:
+  ///   • Speed guard: 1.5 m/s walking − 0.5 m/s GPS accuracy = 1.0 net m/s < 2.0
+  ///   • Distance guard: ~15 m per fix < 25 m threshold → both guards fail
+  ///   → _lastMeaningfulMovementTime never updates → timer fires → passive.
+  static const double activeKeepSpeedThresholdMps = 0.8;  // ≈ slow walk
+  static const double activeKeepDistanceMeters = 10.0;    // one city-block step
 
   AutoTrackingRuntimeMode get currentMode => _currentMode;
   DateTime? get lastMeaningfulMovementTime => _lastMeaningfulMovementTime;
@@ -105,37 +123,61 @@ final class TrackerIntelligenceService {
       );
     }
 
-    // ── Noise guards ──────────────────────────────────────────────────────────
-
-    // Guard 1 — Accuracy-gated distance.
-    // The displacement between two fixes must exceed the *combined* accuracy
-    // radius of both endpoints, not just the raw travel threshold.  If the
-    // device's GPS reported ±20 m for each fix the real position could be
-    // anywhere within a 40 m bubble — a 30 m jump is indistinguishable from
-    // noise and must not trigger a wake-up.
+    // ── Mode-aware movement detection ─────────────────────────────────────────
     //
-    // [activeWakeThresholdMeters] is a minimum sensitivity floor (25 m), not
-    // an accuracy ceiling.  At high / best precision (±5–10 m per fix) the
-    // combined bubble is 10–20 m and the floor is the binding constraint.
-    // At balanced / lowPower precision (±30–100 m per fix) the combined bubble
-    // grows to 60–200 m and becomes the binding constraint instead — meaning
-    // the check automatically loosens in proportion to the user's chosen
-    // [LocationPrecision] without needing a separate user-facing setting and
-    // without the risk of silently blocking all wake decisions that a hard
-    // accuracy ceiling would introduce.
-    final combinedAccuracyMeters =
-        (lastFix?.hAccuracyMeters ?? 0.0) + fix.hAccuracyMeters;
-    final isDistanceConfident = distanceMeters >= activeWakeThresholdMeters &&
-        distanceMeters > combinedAccuracyMeters;
+    // Two separate guard sets are used:
+    //
+    //  • PASSIVE mode  → ACTIVE wake: strict guards (the motion detector is the
+    //    primary wakeup mechanism; GPS is a fallback used when the accelerometer
+    //    is unavailable or the phone is in a vehicle).  Accuracy gating is kept
+    //    but relaxed to 60 % of combined radius so that balanced/lowPower fixes
+    //    (±30–100 m) don't block detection of clear high-speed movement.
+    //
+    //  • ACTIVE mode (keep-active): loose guards so that normal walking pace
+    //    (~1.5 m/s, ~10–15 m per 10 s interval) continuously refreshes
+    //    [_lastMeaningfulMovementTime] and prevents the one-minute silence timer
+    //    from firing mid-walk.  No accuracy gating — at active-mode precision
+    //    the fix interval is short enough that genuine movement clearly exceeds
+    //    the 10 m floor.
 
-    // Guard 2 — Speed accuracy gating.
-    // Subtract the provider's reported speed uncertainty before comparing so
-    // that Doppler noise on a stationary receiver (which can read 1–3 m/s)
-    // never crosses the threshold on its own.
-    final netSpeedMps = math.max(0.0, fix.speedMps - fix.speedAccuracyMps);
-    final isSpeedConfident = netSpeedMps >= activeWakeSpeedThresholdMps;
+    final bool isClearlyMoving;
 
-    final isClearlyMoving = isSpeedConfident || isDistanceConfident;
+    if (_currentMode == AutoTrackingRuntimeMode.passive) {
+      // Passive → active: stricter check (GPS wakeup fallback path).
+      // Clamp speedAccuracyMps: some Android builds report -1 for "unknown";
+      // subtracting a negative value would artificially inflate net speed.
+      final combinedAccuracyMeters =
+          (lastFix?.hAccuracyMeters ?? 0.0) + fix.hAccuracyMeters;
+      final isDistanceConfident = distanceMeters >= activeWakeThresholdMeters &&
+          distanceMeters > combinedAccuracyMeters * 0.6;
+      final clampedSpeedAccuracy = math.max(0.0, fix.speedAccuracyMps);
+      final netSpeedMps = math.max(0.0, fix.speedMps - clampedSpeedAccuracy);
+      final isSpeedConfident = netSpeedMps >= activeWakeSpeedThresholdMps;
+      isClearlyMoving = isSpeedConfident || isDistanceConfident;
+    } else {
+      // Active mode: loose check so walkers stay active.
+      //
+      // Speed accuracy can be reported as -1 on some Android builds (meaning
+      // "unknown"). Clamping to 0 prevents the negative value from being
+      // subtracted and artificially inflating net speed, which would otherwise
+      // keep the device in active mode indefinitely while stationary.
+      final clampedSpeedAccuracy = math.max(0.0, fix.speedAccuracyMps);
+      final netSpeedMps = math.max(0.0, fix.speedMps - clampedSpeedAccuracy);
+      final isSpeedConfident = netSpeedMps >= activeKeepSpeedThresholdMps;
+
+      // Accuracy-gated distance check: the measured displacement must exceed
+      // the combined horizontal-accuracy radius of both fixes.  Without this
+      // gate, GPS drift while stationary (5–15 m is common with high-precision
+      // fixes) can continuously refresh [_lastMeaningfulMovementTime] and
+      // prevent the silence timer from ever switching to passive.
+      final combinedAccuracyMeters =
+          (lastFix?.hAccuracyMeters ?? 0.0) + fix.hAccuracyMeters;
+      final effectiveDistanceThreshold =
+          math.max(activeKeepDistanceMeters, combinedAccuracyMeters * 0.75);
+      final isDistanceConfident = distanceMeters >= effectiveDistanceThreshold;
+
+      isClearlyMoving = isSpeedConfident || isDistanceConfident;
+    }
 
     _lastObservedFix = fix;
 

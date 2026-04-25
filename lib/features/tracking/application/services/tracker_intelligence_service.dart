@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:dawarich/features/tracking/domain/enum/auto_tracking_runtime_mode.dart';
+import 'package:dawarich/features/tracking/domain/enum/battery_state.dart';
 import 'package:dawarich/features/tracking/domain/enum/connectivity_kind.dart';
 import 'package:dawarich/features/tracking/domain/models/location_fix.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 
@@ -11,37 +13,56 @@ final class TrackerIntelligenceService {
   DateTime? _lastMeaningfulMovementTime;
   LocationFix? _lastObservedFix;
 
-  /// True while the device is connected to a WiFi network.
-  ///
-  /// Used only as a one-shot passive trigger: when the device connects to WiFi
-  /// [notifyConnectivityChanged] immediately sets the mode to passive (fast
-  /// path for arriving at a known stationary location).  The movement guards
-  /// in [evaluateFix] still run on every fix regardless, so detected movement
-  /// (e.g. a train or bus with onboard WiFi) will override the passive state
-  /// and switch back to active normally.
+  // Time we entered monitor mode, used for the idle timeout.
+  DateTime? _monitorEnteredTime;
+
+  // Whether we're currently on WiFi.
   bool _isOnWifi = false;
 
-  static const Duration passiveAfterStillness = Duration(minutes: 1);
+  // Tracks the previous charging state so we can detect the unplug transition.
+  bool _wasCharging = false;
 
-  /// Thresholds used when deciding whether a GPS fix confirms the device is
-  /// moving while already in **passive** mode (passive → active wake-up).
-  /// These are intentionally strict so that low-accuracy passive-mode fixes
-  /// (balanced / lowPower precision, ±30–100 m) don't spam spurious wakeups.
-  static const double activeWakeThresholdMeters = 25;
-  static const double activeWakeSpeedThresholdMps = 2.0;
+  // How long without meaningful movement in active mode before dropping to monitor.
+  // Long enough to survive traffic lights, station stops, and brief tunnels.
+  static const Duration activeToMonitorStillness = Duration(minutes: 3);
 
-  /// Thresholds used to keep [_lastMeaningfulMovementTime] fresh while already
-  /// in **active** mode.  They must be low enough to catch normal walking
-  /// (~1.4–1.6 m/s, ~10–15 m per 10 s fix interval) so the one-minute silence
-  /// timer does not prematurely switch a walking user to passive mode.
-  ///
-  /// Using the same strict [activeWakeThresholdMeters] / [activeWakeSpeedThresholdMps]
-  /// here was the root cause of active → passive flipping mid-walk:
-  ///   • Speed guard: 1.5 m/s walking − 0.5 m/s GPS accuracy = 1.0 net m/s < 2.0
-  ///   • Distance guard: ~15 m per fix < 25 m threshold → both guards fail
-  ///   → _lastMeaningfulMovementTime never updates → timer fires → passive.
-  static const double activeKeepSpeedThresholdMps = 0.8;  // ≈ slow walk
-  static const double activeKeepDistanceMeters = 10.0;    // one city-block step
+  // How long in monitor without confirmed movement before going passive.
+  // Covers longer waits like level crossings or extended station stops.
+  static const Duration monitorIdleTimeout = Duration(minutes: 5);
+
+  // Passive mode runs a PRIORITY_NO_POWER piggyback stream as a free point
+  // recorder alongside activity recognition. evaluateFix() is NOT called for
+  // passive fixes in PointAutomationService — mode transitions from passive are
+  // driven by activity recognition only. _evaluatePassive() is kept as a
+  // defensive fallback in case that guard is ever removed.
+
+  // Distance threshold for passive wake-up when speed isn't available.
+  static const double passiveWakeDistanceMeters = 80;
+
+  // Net speed (after subtracting speed accuracy) to wake passive to monitor.
+  // Kept low because PRIORITY_LOW_POWER speed accuracy can be ±0.5–1.0 m/s.
+  static const double passiveWakeSpeedMps = 0.5;
+
+  // Vehicle-level speed that skips monitor entirely and goes straight to active.
+  // ~18 km/h — unambiguously in a vehicle.
+  static const double passiveDirectActiveSpeedMps = 5.0;
+
+  // Speed at which a balanced fix (monitor mode) promotes to active.
+  // 0.8 m/s net corresponds to about 1.1–1.3 m/s actual — a slow walk.
+  static const double monitorPromoteSpeedMps = 0.8;
+
+  // Minimum net speed to keep the movement timestamp refreshed while active.
+  // Slightly lower than monitorPromoteSpeedMps so a small speed dip doesn't
+  // immediately start the silence countdown.
+  static const double activeKeepSpeedMps = 0.5;
+
+  // Minimum displacement between consecutive active fixes to count as real movement.
+  // Prevents GPS jitter (±5–15 m) from refreshing the timestamp when stationary.
+  static const double activeKeepDistanceMeters = 20.0;
+
+  // Counts consecutive zero-speed fixes in monitor mode for debug logging.
+  // Some OEMs don't populate speed at PRIORITY_BALANCED.
+  int _consecutiveZeroSpeedFixes = 0;
 
   AutoTrackingRuntimeMode get currentMode => _currentMode;
   DateTime? get lastMeaningfulMovementTime => _lastMeaningfulMovementTime;
@@ -50,67 +71,107 @@ final class TrackerIntelligenceService {
     _currentMode = AutoTrackingRuntimeMode.active;
     _lastMeaningfulMovementTime = null;
     _lastObservedFix = null;
+    _monitorEnteredTime = null;
+    _consecutiveZeroSpeedFixes = 0;
     _isOnWifi = false;
+    _wasCharging = false;
   }
 
-  /// Called by the motion detector to record that physical motion was observed
-  /// before a confirming GPS fix is available.
+  /// Called when the OS delivers a locomotion transition event.
   ///
-  /// Seeding [_lastMeaningfulMovementTime] here prevents the active-silence
-  /// timer (which starts on the first GPS fix after a mode switch) from
-  /// expiring prematurely in the gap between the accelerometer event and the
-  /// first active-mode GPS fix.  If the subsequent GPS fixes do not confirm
-  /// real movement the timer will still fire after [passiveAfterStillness] and
-  /// revert to passive normally.
-  void notifyMotion(DateTime atTime) {
-    _lastMeaningfulMovementTime = atTime;
-    _currentMode = AutoTrackingRuntimeMode.active;
+  /// If the tracker is in passive mode, it transitions to monitor so the
+  /// cell+WiFi stream can confirm real movement before spinning up full GPS.
+  /// If already in monitor or active, this is a no-op — evaluateFix() handles
+  /// transitions from there.
+  AutoTrackingRuntimeMode notifyMotionTransitionDetected() {
+    if (kDebugMode) {
+      debugPrint(
+        '[TrackerIntelligence] Motion transition event received '
+        '(current mode: $_currentMode)',
+      );
+    }
+
+    if (_currentMode == AutoTrackingRuntimeMode.passive) {
+      _lastMeaningfulMovementTime = null;
+      _lastObservedFix = null;
+      _setMode(AutoTrackingRuntimeMode.monitor);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[TrackerIntelligence] Motion transition detected → passive → monitor',
+        );
+      }
+    } else {
+      // Already in monitor or active — don't refresh the movement timestamp.
+      // GPS fixes are the sole source of truth for the keep-alive. Letting
+      // motion events refresh it caused the tracker to stay permanently active
+      // because false-positive activity events (e.g. walking to the kitchen)
+      // kept resetting the silence timer.
+      if (kDebugMode) {
+        debugPrint(
+          '[TrackerIntelligence] Motion transition detected while $_currentMode '
+          '— ignoring (GPS fixes manage the keep-alive in active/monitor).',
+        );
+      }
+    }
+
+    return _currentMode;
   }
 
-  /// Called whenever the device's network connectivity changes.
+  /// Called whenever the network connectivity changes.
   ///
-  /// Returns the new [AutoTrackingRuntimeMode] so the caller can decide
-  /// whether to restart the location stream.
+  /// WiFi connected: if we're in active mode, drop to monitor so low-power GPS
+  /// can check whether we're actually stationary. Going straight to passive on
+  /// WiFi connect would interrupt tracking on public hotspots or transport WiFi.
+  /// Monitor will naturally fall through to passive via the idle timeout if
+  /// nothing is moving.
   ///
-  /// WiFi connected → immediately passive.  This is a fast path for arriving
-  /// at a stationary location (home, office, etc.).  The movement guards in
-  /// [evaluateFix] continue to run on every subsequent fix, so if the device
-  /// is actually moving while on WiFi (train, bus, tethered hotspot) the
-  /// guards will detect it and switch back to active without any extra logic.
-  ///
-  /// WiFi lost → clear the movement baseline so the position guards evaluate
-  /// from scratch on the next fix.  Mode is not forced; the first confirming
-  /// fix after leaving WiFi decides whether the user is moving.
+  /// WiFi lost: move to monitor so GPS can quickly evaluate if we're moving.
   AutoTrackingRuntimeMode notifyConnectivityChanged(ConnectivityKind kind) {
     final wasOnWifi = _isOnWifi;
     _isOnWifi = kind == ConnectivityKind.wifi;
 
     if (_isOnWifi && !wasOnWifi) {
-      // Only go passive immediately if there is no evidence of current movement.
-      // If _lastMeaningfulMovementTime was updated recently (within
-      // passiveAfterStillness) the device was already moving when WiFi
-      // connected, e.g. a train that was in motion when the user's phone
-      // joined the onboard network.  In that case skip the passive switch and
-      // let the movement guards decide normally; they will transition to passive
-      // once the device has been still for passiveAfterStillness.
-      final lastMoved = _lastMeaningfulMovementTime;
-      final isLikelyMoving = lastMoved != null &&
-          DateTime.now().toUtc().difference(lastMoved) < passiveAfterStillness;
-
-      if (!isLikelyMoving) {
-        _currentMode = AutoTrackingRuntimeMode.passive;
+      // Only drop to monitor if we're in active — no need to restart from
+      // passive or monitor since they're already lower power.
+      if (_currentMode == AutoTrackingRuntimeMode.active) {
+        _lastMeaningfulMovementTime = null;
+        _lastObservedFix = null;
+        _setMode(AutoTrackingRuntimeMode.monitor);
       }
     } else if (!_isOnWifi && wasOnWifi) {
-      // Just left WiFi reset baseline so the next fix is evaluated fresh.
       _lastMeaningfulMovementTime = null;
       _lastObservedFix = null;
+      _setMode(AutoTrackingRuntimeMode.monitor);
+    }
+
+    return _currentMode;
+  }
+
+  /// Called whenever the battery/charging state changes.
+  ///
+  /// Charger unplugged while in passive mode wakes the tracker to monitor.
+  /// It's a free signal that the user may be about to leave — pulling the
+  /// phone off the charger before heading out. Monitor will then confirm
+  /// whether actual movement follows.
+  AutoTrackingRuntimeMode notifyBatteryStateChanged(BatteryState state) {
+    final wasCharging = _wasCharging;
+    _wasCharging = state == BatteryState.charging ||
+        state == BatteryState.full ||
+        state == BatteryState.connectedNotCharging;
+
+    final justUnplugged = wasCharging && state == BatteryState.discharging;
+
+    if (justUnplugged && _currentMode == AutoTrackingRuntimeMode.passive) {
+      _lastMeaningfulMovementTime = null;
+      _lastObservedFix = null;
+      _setMode(AutoTrackingRuntimeMode.monitor);
     }
 
     return _currentMode;
   }
 
   AutoTrackingRuntimeMode evaluateFix(LocationFix fix) {
-
     final lastFix = _lastObservedFix;
     double distanceMeters = 0;
 
@@ -123,67 +184,122 @@ final class TrackerIntelligenceService {
       );
     }
 
-    // ── Mode-aware movement detection ─────────────────────────────────────────
-    //
-    // Two separate guard sets are used:
-    //
-    //  • PASSIVE mode  → ACTIVE wake: strict guards (the motion detector is the
-    //    primary wakeup mechanism; GPS is a fallback used when the accelerometer
-    //    is unavailable or the phone is in a vehicle).  Accuracy gating is kept
-    //    but relaxed to 60 % of combined radius so that balanced/lowPower fixes
-    //    (±30–100 m) don't block detection of clear high-speed movement.
-    //
-    //  • ACTIVE mode (keep-active): loose guards so that normal walking pace
-    //    (~1.5 m/s, ~10–15 m per 10 s interval) continuously refreshes
-    //    [_lastMeaningfulMovementTime] and prevents the one-minute silence timer
-    //    from firing mid-walk.  No accuracy gating — at active-mode precision
-    //    the fix interval is short enough that genuine movement clearly exceeds
-    //    the 10 m floor.
-
-    final bool isClearlyMoving;
-
-    if (_currentMode == AutoTrackingRuntimeMode.passive) {
-      // Passive → active: stricter check (GPS wakeup fallback path).
-      // Clamp speedAccuracyMps: some Android builds report -1 for "unknown";
-      // subtracting a negative value would artificially inflate net speed.
-      final combinedAccuracyMeters =
-          (lastFix?.hAccuracyMeters ?? 0.0) + fix.hAccuracyMeters;
-      final isDistanceConfident = distanceMeters >= activeWakeThresholdMeters &&
-          distanceMeters > combinedAccuracyMeters * 0.6;
-      final clampedSpeedAccuracy = math.max(0.0, fix.speedAccuracyMps);
-      final netSpeedMps = math.max(0.0, fix.speedMps - clampedSpeedAccuracy);
-      final isSpeedConfident = netSpeedMps >= activeWakeSpeedThresholdMps;
-      isClearlyMoving = isSpeedConfident || isDistanceConfident;
-    } else {
-      // Active mode: loose check so walkers stay active.
-      //
-      // Speed accuracy can be reported as -1 on some Android builds (meaning
-      // "unknown"). Clamping to 0 prevents the negative value from being
-      // subtracted and artificially inflating net speed, which would otherwise
-      // keep the device in active mode indefinitely while stationary.
-      final clampedSpeedAccuracy = math.max(0.0, fix.speedAccuracyMps);
-      final netSpeedMps = math.max(0.0, fix.speedMps - clampedSpeedAccuracy);
-      final isSpeedConfident = netSpeedMps >= activeKeepSpeedThresholdMps;
-
-      // Accuracy-gated distance check: the measured displacement must exceed
-      // the combined horizontal-accuracy radius of both fixes.  Without this
-      // gate, GPS drift while stationary (5–15 m is common with high-precision
-      // fixes) can continuously refresh [_lastMeaningfulMovementTime] and
-      // prevent the silence timer from ever switching to passive.
-      final combinedAccuracyMeters =
-          (lastFix?.hAccuracyMeters ?? 0.0) + fix.hAccuracyMeters;
-      final effectiveDistanceThreshold =
-          math.max(activeKeepDistanceMeters, combinedAccuracyMeters * 0.75);
-      final isDistanceConfident = distanceMeters >= effectiveDistanceThreshold;
-
-      isClearlyMoving = isSpeedConfident || isDistanceConfident;
-    }
+    // Some Android builds report -1 for unknown speed accuracy — clamp to 0.
+    final clampedSpeedAccuracy = math.max(0.0, fix.speedAccuracyMps);
+    final netSpeedMps = math.max(0.0, fix.speedMps - clampedSpeedAccuracy);
+    final combinedAccuracyMeters =
+        (lastFix?.hAccuracyMeters ?? 0.0) + fix.hAccuracyMeters;
 
     _lastObservedFix = fix;
 
-    if (isClearlyMoving) {
+    switch (_currentMode) {
+      case AutoTrackingRuntimeMode.passive:
+        // Passive has no stream — this branch shouldn't be reached normally.
+        return _evaluatePassive(fix, distanceMeters, netSpeedMps);
+      case AutoTrackingRuntimeMode.monitor:
+        return _evaluateMonitor(fix, distanceMeters, netSpeedMps, combinedAccuracyMeters);
+      case AutoTrackingRuntimeMode.active:
+        return _evaluateActive(fix, distanceMeters, netSpeedMps, combinedAccuracyMeters);
+    }
+  }
+
+  AutoTrackingRuntimeMode _evaluatePassive(
+    LocationFix fix,
+    double distanceMeters,
+    double netSpeedMps,
+  ) {
+    // Vehicle speed — skip monitor and go straight to active.
+    if (netSpeedMps >= passiveDirectActiveSpeedMps) {
+      if (kDebugMode) {
+        debugPrint(
+          '[TrackerIntelligence] Passive → active (vehicle speed: '
+          '${netSpeedMps.toStringAsFixed(1)} m/s >= $passiveDirectActiveSpeedMps)',
+        );
+      }
       _lastMeaningfulMovementTime = fix.timestampUtc;
-      _currentMode = AutoTrackingRuntimeMode.active;
+      _setMode(AutoTrackingRuntimeMode.active);
+      return _currentMode;
+    }
+
+    final isSpeedSignificant = netSpeedMps >= passiveWakeSpeedMps;
+    final isDistanceSignificant = distanceMeters >= passiveWakeDistanceMeters;
+
+    if (isSpeedSignificant || isDistanceSignificant) {
+      if (kDebugMode) {
+        debugPrint(
+          '[TrackerIntelligence] Passive → monitor (location fix fallback: '
+          'speed=${netSpeedMps.toStringAsFixed(1)} m/s, '
+          'distance=${distanceMeters.toStringAsFixed(0)} m)',
+        );
+      }
+      _lastMeaningfulMovementTime = fix.timestampUtc;
+      _setMode(AutoTrackingRuntimeMode.monitor);
+    }
+
+    return _currentMode;
+  }
+
+  AutoTrackingRuntimeMode _evaluateMonitor(
+    LocationFix fix,
+    double distanceMeters,
+    double netSpeedMps,
+    double combinedAccuracy,
+  ) {
+    if (fix.speedMps <= 0.0) {
+      _consecutiveZeroSpeedFixes++;
+    } else {
+      _consecutiveZeroSpeedFixes = 0;
+    }
+
+    if (kDebugMode && _consecutiveZeroSpeedFixes > 0) {
+      debugPrint(
+        '[TrackerIntelligence] Monitor: $_consecutiveZeroSpeedFixes consecutive '
+        'zero-speed fixes (OEM may not populate speed at PRIORITY_BALANCED)',
+      );
+    }
+
+    if (netSpeedMps >= monitorPromoteSpeedMps) {
+      if (kDebugMode) {
+        debugPrint(
+          '[TrackerIntelligence] Monitor → active (speed: '
+          '${netSpeedMps.toStringAsFixed(1)} m/s >= $monitorPromoteSpeedMps)',
+        );
+      }
+      _consecutiveZeroSpeedFixes = 0;
+      _lastMeaningfulMovementTime = fix.timestampUtc;
+      _setMode(AutoTrackingRuntimeMode.active);
+      return _currentMode;
+    }
+
+    // Safety net for when the external monitor idle timer is delayed by doze mode.
+    final enteredTime = _monitorEnteredTime;
+    if (enteredTime != null) {
+      final timeInMonitor = fix.timestampUtc.difference(enteredTime);
+      if (timeInMonitor >= monitorIdleTimeout) {
+        _setMode(AutoTrackingRuntimeMode.passive);
+        return _currentMode;
+      }
+    }
+
+    return _currentMode;
+  }
+
+  AutoTrackingRuntimeMode _evaluateActive(
+    LocationFix fix,
+    double distanceMeters,
+    double netSpeedMps,
+    double combinedAccuracy,
+  ) {
+    // Displacement must exceed the total positional uncertainty (sum of both
+    // error radii) before it counts as real movement, to avoid GPS jitter
+    // refreshing the timestamp when stationary.
+    final effectiveDistanceThreshold =
+        math.max(activeKeepDistanceMeters, combinedAccuracy * 1.0);
+    final isDistanceConfident = distanceMeters >= effectiveDistanceThreshold;
+    final isSpeedConfident = netSpeedMps >= activeKeepSpeedMps;
+
+    if (isDistanceConfident || isSpeedConfident) {
+      _lastMeaningfulMovementTime = fix.timestampUtc;
       return _currentMode;
     }
 
@@ -194,10 +310,34 @@ final class TrackerIntelligenceService {
     }
 
     final stillFor = fix.timestampUtc.difference(lastMovementTime);
-    if (stillFor >= passiveAfterStillness) {
-      _currentMode = AutoTrackingRuntimeMode.passive;
+    if (stillFor >= activeToMonitorStillness) {
+      _setMode(AutoTrackingRuntimeMode.monitor);
     }
 
     return _currentMode;
+  }
+
+  /// Force the service into [mode] without GPS evaluation. Called by the
+  /// external silence/idle timers in PointAutomationService to keep this
+  /// service in sync when a mode change is timer-driven rather than fix-driven.
+  ///
+  /// Also resets [_lastObservedFix] so the next fix from the new accuracy class
+  /// isn't compared against a stale fix from a different class.
+  void forceMode(AutoTrackingRuntimeMode mode) {
+    _setMode(mode);
+    _lastObservedFix = null;
+  }
+
+  void _setMode(AutoTrackingRuntimeMode mode) {
+    if (_currentMode == mode) return;
+    _currentMode = mode;
+
+    if (mode == AutoTrackingRuntimeMode.monitor) {
+      _monitorEnteredTime = DateTime.now().toUtc();
+      _consecutiveZeroSpeedFixes = 0;
+    } else {
+      _monitorEnteredTime = null;
+      _consecutiveZeroSpeedFixes = 0;
+    }
   }
 }

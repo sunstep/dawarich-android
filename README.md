@@ -65,6 +65,11 @@
 </p>
 
 <p align="center">
+  <a href="https://f-droid.org/packages/YOUR.APP.ID">
+    <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+    alt="Get it on F-Droid"
+    height="80">
+</a>
   <a href="https://play.google.com/store/apps/details?id=com.sunstep.dawarich">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80" alt="Get it on Google Play" />
   </a>

@@ -106,7 +106,7 @@ final class SQLiteClient extends _$SQLiteClient {
         }
         try {
           final iso = DriftIsolate.fromConnectPort(existing);
-          final conn = await iso.connect().timeout(const Duration(seconds: 5));
+          final conn = await iso.connect().timeout(const Duration(seconds: 1));
           _instance = SQLiteClient._(conn);
           completer.complete(_instance!);
           return _instance!;
@@ -222,7 +222,7 @@ final class SQLiteClient extends _$SQLiteClient {
   }
 
 
-  static const int kSchemaVersion = 9;
+  static const int kSchemaVersion = 10;
   @override
   int get schemaVersion => kSchemaVersion;
 

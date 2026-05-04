@@ -39,6 +39,7 @@ class _SplashPageState extends ConsumerState<SplashView> {
       debugPrint('[SplashPage] Starting boot...');
     }
 
+
     try {
       if (kDebugMode) {
         debugPrint('[SplashPage] Reading coreProvider...');

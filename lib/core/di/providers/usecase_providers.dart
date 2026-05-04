@@ -25,8 +25,10 @@ import 'package:dawarich/features/tracking/application/usecases/notifications/in
 import 'package:dawarich/features/tracking/application/usecases/notifications/was_launched_from_notification_usecase.dart';
 import 'package:dawarich/features/tracking/application/usecases/point_creation/create_point_usecase.dart';
 import 'package:dawarich/features/tracking/data/repositories/location_provider.dart';
+import 'package:dawarich/features/tracking/data/sources/activity_transition_data_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core_providers.dart';
+import 'settings_providers.dart';
 import 'package:dawarich/core/data/repositories/drift/drift_local_point_repository.dart';
 import 'package:dawarich/core/data/repositories/drift/drift_track_repository.dart';
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
@@ -92,10 +94,18 @@ final statsRepositoryProvider = FutureProvider<IStatsRepository>((ref) async {
   return StatsRepository(remote: remote, cache: cache);
 });
 // --- Tracking repositories ---
+final activityTransitionDataClientProvider = Provider<ActivityTransitionDataClient>((ref) {
+  final client = ActivityTransitionDataClient();
+  client.initialize();
+  ref.onDispose(client.dispose);
+  return client;
+});
+
 final hardwareRepositoryProvider = Provider<IHardwareRepository>((ref) {
   return HardwareRepository(
     ref.watch(deviceDataClientProvider),
     ref.watch(connectivityDataClientProvider),
+    ref.watch(activityTransitionDataClientProvider),
   );
 });
 
@@ -281,6 +291,8 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
   final localRepo = await ref.watch(pointLocalRepositoryProvider.future);
 
   final trackerIntelligenceService = await ref.watch(trackerIntelligenceServiceProvider.future);
+  final hardwareRepo = ref.watch(hardwareRepositoryProvider);
+  final locationProvider = ref.watch(locationProviderProvider);
 
   return PointAutomationService(
     createStream,
@@ -291,7 +303,9 @@ final pointAutomationServiceProvider = FutureProvider<PointAutomationService>((r
     batchUploadWorkflow,
     watchSettings,
     localRepo,
-    trackerIntelligenceService
+    trackerIntelligenceService,
+    hardwareRepo,
+    locationProvider,
   );
 });
 
@@ -325,6 +339,7 @@ final loadTimelineUseCaseProvider = FutureProvider<LoadTimelineUseCase>((ref) as
   return LoadTimelineUseCase(
     await ref.watch(apiPointRepositoryProvider.future),
     ref.watch(timelinePointsProcessorProvider),
+    await ref.watch(getTimelineDistanceThresholdUseCaseProvider.future),
   );
 });
 

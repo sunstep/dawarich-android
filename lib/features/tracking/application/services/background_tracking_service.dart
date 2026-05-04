@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dawarich/core/constants/notification.dart';
+import 'package:dawarich/core/data/drift/database/sqlite_client.dart';
 import 'package:dawarich/core/domain/models/user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -112,8 +113,21 @@ class BackgroundTrackingEntry {
       debugPrint('[Background] Starting background tracking...');
     }
 
-    final automation = await container.read(pointAutomationServiceProvider.future);
-    await automation.startTracking(userId);
+
+    // Wrap the critical provider resolution + tracking start in try/catch.
+    // Without this, an error in the deep provider chain (e.g. DB isolate
+    // timeout, Drift migration failure) propagates out of the unawaited
+    // fire-and-forget block in the entrypoint. The outer catch calls
+    // shutdown() but in some edge cases the exception bypasses it entirely,
+    // leaving the service alive but non-functional (zombie service).
+    try {
+      final automation = await container.read(pointAutomationServiceProvider.future);
+      await automation.startTracking(userId);
+    } catch (e, s) {
+      debugPrint('[Background] Failed to start tracking ($e) → shutting down.\n$s');
+      await shutdown(backgroundService, 'startTracking failed: $e');
+      return;
+    }
 
     try {
       final checkExpiredBatch =
@@ -188,6 +202,12 @@ class BackgroundTrackingEntry {
       _container?.dispose();
     } catch (_) {}
     _container = null;
+
+    // Remove the stale Drift IsolateNameServer port so the main app's next
+    // connectSharedIsolate() doesn't waste time trying to connect to a dead
+    // isolate (the 1 s timeout in connectSharedIsolate() adds up otherwise).
+    SQLiteClient.resetSharedState();
+
     svc.stopSelf();
   }
 
@@ -249,21 +269,36 @@ final class BackgroundTrackingService {
 
     await ensureNotificationChannelExists();
 
-    await FlutterBackgroundService().configure(
-      androidConfiguration: AndroidConfiguration(
-        onStart: backgroundTrackingEntry,
-        autoStartOnBoot: true,
-        isForegroundMode: true,
-        foregroundServiceTypes: [AndroidForegroundType.location],
-        autoStart: false,
-        foregroundServiceNotificationId: NotificationConstants.notificationId,
-        notificationChannelId: NotificationConstants.channelId,
-      ),
-      iosConfiguration: IosConfiguration(
-        onForeground: backgroundTrackingEntry,
-        onBackground: (_) async => true,
-      ),
-    );
+    // FlutterBackgroundService.configure() is a platform-channel call that
+    // can deadlock when the service was already started by the platform
+    // (autoStartOnBoot). The _configured flag is per-Dart-isolate, so it's
+    // always false in a fresh foreground process even when the platform
+    // service is alive. Wrapping configure() in a timeout prevents the
+    // splash screen from freezing indefinitely in that scenario.
+    try {
+      await FlutterBackgroundService().configure(
+        androidConfiguration: AndroidConfiguration(
+          onStart: backgroundTrackingEntry,
+          autoStartOnBoot: true,
+          isForegroundMode: true,
+          foregroundServiceTypes: [AndroidForegroundType.location],
+          autoStart: false,
+          foregroundServiceNotificationId: NotificationConstants.notificationId,
+          notificationChannelId: NotificationConstants.channelId,
+        ),
+        iosConfiguration: IosConfiguration(
+          onForeground: backgroundTrackingEntry,
+          onBackground: (_) async => true,
+        ),
+      ).timeout(const Duration(seconds: 8));
+    } on TimeoutException {
+      debugPrint('[BackgroundService] configure() timed out — likely already running via autoStartOnBoot.');
+      // Don't set _configured, a subsequent call can retry.
+      return;
+    } catch (e) {
+      debugPrint('[BackgroundService] configure() failed: $e');
+      return;
+    }
 
     _configured = true;
   }

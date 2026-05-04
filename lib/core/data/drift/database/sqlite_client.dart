@@ -215,6 +215,15 @@ final class SQLiteClient extends _$SQLiteClient {
   }
 
 
+  /// Clears all cached connection state and removes the IsolateNameServer port
+  /// registration. Call this when the background service shuts down so the
+  /// foreground app doesn't try to reconnect to a dead isolate.
+  static void resetSharedState() {
+    _instance = null;
+    _pendingInit = null;
+    IsolateNameServer.removePortNameMapping(_driftPortName);
+  }
+
   // Database path helper
   static Future<String> dbPath() async {
     final dir = await getApplicationDocumentsDirectory();

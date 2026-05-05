@@ -1,11 +1,9 @@
 package com.sunstep.travel
 
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import id.flutter.flutter_background_service.BackgroundService
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.renderer.FlutterUiDisplayListener
@@ -32,35 +30,16 @@ class MainActivity : FlutterFragmentActivity() {
         override fun onFlutterUiNoLongerDisplayed() {}
     }
 
-    // When the background service keeps the OS process alive between sessions,
-    // its FlutterEngine holds shared native resources. A second engine started
-    // by this Activity can deadlock on those resources and prevent the first
-    // frame from rendering. The watchdog detects this and recovers in two stages.
-    //
-    // Stage 1: stop the background service to release its engine, then recreate
-    // this Activity so a fresh engine starts without contention.
-    //
-    // Stage 2: if the recreated engine still cannot render, kill the process so
-    // the next launch is completely clean.
-    //
-    // StartupService in Dart restarts background tracking after either stage.
     private val startupWatchdog = Runnable {
         if (flutterUiReady) return@Runnable
 
         recoveryAttempts++
 
         if (recoveryAttempts == 1) {
-            Log.w(TAG, "Flutter UI not ready after ${WATCHDOG_MS}ms, soft recovery")
-
-            try {
-                stopService(Intent(this@MainActivity, BackgroundService::class.java))
-            } catch (e: Exception) {
-                Log.w(TAG, "stopService failed: ${e.message}")
-            }
-
+            Log.w(TAG, "Flutter UI not ready after ${WATCHDOG_MS}ms — recreating Activity")
             recreate()
         } else {
-            Log.e(TAG, "Flutter UI still not ready, killing process (attempt $recoveryAttempts)")
+            Log.e(TAG, "Flutter UI still not ready — killing process for clean restart (attempt $recoveryAttempts)")
             android.os.Process.killProcess(android.os.Process.myPid())
         }
     }

@@ -114,17 +114,15 @@ class BackgroundTrackingEntry {
     }
 
 
-    // Wrap the critical provider resolution + tracking start in try/catch.
-    // Without this, an error in the deep provider chain (e.g. DB isolate
-    // timeout, Drift migration failure) propagates out of the unawaited
-    // fire-and-forget block in the entrypoint. The outer catch calls
-    // shutdown() but in some edge cases the exception bypasses it entirely,
-    // leaving the service alive but non-functional (zombie service).
     try {
       final automation = await container.read(pointAutomationServiceProvider.future);
       await automation.startTracking(userId);
-      // Tracking is confirmed healthy — signal the foreground 'ready' listener.
       backgroundService.invoke('ready');
+
+      automation.fatalFailures.listen((_) async {
+        debugPrint('[Background] Automation fatal failure — stopping service for watchdog restart.');
+        await shutdown(backgroundService, 'automation fatal failure');
+      });
     } catch (e, s) {
       debugPrint('[Background] Failed to start tracking ($e) → shutting down.\n$s');
       await shutdown(backgroundService, 'startTracking failed: $e');
@@ -377,10 +375,33 @@ final class BackgroundTrackingService {
       return Ok(());
     }
 
+    // Subscribe before startService() to avoid missing a very fast 'ready' event.
+    final readyCompleter = Completer<void>();
+    final readySub = FlutterBackgroundService().on('ready').listen((_) {
+      if (!readyCompleter.isCompleted) readyCompleter.complete();
+    });
+
     final started = await FlutterBackgroundService().startService();
-    return started
-        ? Ok(())
-        : Err("Failed to start background service.");
+    if (!started) {
+      await readySub.cancel();
+      return Err("Failed to start background service.");
+    }
+
+    bool timedOut = false;
+    await readyCompleter.future.timeout(
+      const Duration(seconds: 20),
+      onTimeout: () { timedOut = true; },
+    );
+    await readySub.cancel();
+
+    if (timedOut) {
+      final stillRunning = await FlutterBackgroundService().isRunning();
+      if (!stillRunning) {
+        return Err("Background service failed during startup — session or settings check failed.");
+      }
+    }
+
+    return Ok(());
   }
 
   static Future<bool> isRunning() async {

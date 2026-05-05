@@ -40,18 +40,17 @@ final class PointAutomationService {
   int _lastKnownBatchCount = 0;
   int _recoveryAttempt = 0;
 
-  // Skips the first connectivity event emitted on subscription.
-  // connectivity_plus fires the current state immediately, but we always want
-  // the tracker to start in active mode. Events after that still apply normally.
   bool _startupConnectivityGuard = true;
 
-  // Max consecutive recovery attempts before giving up.
-  // The 15-min WorkManager watchdog will restart the service with a clean state.
   static const _maxRecoveryAttempts = 10;
 
-  // Heartbeat interval to re-post the notification so aggressive OEMs
-  // don't kill the foreground service.
   static const _heartbeatInterval = Duration(seconds: 60);
+
+  final StreamController<String> _fatalFailureController =
+      StreamController<String>.broadcast();
+
+
+  Stream<String> get fatalFailures => _fatalFailureController.stream;
 
   AutoTrackingRuntimeMode get autoTrackingRuntimeMode =>
       _autoTrackingRuntimeMode;
@@ -493,9 +492,10 @@ final class PointAutomationService {
 
     if (_recoveryAttempt > _maxRecoveryAttempts) {
       debugPrint(
-        "[PointAutomation] Stream recovery exhausted ($_maxRecoveryAttempts attempts). "
-        "Giving up — watchdog will restart the service.",
+        "[PointAutomation] Stream recovery exhausted ($_maxRecoveryAttempts attempts) — "
+        "signalling service shutdown for watchdog restart.",
       );
+      _fatalFailureController.add('recovery exhausted after $_maxRecoveryAttempts attempts');
       return;
     }
 
@@ -717,7 +717,10 @@ final class PointAutomationService {
         if (userId != null) _startOrResetActiveSilenceTimer(userId);
       case AutoTrackingRuntimeMode.monitor:
         _cancelActiveSilenceTimer();
-        if (userId != null) _startMonitorIdleTimer(userId);
+        if (userId != null) {
+          _startMonitorIdleTimer(userId);
+          _startMotionTransitionWatch(userId);
+        }
       case AutoTrackingRuntimeMode.passive:
         _cancelActiveSilenceTimer();
         _cancelMonitorIdleTimer();

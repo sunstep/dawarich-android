@@ -26,6 +26,7 @@ import 'package:dawarich/features/tracking/application/usecases/point_creation/c
 import 'package:dawarich/features/tracking/data/repositories/location_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core_providers.dart';
+import 'settings_providers.dart';
 import 'package:dawarich/core/data/repositories/drift/drift_local_point_repository.dart';
 import 'package:dawarich/core/data/repositories/drift/drift_track_repository.dart';
 import 'package:dawarich/core/data/repositories/local_point_repository_interfaces.dart';
@@ -317,6 +318,7 @@ final loadTimelineUseCaseProvider = FutureProvider<LoadTimelineUseCase>((ref) as
   return LoadTimelineUseCase(
     await ref.watch(apiPointRepositoryProvider.future),
     ref.watch(timelinePointsProcessorProvider),
+    await ref.watch(getTimelineDistanceThresholdUseCaseProvider.future),
   );
 });
 
